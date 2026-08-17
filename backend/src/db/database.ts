@@ -350,6 +350,9 @@ export interface Schema {
   active_sessions: ActiveSessionRecord[];
   security_alerts: SecurityAlertRecord[];
   audit_logs: AuditLogRecord[];
+  payments: any[];
+  marketing_campaigns: any[];
+  employee_activities: any[];
   leads: any[];
   projects: any[];
   builders: any[];
@@ -514,6 +517,9 @@ const initialData: Schema = {
     }
   ],
   audit_logs: [],
+  payments: [],
+  marketing_campaigns: [],
+  employee_activities: [],
   leads: [],
   projects: [],
   builders: [],

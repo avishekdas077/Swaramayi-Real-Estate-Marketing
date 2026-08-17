@@ -78,6 +78,12 @@ export default function App() {
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
 
+  // Customer 360° and Property 360° Drawer States
+  const [selectedCustomer360, setSelectedCustomer360] = useState<any>(null);
+  const [selectedProperty360, setSelectedProperty360] = useState<any>(null);
+  const [followupSubTab, setFollowupSubTab] = useState<'overdue' | 'today' | 'tomorrow' | 'upcoming' | 'none'>('overdue');
+  const [salespersonFilter, setSalespersonFilter] = useState<string>('ALL');
+
   // ----------------------------------------------------
   // FULL MASTER CRM DATASETS
   // ----------------------------------------------------
@@ -371,36 +377,574 @@ export default function App() {
         {/* MAIN BODY DISPLAY */}
         <div style={{ flex: 1, padding: '24px', overflowY: 'auto' }}>
           
-          {/* CATEGORY 1: MAIN DASHBOARD (BI CONTROL CENTER) */}
+          {/* CATEGORY 1: MAIN DASHBOARD (ADVANCED BI CONTROL CENTER) */}
           {activeTab === 'main_dashboard' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#ffffff' }}>SWARAMAYI REAL ESTATE MARKETING</h2>
-                <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>ADVANCED MANAGEMENT & BUSINESS INTELLIGENCE CONTROL CENTER</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+              
+              {/* TOP BI CONTROL HEADER & ROLE CONTEXT BADGE */}
+              <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff' }}>SWARAMAYI REAL ESTATE MARKETING</h2>
+                      <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>BI CONTROL CENTER</span>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>
+                      Role View: <strong style={{ color: '#38bdf8' }}>{currentRole}</strong> • Scope: <strong style={{ color: '#4ade80' }}>ALL DATA DRILL-DOWN ENABLED</strong> • Updated: Real-time Live Records
+                    </p>
+                  </div>
+
+                  {/* QUICK ACTIONS BUTTON SUITE */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <button onClick={() => setShowLeadModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <UserPlus size={14} /> + Add Customer
+                    </button>
+                    <button onClick={() => setShowPropertyModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Building2 size={14} /> + Add Property
+                    </button>
+                    <button onClick={() => alert('⚡ Running Smart Property Matching Engine across all 438 customer requirements...')} style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Zap size={14} /> Find Matches
+                    </button>
+                    <button onClick={() => alert('📅 Opening Site Visit Scheduler...')} style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.4)', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={14} /> Schedule Visit
+                    </button>
+                    <button onClick={() => alert('📄 Opening Booking Creator...')} style={{ background: 'rgba(74, 222, 128, 0.2)', color: '#4ade80', border: '1px solid rgba(74, 222, 128, 0.4)', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <FileCheck size={14} /> Create Booking
+                    </button>
+                  </div>
+                </div>
+
+                {/* GLOBAL DASHBOARD FILTERS TOOLBAR */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', borderTop: '1px solid #334155', paddingTop: '14px', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Calendar size={15} color="#94a3b8" />
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700' }}>Date Range:</span>
+                    <select value={dateFilter} onChange={(e: any) => setDateFilter(e.target.value)} style={{ background: '#0f172a', color: '#ffffff', border: '1px solid #334155', borderRadius: '6px', padding: '5px 10px', fontSize: '0.8rem', fontWeight: '700' }}>
+                      <option value="today">Today</option>
+                      <option value="yesterday">Yesterday</option>
+                      <option value="this_week">This Week</option>
+                      <option value="last_week">Last Week</option>
+                      <option value="this_month">This Month</option>
+                      <option value="last_month">Last Month</option>
+                      <option value="this_quarter">This Quarter</option>
+                      <option value="this_year">This Year</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Building size={15} color="#94a3b8" />
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700' }}>Branch:</span>
+                    <select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} style={{ background: '#0f172a', color: '#ffffff', border: '1px solid #334155', borderRadius: '6px', padding: '5px 10px', fontSize: '0.8rem', fontWeight: '700' }}>
+                      <option value="ALL">All Branches</option>
+                      <option value="Head Office">Head Office (Hyderabad)</option>
+                      <option value="Kondapur Branch">Kondapur Branch</option>
+                      <option value="Gachibowli Branch">Gachibowli Branch</option>
+                      <option value="Kolkata Branch">Kolkata Branch</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Users size={15} color="#94a3b8" />
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700' }}>Team:</span>
+                    <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} style={{ background: '#0f172a', color: '#ffffff', border: '1px solid #334155', borderRadius: '6px', padding: '5px 10px', fontSize: '0.8rem', fontWeight: '700' }}>
+                      <option value="ALL">All Teams</option>
+                      <option value="Sales Team Alpha">Sales Team Alpha</option>
+                      <option value="Sales Team Bravo">Sales Team Bravo</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <UserCheck size={15} color="#94a3b8" />
+                    <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700' }}>Salesperson:</span>
+                    <select value={salespersonFilter} onChange={(e) => setSalespersonFilter(e.target.value)} style={{ background: '#0f172a', color: '#ffffff', border: '1px solid #334155', borderRadius: '6px', padding: '5px 10px', fontSize: '0.8rem', fontWeight: '700' }}>
+                      <option value="ALL">All Salespeople</option>
+                      <option value="Priya Nair">Priya Nair (Sales Exec)</option>
+                      <option value="Amit Patel">Amit Patel (Sales Exec)</option>
+                      <option value="Srinivas Rao">Srinivas Rao (Senior Exec)</option>
+                    </select>
+                  </div>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
-                <div onClick={() => openDrillDown('CUSTOMERS MASTER VAULT', customers)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '16px', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>CUSTOMERS</span>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#ffffff', marginTop: '4px' }}>{customers.length}</h3>
-                  <span style={{ fontSize: '0.7rem', color: '#38bdf8' }}>Click &rarr; Drill Down 360°</span>
-                </div>
-                <div onClick={() => openDrillDown('ACTIVE LEADS PIPELINE', customers)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '16px', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>ACTIVE LEADS</span>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#38bdf8', marginTop: '4px' }}>430</h3>
-                  <span style={{ fontSize: '0.7rem', color: '#4ade80' }}>✓ 96% Match Ranking</span>
-                </div>
-                <div onClick={() => openDrillDown('ACTIVE PROPERTY STOCK', properties)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '16px', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>ACTIVE PROPERTY STOCK</span>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#ffffff', marginTop: '4px' }}>2,458</h3>
-                  <span style={{ fontSize: '0.7rem', color: '#38bdf8' }}>1,487 Available</span>
-                </div>
-                <div onClick={() => openDrillDown('RECEIVED BROKERAGE LEDGER', bookings)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '16px', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>RECEIVED BROKERAGE</span>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#4ade80', marginTop: '4px' }}>₹9.80 Lakhs</h3>
-                  <span style={{ fontSize: '0.7rem', color: '#4ade80' }}>✓ Invoiced & Settled</span>
+              {/* 1. TOP-LEVEL INTERACTIVE KPI CARDS GRID (12 CARDS WITH DRILL-DOWN) */}
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Activity size={18} color="#38bdf8" /> BUSINESS CONTROL CENTER - KEY PERFORMANCE INDICATORS
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
+                  
+                  <div onClick={() => openDrillDown('CUSTOMERS MASTER LIST', customers)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer', transition: 'all 0.2s' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>CUSTOMERS</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff', marginTop: '2px' }}>{customers.length}</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: '700' }}>Click &rarr; 360° List</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('ACTIVE LEADS PIPELINE', customers)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>ACTIVE LEADS</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>430</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: '700' }}>Click &rarr; View Leads</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown("TODAY'S NEW LEADS", customers.filter(c => c.created_at?.includes('2026-08-17')))} style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>NEW LEADS TODAY</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>14</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#fbbf24', fontWeight: '700' }}>Click &rarr; Fresh Leads</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('HOT LEADS PRIORITY LIST', customers.filter(c => c.priority === 'HOT'))} style={{ background: '#1e293b', border: '1px solid #ef4444', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#f87171', textTransform: 'uppercase', fontWeight: '800' }}>🔥 HOT LEADS</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ef4444', marginTop: '2px' }}>127</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#f87171', fontWeight: '700' }}>Click &rarr; High Intent</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('ACTIVE PROPERTY STOCK', properties)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>PROPERTY STOCK</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff', marginTop: '2px' }}>2,458</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: '700' }}>Click &rarr; Inventory</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('AVAILABLE PROPERTIES', properties.filter(p => p.status === 'AVAILABLE'))} style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>AVAILABLE</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>1,487</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#4ade80', fontWeight: '700' }}>Click &rarr; Live Stock</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('SITE VISITS SCHEDULED', siteVisits || [])} style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>SITE VISITS</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>95</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: '700' }}>Click &rarr; Visit Logs</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('CONFIRMED BOOKINGS', bookings)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>BOOKINGS</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>18</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#4ade80', fontWeight: '700' }}>Click &rarr; Bookings</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('EXPECTED BROKERAGE PIPELINE', bookings)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED BROKERAGE</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff', marginTop: '2px' }}>₹18.50L</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '700' }}>Pipeline Deals</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('RECEIVED BROKERAGE LEDGER', invoices)} style={{ background: '#1e293b', border: '1px solid #22c55e', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#4ade80', textTransform: 'uppercase', fontWeight: '800' }}>RECEIVED BROKERAGE</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>₹9.80L</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#4ade80', fontWeight: '700' }}>✓ Invoiced & Paid</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('PENDING BROKERAGE LEDGER', invoices)} style={{ background: '#1e293b', border: '1px solid #f59e0b', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#fbbf24', textTransform: 'uppercase', fontWeight: '800' }}>PENDING BROKERAGE</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>₹4.40L</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#fbbf24', fontWeight: '700' }}>Invoiced & Awaiting</span>
+                  </div>
+
+                  <div onClick={() => openDrillDown('PAYMENTS RECEIVABLE', invoices)} style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>RECEIVABLES</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>₹7.08L</h4>
+                    <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: '700' }}>Due Receipts</span>
+                  </div>
                 </div>
               </div>
+
+              {/* 2. VISUAL 11-STAGE SALES FUNNEL */}
+              <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <TrendingUp size={18} color="#38bdf8" /> 11-STAGE ENTERPRISE SALES FUNNEL
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Click any stage bar to drill down into stage CRM records & conversion analysis.</p>
+                  </div>
+                  <span style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', padding: '4px 12px', borderRadius: '20px', fontSize: '0.8rem', fontWeight: '800' }}>
+                    Overall Lead Conversion: 1.8% (18 Bookings / 1,000 Leads)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {[
+                    { stage: '1. NEW LEAD', count: 1000, pct: 100, color: '#38bdf8', conv: '100%' },
+                    { stage: '2. CONTACTED', count: 620, pct: 62.0, color: '#0284c7', conv: '62.0%' },
+                    { stage: '3. QUALIFIED', count: 430, pct: 43.0, color: '#0369a1', conv: '69.3%' },
+                    { stage: '4. REQUIREMENT CAPTURED', count: 380, pct: 38.0, color: '#6366f1', conv: '88.3%' },
+                    { stage: '5. PROPERTY MATCHED', count: 350, pct: 35.0, color: '#8b5cf6', conv: '92.1%' },
+                    { stage: '6. PROPERTY SENT', count: 280, pct: 28.0, color: '#a855f7', conv: '80.0%' },
+                    { stage: '7. INTERESTED', count: 160, pct: 16.0, color: '#d946ef', conv: '57.1%' },
+                    { stage: '8. SITE VISIT', count: 95, pct: 9.5, color: '#ec4899', conv: '59.3%' },
+                    { stage: '9. NEGOTIATION', count: 42, pct: 4.2, color: '#f43f5e', conv: '44.2%' },
+                    { stage: '10. BOOKING', count: 18, pct: 1.8, color: '#22c55e', conv: '42.8%' },
+                    { stage: '11. BROKERAGE GENERATED', count: 18, pct: 1.8, color: '#16a34a', conv: '100%' }
+                  ].map((s, idx) => (
+                    <div key={idx} onClick={() => openDrillDown(`FUNNEL STAGE: ${s.stage}`, customers)} style={{ display: 'grid', gridTemplateColumns: '220px 1fr 140px 100px', alignItems: 'center', gap: '12px', padding: '6px 12px', background: '#0f172a', borderRadius: '8px', cursor: 'pointer' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#ffffff' }}>{s.stage}</span>
+                      <div style={{ background: '#1e293b', height: '14px', borderRadius: '7px', overflow: 'hidden', width: '100%' }}>
+                        <div style={{ width: `${s.pct}%`, background: s.color, height: '100%', borderRadius: '7px' }} />
+                      </div>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '800', color: s.color }}>{s.count} Leads ({s.pct}%)</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: '700', color: '#94a3b8' }}>Conv: {s.conv}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3. CUSTOMER REQUIREMENT & SMART PROPERTY MATCHING ENGINE */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Sparkles size={18} color="#c084fc" /> SMART PROPERTY MATCHING ENGINE
+                    </h3>
+                    <span style={{ fontSize: '0.75rem', color: '#c084fc', fontWeight: '800' }}>438 Active Requirements</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                    <div onClick={() => openDrillDown('EXCELLENT 90%+ MATCHES', customers)} style={{ background: '#0f172a', border: '1px solid #22c55e', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#4ade80', fontWeight: '800' }}>90%+ MATCH</span>
+                      <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#4ade80' }}>126</h4>
+                    </div>
+                    <div onClick={() => openDrillDown('GOOD 75-89% MATCHES', customers)} style={{ background: '#0f172a', border: '1px solid #38bdf8', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: '800' }}>75–89% MATCH</span>
+                      <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#38bdf8' }}>187</h4>
+                    </div>
+                    <div onClick={() => openDrillDown('ALTERNATIVE 60-74% MATCHES', customers)} style={{ background: '#0f172a', border: '1px solid #fbbf24', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: '800' }}>60–74% MATCH</span>
+                      <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fbbf24' }}>79</h4>
+                    </div>
+                    <div onClick={() => openDrillDown('NO MATCH REQUIREMENTS', customers)} style={{ background: '#0f172a', border: '1px solid #ef4444', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                      <span style={{ fontSize: '0.68rem', color: '#f87171', fontWeight: '800' }}>NO MATCH</span>
+                      <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#ef4444' }}>46</h4>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '14px' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '800', color: '#ffffff', display: 'block', marginBottom: '8px' }}>
+                      🚨 CUSTOMERS WAITING FOR PROPERTY RECOMMENDATION (12)
+                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {[
+                        { name: 'Rahul', req: '2 BHK • ₹40–55L • Madhyamgram', matches: 12, exec: 'Priya Nair' },
+                        { name: 'Sunita Rao', req: '3 BHK • ₹80–95L • Kondapur', matches: 5, exec: 'Amit Patel' },
+                        { name: 'Vikram Chatterji', req: '4 BHK Villa • ₹1.5–2.0Cr • Rajarhat', matches: 3, exec: 'Srinivas Rao' }
+                      ].map((c, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#1e293b', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem' }}>
+                          <div>
+                            <strong style={{ color: '#ffffff' }}>{c.name}</strong> <span style={{ color: '#94a3b8' }}>({c.req})</span>
+                            <br /><span style={{ color: '#4ade80', fontWeight: '700' }}>{c.matches} Matched Properties</span>
+                          </div>
+                          <button onClick={() => alert(`Sending ${c.matches} properties to ${c.name}...`)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.72rem' }}>
+                            Send Properties
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 4. PROPERTY INVENTORY AGING & AUTOMATED MATCH ALERTS */}
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Clock size={18} color="#fbbf24" /> PROPERTY STOCK AGING & DEAD INVENTORY
+                    </h3>
+                    <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800' }}>Total Stock: 2,458 Units</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                    {[
+                      { range: '0–30 Days', count: 1480, label: 'Fresh Stock', color: '#4ade80' },
+                      { range: '31–60 Days', count: 520, label: 'Active', color: '#38bdf8' },
+                      { range: '61–90 Days', count: 260, label: 'Aging', color: '#fbbf24' },
+                      { range: '91–180 Days', count: 153, label: 'Slow', color: '#f97316' },
+                      { range: '180+ Days', count: 45, label: 'Stale / Dead', color: '#ef4444' }
+                    ].map((a, idx) => (
+                      <div key={idx} onClick={() => openDrillDown(`STOCK AGING: ${a.range}`, properties)} style={{ background: '#0f172a', border: `1px solid ${a.color}`, padding: '10px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                        <span style={{ fontSize: '0.65rem', color: a.color, fontWeight: '800' }}>{a.range}</span>
+                        <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: a.color }}>{a.count}</h4>
+                        <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>{a.label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* PRICE DROP & NEW PROPERTY AUTOMATED ALERTS */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.4)', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '800' }}>🚨 PRICE DROP ALERT → NEW CUSTOMER MATCHES</span>
+                        <p style={{ fontSize: '0.78rem', color: '#ffffff' }}>Aparna Zenon 3BHK (₹86L &rarr; ₹84L) • Created 6 new budget matches!</p>
+                      </div>
+                      <button onClick={() => alert('Notifying 6 matched budget customers of price drop!')} style={{ background: '#f59e0b', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer' }}>
+                        Notify Customers
+                      </button>
+                    </div>
+
+                    <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.4)', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '800' }}>✨ NEW PROPERTY ADDED → MATCH FOUND</span>
+                        <p style={{ fontSize: '0.78rem', color: '#ffffff' }}>Financial Towers Sky Suite (4BHK) • Matched with 8 buyers (3 HOT)</p>
+                      </div>
+                      <button onClick={() => alert('Opening 8 matched buyer profiles...')} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer' }}>
+                        View Buyers
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 5. FOLLOW-UP CONTROL CENTER & HOT LEAD CONTROL */}
+              <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <PhoneCall size={18} color="#ef4444" /> FOLLOW-UP MANAGEMENT & HOT LEAD CONTROL
+                    </h3>
+                    <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Categorized follow-up actions with instant WhatsApp and Calling triggers.</p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button onClick={() => setFollowupSubTab('overdue')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'overdue' ? '#ef4444' : '#0f172a', color: '#ffffff', border: 'none', cursor: 'pointer' }}>
+                      OVERDUE (12)
+                    </button>
+                    <button onClick={() => setFollowupSubTab('today')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'today' ? '#0284c7' : '#0f172a', color: '#ffffff', border: 'none', cursor: 'pointer' }}>
+                      DUE TODAY (8)
+                    </button>
+                    <button onClick={() => setFollowupSubTab('tomorrow')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'tomorrow' ? '#334155' : '#0f172a', color: '#ffffff', border: 'none', cursor: 'pointer' }}>
+                      DUE TOMORROW (14)
+                    </button>
+                    <button onClick={() => setFollowupSubTab('upcoming')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'upcoming' ? '#334155' : '#0f172a', color: '#ffffff', border: 'none', cursor: 'pointer' }}>
+                      UPCOMING (22)
+                    </button>
+                  </div>
+                </div>
+
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                  <thead>
+                    <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                      <th style={{ padding: '10px' }}>Customer</th>
+                      <th style={{ padding: '10px' }}>Salesperson</th>
+                      <th style={{ padding: '10px' }}>Last Property Sent</th>
+                      <th style={{ padding: '10px' }}>Customer Response</th>
+                      <th style={{ padding: '10px' }}>Next Follow-up</th>
+                      <th style={{ padding: '10px', textAlign: 'center' }}>Quick Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { name: 'Rohan Deshmukh', phone: '+91 98490 12345', exec: 'Priya Nair', sent: 'Aparna Zenon 3BHK', resp: 'Asked for discount pricing table', next: '16 Aug (OVERDUE)', status: 'OVERDUE' },
+                      { name: 'Priya Sharma', phone: '+91 99887 76655', exec: 'Priya Nair', sent: 'Financial Towers 4BHK Sky Suite', resp: 'Scheduled site visit today at 11 AM', next: '17 Aug (TODAY)', status: 'TODAY' },
+                      { name: 'Sunita Rao', phone: '+91 96111 22334', exec: 'Amit Patel', sent: 'Prestige High Fields 2BHK', resp: 'Waiting for property match recommendation', next: '18 Aug (TOMORROW)', status: 'TOMORROW' }
+                    ].map((f, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '10px', fontWeight: '800', color: '#ffffff' }}>{f.name} <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '400' }}>({f.phone})</span></td>
+                        <td style={{ padding: '10px', color: '#38bdf8' }}>{f.exec}</td>
+                        <td style={{ padding: '10px' }}>{f.sent}</td>
+                        <td style={{ padding: '10px', color: '#fbbf24' }}>{f.resp}</td>
+                        <td style={{ padding: '10px' }}><span style={{ background: f.status === 'OVERDUE' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(56, 189, 248, 0.2)', color: f.status === 'OVERDUE' ? '#ef4444' : '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>{f.next}</span></td>
+                        <td style={{ padding: '10px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                            <button onClick={() => alert(`Calling ${f.name} at ${f.phone}...`)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800' }}>Call</button>
+                            <button onClick={() => alert(`Opening WhatsApp chat for ${f.name}...`)} style={{ background: '#25d366', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800' }}>WhatsApp</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* 6. SALESPERSON PERFORMANCE & TEAM COMPARISON */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Award size={18} color="#4ade80" /> SALESPERSON PERFORMANCE MATRIX
+                  </h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                    <thead>
+                      <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                        <th style={{ padding: '8px' }}>Salesperson</th>
+                        <th style={{ padding: '8px' }}>Leads</th>
+                        <th style={{ padding: '8px' }}>Qualified</th>
+                        <th style={{ padding: '8px' }}>Matches</th>
+                        <th style={{ padding: '8px' }}>Visits</th>
+                        <th style={{ padding: '8px' }}>Bookings</th>
+                        <th style={{ padding: '8px' }}>Brokerage</th>
+                        <th style={{ padding: '8px' }}>Conv %</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { name: 'Priya Nair', leads: 85, qual: 62, match: 54, visit: 48, bkg: 6, brk: '₹6.40L', conv: '7.0%' },
+                        { name: 'Amit Patel', leads: 65, qual: 48, match: 40, visit: 32, bkg: 4, brk: '₹3.80L', conv: '6.1%' },
+                        { name: 'Srinivas Rao', leads: 50, qual: 35, match: 28, visit: 20, bkg: 2, brk: '₹2.20L', conv: '4.0%' }
+                      ].map((sp, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
+                          <td style={{ padding: '8px', fontWeight: '800', color: '#ffffff' }}>{sp.name}</td>
+                          <td style={{ padding: '8px' }}>{sp.leads}</td>
+                          <td style={{ padding: '8px' }}>{sp.qual}</td>
+                          <td style={{ padding: '8px' }}>{sp.match}</td>
+                          <td style={{ padding: '8px', color: '#38bdf8' }}>{sp.visit}</td>
+                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.bkg}</td>
+                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.brk}</td>
+                          <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>{sp.conv}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Layers size={18} color="#38bdf8" /> TEAM COMPARISON
+                  </h3>
+                  <div style={{ background: '#0f172a', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '800' }}>TEAM ALPHA (KONDAPUR)</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: '4px' }}>
+                      <span>Leads: 350 | Visits: 82</span>
+                      <strong style={{ color: '#4ade80' }}>14 Bookings (₹14.2L)</strong>
+                    </div>
+                  </div>
+
+                  <div style={{ background: '#0f172a', padding: '12px', borderRadius: '8px' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800' }}>TEAM BRAVO (GACHIBOWLI)</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: '4px' }}>
+                      <span>Leads: 290 | Visits: 74</span>
+                      <strong style={{ color: '#4ade80' }}>18 Bookings (₹18.5L)</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 7. DEVELOPER PERFORMANCE & MARKETING ROI */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Building2 size={18} color="#38bdf8" /> DEVELOPER PERFORMANCE RANKING
+                  </h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                    <thead>
+                      <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                        <th style={{ padding: '8px' }}>Developer</th>
+                        <th style={{ padding: '8px' }}>Stock</th>
+                        <th style={{ padding: '8px' }}>Visits</th>
+                        <th style={{ padding: '8px' }}>Bookings</th>
+                        <th style={{ padding: '8px' }}>Brokerage</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { dev: 'Aparna Constructions', stock: 420, visits: 82, bkg: 16, brk: '₹16.80L' },
+                        { dev: 'My Home Group', stock: 350, visits: 64, bkg: 12, brk: '₹12.40L' },
+                        { dev: 'Prestige Group', stock: 280, visits: 45, bkg: 8, brk: '₹8.60L' },
+                        { dev: 'Jayabheri Group', stock: 190, visits: 28, bkg: 4, brk: '₹4.20L' }
+                      ].map((d, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
+                          <td style={{ padding: '8px', fontWeight: '800', color: '#ffffff' }}>{d.dev}</td>
+                          <td style={{ padding: '8px' }}>{d.stock}</td>
+                          <td style={{ padding: '8px' }}>{d.visits}</td>
+                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.bkg}</td>
+                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.brk}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <DollarSign size={18} color="#4ade80" /> MARKETING CAMPAIGN ROI TRACKER
+                  </h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                    <thead>
+                      <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                        <th style={{ padding: '8px' }}>Channel</th>
+                        <th style={{ padding: '8px' }}>Spend</th>
+                        <th style={{ padding: '8px' }}>Leads</th>
+                        <th style={{ padding: '8px' }}>Bookings</th>
+                        <th style={{ padding: '8px' }}>Brokerage</th>
+                        <th style={{ padding: '8px' }}>ROI</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { ch: 'Meta Ads', spend: '₹45,000', leads: 120, bkg: 4, brk: '₹4.80L', roi: '966%' },
+                        { ch: 'Google Search', spend: '₹60,000', leads: 95, bkg: 3, brk: '₹5.40L', roi: '800%' },
+                        { ch: 'WhatsApp Blast', spend: '₹12,000', leads: 210, bkg: 5, brk: '₹4.20L', roi: '3400%' },
+                        { ch: 'Property Portal', spend: '₹35,000', leads: 85, bkg: 2, brk: '₹2.40L', roi: '585%' }
+                      ].map((m, i) => (
+                        <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
+                          <td style={{ padding: '8px', fontWeight: '800', color: '#ffffff' }}>{m.ch}</td>
+                          <td style={{ padding: '8px' }}>{m.spend}</td>
+                          <td style={{ padding: '8px' }}>{m.leads}</td>
+                          <td style={{ padding: '8px', color: '#4ade80' }}>{m.bkg}</td>
+                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{m.brk}</td>
+                          <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>{m.roi}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* 8. "NEEDS YOUR ATTENTION" PRIORITY ACTION CENTER */}
+              <div style={{ background: '#1e293b', border: '1px solid #ef4444', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <AlertTriangle size={20} color="#ef4444" /> "NEEDS YOUR ATTENTION" PRIORITY ACTION CENTER
+                  </h3>
+                  <span style={{ background: '#ef4444', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+                    7 Priority Management Items
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                  {[
+                    { priority: 'CRITICAL', title: '7 Hot Leads have no follow-up scheduled', desc: 'Customers with lead score > 88 have zero upcoming activities.', action: 'Assign Follow-up' },
+                    { priority: 'CRITICAL', title: '₹4.40 Lakhs Brokerage Payment Overdue', desc: 'Prestige Group & Aparna invoices pending past 30 days.', action: 'Collect Payment' },
+                    { priority: 'HIGH', title: '12 Customers waiting for Property Recommendations', desc: '90%+ property matches found but not sent to customer.', action: 'Send Recommendations' },
+                    { priority: 'HIGH', title: '3 Bookings awaiting Management Approval', desc: 'Discount approvals pending on 3BHK Aparna Zenon units.', action: 'Review Approvals' },
+                    { priority: 'MEDIUM', title: '5 Properties aging past 180+ days requiring verification', desc: 'Dead inventory stock needs developer price re-negotiation.', action: 'Re-verify Stock' },
+                    { priority: 'LOW', title: '4 Customers requested callback for project brochure', desc: 'Inside sales squad assigned for follow-up call.', action: 'View Callbacks' }
+                  ].map((act, i) => (
+                    <div key={i} style={{ background: '#0f172a', border: '1px solid #334155', padding: '14px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ background: act.priority === 'CRITICAL' ? 'rgba(239,68,68,0.2)' : act.priority === 'HIGH' ? 'rgba(245,158,11,0.2)' : 'rgba(56,189,248,0.2)', color: act.priority === 'CRITICAL' ? '#ef4444' : act.priority === 'HIGH' ? '#fbbf24' : '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: '900', fontSize: '0.65rem' }}>{act.priority}</span>
+                        <h4 style={{ fontSize: '0.85rem', fontWeight: '800', color: '#ffffff', marginTop: '4px' }}>{act.title}</h4>
+                        <p style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{act.desc}</p>
+                      </div>
+                      <button onClick={() => alert(`Triggering action: ${act.action}`)} style={{ background: act.priority === 'CRITICAL' ? '#ef4444' : '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer', flexShrink: 0 }}>
+                        {act.action}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 9. PREDICTIVE FORECASTING WIDGET */}
+              <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #311b92 100%)', border: '1px solid #6366f1', borderRadius: '16px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Sparkles size={20} color="#a5b4fc" />
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>30-DAY BUSINESS FORECAST (PROJECTION ONLY)</h3>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#c7d2fe', marginTop: '2px' }}>
+                    Calculated from active negotiations, hot lead scores, and site visit conversion velocity.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '24px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED BOOKINGS</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff' }}>8 Deals</h4>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED BROKERAGE</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80' }}>₹9.80 Lakhs</h4>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.7rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED RECEIVABLES</span>
+                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>₹4.40 Lakhs</h4>
+                  </div>
+                </div>
+              </div>
+
             </div>
           )}
 
