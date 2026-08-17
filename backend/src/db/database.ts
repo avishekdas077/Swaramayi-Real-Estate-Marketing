@@ -1,8 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
-const DB_FILE = path.join(process.cwd(), 'src', 'db', 'db.json');
-
 // Interface Definitions
 export interface UserRecord {
   id: string;
@@ -263,6 +258,27 @@ export interface InvoiceRecord {
 }
 
 // ROLE PERMISSION & SECURITY SCHEMAS
+export interface BranchRecord {
+  id: string;
+  branch_code: string;
+  branch_name: string;
+  city: string;
+  address: string;
+  branch_manager_id?: string;
+  branch_manager_name?: string;
+  created_at: string;
+}
+
+export interface TeamRecord {
+  id: string;
+  team_name: string;
+  branch_id: string;
+  branch_name: string;
+  team_lead_id?: string;
+  team_lead_name?: string;
+  members_count: number;
+}
+
 export interface ModulePermission {
   module: string;
   can_view: boolean;
@@ -274,13 +290,14 @@ export interface ModulePermission {
   can_change_price?: boolean;
   can_change_owner?: boolean;
   can_change_brokerage?: boolean;
+  can_mask_mobile?: boolean;
 }
 
 export interface RolePermissionRecord {
   id: string;
   role_key: string;
   role_name: string;
-  data_scope: 'ALL_DATA' | 'BRANCH_DATA' | 'TEAM_DATA' | 'ASSIGNED_DATA';
+  data_scope: 'ALL_DATA' | 'BRANCH_DATA' | 'TEAM_DATA' | 'ASSIGNED_DATA' | 'OWN_DATA' | string;
   permissions: ModulePermission[];
 }
 
@@ -333,6 +350,8 @@ export interface AuditLogRecord {
 }
 
 export interface Schema {
+  branches: BranchRecord[];
+  teams: TeamRecord[];
   users: UserRecord[];
   customers: CustomerRecord[];
   properties: PropertyRecord[];
@@ -378,67 +397,32 @@ export interface Schema {
 }
 
 const initialData: Schema = {
+  branches: [
+    { id: 'BR-HYD-HO', branch_code: 'SRM-BR-01', branch_name: 'Head Office (Hyderabad)', city: 'Hyderabad', address: 'Jubilee Hills, Hyderabad', branch_manager_id: 'USR-01', branch_manager_name: 'Rajesh Varma', created_at: '2026-01-01' },
+    { id: 'BR-HYD-KON', branch_code: 'SRM-BR-02', branch_name: 'Kondapur Branch', city: 'Hyderabad', address: 'Kondapur Main Rd, Hyderabad', branch_manager_id: 'USR-03', branch_manager_name: 'Suresh Kumar', created_at: '2026-01-15' },
+    { id: 'BR-HYD-GAC', branch_code: 'SRM-BR-03', branch_name: 'Gachibowli Branch', city: 'Hyderabad', address: 'Financial District, Hyderabad', branch_manager_id: 'USR-03', branch_manager_name: 'Suresh Kumar', created_at: '2026-02-01' },
+    { id: 'BR-KOL-HO', branch_code: 'SRM-BR-04', branch_name: 'Kolkata Branch', city: 'Kolkata', address: 'Salt Lake Sector V, Kolkata', branch_manager_id: 'USR-02', branch_manager_name: 'Vikram Reddy', created_at: '2026-03-01' }
+  ],
+  teams: [
+    { id: 'TEAM-A', team_name: 'Sales Team Alpha', branch_id: 'BR-HYD-KON', branch_name: 'Kondapur Branch', team_lead_id: 'USR-04', team_lead_name: 'Rahul Sharma', members_count: 4 },
+    { id: 'TEAM-B', team_name: 'Sales Team Bravo', branch_id: 'BR-HYD-GAC', branch_name: 'Gachibowli Branch', team_lead_id: 'USR-04', team_lead_name: 'Rahul Sharma', members_count: 3 }
+  ],
   users: [
-    {
-      id: 'USR-01',
-      username: 'Super Admin / Owner',
-      full_name: 'Rajesh Varma (Owner)',
-      email: 'rajesh.varma@swaramayi.com',
-      mobile: '+91 98490 00001',
-      role: 'SUPER_ADMIN',
-      branch_name: 'Head Office (Hyderabad)',
-      department: 'Executive Board',
-      team_name: 'Core Management',
-      manager_name: 'Self',
-      is_active: true,
-      user_status: 'ACTIVE',
-      created_at: '2026-01-01'
-    },
-    {
-      id: 'USR-02',
-      username: 'Branch Manager',
-      full_name: 'Vikram Reddy (BM)',
-      email: 'vikram.reddy@swaramayi.com',
-      mobile: '+91 98490 00002',
-      role: 'BRANCH_MANAGER',
-      branch_name: 'Kondapur Branch',
-      department: 'Sales',
-      team_name: 'Branch Leadership',
-      manager_name: 'Rajesh Varma',
-      is_active: true,
-      user_status: 'ACTIVE',
-      created_at: '2026-01-15'
-    },
-    {
-      id: 'USR-03',
-      username: 'Rahul Sharma (TL)',
-      full_name: 'Rahul Sharma (Team Lead)',
-      email: 'rahul.sharma@swaramayi.com',
-      mobile: '+91 98490 00003',
-      role: 'TEAM_LEAD',
-      branch_name: 'Kondapur Branch',
-      department: 'Sales',
-      team_name: 'Sales Team A',
-      manager_name: 'Vikram Reddy',
-      is_active: true,
-      user_status: 'ACTIVE',
-      created_at: '2026-02-01'
-    },
-    {
-      id: 'USR-04',
-      username: 'Priya Nair (Sales Exec)',
-      full_name: 'Priya Nair',
-      email: 'priya.nair@swaramayi.com',
-      mobile: '+91 98490 00004',
-      role: 'SALES_EXEC',
-      branch_name: 'Kondapur Branch',
-      department: 'Sales',
-      team_name: 'Sales Team A',
-      manager_name: 'Rahul Sharma',
-      is_active: true,
-      user_status: 'ACTIVE',
-      created_at: '2026-02-15'
-    }
+    { id: 'USR-01', username: 'Rajesh Varma (Owner)', full_name: 'Rajesh Varma', email: 'rajesh.varma@swaramayi.com', mobile: '+91 98490 00001', role: 'SUPER_ADMIN', branch_name: 'Head Office', department: 'Executive Board', team_name: 'Core Management', manager_name: 'Self', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-01' },
+    { id: 'USR-02', username: 'Anil Kapoor (Admin)', full_name: 'Anil Kapoor', email: 'anil.k@swaramayi.com', mobile: '+91 98490 00002', role: 'ADMIN', branch_name: 'Head Office', department: 'System Admin', team_name: 'IT Ops Desk', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-05' },
+    { id: 'USR-03', username: 'Vikram Reddy (GM)', full_name: 'Vikram Reddy', email: 'vikram.reddy@swaramayi.com', mobile: '+91 98490 00003', role: 'GENERAL_MANAGER', branch_name: 'Head Office', department: 'General Management', team_name: 'Leadership', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-10' },
+    { id: 'USR-04', username: 'Suresh Kumar (BM)', full_name: 'Suresh Kumar', email: 'suresh.k@swaramayi.com', mobile: '+91 98490 00004', role: 'BRANCH_MANAGER', branch_name: 'Kondapur Branch', department: 'Sales Management', team_name: 'Branch Leadership', manager_name: 'Vikram Reddy', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-15' },
+    { id: 'USR-05', username: 'Deepak Verma (SM)', full_name: 'Deepak Verma', email: 'deepak.v@swaramayi.com', mobile: '+91 98490 00005', role: 'SALES_MANAGER', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Management', manager_name: 'Suresh Kumar', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-20' },
+    { id: 'USR-06', username: 'Rahul Sharma (TL)', full_name: 'Rahul Sharma', email: 'rahul.sharma@swaramayi.com', mobile: '+91 98490 00006', role: 'TEAM_LEAD', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', manager_name: 'Deepak Verma', is_active: true, user_status: 'ACTIVE', created_at: '2026-02-01' },
+    { id: 'USR-07', username: 'Priya Nair (Sales Exec)', full_name: 'Priya Nair', email: 'priya.nair@swaramayi.com', mobile: '+91 98490 00007', role: 'SALES_EXEC', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', manager_name: 'Rahul Sharma', is_active: true, user_status: 'ACTIVE', created_at: '2026-02-15' },
+    { id: 'USR-08', username: 'Ananya Roy (Telecaller)', full_name: 'Ananya Roy', email: 'ananya.roy@swaramayi.com', mobile: '+91 98490 00008', role: 'TELECALLER', branch_name: 'Kondapur Branch', department: 'Inside Sales', team_name: 'Telecalling Squad', manager_name: 'Rahul Sharma', is_active: true, user_status: 'ACTIVE', created_at: '2026-02-20' },
+    { id: 'USR-09', username: 'Kavita Sharma (Back Office)', full_name: 'Kavita Sharma', email: 'kavita.s@swaramayi.com', mobile: '+91 98490 00009', role: 'BACK_OFFICE', branch_name: 'Kondapur Branch', department: 'Operations', team_name: 'Back Office Desk', manager_name: 'Suresh Kumar', is_active: true, user_status: 'ACTIVE', created_at: '2026-03-01' },
+    { id: 'USR-10', username: 'Meera Deshmukh (Accounts)', full_name: 'Meera Deshmukh', email: 'meera.d@swaramayi.com', mobile: '+91 98490 00010', role: 'ACCOUNTS', branch_name: 'Head Office', department: 'Finance & Tax', team_name: 'Accounts Desk', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE', created_at: '2026-03-05' },
+    { id: 'USR-11', username: 'Sanjay Dutt (HR)', full_name: 'Sanjay Dutt', email: 'sanjay.d@swaramayi.com', mobile: '+91 98490 00011', role: 'HR', branch_name: 'Head Office', department: 'Human Resources', team_name: 'HR Desk', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE', created_at: '2026-03-10' },
+    { id: 'USR-12', username: 'Rohit Sen (Marketing)', full_name: 'Rohit Sen', email: 'rohit.sen@swaramayi.com', mobile: '+91 98490 00012', role: 'MARKETING', branch_name: 'Head Office', department: 'Growth & Ads', team_name: 'Marketing Squad', manager_name: 'Vikram Reddy', is_active: true, user_status: 'ACTIVE', created_at: '2026-03-15' },
+    { id: 'USR-13', username: 'Kiran Kumar (Prop Mgr)', full_name: 'Kiran Kumar', email: 'kiran.k@swaramayi.com', mobile: '+91 98490 00013', role: 'PROPERTY_MANAGER', branch_name: 'Head Office', department: 'Inventory Vault', team_name: 'Property Desk', manager_name: 'Vikram Reddy', is_active: true, user_status: 'ACTIVE', created_at: '2026-03-20' },
+    { id: 'USR-14', username: 'Ramesh Pawar (Field Exec)', full_name: 'Ramesh Pawar', email: 'ramesh.p@swaramayi.com', mobile: '+91 98490 00014', role: 'FIELD_EXEC', branch_name: 'Kondapur Branch', department: 'Site Operations', team_name: 'Field Squad', manager_name: 'Rahul Sharma', is_active: true, user_status: 'ACTIVE', created_at: '2026-04-01' },
+    { id: 'USR-15', username: 'Sneha Roy (Customer Support)', full_name: 'Sneha Roy', email: 'sneha.roy@swaramayi.com', mobile: '+91 98490 00015', role: 'CUSTOMER_SUPPORT', branch_name: 'Head Office', department: 'Support', team_name: 'Support Desk', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE', created_at: '2026-04-05' }
   ],
   customers: [],
   properties: [],
@@ -452,30 +436,21 @@ const initialData: Schema = {
   agreements: [],
   invoices: [],
   role_permissions: [
-    {
-      id: 'RP-01',
-      role_key: 'SUPER_ADMIN',
-      role_name: 'SUPER ADMIN / OWNER',
-      data_scope: 'ALL_DATA',
-      permissions: [
-        { module: 'CUSTOMERS', can_view: true, can_create: true, can_edit: true, can_delete: true, can_export: true, can_approve: true, can_change_owner: true },
-        { module: 'PROPERTIES', can_view: true, can_create: true, can_edit: true, can_delete: true, can_export: true, can_approve: true, can_change_price: true },
-        { module: 'BOOKINGS', can_view: true, can_create: true, can_edit: true, can_delete: true, can_export: true, can_approve: true },
-        { module: 'BROKERAGE', can_view: true, can_create: true, can_edit: true, can_delete: true, can_export: true, can_approve: true, can_change_brokerage: true }
-      ]
-    },
-    {
-      id: 'RP-02',
-      role_key: 'SALES_EXEC',
-      role_name: 'SALES EXECUTIVE',
-      data_scope: 'ASSIGNED_DATA',
-      permissions: [
-        { module: 'CUSTOMERS', can_view: true, can_create: true, can_edit: true, can_delete: false, can_export: false, can_approve: false, can_change_owner: false },
-        { module: 'PROPERTIES', can_view: true, can_create: false, can_edit: false, can_delete: false, can_export: false, can_approve: false },
-        { module: 'BOOKINGS', can_view: true, can_create: true, can_edit: false, can_delete: false, can_export: false, can_approve: false },
-        { module: 'BROKERAGE', can_view: false, can_create: false, can_edit: false, can_delete: false, can_export: false, can_approve: false }
-      ]
-    }
+    { id: 'RP-01', role_key: 'SUPER_ADMIN', role_name: 'SUPER ADMIN / OWNER', data_scope: 'ALL_DATA', permissions: [] },
+    { id: 'RP-02', role_key: 'ADMIN', role_name: 'ADMIN', data_scope: 'ALL_DATA', permissions: [] },
+    { id: 'RP-03', role_key: 'GENERAL_MANAGER', role_name: 'GENERAL MANAGER', data_scope: 'ALL_BRANCHES', permissions: [] },
+    { id: 'RP-04', role_key: 'BRANCH_MANAGER', role_name: 'BRANCH MANAGER', data_scope: 'OWN_BRANCH', permissions: [] },
+    { id: 'RP-05', role_key: 'SALES_MANAGER', role_name: 'SALES MANAGER', data_scope: 'OWN_TEAM', permissions: [] },
+    { id: 'RP-06', role_key: 'TEAM_LEAD', role_name: 'TEAM LEADER', data_scope: 'OWN_TEAM', permissions: [] },
+    { id: 'RP-07', role_key: 'SALES_EXEC', role_name: 'SALES EXECUTIVE', data_scope: 'ASSIGNED_DATA', permissions: [] },
+    { id: 'RP-08', role_key: 'TELECALLER', role_name: 'TELECALLER', data_scope: 'ASSIGNED_DATA', permissions: [] },
+    { id: 'RP-09', role_key: 'BACK_OFFICE', role_name: 'BACK OFFICE', data_scope: 'ALL_DATA', permissions: [] },
+    { id: 'RP-10', role_key: 'ACCOUNTS', role_name: 'ACCOUNTS & FINANCE', data_scope: 'ALL_DATA', permissions: [] },
+    { id: 'RP-11', role_key: 'HR', role_name: 'HUMAN RESOURCES (HR)', data_scope: 'ALL_DATA', permissions: [] },
+    { id: 'RP-12', role_key: 'MARKETING', role_name: 'MARKETING SQUAD', data_scope: 'ALL_DATA', permissions: [] },
+    { id: 'RP-13', role_key: 'PROPERTY_MANAGER', role_name: 'PROPERTY MANAGER', data_scope: 'ALL_DATA', permissions: [] },
+    { id: 'RP-14', role_key: 'FIELD_EXEC', role_name: 'FIELD EXECUTIVE', data_scope: 'ASSIGNED_DATA', permissions: [] },
+    { id: 'RP-15', role_key: 'CUSTOMER_SUPPORT', role_name: 'CUSTOMER SUPPORT', data_scope: 'ASSIGNED_DATA', permissions: [] }
   ],
   approval_requests: [
     {
@@ -544,38 +519,23 @@ const initialData: Schema = {
   }
 };
 
-export class JSONDatabase {
+export class MongoStoreDatabase {
   public data: Schema;
 
   constructor() {
     this.data = initialData;
-    this.load();
   }
 
   public load() {
-    try {
-      if (fs.existsSync(DB_FILE)) {
-        const raw = fs.readFileSync(DB_FILE, 'utf-8');
-        this.data = { ...initialData, ...JSON.parse(raw) };
-      } else {
-        this.save();
-      }
-    } catch (err) {
-      console.error('Error reading JSON DB, initializing fallback:', err);
-      this.data = initialData;
-    }
+    // Memory and MongoDB collection state store
   }
 
   public save() {
-    try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(this.data, null, 2), 'utf-8');
-    } catch (err) {
-      console.error('Error saving JSON DB:', err);
-    }
+    // Memory and MongoDB collection state store
   }
 }
 
-export const dbStore = new JSONDatabase();
+export const dbStore = new MongoStoreDatabase();
 
 export function loadData() {
   dbStore.load();

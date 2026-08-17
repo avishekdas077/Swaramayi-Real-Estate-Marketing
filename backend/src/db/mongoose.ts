@@ -11,7 +11,7 @@ export const connectMongoDB = async () => {
     console.log(`✅ Connected to MongoDB successfully! Database: swaramayi_crm`);
     return true;
   } catch (err: any) {
-    console.warn(`⚠️ Local MongoDB service not active on 27017. Falling back to embedded file database (db.json).`);
+    console.warn(`⚠️ Local MongoDB service not active on 27017. Running with in-memory MongoDB store.`);
     return false;
   }
 };

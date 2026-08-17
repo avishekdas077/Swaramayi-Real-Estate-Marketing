@@ -33,7 +33,7 @@ export default function App() {
   const [customerViewMode, setCustomerViewMode] = useState<'grid' | 'table' | 'split'>('table');
 
   // Sub-Tabs States across Categories
-  const [activeRoleSubTab, setActiveRoleSubTab] = useState<'user_directory' | 'permission_matrix' | 'org_hierarchy' | 'approval_queue' | 'session_security'>('user_directory');
+  const [activeRoleSubTab, setActiveRoleSubTab] = useState<'user_directory' | 'permission_matrix' | 'org_hierarchy' | 'approval_queue' | 'session_security' | 'exit_handover'>('user_directory');
   const [activeProjectSubTab, setActiveProjectSubTab] = useState<'property_master' | 'live_inventory_board' | 'map_radius' | 'price_security'>('property_master');
   const [activeCustomerSubTab, setActiveCustomerSubTab] = useState<'smart_matching_engine' | 'master_360' | 'lead_pipeline'>('smart_matching_engine');
   const [activeAgreementSubTab, setActiveAgreementSubTab] = useState<'all_agreements' | 'customer_agreements' | 'developer_agreements' | 'tc_templates'>('all_agreements');
@@ -88,16 +88,23 @@ export default function App() {
   // FULL MASTER CRM DATASETS
   // ----------------------------------------------------
 
-  // 1. Employee Directory (8 Users)
+  // 1. Employee Directory (15 Users for all 15 Default Roles)
   const [users, setUsers] = useState([
     { id: 'USR-01', username: 'Rajesh Varma (Owner)', full_name: 'Rajesh Varma', email: 'rajesh.varma@swaramayi.com', mobile: '+91 98490 00001', role: 'SUPER_ADMIN', branch_name: 'Head Office', department: 'Executive Board', team_name: 'Core Management', manager_name: 'Self', is_active: true, user_status: 'ACTIVE' },
-    { id: 'USR-02', username: 'Vikram Reddy (BM)', full_name: 'Vikram Reddy', email: 'vikram.reddy@swaramayi.com', mobile: '+91 98490 00002', role: 'BRANCH_MANAGER', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Branch Leadership', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE' },
-    { id: 'USR-03', username: 'Rahul Sharma (TL)', full_name: 'Rahul Sharma', email: 'rahul.sharma@swaramayi.com', mobile: '+91 98490 00003', role: 'TEAM_LEAD', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team A', manager_name: 'Vikram Reddy', is_active: true, user_status: 'ACTIVE' },
-    { id: 'USR-04', username: 'Priya Nair (Sales Exec)', full_name: 'Priya Nair', email: 'priya.nair@swaramayi.com', mobile: '+91 98490 00004', role: 'SALES_EXEC', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team A', manager_name: 'Rahul Sharma', is_active: true, user_status: 'ACTIVE' },
-    { id: 'USR-05', username: 'Srinivas Rao (Senior Exec)', full_name: 'Srinivas Rao', email: 'srinivas.rao@swaramayi.com', mobile: '+91 98490 00005', role: 'SALES_EXEC', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team A', manager_name: 'Rahul Sharma', is_active: true, user_status: 'ACTIVE' },
-    { id: 'USR-06', username: 'Ananya Roy (Telecaller)', full_name: 'Ananya Roy', email: 'ananya.roy@swaramayi.com', mobile: '+91 98490 00006', role: 'TELECALLER', branch_name: 'Kondapur Branch', department: 'Inside Sales', team_name: 'Telecalling Squad', manager_name: 'Rahul Sharma', is_active: true, user_status: 'ACTIVE' },
-    { id: 'USR-07', username: 'Kiran Kumar (Property Mgr)', full_name: 'Kiran Kumar', email: 'kiran.k@swaramayi.com', mobile: '+91 98490 00007', role: 'PROPERTY_MANAGER', branch_name: 'Head Office', department: 'Inventory Vault', team_name: 'Property Desk', manager_name: 'Vikram Reddy', is_active: true, user_status: 'ACTIVE' },
-    { id: 'USR-08', username: 'Meera Deshmukh (Accounts)', full_name: 'Meera Deshmukh', email: 'meera.d@swaramayi.com', mobile: '+91 98490 00008', role: 'ACCOUNTS', branch_name: 'Head Office', department: 'Finance & Tax', team_name: 'Accounts Desk', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE' }
+    { id: 'USR-02', username: 'Anil Kapoor (Admin)', full_name: 'Anil Kapoor', email: 'anil.k@swaramayi.com', mobile: '+91 98490 00002', role: 'ADMIN', branch_name: 'Head Office', department: 'System Admin', team_name: 'IT Ops Desk', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-03', username: 'Vikram Reddy (GM)', full_name: 'Vikram Reddy', email: 'vikram.reddy@swaramayi.com', mobile: '+91 98490 00003', role: 'GENERAL_MANAGER', branch_name: 'Head Office', department: 'General Management', team_name: 'Leadership', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-04', username: 'Suresh Kumar (BM)', full_name: 'Suresh Kumar', email: 'suresh.k@swaramayi.com', mobile: '+91 98490 00004', role: 'BRANCH_MANAGER', branch_name: 'Kondapur Branch', department: 'Sales Management', team_name: 'Branch Leadership', manager_name: 'Vikram Reddy', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-05', username: 'Deepak Verma (SM)', full_name: 'Deepak Verma', email: 'deepak.v@swaramayi.com', mobile: '+91 98490 00005', role: 'SALES_MANAGER', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Management', manager_name: 'Suresh Kumar', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-06', username: 'Rahul Sharma (TL)', full_name: 'Rahul Sharma', email: 'rahul.sharma@swaramayi.com', mobile: '+91 98490 00006', role: 'TEAM_LEAD', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', manager_name: 'Deepak Verma', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-07', username: 'Priya Nair (Sales Exec)', full_name: 'Priya Nair', email: 'priya.nair@swaramayi.com', mobile: '+91 98490 00007', role: 'SALES_EXEC', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', manager_name: 'Rahul Sharma', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-08', username: 'Ananya Roy (Telecaller)', full_name: 'Ananya Roy', email: 'ananya.roy@swaramayi.com', mobile: '+91 98490 00008', role: 'TELECALLER', branch_name: 'Kondapur Branch', department: 'Inside Sales', team_name: 'Telecalling Squad', manager_name: 'Rahul Sharma', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-09', username: 'Kavita Sharma (Back Office)', full_name: 'Kavita Sharma', email: 'kavita.s@swaramayi.com', mobile: '+91 98490 00009', role: 'BACK_OFFICE', branch_name: 'Kondapur Branch', department: 'Operations', team_name: 'Back Office Desk', manager_name: 'Suresh Kumar', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-10', username: 'Meera Deshmukh (Accounts)', full_name: 'Meera Deshmukh', email: 'meera.d@swaramayi.com', mobile: '+91 98490 00010', role: 'ACCOUNTS', branch_name: 'Head Office', department: 'Finance & Tax', team_name: 'Accounts Desk', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-11', username: 'Sanjay Dutt (HR)', full_name: 'Sanjay Dutt', email: 'sanjay.d@swaramayi.com', mobile: '+91 98490 00011', role: 'HR', branch_name: 'Head Office', department: 'Human Resources', team_name: 'HR Desk', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-12', username: 'Rohit Sen (Marketing)', full_name: 'Rohit Sen', email: 'rohit.sen@swaramayi.com', mobile: '+91 98490 00012', role: 'MARKETING', branch_name: 'Head Office', department: 'Growth & Ads', team_name: 'Marketing Squad', manager_name: 'Vikram Reddy', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-13', username: 'Kiran Kumar (Prop Mgr)', full_name: 'Kiran Kumar', email: 'kiran.k@swaramayi.com', mobile: '+91 98490 00013', role: 'PROPERTY_MANAGER', branch_name: 'Head Office', department: 'Inventory Vault', team_name: 'Property Desk', manager_name: 'Vikram Reddy', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-14', username: 'Ramesh Pawar (Field Exec)', full_name: 'Ramesh Pawar', email: 'ramesh.p@swaramayi.com', mobile: '+91 98490 00014', role: 'FIELD_EXEC', branch_name: 'Kondapur Branch', department: 'Site Operations', team_name: 'Field Squad', manager_name: 'Rahul Sharma', is_active: true, user_status: 'ACTIVE' },
+    { id: 'USR-15', username: 'Sneha Roy (Customer Support)', full_name: 'Sneha Roy', email: 'sneha.roy@swaramayi.com', mobile: '+91 98490 00015', role: 'CUSTOMER_SUPPORT', branch_name: 'Head Office', department: 'Support', team_name: 'Support Desk', manager_name: 'Rajesh Varma', is_active: true, user_status: 'ACTIVE' }
   ]);
 
   // 2. All 15 Roles Permission Matrix
@@ -109,7 +116,14 @@ export default function App() {
     { role_key: 'SALES_MANAGER', role_name: '5. SALES MANAGER', data_scope: 'OWN_TEAM', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: false },
     { role_key: 'TEAM_LEAD', role_name: '6. TEAM LEADER', data_scope: 'OWN_TEAM', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
     { role_key: 'SALES_EXEC', role_name: '7. SALES EXECUTIVE', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
-    { role_key: 'TELECALLER', role_name: '8. TELECALLER', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false }
+    { role_key: 'TELECALLER', role_name: '8. TELECALLER', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
+    { role_key: 'BACK_OFFICE', role_name: '9. BACK OFFICE / DESK', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: false },
+    { role_key: 'ACCOUNTS', role_name: '10. ACCOUNTS & FINANCE', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: false, brokerage: true },
+    { role_key: 'HR', role_name: '11. HUMAN RESOURCES (HR)', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: false, brokerage: false },
+    { role_key: 'MARKETING', role_name: '12. MARKETING SQUAD', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: false },
+    { role_key: 'PROPERTY_MANAGER', role_name: '13. PROPERTY MANAGER', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: true, owner_change: true, brokerage: false },
+    { role_key: 'FIELD_EXEC', role_name: '14. FIELD EXECUTIVE', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
+    { role_key: 'CUSTOMER_SUPPORT', role_name: '15. CUSTOMER SUPPORT', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false }
   ]);
 
   // 3. Approval Queue & Security Logs
@@ -948,45 +962,80 @@ export default function App() {
             </div>
           )}
 
-          {/* CATEGORY 2: ROLE AND MANAGEMENT (RESTORED ALL SUB-TABS) */}
+          {/* CATEGORY 2: ADVANCED ROLE, USER & MANAGEMENT CONTROL SYSTEM (RBAC) */}
           {activeTab === 'role_management' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              
+              {/* SYSTEM GOVERNANCE HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: '#ffffff' }}>Role & System Governance Control</h2>
-                  <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Manage 15 RBAC permission matrices, employee directory, hierarchy, and security logs.</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff' }}>ADVANCED ROLE, USER & MANAGEMENT CONTROL SYSTEM</h2>
+                    <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>ENTERPRISE RBAC</span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
+                    15 Configurable Default Roles • Company & Branch Hierarchy • Maker-Checker Universal Approvals • Employee Exit Handover Engine
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button onClick={() => setShowUserModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <UserPlus size={15} /> + Add Employee
+                  </button>
+                  <button onClick={() => alert('🏢 Opening Add Branch Modal...')} style={{ background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Building2 size={15} /> + Add Branch
+                  </button>
+                  <button onClick={() => alert('👥 Opening Add Sales Team Modal...')} style={{ background: '#1e293b', color: '#4ade80', border: '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Users size={15} /> + Add Team
+                  </button>
+                  <button onClick={() => setIsLockdown(!isLockdown)} style={{ background: isLockdown ? '#ef4444' : '#334155', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <ShieldAlert size={15} /> {isLockdown ? 'LIFT LOCKDOWN' : 'EMERGENCY LOCKDOWN'}
+                  </button>
                 </div>
               </div>
 
-              {/* 5 SUB-TABS */}
-              <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
-                <button onClick={() => setActiveRoleSubTab('user_directory')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer', background: activeRoleSubTab === 'user_directory' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'user_directory' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
-                  👥 User Directory ({users.length})
+              {/* 6 SUB-TABS NAVIGATION */}
+              <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
+                <button onClick={() => setActiveRoleSubTab('user_directory')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'user_directory' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'user_directory' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  👥 Employee Directory ({users.length})
                 </button>
-                <button onClick={() => setActiveRoleSubTab('permission_matrix')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer', background: activeRoleSubTab === 'permission_matrix' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'permission_matrix' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
-                  🔑 15 Roles Permission Matrix
+                <button onClick={() => setActiveRoleSubTab('permission_matrix')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'permission_matrix' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'permission_matrix' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  🔑 15 Roles & Permission Matrix ({rolePermissions.length})
                 </button>
-                <button onClick={() => setActiveRoleSubTab('org_hierarchy')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer', background: activeRoleSubTab === 'org_hierarchy' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'org_hierarchy' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                <button onClick={() => setActiveRoleSubTab('org_hierarchy')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'org_hierarchy' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'org_hierarchy' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
                   🏢 Company & Branch Hierarchy
                 </button>
-                <button onClick={() => setActiveRoleSubTab('approval_queue')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer', background: activeRoleSubTab === 'approval_queue' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'approval_queue' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                <button onClick={() => setActiveRoleSubTab('approval_queue')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'approval_queue' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'approval_queue' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
                   ⚖️ Universal Approval Queue ({approvalRequests.length})
                 </button>
-                <button onClick={() => setActiveRoleSubTab('session_security')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer', background: activeRoleSubTab === 'session_security' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'session_security' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                <button onClick={() => setActiveRoleSubTab('session_security')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'session_security' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'session_security' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
                   🚨 Active Sessions & Risk Alerts
+                </button>
+                <button onClick={() => setActiveRoleSubTab('exit_handover')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'exit_handover' ? '#ef4444' : '#1e293b', color: activeRoleSubTab === 'exit_handover' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  📋 Employee Exit & Handover Hub
                 </button>
               </div>
 
+              {/* SUB-TAB 1: USER DIRECTORY & EMPLOYEE MANAGEMENT */}
               {activeRoleSubTab === 'user_directory' && (
-                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '24px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>👥 Enterprise Employee Directory & Lifecycle Status</h3>
+                      <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Manages user accounts, assigned branches, reporting managers, phone masking, and security status.</p>
+                    </div>
+                  </div>
+
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
                     <thead>
-                      <tr style={{ background: '#0f172a', color: '#ffffff', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                      <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
                         <th style={{ padding: '12px' }}>User ID</th>
-                        <th style={{ padding: '12px' }}>Full Name</th>
+                        <th style={{ padding: '12px' }}>Full Name & Username</th>
                         <th style={{ padding: '12px' }}>Role</th>
-                        <th style={{ padding: '12px' }}>Branch</th>
-                        <th style={{ padding: '12px' }}>Mobile</th>
+                        <th style={{ padding: '12px' }}>Branch & Dept</th>
+                        <th style={{ padding: '12px' }}>Team & Manager</th>
+                        <th style={{ padding: '12px' }}>Mobile Contact</th>
+                        <th style={{ padding: '12px' }}>Status</th>
                         <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
                       </tr>
                     </thead>
@@ -994,12 +1043,37 @@ export default function App() {
                       {users.map(u => (
                         <tr key={u.id} style={{ borderBottom: '1px solid #334155' }}>
                           <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{u.id}</td>
-                          <td style={{ padding: '12px', fontWeight: '800', color: '#ffffff' }}>{u.full_name}</td>
-                          <td style={{ padding: '12px' }}><span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontWeight: '800', fontSize: '0.75rem' }}>{u.role}</span></td>
-                          <td style={{ padding: '12px' }}>{u.branch_name}</td>
-                          <td style={{ padding: '12px' }}>{maskPhone(u.mobile)}</td>
+                          <td style={{ padding: '12px' }}>
+                            <strong style={{ color: '#ffffff' }}>{u.full_name}</strong>
+                            <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>@{u.username}</span>
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '3px 8px', borderRadius: '6px', fontWeight: '800', fontSize: '0.73rem' }}>
+                              {u.role}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <span style={{ color: '#ffffff', fontWeight: '700' }}>{u.branch_name}</span>
+                            <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{u.department}</span>
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <span style={{ color: '#ffffff' }}>{u.team_name}</span>
+                            <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Mgr: {u.manager_name}</span>
+                          </td>
+                          <td style={{ padding: '12px', fontFamily: 'monospace', color: '#4ade80', fontWeight: '700' }}>
+                            {maskPhone(u.mobile)}
+                          </td>
+                          <td style={{ padding: '12px' }}>
+                            <span style={{ background: u.user_status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: u.user_status === 'ACTIVE' ? '#4ade80' : '#ef4444', padding: '3px 8px', borderRadius: '6px', fontWeight: '800', fontSize: '0.72rem' }}>
+                              ● {u.user_status || 'ACTIVE'}
+                            </span>
+                          </td>
                           <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <button onClick={() => handleDeleteUser(u.id, u.username)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Delete</button>
+                            <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                              <button onClick={() => alert(`Editing user profile for ${u.full_name}`)} style={{ background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}>Edit</button>
+                              <button onClick={() => alert(`Resetting password for ${u.full_name}`)} style={{ background: '#1e293b', color: '#fbbf24', border: '1px solid #334155', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}>Reset</button>
+                              <button onClick={() => handleDeleteUser(u.id, u.username)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}>Delete</button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1008,37 +1082,268 @@ export default function App() {
                 </div>
               )}
 
+              {/* SUB-TAB 2: 15 ROLES PERMISSION MATRIX & CUSTOM ROLE ENGINE */}
               {activeRoleSubTab === 'permission_matrix' && (
-                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '24px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff', marginBottom: '16px' }}>15 Roles RBAC Matrix</h3>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>🔑 15 Default Roles & Granular Permission Matrix</h3>
+                      <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Configurable action-level permissions and data access scope for all enterprise roles.</p>
+                    </div>
+                    <button onClick={() => setShowUserModal(true)} style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}>
+                      + Create Custom Role
+                    </button>
+                  </div>
+
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
                     <thead>
                       <tr style={{ background: '#0f172a', color: '#ffffff', textAlign: 'left', borderBottom: '2px solid #334155' }}>
                         <th style={{ padding: '10px' }}>Role</th>
-                        <th style={{ padding: '10px' }}>Scope</th>
-                        <th style={{ padding: '10px' }}>View</th>
-                        <th style={{ padding: '10px' }}>Create</th>
-                        <th style={{ padding: '10px' }}>Edit</th>
-                        <th style={{ padding: '10px' }}>Delete</th>
-                        <th style={{ padding: '10px' }}>Approve</th>
+                        <th style={{ padding: '10px' }}>Data Scope</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>View</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>Create</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>Edit</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>Delete</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>Export</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>Approve</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>Price Change</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>Brokerage</th>
                       </tr>
                     </thead>
                     <tbody>
                       {rolePermissions.map(rp => (
                         <tr key={rp.role_key} style={{ borderBottom: '1px solid #334155' }}>
                           <td style={{ padding: '10px', fontWeight: '800', color: '#ffffff' }}>{rp.role_name}</td>
-                          <td style={{ padding: '10px', color: '#38bdf8' }}>{rp.data_scope}</td>
-                          <td style={{ padding: '10px' }}><input type="checkbox" checked={rp.view} onChange={() => handleTogglePermission(rp.role_key, 'view')} /></td>
-                          <td style={{ padding: '10px' }}><input type="checkbox" checked={rp.create} onChange={() => handleTogglePermission(rp.role_key, 'create')} /></td>
-                          <td style={{ padding: '10px' }}><input type="checkbox" checked={rp.edit} onChange={() => handleTogglePermission(rp.role_key, 'edit')} /></td>
-                          <td style={{ padding: '10px' }}><input type="checkbox" checked={rp.delete} onChange={() => handleTogglePermission(rp.role_key, 'delete')} /></td>
-                          <td style={{ padding: '10px' }}><input type="checkbox" checked={rp.approve} onChange={() => handleTogglePermission(rp.role_key, 'approve')} /></td>
+                          <td style={{ padding: '10px' }}>
+                            <select value={rp.data_scope} onChange={(e) => alert(`Updated scope for ${rp.role_key} to ${e.target.value}`)} style={{ background: '#0f172a', color: '#38bdf8', border: '1px solid #334155', borderRadius: '4px', padding: '3px 6px', fontSize: '0.75rem', fontWeight: '700' }}>
+                              <option value="ALL_DATA">ALL_DATA</option>
+                              <option value="BRANCH_DATA">BRANCH_DATA</option>
+                              <option value="TEAM_DATA">TEAM_DATA</option>
+                              <option value="ASSIGNED_DATA">ASSIGNED_DATA</option>
+                              <option value="OWN_DATA">OWN_DATA</option>
+                            </select>
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.view} onChange={() => handleTogglePermission(rp.role_key, 'view')} /></td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.create} onChange={() => handleTogglePermission(rp.role_key, 'create')} /></td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.edit} onChange={() => handleTogglePermission(rp.role_key, 'edit')} /></td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.delete} onChange={() => handleTogglePermission(rp.role_key, 'delete')} /></td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.export} onChange={() => handleTogglePermission(rp.role_key, 'export')} /></td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.approve} onChange={() => handleTogglePermission(rp.role_key, 'approve')} /></td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.price_change} onChange={() => handleTogglePermission(rp.role_key, 'price_change')} /></td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.brokerage} onChange={() => handleTogglePermission(rp.role_key, 'brokerage')} /></td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
               )}
+
+              {/* SUB-TAB 3: COMPANY & BRANCH HIERARCHY TREE */}
+              {activeRoleSubTab === 'org_hierarchy' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>🏢 Organizational Hierarchy Tree & Branch Mapping</h3>
+                  
+                  <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ background: '#1e293b', border: '2px solid #0284c7', borderRadius: '8px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '800', textTransform: 'uppercase' }}>COMPANY HEADQUARTERS</span>
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>Swaramayi Real Estate Marketing (Jubilee Hills, Hyderabad)</h4>
+                      </div>
+                      <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem' }}>Super Admin: Rajesh Varma</span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', paddingLeft: '20px' }}>
+                      {[
+                        { name: 'Kondapur Branch', mgr: 'Suresh Kumar (BM)', teams: ['Sales Team Alpha (TL: Rahul Sharma)', 'Inside Telecalling Squad'], staff: 8 },
+                        { name: 'Gachibowli Branch', mgr: 'Suresh Kumar (BM)', teams: ['Sales Team Bravo (TL: Rahul Sharma)'], staff: 6 },
+                        { name: 'Kolkata Branch', mgr: 'Vikram Reddy (GM)', teams: ['Kolkata Expansion Team'], staff: 4 }
+                      ].map((b, i) => (
+                        <div key={i} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                          <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>BRANCH OFFICE #{i + 1}</span>
+                          <strong style={{ fontSize: '0.95rem', color: '#ffffff' }}>{b.name}</strong>
+                          <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Manager: <strong style={{ color: '#ffffff' }}>{b.mgr}</strong></p>
+                          <div style={{ background: '#0f172a', padding: '8px', borderRadius: '6px', fontSize: '0.72rem', color: '#cbd5e1' }}>
+                            <strong>Assigned Teams:</strong>
+                            {b.teams.map((t, ti) => <div key={ti}>• {t}</div>)}
+                          </div>
+                          <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '700' }}>{b.staff} Active Employees</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 4: UNIVERSAL APPROVAL QUEUE & TWO-PERSON VERIFICATION */}
+              {activeRoleSubTab === 'approval_queue' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>⚖️ Universal Approval Queue & Two-Person Maker-Checker Engine</h3>
+                      <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Requires management check & approval for sensitive price, ownership, transfer, and export requests.</p>
+                    </div>
+                    <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#fbbf24', padding: '4px 10px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '800' }}>
+                      {approvalRequests.filter(r => r.status === 'PENDING').length} Pending Approval Requests
+                    </span>
+                  </div>
+
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                        <th style={{ padding: '10px' }}>Request Code</th>
+                        <th style={{ padding: '10px' }}>Request Type</th>
+                        <th style={{ padding: '10px' }}>Requested By</th>
+                        <th style={{ padding: '10px' }}>Target Record</th>
+                        <th style={{ padding: '10px' }}>Old Value &rarr; New Value</th>
+                        <th style={{ padding: '10px' }}>Reason</th>
+                        <th style={{ padding: '10px' }}>Status</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {approvalRequests.map(r => (
+                        <tr key={r.id} style={{ borderBottom: '1px solid #334155' }}>
+                          <td style={{ padding: '10px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{r.request_code}</td>
+                          <td style={{ padding: '10px' }}><span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>{r.request_type}</span></td>
+                          <td style={{ padding: '10px', color: '#ffffff' }}>{r.requested_by}</td>
+                          <td style={{ padding: '10px', color: '#fbbf24' }}>{r.record_id}</td>
+                          <td style={{ padding: '10px' }}><span style={{ color: '#ef4444' }}>{r.old_val}</span> &rarr; <span style={{ color: '#4ade80', fontWeight: '800' }}>{r.new_val}</span></td>
+                          <td style={{ padding: '10px', color: '#94a3b8', fontSize: '0.75rem' }}>{r.reason}</td>
+                          <td style={{ padding: '10px' }}>
+                            <span style={{ background: r.status === 'PENDING' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)', color: r.status === 'PENDING' ? '#fbbf24' : '#4ade80', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>
+                              {r.status}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            {r.status === 'PENDING' ? (
+                              <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                                <button onClick={() => handleRespondApproval(r.id, 'APPROVED')} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem' }}>Approve</button>
+                                <button onClick={() => handleRespondApproval(r.id, 'REJECTED')} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem' }}>Reject</button>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Approved by {r.approved_by || 'Admin'}</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* SUB-TAB 5: ACTIVE SESSIONS, DEVICE TRACKING & RISK ALERTS */}
+              {activeRoleSubTab === 'session_security' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Key size={18} color="#38bdf8" /> ACTIVE USER SESSIONS & DEVICE TRACKING
+                    </h3>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                      <thead>
+                        <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                          <th style={{ padding: '8px' }}>User</th>
+                          <th style={{ padding: '8px' }}>IP Address</th>
+                          <th style={{ padding: '8px' }}>Device</th>
+                          <th style={{ padding: '8px' }}>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeSessions.map(s => (
+                          <tr key={s.id} style={{ borderBottom: '1px solid #334155' }}>
+                            <td style={{ padding: '8px', fontWeight: '800', color: '#ffffff' }}>{s.user}</td>
+                            <td style={{ padding: '8px', fontFamily: 'monospace', color: '#38bdf8' }}>{s.ip}</td>
+                            <td style={{ padding: '8px', color: '#94a3b8' }}>{s.device}</td>
+                            <td style={{ padding: '8px' }}>
+                              <button onClick={() => alert(`Force logged out session ${s.id}`)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '3px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}>Force Logout</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div style={{ background: '#1e293b', border: '1px solid #ef4444', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ShieldAlert size={18} color="#ef4444" /> SECURITY RISK ALERTS & ANOMALY DETECTION
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {[
+                        { risk: 'HIGH', user: 'Amit Patel', action: 'Bulk Customer Contact Export Attempt', reason: 'Tried exporting 250 records without BM approval.', time: 'Today 09:14 AM' },
+                        { risk: 'LOW', user: 'Priya Nair', action: 'After-Hours System Access', reason: 'Logged in at 11:45 PM from mobile IP.', time: '16 Aug 11:45 PM' }
+                      ].map((al, idx) => (
+                        <div key={idx} style={{ background: '#0f172a', border: '1px solid #334155', padding: '10px 12px', borderRadius: '8px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ background: al.risk === 'HIGH' ? '#ef4444' : '#38bdf8', color: '#ffffff', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '900' }}>{al.risk} RISK</span>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{al.time}</span>
+                          </div>
+                          <h4 style={{ fontSize: '0.82rem', color: '#ffffff', fontWeight: '800', marginTop: '4px' }}>{al.action} ({al.user})</h4>
+                          <p style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{al.reason}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 6: EMPLOYEE EXIT & AUTOMATED REASSIGNMENT HANDOVER HUB */}
+              {activeRoleSubTab === 'exit_handover' && (
+                <div style={{ background: '#1e293b', border: '1px solid #ef4444', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>📋 Employee Exit & Automated CRM Reassignment Handover Hub</h3>
+                      <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>When marking an employee as RESIGNED or TERMINATED, reassign all active records while preserving audit history.</p>
+                    </div>
+                    <span style={{ background: '#ef4444', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>
+                      SECURITY PROTOCOL ACTIVE
+                    </span>
+                  </div>
+
+                  <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Select Resigning / Exiting Employee:</label>
+                        <select style={{ width: '100%', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', borderRadius: '6px', padding: '8px', fontSize: '0.85rem' }}>
+                          <option value="USR-06">Amit Patel (Sales Exec - Sales Team Bravo)</option>
+                          <option value="USR-05">Priya Nair (Sales Exec - Sales Team Alpha)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Select Target Reassignment Agent / Manager:</label>
+                        <select style={{ width: '100%', background: '#1e293b', color: '#4ade80', fontWeight: '800', border: '1px solid #334155', borderRadius: '6px', padding: '8px', fontSize: '0.85rem' }}>
+                          <option value="USR-04">Rahul Sharma (Team Lead)</option>
+                          <option value="USR-05">Priya Nair (Sales Exec)</option>
+                          <option value="USR-02">Vikram Reddy (GM)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '14px', borderRadius: '8px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', textAlign: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>PENDING CUSTOMERS</span>
+                        <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#ffffff' }}>14 Records</h4>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>ACTIVE LEADS</span>
+                        <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8' }}>8 Leads</h4>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>UPCOMING SITE VISITS</span>
+                        <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fbbf24' }}>2 Visits</h4>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>ACTIVE BOOKINGS</span>
+                        <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80' }}>1 Booking</h4>
+                      </div>
+                    </div>
+
+                    <button onClick={() => alert('🔒 Reassigned 25 CRM records from Amit Patel to Rahul Sharma. Exiting user account disabled & sessions revoked.')} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', alignSelf: 'flex-end' }}>
+                      Execute Employee Exit & Reassign All CRM Records
+                    </button>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 

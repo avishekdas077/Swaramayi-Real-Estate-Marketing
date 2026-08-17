@@ -1,7 +1,6 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
+import { dbStore } from './database.js';
 
 dotenv.config();
 
@@ -28,47 +27,42 @@ export const seedMongoDB = async () => {
     await mongoose.connect(mongoURI);
     console.log(`✅ Connected to MongoDB! Database: swaramayi_crm`);
 
-    // Load data from db.json
-    const dbFilePath = path.join(process.cwd(), 'src', 'db', 'db.json');
-    if (fs.existsSync(dbFilePath)) {
-      const rawData = fs.readFileSync(dbFilePath, 'utf-8');
-      const db = JSON.parse(rawData);
+    const db = dbStore.data;
 
-      if (db.users) {
-        await UserModel.deleteMany({});
-        await UserModel.insertMany(db.users);
-        console.log(`📥 Seeded ${db.users.length} Users into MongoDB 'users' collection`);
-      }
+    if (db.users) {
+      await UserModel.deleteMany({});
+      await UserModel.insertMany(db.users);
+      console.log(`📥 Seeded ${db.users.length} Users into MongoDB 'users' collection`);
+    }
 
-      if (db.properties) {
-        await PropertyModel.deleteMany({});
-        await PropertyModel.insertMany(db.properties);
-        console.log(`📥 Seeded ${db.properties.length} Properties into MongoDB 'properties' collection`);
-      }
+    if (db.properties) {
+      await PropertyModel.deleteMany({});
+      await PropertyModel.insertMany(db.properties);
+      console.log(`📥 Seeded ${db.properties.length} Properties into MongoDB 'properties' collection`);
+    }
 
-      if (db.customers) {
-        await CustomerModel.deleteMany({});
-        await CustomerModel.insertMany(db.customers);
-        console.log(`📥 Seeded ${db.customers.length} Customers into MongoDB 'customers' collection`);
-      }
+    if (db.customers) {
+      await CustomerModel.deleteMany({});
+      await CustomerModel.insertMany(db.customers);
+      console.log(`📥 Seeded ${db.customers.length} Customers into MongoDB 'customers' collection`);
+    }
 
-      if (db.bookings) {
-        await BookingModel.deleteMany({});
-        await BookingModel.insertMany(db.bookings);
-        console.log(`📥 Seeded ${db.bookings.length} Bookings into MongoDB 'bookings' collection`);
-      }
+    if (db.bookings) {
+      await BookingModel.deleteMany({});
+      await BookingModel.insertMany(db.bookings);
+      console.log(`📥 Seeded ${db.bookings.length} Bookings into MongoDB 'bookings' collection`);
+    }
 
-      if (db.invoices) {
-        await InvoiceModel.deleteMany({});
-        await InvoiceModel.insertMany(db.invoices);
-        console.log(`📥 Seeded ${db.invoices.length} Invoices into MongoDB 'invoices' collection`);
-      }
+    if (db.invoices) {
+      await InvoiceModel.deleteMany({});
+      await InvoiceModel.insertMany(db.invoices);
+      console.log(`📥 Seeded ${db.invoices.length} Invoices into MongoDB 'invoices' collection`);
+    }
 
-      if (db.agreements) {
-        await AgreementModel.deleteMany({});
-        await AgreementModel.insertMany(db.agreements);
-        console.log(`📥 Seeded ${db.agreements.length} Agreements into MongoDB 'agreements' collection`);
-      }
+    if (db.agreements) {
+      await AgreementModel.deleteMany({});
+      await AgreementModel.insertMany(db.agreements);
+      console.log(`📥 Seeded ${db.agreements.length} Agreements into MongoDB 'agreements' collection`);
     }
 
     console.log(`🎉 MongoDB Master Dataset Seeding Completed Successfully!`);
@@ -77,6 +71,6 @@ export const seedMongoDB = async () => {
   }
 };
 
-if (require.main === module) {
+if (process.argv[1] && (process.argv[1].endsWith('seedMongo.ts') || process.argv[1].endsWith('seedMongo.js'))) {
   seedMongoDB().then(() => process.exit(0));
 }

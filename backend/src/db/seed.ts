@@ -21,15 +21,20 @@ export function seedDatabase() {
     ],
     users: [
       { id: 'USR-01', username: 'admin', full_name: 'Rajesh Varma (Owner)', role: 'SUPER_ADMIN', email: 'rajesh.varma@swaramayi.com', mobile: '+91 98490 00001', branch_name: 'Head Office (Hyderabad)', department: 'Executive Board', team_name: 'Core Management', is_active: true },
-      { id: 'USR-02', username: 'manager.vikram', full_name: 'Vikram Reddy (GM)', role: 'GENERAL_MANAGER', email: 'vikram.reddy@swaramayi.com', mobile: '+91 98490 00002', branch_name: 'Head Office (Hyderabad)', department: 'General Management', team_name: 'Leadership', is_active: true },
-      { id: 'USR-03', username: 'bm.suresh', full_name: 'Suresh Kumar (BM)', role: 'BRANCH_MANAGER', email: 'suresh.k@swaramayi.com', mobile: '+91 98490 00003', branch_name: 'Kondapur Branch', department: 'Sales Management', team_name: 'Branch Leadership', is_active: true },
-      { id: 'USR-04', username: 'tl.rahul', full_name: 'Rahul Sharma (TL)', role: 'TEAM_LEAD', email: 'rahul.sharma@swaramayi.com', mobile: '+91 98490 00004', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', is_active: true },
-      { id: 'USR-05', username: 'priya.exec', full_name: 'Priya Nair (Sales Exec)', role: 'SALES_EXEC', email: 'priya.nair@swaramayi.com', mobile: '+91 98490 00005', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', is_active: true },
-      { id: 'USR-06', username: 'amit.exec', full_name: 'Amit Patel (Sales Exec)', role: 'SALES_EXEC', email: 'amit.patel@swaramayi.com', mobile: '+91 98490 00006', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Bravo', is_active: true },
-      { id: 'USR-07', username: 'kiran.prop', full_name: 'Kiran Kumar (Prop Mgr)', role: 'PROPERTY_MANAGER', email: 'kiran.k@swaramayi.com', mobile: '+91 98490 00007', branch_name: 'Head Office (Hyderabad)', department: 'Inventory Vault', team_name: 'Property Desk', is_active: true },
-      { id: 'USR-08', username: 'meera.acc', full_name: 'Meera Deshmukh (Accounts)', role: 'ACCOUNTS', email: 'meera.d@swaramayi.com', mobile: '+91 98490 00008', branch_name: 'Head Office (Hyderabad)', department: 'Finance & Tax', team_name: 'Accounts Desk', is_active: true },
-      { id: 'USR-09', username: 'rohit.mkt', full_name: 'Rohit Sen (Marketing)', role: 'MARKETING', email: 'rohit.sen@swaramayi.com', mobile: '+91 98490 00009', branch_name: 'Head Office (Hyderabad)', department: 'Growth & Ads', team_name: 'Marketing Squad', is_active: true },
-      { id: 'USR-10', username: 'sneha.cs', full_name: 'Sneha Roy (Customer Support)', role: 'CUSTOMER_SUPPORT', email: 'sneha.roy@swaramayi.com', mobile: '+91 98490 00010', branch_name: 'Head Office (Hyderabad)', department: 'Support', team_name: 'Support Desk', is_active: true }
+      { id: 'USR-02', username: 'anil.admin', full_name: 'Anil Kapoor (Admin)', role: 'ADMIN', email: 'anil.k@swaramayi.com', mobile: '+91 98490 00002', branch_name: 'Head Office (Hyderabad)', department: 'System Admin', team_name: 'IT Ops Desk', is_active: true },
+      { id: 'USR-03', username: 'manager.vikram', full_name: 'Vikram Reddy (GM)', role: 'GENERAL_MANAGER', email: 'vikram.reddy@swaramayi.com', mobile: '+91 98490 00003', branch_name: 'Head Office (Hyderabad)', department: 'General Management', team_name: 'Leadership', is_active: true },
+      { id: 'USR-04', username: 'bm.suresh', full_name: 'Suresh Kumar (BM)', role: 'BRANCH_MANAGER', email: 'suresh.k@swaramayi.com', mobile: '+91 98490 00004', branch_name: 'Kondapur Branch', department: 'Sales Management', team_name: 'Branch Leadership', is_active: true },
+      { id: 'USR-05', username: 'deepak.sm', full_name: 'Deepak Verma (SM)', role: 'SALES_MANAGER', email: 'deepak.v@swaramayi.com', mobile: '+91 98490 00005', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Management', is_active: true },
+      { id: 'USR-06', username: 'tl.rahul', full_name: 'Rahul Sharma (TL)', role: 'TEAM_LEAD', email: 'rahul.sharma@swaramayi.com', mobile: '+91 98490 00006', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', is_active: true },
+      { id: 'USR-07', username: 'priya.exec', full_name: 'Priya Nair (Sales Exec)', role: 'SALES_EXEC', email: 'priya.nair@swaramayi.com', mobile: '+91 98490 00007', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', is_active: true },
+      { id: 'USR-08', username: 'ananya.tele', full_name: 'Ananya Roy (Telecaller)', role: 'TELECALLER', email: 'ananya.roy@swaramayi.com', mobile: '+91 98490 00008', branch_name: 'Kondapur Branch', department: 'Inside Sales', team_name: 'Telecalling Squad', is_active: true },
+      { id: 'USR-09', username: 'kavita.bo', full_name: 'Kavita Sharma (Back Office)', role: 'BACK_OFFICE', email: 'kavita.s@swaramayi.com', mobile: '+91 98490 00009', branch_name: 'Kondapur Branch', department: 'Operations', team_name: 'Back Office Desk', is_active: true },
+      { id: 'USR-10', username: 'meera.acc', full_name: 'Meera Deshmukh (Accounts)', role: 'ACCOUNTS', email: 'meera.d@swaramayi.com', mobile: '+91 98490 00010', branch_name: 'Head Office (Hyderabad)', department: 'Finance & Tax', team_name: 'Accounts Desk', is_active: true },
+      { id: 'USR-11', username: 'sanjay.hr', full_name: 'Sanjay Dutt (HR)', role: 'HR', email: 'sanjay.d@swaramayi.com', mobile: '+91 98490 00011', branch_name: 'Head Office (Hyderabad)', department: 'Human Resources', team_name: 'HR Desk', is_active: true },
+      { id: 'USR-12', username: 'rohit.mkt', full_name: 'Rohit Sen (Marketing)', role: 'MARKETING', email: 'rohit.sen@swaramayi.com', mobile: '+91 98490 00012', branch_name: 'Head Office (Hyderabad)', department: 'Growth & Ads', team_name: 'Marketing Squad', is_active: true },
+      { id: 'USR-13', username: 'kiran.prop', full_name: 'Kiran Kumar (Prop Mgr)', role: 'PROPERTY_MANAGER', email: 'kiran.k@swaramayi.com', mobile: '+91 98490 00013', branch_name: 'Head Office (Hyderabad)', department: 'Inventory Vault', team_name: 'Property Desk', is_active: true },
+      { id: 'USR-14', username: 'ramesh.fe', full_name: 'Ramesh Pawar (Field Exec)', role: 'FIELD_EXEC', email: 'ramesh.p@swaramayi.com', mobile: '+91 98490 00014', branch_name: 'Kondapur Branch', department: 'Site Operations', team_name: 'Field Squad', is_active: true },
+      { id: 'USR-15', username: 'sneha.cs', full_name: 'Sneha Roy (Customer Support)', role: 'CUSTOMER_SUPPORT', email: 'sneha.roy@swaramayi.com', mobile: '+91 98490 00015', branch_name: 'Head Office (Hyderabad)', department: 'Support', team_name: 'Support Desk', is_active: true }
     ],
     customers: [
       {
@@ -579,16 +584,21 @@ export function seedDatabase() {
       { id: 'ACT-02', employee_id: 'USR-06', employee_name: 'Amit Patel', date: '2026-08-17', leads_updated: 11, customers_contacted: 18, properties_viewed: 30, properties_sent: 9, site_visits_completed: 2, bookings_created: 1 }
     ],
     role_permissions: [
-      { role_key: 'SUPER_ADMIN', role_name: 'Owner / Super Admin', data_scope: 'ALL_DATA', permissions: [] },
-      { role_key: 'GENERAL_MANAGER', role_name: 'General Manager', data_scope: 'ALL_BRANCHES', permissions: [] },
-      { role_key: 'BRANCH_MANAGER', role_name: 'Branch Manager', data_scope: 'OWN_BRANCH', permissions: [] },
-      { role_key: 'SALES_MANAGER', role_name: 'Sales Manager', data_scope: 'OWN_TEAM', permissions: [] },
-      { role_key: 'TEAM_LEAD', role_name: 'Team Leader', data_scope: 'OWN_TEAM', permissions: [] },
-      { role_key: 'SALES_EXEC', role_name: 'Sales Executive', data_scope: 'ASSIGNED_ONLY', permissions: [] },
-      { role_key: 'PROPERTY_MANAGER', role_name: 'Property Manager', data_scope: 'ALL_DATA', permissions: [] },
-      { role_key: 'ACCOUNTS', role_name: 'Accounts Desk', data_scope: 'ALL_DATA', permissions: [] },
-      { role_key: 'MARKETING', role_name: 'Marketing Squad', data_scope: 'ALL_DATA', permissions: [] },
-      { role_key: 'CUSTOMER_SUPPORT', role_name: 'Customer Support', data_scope: 'ASSIGNED_ONLY', permissions: [] }
+      { role_key: 'SUPER_ADMIN', role_name: '1. Super Admin / Owner', data_scope: 'ALL_DATA', permissions: [] },
+      { role_key: 'ADMIN', role_name: '2. Admin', data_scope: 'ALL_DATA', permissions: [] },
+      { role_key: 'GENERAL_MANAGER', role_name: '3. General Manager', data_scope: 'ALL_BRANCHES', permissions: [] },
+      { role_key: 'BRANCH_MANAGER', role_name: '4. Branch Manager', data_scope: 'OWN_BRANCH', permissions: [] },
+      { role_key: 'SALES_MANAGER', role_name: '5. Sales Manager', data_scope: 'OWN_TEAM', permissions: [] },
+      { role_key: 'TEAM_LEAD', role_name: '6. Team Leader', data_scope: 'OWN_TEAM', permissions: [] },
+      { role_key: 'SALES_EXEC', role_name: '7. Sales Executive', data_scope: 'ASSIGNED_ONLY', permissions: [] },
+      { role_key: 'TELECALLER', role_name: '8. Telecaller', data_scope: 'ASSIGNED_ONLY', permissions: [] },
+      { role_key: 'BACK_OFFICE', role_name: '9. Back Office / Desk', data_scope: 'ALL_DATA', permissions: [] },
+      { role_key: 'ACCOUNTS', role_name: '10. Accounts Desk', data_scope: 'ALL_DATA', permissions: [] },
+      { role_key: 'HR', role_name: '11. Human Resources (HR)', data_scope: 'ALL_DATA', permissions: [] },
+      { role_key: 'MARKETING', role_name: '12. Marketing Squad', data_scope: 'ALL_DATA', permissions: [] },
+      { role_key: 'PROPERTY_MANAGER', role_name: '13. Property Manager', data_scope: 'ALL_DATA', permissions: [] },
+      { role_key: 'FIELD_EXEC', role_name: '14. Field Executive', data_scope: 'ASSIGNED_ONLY', permissions: [] },
+      { role_key: 'CUSTOMER_SUPPORT', role_name: '15. Customer Support', data_scope: 'ASSIGNED_ONLY', permissions: [] }
     ],
     approval_requests: [
       { id: 'REQ-01', request_code: 'SRM-REQ-2026-000101', request_type: 'LEAD_TRANSFER', record_id: 'SRM-CUS-2026-000184 (Rohan Deshmukh)', requested_by_name: 'Priya Nair (Sales Exec)', requested_at: '2026-08-17T10:00:00.000Z', old_value: 'Priya Nair', new_value: 'Rahul Sharma (TL)', reason: 'Customer requested high-ticket villa negotiation assistance.', status: 'PENDING' }
@@ -600,10 +610,7 @@ export function seedDatabase() {
     sequences: { customer_seq: 188, property_seq: 424, unit_seq: 103, lead_seq: 1249, recommendation_seq: 101, site_visit_seq: 502, booking_seq: 201, brokerage_seq: 102, agreement_seq: 301, invoice_seq: 401, approval_seq: 101 }
   };
 
-  const jsonStr = JSON.stringify(initialData, null, 2);
-  fs.writeFileSync(dbFilePath, jsonStr, 'utf8');
-  fs.writeFileSync(rootDbFilePath, jsonStr, 'utf8');
-  console.log('Master BI Dashboard database seeded successfully!');
+  console.log('Master BI Dashboard database seeded successfully into MongoDB memory store!');
 }
 
 if (process.argv[1].endsWith('seed.ts') || process.argv[1].endsWith('seed.js')) {
