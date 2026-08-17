@@ -1,0 +1,23 @@
+{
+  "users": [],
+  "customers": [],
+  "properties": [],
+  "property_units": [],
+  "property_price_history": [],
+  "property_shares": [],
+  "recommendation_shares": [],
+  "site_visits": [],
+  "bookings": [],
+  "brokerage_records": [],
+  "audit_logs": [],
+  "sequences": {
+    "customer_seq": 184,
+    "property_seq": 421,
+    "unit_seq": 1,
+    "lead_seq": 1245,
+    "recommendation_seq": 101,
+    "site_visit_seq": 501,
+    "booking_seq": 201,
+    "brokerage_seq": 101
+  }
+}

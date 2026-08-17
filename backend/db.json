@@ -1,0 +1,299 @@
+{
+  "companies": [
+    {
+      "id": "COMP-01",
+      "name": "Swaramayi Real Estate Marketing CRM"
+    }
+  ],
+  "branches": [
+    {
+      "id": "BR-HYD",
+      "name": "Hyderabad Head Office"
+    }
+  ],
+  "users": [
+    {
+      "id": "USR-01",
+      "username": "admin",
+      "full_name": "Swaramayi Super Admin",
+      "role": "SUPER_ADMIN"
+    },
+    {
+      "id": "USR-02",
+      "username": "manager.hyd",
+      "full_name": "Rajesh Verma",
+      "role": "BRANCH_MANAGER"
+    },
+    {
+      "id": "USR-03",
+      "username": "tl.rahul",
+      "full_name": "Rahul Sharma",
+      "role": "TEAM_LEAD"
+    },
+    {
+      "id": "USR-04",
+      "username": "priya.agent",
+      "full_name": "Priya Nair",
+      "role": "SALES_EXECUTIVE"
+    }
+  ],
+  "customers": [
+    {
+      "id": "CUST-01",
+      "customer_number": "SRM-CUS-2026-000184",
+      "full_name": "Rohan Deshmukh",
+      "mobile": "+91 98490 12345",
+      "alternate_mobile": "+91 98490 99999",
+      "email": "rohan.d@gmail.com",
+      "city": "Hyderabad",
+      "address": "Plot 42, Jubilee Hills, Hyderabad",
+      "preferred_location": "Kondapur / Gachibowli",
+      "property_type": "Flat / Apartment",
+      "configuration": "3BHK",
+      "budget_min": 7000000,
+      "budget_max": 8500000,
+      "purchase_timeline": "Immediate (< 30 Days)",
+      "loan_required": true,
+      "investment_purpose": "Self / End Use",
+      "family_requirements": "3 BHK, East Facing, Vastu Compliant, Pool",
+      "preferred_projects": "Aparna Zenon, My Home Jewel",
+      "lead_source": "Meta Ads",
+      "assigned_employee_id": "USR-04",
+      "customer_status": "QUALIFIED",
+      "lead_score": 88,
+      "priority": "HOT",
+      "created_at": "2026-08-10T10:00:00.000Z",
+      "updated_at": "2026-08-10T10:00:00.000Z"
+    },
+    {
+      "id": "CUST-02",
+      "customer_number": "SRM-CUS-2026-000185",
+      "full_name": "Priya Sharma",
+      "mobile": "+91 99887 76655",
+      "email": "priya.s@yahoo.com",
+      "city": "Hyderabad",
+      "address": "Tower 4, Financial District, Hyderabad",
+      "preferred_location": "Financial District",
+      "property_type": "Flat / Apartment",
+      "configuration": "4BHK",
+      "budget_min": 18000000,
+      "budget_max": 22000000,
+      "purchase_timeline": "30 to 60 Days",
+      "loan_required": false,
+      "investment_purpose": "High Yield Investment",
+      "family_requirements": "4 BHK, High Floor, Club House",
+      "preferred_projects": "Financial Towers",
+      "lead_source": "Google Search",
+      "assigned_employee_id": "USR-04",
+      "customer_status": "SITE_VISIT_SCHEDULED",
+      "lead_score": 94,
+      "priority": "HOT",
+      "created_at": "2026-08-12T14:30:00.000Z",
+      "updated_at": "2026-08-12T14:30:00.000Z"
+    }
+  ],
+  "leads": [
+    {
+      "id": "LD-101",
+      "lead_number": "SRM-LEAD-2026-001245",
+      "customer_id": "CUST-01",
+      "source": "Meta Ads",
+      "property_requirement": "3BHK in Kondapur",
+      "budget": 8500000,
+      "assigned_employee_id": "USR-04",
+      "lead_status": "Site Visit Scheduled",
+      "lead_score": 88,
+      "priority": "HOT",
+      "created_at": "2026-08-10T10:00:00.000Z"
+    }
+  ],
+  "properties": [
+    {
+      "id": "PROP-01",
+      "property_code": "SRM-PROP-2026-000421",
+      "property_title": "Aparna Zenon Premium 3BHK Residence",
+      "property_type": "Apartment",
+      "transaction_type": "Sale",
+      "developer_name": "Aparna Constructions",
+      "project_name": "Aparna Zenon",
+      "tower_name": "Tower A",
+      "floor": 5,
+      "unit_number": "A-504",
+      "configuration": "3BHK",
+      "carpet_area_sqft": 1450,
+      "built_up_area_sqft": 1680,
+      "facing": "East",
+      "parking_spaces": 2,
+      "furnishing_status": "Semi-Furnished",
+      "possession_date": "2026-12-31",
+      "base_price": 8500000,
+      "price_per_sqft": 5862,
+      "discount": 100000,
+      "final_estimated_price": 8400000,
+      "property_status": "Active",
+      "availability_status": "AVAILABLE",
+      "location_address": "Kondapur Main Road, Hyderabad",
+      "city": "Hyderabad",
+      "locality": "Kondapur",
+      "latitude": 17.4612,
+      "longitude": 78.3689,
+      "gps_accuracy_meters": 5,
+      "verification_status": "GPS Verified",
+      "verified_by": "USR-01",
+      "verified_at": "2026-08-16T10:00:00.000Z",
+      "completeness_score": 94,
+      "assigned_employee_id": "USR-04",
+      "assigned_employee_name": "Priya Nair",
+      "created_at": "2026-08-10T10:00:00.000Z",
+      "updated_at": "2026-08-16T10:00:00.000Z"
+    },
+    {
+      "id": "PROP-02",
+      "property_code": "SRM-PROP-2026-000422",
+      "property_title": "Financial Towers Luxury 4BHK Sky Suite",
+      "property_type": "Penthouse",
+      "transaction_type": "Sale",
+      "developer_name": "My Home Group",
+      "project_name": "Financial Towers",
+      "tower_name": "Tower B",
+      "floor": 12,
+      "unit_number": "B-1202",
+      "configuration": "4BHK",
+      "carpet_area_sqft": 2400,
+      "built_up_area_sqft": 2800,
+      "facing": "North-East",
+      "parking_spaces": 3,
+      "furnishing_status": "Fully Furnished",
+      "possession_date": "2027-03-31",
+      "base_price": 21000000,
+      "price_per_sqft": 8750,
+      "discount": 200000,
+      "final_estimated_price": 20800000,
+      "property_status": "Active",
+      "availability_status": "HOLD",
+      "location_address": "Financial District, Gachibowli, Hyderabad",
+      "city": "Hyderabad",
+      "locality": "Financial District",
+      "latitude": 17.4401,
+      "longitude": 78.3489,
+      "gps_accuracy_meters": 6,
+      "verification_status": "Admin Verified",
+      "verified_by": "USR-01",
+      "verified_at": "2026-08-15T10:00:00.000Z",
+      "completeness_score": 96,
+      "assigned_employee_id": "USR-04",
+      "assigned_employee_name": "Priya Nair",
+      "created_at": "2026-08-12T10:00:00.000Z",
+      "updated_at": "2026-08-15T10:00:00.000Z"
+    }
+  ],
+  "property_units": [
+    {
+      "id": "UNIT-101",
+      "unit_code": "SRM-UNIT-2026-000001",
+      "property_id": "PROP-01",
+      "project_name": "Aparna Zenon",
+      "tower_block": "Tower A",
+      "floor": 1,
+      "unit_number": "A-101",
+      "configuration": "2BHK",
+      "area_sqft": 1100,
+      "facing": "East",
+      "base_price": 7000000,
+      "final_price": 7000000,
+      "status": "AVAILABLE"
+    },
+    {
+      "id": "UNIT-102",
+      "unit_code": "SRM-UNIT-2026-000002",
+      "property_id": "PROP-01",
+      "project_name": "Aparna Zenon",
+      "tower_block": "Tower A",
+      "floor": 1,
+      "unit_number": "A-102",
+      "configuration": "3BHK",
+      "area_sqft": 1450,
+      "facing": "East",
+      "base_price": 8400000,
+      "final_price": 8400000,
+      "status": "BOOKED",
+      "booking_customer_id": "CUST-01"
+    },
+    {
+      "id": "UNIT-201",
+      "unit_code": "SRM-UNIT-2026-000003",
+      "property_id": "PROP-01",
+      "project_name": "Aparna Zenon",
+      "tower_block": "Tower A",
+      "floor": 2,
+      "unit_number": "A-201",
+      "configuration": "3BHK",
+      "area_sqft": 1450,
+      "facing": "West",
+      "base_price": 8500000,
+      "final_price": 8500000,
+      "status": "HOLD"
+    },
+    {
+      "id": "UNIT-301",
+      "unit_code": "SRM-UNIT-2026-000004",
+      "property_id": "PROP-02",
+      "project_name": "Financial Towers",
+      "tower_block": "Tower B",
+      "floor": 5,
+      "unit_number": "B-501",
+      "configuration": "4BHK",
+      "area_sqft": 2400,
+      "facing": "North-East",
+      "base_price": 20800000,
+      "final_price": 20800000,
+      "status": "AVAILABLE"
+    }
+  ],
+  "property_price_history": [
+    {
+      "id": "PH-01",
+      "property_id": "SRM-PROP-2026-000421",
+      "previous_price": 8600000,
+      "new_price": 8400000,
+      "changed_by": "Super Admin",
+      "changed_at": "2026-08-16T10:00:00.000Z",
+      "reason": "Developer seasonal promotion discount applied"
+    }
+  ],
+  "property_shares": [
+    {
+      "id": "SHR-01",
+      "property_id": "SRM-PROP-2026-000421",
+      "customer_id": "SRM-CUS-2026-000184",
+      "employee_id": "USR-04",
+      "employee_name": "Priya Nair",
+      "channel": "WhatsApp",
+      "shared_at": "2026-08-16T11:45:00.000Z"
+    }
+  ],
+  "lead_transfers": [],
+  "followups": [],
+  "customer_activities": [],
+  "builders": [],
+  "projects": [],
+  "units": [],
+  "site_visits": [],
+  "bookings": [],
+  "commissions": [],
+  "audit_logs": [],
+  "fraud_alerts": [],
+  "system_settings": {
+    "is_lockdown_active": "false"
+  },
+  "counters": {
+    "customer": 184,
+    "lead": 1245,
+    "property": 422,
+    "unit": 4,
+    "visit": 400,
+    "booking": 200,
+    "invoice": 100,
+    "payment": 100
+  }
+}
