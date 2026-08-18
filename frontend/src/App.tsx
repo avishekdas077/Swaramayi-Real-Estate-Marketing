@@ -15,15 +15,13 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  // 8 Main Navigation Categories
+  // 12 Main Navigation Categories
   const [activeTab, setActiveTab] = useState<
-    'main_dashboard' | 'role_management' | 'project_management' | 'customer_management' | 'billing_management' | 'profile' | 'agreement_management' | 'map_management'
+    'main_dashboard' | 'lead_management' | 'customer_management' | 'matching_management' | 'cost_sheet_share' | 'visit_management' | 'project_management' | 'agreement_management' | 'billing_management' | 'map_management' | 'role_management' | 'profile'
   >('main_dashboard');
-  
-  // Search State
-  const [searchQuery, setSearchQuery] = useState('');
 
-  // Global BI Dashboard Filters
+  // Search & Global BI Filter States
+  const [searchQuery, setSearchQuery] = useState('');
   const [dateFilter, setDateFilter] = useState<'today' | 'this_week' | 'this_month' | 'this_quarter' | 'this_year'>('this_month');
   const [branchFilter, setBranchFilter] = useState<string>('ALL');
   const [teamFilter, setTeamFilter] = useState<string>('ALL');
@@ -33,9 +31,13 @@ export default function App() {
   const [customerViewMode, setCustomerViewMode] = useState<'grid' | 'table' | 'split'>('table');
 
   // Sub-Tabs States across Categories
+  const [activeLeadSubTab, setActiveLeadSubTab] = useState<'lead_ingestion' | 'lead_ownership' | 'lead_transfer' | 'lead_scoring'>('lead_ingestion');
+  const [activeVisitSubTab, setActiveVisitSubTab] = useState<'visit_scheduler' | 'visit_otp_checkin' | 'visit_feedback' | 'visit_analytics'>('visit_scheduler');
+  const [activeMatchingSubTab, setActiveMatchingSubTab] = useState<'ai_matching_engine' | 'req_inventory_matrix' | 'portfolio_dispatcher'>('ai_matching_engine');
+  const [activeCostSheetShareSubTab, setActiveCostSheetShareSubTab] = useState<'dispatcher' | 'delivery_analytics' | 'portal_tokens' | 'interest_handoff'>('dispatcher');
   const [activeRoleSubTab, setActiveRoleSubTab] = useState<'user_directory' | 'permission_matrix' | 'org_hierarchy' | 'approval_queue' | 'session_security' | 'exit_handover'>('user_directory');
   const [activeProjectSubTab, setActiveProjectSubTab] = useState<'property_master' | 'live_inventory_board' | 'map_radius' | 'price_security' | 'deal_pipeline_tracker'>('property_master');
-  const [activeCustomerSubTab, setActiveCustomerSubTab] = useState<'sales_journey_funnel' | 'cost_sheet_engine' | 'site_visit_engine' | 'smart_matching_engine' | 'customer_master_vault' | 'customer_360_profile' | 'anti_leakage_engine'>('sales_journey_funnel');
+  const [activeCustomerSubTab, setActiveCustomerSubTab] = useState<'sales_journey_funnel' | 'cost_sheet_engine' | 'site_visit_engine' | 'smart_matching_engine' | 'customer_master_vault' | 'customer_360_profile' | 'anti_leakage_engine' | 'selected_properties_connections' | 'secure_customer_portal'>('customer_master_vault');
   const [activeAgreementSubTab, setActiveAgreementSubTab] = useState<'all_agreements' | 'customer_agreements' | 'developer_agreements' | 'tc_templates'>('all_agreements');
   const [activeBillingSubTab, setActiveBillingSubTab] = useState<'tax_invoices' | 'developer_commission' | 'payment_receipts' | 'financial_ledger'>('tax_invoices');
 
@@ -76,7 +78,7 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
 
   // Bulk Selection States
-  const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([]);
+  const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>(['SRM-PROP-2026-000421', 'SRM-PROP-2026-000423', 'SRM-PROP-2026-000425']);
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
 
   // Interactive Drill-Down Modal State
@@ -101,34 +103,169 @@ export default function App() {
   const [showLeadModal, setShowLeadModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showFullContractModal, setShowFullContractModal] = useState(false);
+  const [showCreateShareModal, setShowCreateShareModal] = useState(false);
+
+  // New Cost Sheet Share Form State
+  const [newShareForm, setNewShareForm] = useState({
+    parentType: 'COST_SHEET_ID',
+    parentId: 'SRM-CS-2026-000145',
+    customerName: 'Rohan Deshmukh',
+    customerNumber: 'SRM-CUS-2026-000184',
+    mobile: '+91 98490 11223',
+    propertyTitle: 'Aparna Zenon Premium 3BHK Residence',
+    finalPrice: '₹84 Lakhs',
+    channel: 'WhatsApp & Email Gateway',
+    notes: 'Sharing updated cost sheet with special discount pricing.'
+  });
+
+  // 10-Step Lead Intake Wizard Step State & Matching Requests Queue
+  const [leadIntakeStep, setLeadIntakeStep] = useState<number>(1);
+  const [matchingRequestsQueue, setMatchingRequestsQueue] = useState<any[]>([
+    {
+      requestId: 'SRM-MAT-2026-000421',
+      date: '18 Aug 2026 10:22 AM',
+      customerName: 'Rohan Deshmukh',
+      customerNumber: 'SRM-CUS-2026-000184',
+      leadId: 'SRM-LEAD-2026-000184',
+      requirementId: 'SRM-REQ-2026-000094',
+      mobile: '+91 98490 11223',
+      purpose: 'Self Use',
+      propertyType: 'Flat / Apartment',
+      configuration: '3BHK',
+      budget: '₹70 Lakhs – ₹85 Lakhs',
+      preferredArea: 'Kondapur / Gachibowli',
+      secondaryAreas: 'Hitec City',
+      radiusKm: 10,
+      possessionStatus: 'Ready to Move',
+      carpetArea: '1,200 – 1,800 Sq.Ft.',
+      facing: 'East / Any',
+      parking: 'Covered Slot + EV',
+      amenities: 'Lift, Security, Gym, Clubhouse',
+      completenessScore: 96,
+      priority: 'HOT',
+      leadScore: 88,
+      assignedExecutive: 'Priya Nair (Sales Exec)',
+      status: 'MATCHING_COMPLETED',
+      version: 'Snapshot V1'
+    },
+    {
+      requestId: 'MATREQ-2026-000002',
+      date: '18 Aug 2026 12:20 PM',
+      customerName: 'Avishek Das',
+      customerNumber: 'SRM-CUS-2026-000187',
+      leadId: 'SRM-LEAD-2026-000143',
+      requirementId: 'SRM-REQ-2026-000095',
+      mobile: '9432328947',
+      purpose: 'Self Use',
+      propertyType: 'Flat / Apartment',
+      configuration: '3BHK',
+      budget: '50 lakh – 60 Lakh',
+      preferredArea: 'Madhyamgram',
+      secondaryAreas: 'New Barrackpur',
+      radiusKm: 10,
+      possessionStatus: 'Ready to Move',
+      carpetArea: '1,000 – 1,400 Sq.Ft.',
+      facing: 'North-East Facing',
+      parking: 'Covered Slot',
+      amenities: 'Security, Lift, Power Backup',
+      completenessScore: 94,
+      priority: 'HOT',
+      leadScore: 92,
+      assignedExecutive: 'Priya Nair (Sales Exec)',
+      status: 'MATCHING_PENDING',
+      version: 'Snapshot V1'
+    },
+    {
+      requestId: 'MATREQ-2026-000001',
+      date: '18 Aug 2026 11:30 AM',
+      customerName: 'Sumanth Varma',
+      customerNumber: 'SRM-CUS-2026-000186',
+      leadId: 'SRM-LEAD-2026-000142',
+      requirementId: 'SRM-REQ-2026-000094',
+      mobile: '+91 98490 88888',
+      purpose: 'Self Use',
+      propertyType: 'Flat / Apartment',
+      configuration: '3BHK',
+      budget: '₹1.20 Crore - ₹1.80 Crore',
+      preferredArea: 'Kondapur / Gachibowli',
+      secondaryAreas: 'Hitec City, Financial District',
+      radiusKm: 10,
+      possessionStatus: 'Ready to Move',
+      carpetArea: '1,400 – 2,200 Sq.Ft.',
+      facing: 'East Facing',
+      parking: 'Covered Slot + EV Charger',
+      amenities: 'Swimming Pool, Gym, Clubhouse, Power Backup',
+      completenessScore: 94,
+      priority: 'HOT',
+      leadScore: 92,
+      assignedExecutive: 'Priya Nair (Sales Exec)',
+      status: 'MATCHING_PENDING',
+      version: 'Snapshot V1'
+    }
+  ]);
+
+  const [selectedMatchingId, setSelectedMatchingId] = useState<string>('SRM-MAT-2026-000421');
+  const [matchingSearchQuery, setMatchingSearchQuery] = useState<string>('');
+  const [activeSelectionRecord, setActiveSelectionRecord] = useState<{ selectionId: string; matchingId: string; customerId: string; propertyIds: string[]; date: string; status: string } | null>({
+    selectionId: 'SRM-SEL-2026-000078',
+    matchingId: 'SRM-MAT-2026-000421',
+    customerId: 'SRM-CUS-2026-000184',
+    propertyIds: ['SRM-PROP-2026-000421', 'SRM-PROP-2026-000423', 'SRM-PROP-2026-000425'],
+    date: '18 Aug 2026 01:15 PM',
+    status: 'SELECTION_CONFIRMED'
+  });
 
   // Advanced Customer Master Form State
   const [newCustomerForm, setNewCustomerForm] = useState({
     name: '',
     mobile: '',
     alternate_mobile: '',
+    whatsapp: '',
     email: '',
     dob: '',
     address: '',
     city: 'Hyderabad',
+    pincode: '500084',
+    language: 'English',
+    lead_source: 'Meta Ads',
+    campaign_id: 'CMP-2026-8802',
+    utm_source: 'google_cpc',
+    referral_name: '',
+    otp_status: 'VERIFIED',
+    otp_code: '849201',
+    investment_purpose: 'Self Use',
     property_type: 'Flat / Apartment',
     configuration: '3BHK',
-    budget_min: '₹70 Lakhs',
-    budget_max: '₹1.50 Crore',
-    budget: '₹70 Lakhs - ₹1.50 Crore',
+    condition: 'Ready to Move',
+    budget_min: '₹1.20 Crore',
+    budget_max: '₹1.80 Crore',
+    budget: '₹1.20 Crore - ₹1.80 Crore',
+    budget_flexibility: '+10% Negotiable',
     preferredArea: 'Kondapur / Gachibowli',
+    secondary_areas: 'Hitec City, Financial District',
+    radius_km: 10,
+    facing: 'East Facing',
+    floor_pref: '10th Floor or Higher',
+    carpet_area_min: '1,400 Sq.Ft.',
+    carpet_area_max: '2,200 Sq.Ft.',
+    area_unit: 'Sq.Ft.',
+    parking: 'Covered Slot + EV Charger',
+    amenities: 'Swimming Pool, Gym, Clubhouse, Power Backup, Gated Community',
+    possession_status: 'Ready to Move',
     purchase_timeline: 'Immediate (< 30 Days)',
     loan_required: 'Yes',
-    investment_purpose: 'Self / End Use',
+    loan_amount: '₹80 Lakhs',
+    loan_status: 'Pre-Approved',
+    decision_timeline: 'Within 30 Days',
     preferred_projects: 'My Home, Rajapushpa, Aparna',
-    family_requirements: 'East Facing, High Floor, Swimming Pool View',
-    lead_source: 'Meta Ads',
+    family_requirements: 'East Facing, High Floor, Pool View',
     sub_source: 'Kondapur 3BHK Campaign',
     referral_source: '',
     assigned_employee_id: 'USR-07',
     team_leader_id: 'USR-06',
     priority: 'HOT',
     score: 88,
+    completeness_score: 94,
     notes: 'Customer looking for immediate registration in Kondapur locality.'
   });
 
@@ -243,12 +380,73 @@ export default function App() {
   ]);
 
   // 6. CUSTOMERS MASTER VAULT
-  const [customers, setCustomers] = useState([
+  const [customers, setCustomers] = useState<any[]>([
     { id: 'CUST-01', customer_number: 'SRM-CUS-2026-000184', name: 'Rohan Deshmukh', mobile: '+91 98490 12345', email: 'rohan.d@gmail.com', budget: '₹70 Lakhs - ₹85 Lakhs', preferredArea: 'Kondapur / Gachibowli', configuration: '3BHK', status: 'QUALIFIED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 88, source: 'Meta Ads' },
     { id: 'CUST-02', customer_number: 'SRM-CUS-2026-000185', name: 'Priya Sharma', mobile: '+91 99887 76655', email: 'priya.s@yahoo.com', budget: '₹1.8 Crore - ₹2.2 Crore', preferredArea: 'Financial District', configuration: '4BHK', status: 'SITE_VISIT_SCHEDULED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 94, source: 'Google Search' },
     { id: 'CUST-03', customer_number: 'SRM-CUS-2026-000186', name: 'Dr. Ananth Kulkarni', mobile: '+91 98480 33445', email: 'drananth@apollo.com', budget: '₹4.0 Crore - ₹5.0 Crore', preferredArea: 'Hitec City', configuration: '5BHK Villa', status: 'BOOKED', priority: 'HOT', assigned_agent: 'Rahul Sharma (TL)', score: 98, source: 'Referral' }
   ]);
-  const [selectedCust, setSelectedCust] = useState(customers[0]);
+  const [selectedCust, setSelectedCust] = useState<any>(customers[0]);
+
+  // Master Cost Sheet Shares State
+  const [costSheetShares, setCostSheetShares] = useState<any[]>([
+    {
+      shareId: 'SRM-PSH-2026-000032',
+      costSheetId: 'SRM-CS-2026-000145',
+      customerName: 'Rohan Deshmukh',
+      customerNumber: 'SRM-CUS-2026-000184',
+      mobile: '+91 98490 11223',
+      propertyTitle: 'Aparna Zenon Premium 3BHK Residence',
+      finalPrice: '₹84 Lakhs',
+      channel: 'WhatsApp & Email',
+      sentTime: '18 Aug 2026 11:35 AM',
+      viewCount: 4,
+      downloadCount: 2,
+      interest: '🔥 HOT Priority (Requested Site Visit)'
+    },
+    {
+      shareId: 'SRM-PSH-2026-000033',
+      costSheetId: 'SRM-CS-2026-000146',
+      customerName: 'Avishek Das',
+      customerNumber: 'SRM-CUS-2026-000187',
+      mobile: '9432328947',
+      propertyTitle: 'Madhyamgram Premium 3BHK Flat',
+      finalPrice: '55 Lakhs',
+      channel: 'WhatsApp Gateway',
+      sentTime: '18 Aug 2026 12:45 PM',
+      viewCount: 2,
+      downloadCount: 1,
+      interest: '⚡ WARM Priority (Callback Scheduled)'
+    }
+  ]);
+
+  // DELETE ALL CURRENT RECORDS INSIDE FUNCTION
+  const handleDeleteAllCurrentInside = () => {
+    if (window.confirm('⚠️ Are you sure you want to delete ALL current customer records, cost sheet shares, property matches, and site visits inside? This will reset the workspace to a 100% clean state.')) {
+      setCustomers([]);
+      setMatchingRequestsQueue([]);
+      setCostSheetShares([]);
+      setSelectedPropertyIds([]);
+      setSelectedCust(null);
+      setActiveSelectionRecord(null);
+      alert('🗑️ All current records inside have been deleted! Workspace is now 100% clean.');
+    }
+  };
+
+  const activeCust = selectedCust || (customers.length > 0 ? customers[0] : {
+    id: 'CLEAN',
+    customer_number: 'N/A',
+    name: 'No Active Customer Record',
+    mobile: 'N/A',
+    email: 'N/A',
+    budget: 'N/A',
+    preferredArea: 'N/A',
+    configuration: 'N/A',
+    status: 'DATABASE_CLEAN',
+    priority: 'COLD',
+    assigned_employee_id: 'Unassigned',
+    score: 0,
+    source: 'N/A'
+  });
 
   // 7. SITE VISITS & BOOKINGS
   const [siteVisits, setSiteVisits] = useState([
@@ -572,10 +770,34 @@ export default function App() {
           </select>
         </div>
 
-        {/* 8 MAIN CATEGORIES NAV */}
+        {/* 11 MAIN CATEGORIES NAV */}
         <nav style={{ padding: '16px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', overflowY: 'auto' }}>
           <button onClick={() => setActiveTab('main_dashboard')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'main_dashboard' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'main_dashboard' ? '#38bdf8' : '#94a3b8', border: activeTab === 'main_dashboard' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <LayoutDashboard size={18} /> <span>Main Dash Board</span>
+          </button>
+          <button onClick={() => setActiveTab('lead_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'lead_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'lead_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'lead_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <UserPlus size={18} /> <span>Lead Management</span>
+          </button>
+          <button onClick={() => setActiveTab('customer_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'customer_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'customer_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'customer_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <Users size={18} /> <span>Customer Management</span>
+          </button>
+          <button onClick={() => setActiveTab('matching_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'matching_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'matching_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'matching_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <Target size={18} /> <span>Matching Management</span>
+          </button>
+          <button onClick={() => setActiveTab('cost_sheet_share')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'cost_sheet_share' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'cost_sheet_share' ? '#38bdf8' : '#94a3b8', border: activeTab === 'cost_sheet_share' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <Share2 size={18} /> <span>Cost Sheet Sharing</span>
+          </button>
+          <button onClick={() => setActiveTab('visit_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'visit_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'visit_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'visit_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <Compass size={18} /> <span>Visit Management</span>
+          </button>
+          <button onClick={() => setActiveTab('project_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'project_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'project_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'project_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <Building size={18} /> <span>Project Management</span>
+          </button>
+          <button onClick={() => setActiveTab('agreement_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'agreement_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'agreement_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'agreement_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <FileCheck size={18} /> <span>Agreement Management</span>
+          </button>
+          <button onClick={() => setActiveTab('billing_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'billing_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'billing_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'billing_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <CreditCard size={18} /> <span>Billing Management</span>
           </button>
           <button onClick={() => setActiveTab('map_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'map_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'map_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'map_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <Map size={18} /> <span>Location Map</span>
@@ -583,20 +805,8 @@ export default function App() {
           <button onClick={() => setActiveTab('role_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'role_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'role_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'role_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <UserCog size={18} /> <span>Role and Management</span>
           </button>
-          <button onClick={() => setActiveTab('project_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'project_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'project_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'project_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
-            <Building size={18} /> <span>Project Management</span>
-          </button>
-          <button onClick={() => setActiveTab('customer_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'customer_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'customer_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'customer_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
-            <Users size={18} /> <span>Customer Management</span>
-          </button>
-          <button onClick={() => setActiveTab('billing_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'billing_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'billing_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'billing_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
-            <CreditCard size={18} /> <span>Billing Management</span>
-          </button>
           <button onClick={() => setActiveTab('profile')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'profile' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'profile' ? '#38bdf8' : '#94a3b8', border: activeTab === 'profile' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <User size={18} /> <span>Profile</span>
-          </button>
-          <button onClick={() => setActiveTab('agreement_management')} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'agreement_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'agreement_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'agreement_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
-            <FileCheck size={18} /> <span>Agreement Management</span>
           </button>
         </nav>
       </aside>
@@ -606,9 +816,42 @@ export default function App() {
         
         {/* TOP CONTROL HEADER */}
         <header style={{ background: '#0f172a', borderBottom: '1px solid #334155', padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#1e293b', border: '1px solid #334155', padding: '6px 14px', borderRadius: '8px', width: '360px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#1e293b', border: '1px solid #0284c7', padding: '6px 14px', borderRadius: '8px', width: '420px' }}>
             <Search size={16} color="#38bdf8" />
-            <input type="text" placeholder={`Search in ${activeTab.replace('_', ' ').toUpperCase()}...`} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ background: 'transparent', border: 'none', color: '#ffffff', outline: 'none', fontSize: '0.85rem', width: '100%' }} />
+            <input
+              type="text"
+              placeholder="🔍 Global ID Search (e.g. SRM-CUS-2026, SRM-CS-2026)..."
+              value={searchQuery}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSearchQuery(val);
+                const q = val.trim().toUpperCase();
+                if (q.startsWith('SRM-CUS-') || q.startsWith('CUS-')) {
+                  setActiveTab('customer_management');
+                  setActiveCustomerSubTab('customer_360_profile');
+                } else if (q.startsWith('SRM-LEAD-') || q.startsWith('LEAD-')) {
+                  setActiveTab('lead_management');
+                } else if (q.startsWith('SRM-MAT-') || q.startsWith('MAT-')) {
+                  setActiveTab('matching_management');
+                } else if (q.startsWith('SRM-PROP-') || q.startsWith('PROP-')) {
+                  setActiveTab('project_management');
+                } else if (q.startsWith('SRM-CS-') || q.startsWith('SRM-CSS-') || q.startsWith('CS-')) {
+                  setActiveTab('customer_management');
+                  setActiveCustomerSubTab('cost_sheet_engine');
+                } else if (q.startsWith('SRM-VS-') || q.startsWith('SRM-VOTP-') || q.startsWith('SRM-VIN-') || q.startsWith('SRM-VD-') || q.startsWith('SRM-VFB-') || q.startsWith('VIS-')) {
+                  setActiveTab('customer_management');
+                  setActiveCustomerSubTab('site_visit_engine');
+                } else if (q.startsWith('SRM-AGR-') || q.startsWith('AGR-')) {
+                  setActiveTab('agreement_management');
+                } else if (q.startsWith('SRM-BKG-') || q.startsWith('BKG-')) {
+                  setActiveTab('customer_management');
+                  setActiveCustomerSubTab('sales_journey_funnel');
+                } else if (q.startsWith('SRM-INV-') || q.startsWith('SRM-PAY-') || q.startsWith('SRM-BRO-') || q.startsWith('INV-')) {
+                  setActiveTab('billing_management');
+                }
+              }}
+              style={{ background: 'transparent', border: 'none', color: '#ffffff', outline: 'none', fontSize: '0.85rem', width: '100%' }}
+            />
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -625,6 +868,21 @@ export default function App() {
             {activeTab === 'customer_management' && (
               <button onClick={() => setShowLeadModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Plus size={16} /> + Ingest Customer
+              </button>
+            )}
+            {activeTab === 'lead_management' && (
+              <button onClick={() => setShowLeadModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Plus size={16} /> + Ingest New Lead
+              </button>
+            )}
+            {activeTab === 'visit_management' && (
+              <button onClick={() => alert('🚘 Opening Schedule Site Visit Modal...')} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Plus size={16} /> + Schedule Site Visit
+              </button>
+            )}
+            {activeTab === 'matching_management' && (
+              <button onClick={() => alert(`⚡ Recalculated live AI property match ranker for ${selectedCust.name}!`)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Zap size={16} /> ⚡ Run Real-Time AI Matcher
               </button>
             )}
             <button onClick={() => exportToCSV(properties, 'CRM_Export')} style={{ background: '#1e293b', color: '#fbbf24', border: '1px solid #334155', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -1753,25 +2011,229 @@ export default function App() {
             </div>
           )}
 
-          {/* CATEGORY 4: CUSTOMER MANAGEMENT, 360° PROFILE & ANTI-LEAKAGE SYSTEM */}
-          {activeTab === 'customer_management' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              {/* SYSTEM HEADER */}
+          {/* CATEGORY 2: LEAD MANAGEMENT */}
+          {activeTab === 'lead_management' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff' }}>CUSTOMER TRACKING, LEAD OWNERSHIP & ANTI-LEAKAGE SYSTEM</h2>
-                    <span style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>LEAKAGE SHIELD ACTIVE</span>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff' }}>ENTERPRISE LEAD INGESTION & ANTI-LEAKAGE SYSTEM</h2>
+                    <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>LEAD TRACKER ACTIVE</span>
                   </div>
                   <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
-                    Permanent Customer Tracking IDs (SRM-CUS) • Lead IDs (SRM-LEAD) • Customer 360° Vault • Fraud Prevention Shield
+                    Multi-Channel Lead Ingestion • Source Attribution • Fraud Shield • Assigned Sales Executives
                   </p>
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button onClick={() => setShowLeadModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <UserPlus size={15} /> + Ingest New Lead
+                  </button>
+                  <button onClick={() => alert('🔍 Automated Lead Ownership Scanner executed... All leads locked to Swaramayi Real Estate!')} style={{ background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Search size={15} /> Ownership Audit
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 SUB-TABS NAVIGATION FOR LEAD MANAGEMENT */}
+              <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
+                <button onClick={() => setActiveLeadSubTab('lead_ingestion')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeLeadSubTab === 'lead_ingestion' ? '#0284c7' : '#1e293b', color: activeLeadSubTab === 'lead_ingestion' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  📥 Lead Ingestion & Sources
+                </button>
+                <button onClick={() => setActiveLeadSubTab('lead_ownership')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeLeadSubTab === 'lead_ownership' ? '#0284c7' : '#1e293b', color: activeLeadSubTab === 'lead_ownership' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  ⚖️ Anti-Leakage Ownership Shield
+                </button>
+                <button onClick={() => setActiveLeadSubTab('lead_transfer')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeLeadSubTab === 'lead_transfer' ? '#0284c7' : '#1e293b', color: activeLeadSubTab === 'lead_transfer' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  🔄 Lead Transfer Queue
+                </button>
+                <button onClick={() => setActiveLeadSubTab('lead_scoring')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeLeadSubTab === 'lead_scoring' ? '#0284c7' : '#1e293b', color: activeLeadSubTab === 'lead_scoring' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  🔥 Lead Risk & Intent Scoring
+                </button>
+              </div>
+
+              {/* SUB-TAB 1: LEAD INGESTION & SOURCE TRACKER */}
+              {activeLeadSubTab === 'lead_ingestion' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  {/* SOURCE ATTRIBUTION METRIC STRIP */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '700' }}>Google Ads Leads</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>142 Leads</h3>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '700' }}>Meta / Facebook Ads</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>89 Leads</h3>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '700' }}>MagicBricks Portal</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>64 Leads</h3>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '700' }}>99acres / Housing</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#a855f7', marginTop: '2px' }}>52 Leads</h3>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '700' }}>Direct Website / Referral</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ef4444', marginTop: '2px' }}>38 Leads</h3>
+                    </div>
+                  </div>
+
+                  {/* CENTRAL LEAD MASTER TABLE */}
+                  <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>📋 Central Lead Master Vault ({customers.length} Active Records)</h3>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                          <th style={{ padding: '12px' }}>Lead ID</th>
+                          <th style={{ padding: '12px' }}>Lead Name & Contact</th>
+                          <th style={{ padding: '12px' }}>Source Channel</th>
+                          <th style={{ padding: '12px' }}>Preferred Area & BHK</th>
+                          <th style={{ padding: '12px' }}>Assigned Executive</th>
+                          <th style={{ padding: '12px' }}>Priority Score</th>
+                          <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {customers.map((c, i) => (
+                          <tr key={c.id} style={{ borderBottom: '1px solid #334155' }}>
+                            <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>
+                              SRM-LEAD-2026-000{140 + i}
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <strong style={{ color: '#ffffff', fontSize: '0.88rem' }}>{c.name}</strong>
+                              <br /><span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{c.mobile}</span>
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ background: '#0f172a', border: '1px solid #334155', padding: '3px 8px', borderRadius: '4px', color: '#4ade80', fontWeight: '800', fontSize: '0.75rem' }}>
+                                {c.lead_source || 'Google Ads'}
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <strong style={{ color: '#ffffff' }}>{c.preferredArea}</strong>
+                              <br /><span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '800' }}>{c.configuration}</span>
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <select 
+                                defaultValue={c.assigned_employee_id || 'Priya Nair (Sales Exec)'} 
+                                onChange={(e) => alert(`👤 Re-assigned Client/Lead ${c.name} to ${e.target.value}!`)}
+                                style={{ background: '#0f172a', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: '800', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                              >
+                                <option value="Priya Nair (Sales Exec)">👤 Priya Nair (Sales Exec)</option>
+                                <option value="Amit Patel (Lead Manager)">👤 Amit Patel (Lead Manager)</option>
+                                <option value="Rahul Sharma (Property Specialist)">👤 Rahul Sharma (Property Specialist)</option>
+                                <option value="Sneha Reddy (CRM Exec)">👤 Sneha Reddy (CRM Exec)</option>
+                                <option value="Vikram Varma (Branch Director)">👤 Vikram Varma (Branch Director)</option>
+                              </select>
+                            </td>
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '3px 8px', borderRadius: '4px', fontWeight: '900', fontSize: '0.75rem' }}>
+                                🔥 {c.priority} ({c.score}/100)
+                              </span>
+                            </td>
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <button onClick={() => { setSelectedCust(c); setActiveTab('customer_management'); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
+                                View 360° Profile
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 2: ANTI-LEAKAGE OWNERSHIP SHIELD */}
+              {activeLeadSubTab === 'lead_ownership' && (
+                <div style={{ background: '#1e293b', border: '1px solid #ef4444', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <ShieldAlert size={24} color="#ef4444" />
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#ffffff' }}>🚨 ANTI-LEAKAGE CUSTOMER OWNERSHIP SHIELD</h3>
+                  </div>
+                  <p style={{ fontSize: '0.82rem', color: '#cbd5e1' }}>
+                    Prevents sales executives from secretly taking company customers to external developers. Phone numbers are masked for unauthorized staff and locked permanently to Swaramayi Real Estate.
+                  </p>
+                  <div style={{ background: '#0f172a', border: '1px solid #334155', padding: '16px', borderRadius: '12px', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ color: '#4ade80', fontWeight: '800' }}>🟢 Permanent Corporate Data Lock: ACTIVE</div>
+                    <div style={{ color: '#38bdf8', fontWeight: '800' }}>🟢 SHA-256 Customer Contact Hashing: ACTIVE</div>
+                    <div style={{ color: '#fbbf24', fontWeight: '800' }}>🟢 Developer Direct Contact Prevention Shield: ACTIVE</div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 3: LEAD TRANSFER QUEUE */}
+              {activeLeadSubTab === 'lead_transfer' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>⚖️ Lead Re-Assignment & Manager Approval Queue</h3>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Review and authorize requests to transfer customer leads between sales executives.</p>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                        <th style={{ padding: '10px' }}>Lead ID & Customer</th>
+                        <th style={{ padding: '10px' }}>Current Executive</th>
+                        <th style={{ padding: '10px' }}>Proposed Executive</th>
+                        <th style={{ padding: '10px' }}>Transfer Reason</th>
+                        <th style={{ padding: '10px', textAlign: 'center' }}>Approval Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '10px', color: '#ffffff', fontWeight: '800' }}>SRM-LEAD-2026-000184 (Rohan Deshmukh)</td>
+                        <td style={{ padding: '10px', color: '#ef4444' }}>Priya Nair (Sales Exec)</td>
+                        <td style={{ padding: '10px', color: '#4ade80' }}>Vikram Singh (Senior Exec)</td>
+                        <td style={{ padding: '10px', color: '#cbd5e1' }}>Executive on leave; urgent site visit scheduled</td>
+                        <td style={{ padding: '10px', textAlign: 'center' }}>
+                          <button onClick={() => alert('⚖️ Lead Transfer Approved by General Manager!')} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
+                            Approve Transfer
+                          </button>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* SUB-TAB 4: LEAD RISK SCORING */}
+              {activeLeadSubTab === 'lead_scoring' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>🔥 Algorithmic Lead Intent & Risk Scoring Engine</h3>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Dynamic score matrix evaluating budget confirmation (+30 pts), ready-to-move intent (+25 pts), and site visit completion (+25 pts).</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                    <div style={{ background: '#0f172a', border: '1px solid #ef4444', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                      <h4 style={{ color: '#ef4444', fontWeight: '900' }}>🔥 HOT TIER (80-100 Score)</h4>
+                      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>Immediate site visit & cost sheet sharing mandatory within 2 hours.</p>
+                    </div>
+                    <div style={{ background: '#0f172a', border: '1px solid #fbbf24', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                      <h4 style={{ color: '#fbbf24', fontWeight: '900' }}>⚡ WARM TIER (60-79 Score)</h4>
+                      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>Follow-up call & property match recommendations within 24 hours.</p>
+                    </div>
+                    <div style={{ background: '#0f172a', border: '1px solid #38bdf8', padding: '16px', borderRadius: '12px', textAlign: 'center' }}>
+                      <h4 style={{ color: '#38bdf8', fontWeight: '900' }}>❄️ COLD TIER (Below 60 Score)</h4>
+                      <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>Nurture via automated WhatsApp broadcasts & newsletter updates.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CATEGORY 3: CUSTOMER MANAGEMENT */}
+          {activeTab === 'customer_management' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* SYSTEM HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '16px 20px' }}>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#ffffff' }}>CUSTOMER MANAGEMENT</h2>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button onClick={() => setShowCreateShareModal(true)} style={{ background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)', color: '#0f172a', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(56, 189, 248, 0.3)' }}>
+                    <Plus size={15} color="#0f172a" /> + Create Details against Customer ID
+                  </button>
                   <button onClick={() => setShowAddCustomerModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <UserPlus size={15} /> + Add Customer Master
+                  </button>
+                  <button onClick={handleDeleteAllCurrentInside} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Trash2 size={15} color="#ffffff" /> 🗑️ Delete All Current Inside
                   </button>
                   <button onClick={() => alert('🔍 Running Automated Customer Duplicate Scanner... Clean!')} style={{ background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Search size={15} /> Duplicate Scanner
@@ -1779,88 +2241,22 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 7 SUB-TABS NAVIGATION FOR CUSTOMER MANAGEMENT */}
-              <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
-                <button onClick={() => setActiveCustomerSubTab('sales_journey_funnel')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'sales_journey_funnel' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'sales_journey_funnel' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
-                  📈 19-Stage Sales Journey & Funnel
-                </button>
-                <button onClick={() => setActiveCustomerSubTab('cost_sheet_engine')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'cost_sheet_engine' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'cost_sheet_engine' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
-                  📄 Individual Cost Sheet Engine
-                </button>
-                <button onClick={() => setActiveCustomerSubTab('site_visit_engine')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'site_visit_engine' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'site_visit_engine' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
-                  🚘 Site Visit & OTP Verification
-                </button>
-                <button onClick={() => setActiveCustomerSubTab('smart_matching_engine')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'smart_matching_engine' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'smart_matching_engine' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
-                  🎯 Smart AI Property Matching
-                </button>
-                <button onClick={() => setActiveCustomerSubTab('customer_master_vault')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'customer_master_vault' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'customer_master_vault' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+              {/* 3 SUB-TABS NAVIGATION FOR CUSTOMER MANAGEMENT */}
+              <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
+                <button onClick={() => setActiveCustomerSubTab('customer_master_vault')} style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'customer_master_vault' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'customer_master_vault' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
                   👥 Customer Master Vault ({customers.length})
                 </button>
-                <button onClick={() => setActiveCustomerSubTab('customer_360_profile')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'customer_360_profile' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'customer_360_profile' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                <button onClick={() => setActiveCustomerSubTab('customer_360_profile')} style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'customer_360_profile' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'customer_360_profile' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
                   🔍 Customer 360° Profile
                 </button>
-                <button onClick={() => setActiveCustomerSubTab('anti_leakage_engine')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'anti_leakage_engine' ? '#ef4444' : '#1e293b', color: activeCustomerSubTab === 'anti_leakage_engine' ? '#ffffff' : '#94a3b8', border: '1px solid #ef4444' }}>
-                  🚨 Anti-Leakage Detection (3 Alerts)
+                <button onClick={() => setActiveCustomerSubTab('anti_leakage_engine')} style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'anti_leakage_engine' ? '#ef4444' : '#1e293b', color: activeCustomerSubTab === 'anti_leakage_engine' ? '#ffffff' : '#94a3b8', border: '1px solid #ef4444' }}>
+                  🚨 Anti-Leakage Detection
                 </button>
               </div>
 
-              {/* SUB-TAB 1: 19-STAGE PROPERTY SALES JOURNEY & CONVERSION FUNNEL */}
+              {/* AUDIT TRAIL & JOURNEY ACTIVITY TIMELINE */}
               {activeCustomerSubTab === 'sales_journey_funnel' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
-                  {/* CUSTOMER JOURNEY SELECTOR & SUMMARY */}
-                  <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                      <div>
-                        <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          📈 PROPERTY SALES JOURNEY & CONVERSION TIMELINE
-                        </h3>
-                        <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>
-                          Complete 19-stage lifecycle tracking from Customer Requirement to Booking, Agreement, Brokerage & Closure.
-                        </p>
-                      </div>
-
-                      <select value={selectedCust.id} onChange={(e) => { const c = customers.find(x => x.id === e.target.value); if (c) setSelectedCust(c); }} style={{ background: '#0f172a', color: '#38bdf8', border: '1px solid #334155', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: '800' }}>
-                        {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.customer_number}) — {c.configuration} | {c.preferredArea}</option>)}
-                      </select>
-                    </div>
-
-                    {/* 19-STAGE CONVERSION STEPPER GRID */}
-                    <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', textTransform: 'uppercase' }}>
-                        Active 19-Stage Sales Journey Funnel for {selectedCust.name} ({selectedCust.customer_number})
-                      </span>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(10, 1fr)', gap: '6px' }}>
-                        {[
-                          { step: '1. REQUIREMENT', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '2. MATCHING', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '3. SELECTION', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '4. COST SHEET', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '5. SHARING', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '6. INTEREST', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '7. VISIT SCHEDULE', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '8. OTP VERIFY', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '9. CHECK-IN', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '10. VISIT DONE', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '11. FEEDBACK', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '12. CONVERSION', status: 'COMPLETED', color: '#4ade80' },
-                          { step: '13. NEGOTIATION', status: 'IN_PROGRESS', color: '#fbbf24' },
-                          { step: '14. BOOKING', status: 'PENDING', color: '#94a3b8' },
-                          { step: '15. AGREEMENT', status: 'PENDING', color: '#94a3b8' },
-                          { step: '16. BROKERAGE', status: 'PENDING', color: '#94a3b8' },
-                          { step: '17. PAYMENT', status: 'PENDING', color: '#94a3b8' },
-                          { step: '18. CLOSURE', status: 'PENDING', color: '#94a3b8' },
-                          { step: '19. POST-SALE', status: 'PENDING', color: '#94a3b8' }
-                        ].map((s, idx) => (
-                          <div key={idx} style={{ background: '#1e293b', border: `1px solid ${s.color}`, padding: '6px 4px', borderRadius: '6px', textAlign: 'center' }}>
-                            <span style={{ fontSize: '0.58rem', color: s.color, fontWeight: '900', display: 'block' }}>{s.step}</span>
-                            <span style={{ fontSize: '0.62rem', color: '#ffffff', fontWeight: '800' }}>{s.status}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* CLICKABLE EVENT TIMELINE TABLE WITH AUDIT LOGS */}
                   <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1883,18 +2279,18 @@ export default function App() {
                       </thead>
                       <tbody>
                         {[
-                          { time: '17 Aug 2026 10:15 AM', event: 'Customer Master Record Registered', status: 'COMPLETED', user: 'Priya Nair (Sales Exec)', id: 'CUS-2026-000184', source: 'WEB_APP' },
-                          { time: '17 Aug 2026 10:20 AM', event: 'Property Requirements Saved (3BHK, Kondapur)', status: 'COMPLETED', user: 'Priya Nair (Sales Exec)', id: 'REQ-2026-000094', source: 'FORM' },
-                          { time: '17 Aug 2026 10:22 AM', event: 'Automated 5-Factor Property Search Executed', status: 'COMPLETED', user: 'System Engine', id: 'MAT-2026-000421', source: 'ALGORITHM' },
-                          { time: '17 Aug 2026 11:30 AM', event: 'Personalized Cost Sheet Generated (V1)', status: 'COMPLETED', user: 'Priya Nair (Sales Exec)', id: 'CS-2026-000145-V1', source: 'ENGINE' },
-                          { time: '17 Aug 2026 11:35 AM', event: 'Cost Sheet Sent via WhatsApp & Email', status: 'DELIVERED', user: 'WhatsApp API Gateway', id: 'MSG-2026-90412', source: 'WHATSAPP' },
-                          { time: '18 Aug 2026 09:40 AM', event: 'Customer Opened Cost Sheet Secure Token Link', status: 'VIEWED', user: 'Customer (Rohan Deshmukh)', id: 'TOK-2026-77812', source: 'PORTAL' },
-                          { time: '18 Aug 2026 10:00 AM', event: 'Customer Expressed Interest & Requested Site Visit', status: 'INTERESTED', user: 'Customer (Rohan Deshmukh)', id: 'RES-2026-00088', source: 'PORTAL' },
-                          { time: '19 Aug 2026 02:00 PM', event: 'Site Visit Scheduled for My Home Tarkshya', status: 'CONFIRMED', user: 'Priya Nair (Sales Exec)', id: 'VIS-2026-000145', source: 'CALENDAR' },
-                          { time: '20 Aug 2026 03:30 PM', event: 'Customer OTP Verified at Site Lounge (849201)', status: 'VERIFIED', user: 'Kiran Kumar (Field Exec)', id: 'OTP-2026-33912', source: 'MOBILE_OTP' },
-                          { time: '20 Aug 2026 03:31 PM', event: 'GPS Geofence Check-in Verified (17.4612° N, 78.3685° E)', status: 'CHECKED_IN', user: 'Kiran Kumar (Field Exec)', id: 'GPS-2026-10492', source: 'GEO_FENCE' },
-                          { time: '20 Aug 2026 04:15 PM', event: 'Site Visit Completed & 5-Star Feedback Recorded', status: 'COMPLETED', user: 'Kiran Kumar (Field Exec)', id: 'FBK-2026-00054', source: 'FEEDBACK' },
-                          { time: '20 Aug 2026 05:00 PM', event: 'Negotiation Initiated (₹2,00,000 Special Discount)', status: 'IN_PROGRESS', user: 'Rahul Sharma (Team Lead)', id: 'NEG-2026-00028', source: 'APPROVAL' }
+                          { time: '17 Aug 2026 10:15 AM', event: `Customer Master Record Registered (${selectedCust.name})`, status: 'COMPLETED', user: `${selectedCust.assigned_employee_id || 'Priya Nair (Sales Exec)'}`, id: selectedCust.customer_number, source: 'WEB_APP' },
+                          { time: '17 Aug 2026 10:20 AM', event: `Property Requirements Saved (${selectedCust.configuration}, ${selectedCust.preferredArea})`, status: 'COMPLETED', user: `${selectedCust.assigned_employee_id || 'Priya Nair (Sales Exec)'}`, id: `REQ-${selectedCust.customer_number}`, source: 'FORM' },
+                          { time: '17 Aug 2026 10:22 AM', event: `Automated 5-Factor Property Search Executed for ${selectedCust.name}`, status: 'COMPLETED', user: 'System Engine', id: `MAT-${selectedCust.customer_number}`, source: 'ALGORITHM' },
+                          { time: '17 Aug 2026 11:30 AM', event: `Personalized Cost Sheet Generated for ${selectedCust.name}`, status: 'COMPLETED', user: `${selectedCust.assigned_employee_id || 'Priya Nair (Sales Exec)'}`, id: `CS-${selectedCust.customer_number}`, source: 'ENGINE' },
+                          { time: '17 Aug 2026 11:35 AM', event: `Cost Sheet Sent via WhatsApp & Email to ${selectedCust.mobile}`, status: 'DELIVERED', user: 'WhatsApp API Gateway', id: `MSG-${selectedCust.customer_number}`, source: 'WHATSAPP' },
+                          { time: '18 Aug 2026 09:40 AM', event: `Customer Opened Cost Sheet Secure Token Link (${selectedCust.name})`, status: 'VIEWED', user: `Customer (${selectedCust.name})`, id: `TOK-${selectedCust.customer_number}`, source: 'PORTAL' },
+                          { time: '18 Aug 2026 10:00 AM', event: `Customer Expressed Interest & Requested Site Visit`, status: 'INTERESTED', user: `Customer (${selectedCust.name})`, id: `RES-${selectedCust.customer_number}`, source: 'PORTAL' },
+                          { time: '19 Aug 2026 02:00 PM', event: `Site Visit Scheduled for ${selectedCust.name}`, status: 'CONFIRMED', user: `${selectedCust.assigned_employee_id || 'Priya Nair (Sales Exec)'}`, id: `VIS-${selectedCust.customer_number}`, source: 'CALENDAR' },
+                          { time: '20 Aug 2026 03:30 PM', event: `Customer OTP Verified at Site Lounge for ${selectedCust.name}`, status: 'VERIFIED', user: 'Field Executive', id: `OTP-${selectedCust.customer_number}`, source: 'MOBILE_OTP' },
+                          { time: '20 Aug 2026 03:31 PM', event: `GPS Geofence Check-in Verified for ${selectedCust.name}`, status: 'CHECKED_IN', user: 'Field Executive', id: `GPS-${selectedCust.customer_number}`, source: 'GEO_FENCE' },
+                          { time: '20 Aug 2026 04:15 PM', event: `Site Visit Completed & ${selectedCust.name} Feedback Recorded`, status: 'COMPLETED', user: 'Field Executive', id: `FBK-${selectedCust.customer_number}`, source: 'FEEDBACK' },
+                          { time: '20 Aug 2026 05:00 PM', event: `Negotiation Initiated for ${selectedCust.name}`, status: 'IN_PROGRESS', user: 'Team Lead', id: `NEG-${selectedCust.customer_number}`, source: 'APPROVAL' }
                         ].map((item, idx) => (
                           <tr key={idx} style={{ borderBottom: '1px solid #334155' }}>
                             <td style={{ padding: '10px', color: '#94a3b8', fontSize: '0.78rem' }}>{item.time}</td>
@@ -1920,599 +2316,11 @@ export default function App() {
                 </div>
               )}
 
-              {/* SUB-TAB 2: INDIVIDUAL PROPERTY COST SHEET ENGINE */}
-              {activeCustomerSubTab === 'cost_sheet_engine' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
-                  {/* COST SHEET GENERATOR PANEL */}
-                  <div style={{ background: '#1e293b', border: '1px solid #0284c7', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '14px' }}>
-                      <div>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          📄 INDIVIDUAL PROPERTY COST SHEET CALCULATOR ENGINE
-                        </h3>
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>
-                          Customer-specific pricing breakdown for {selectedCust.name} ({selectedCust.customer_number}) — Unit 1402, Tower B.
-                        </p>
-                      </div>
 
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem' }}>
-                          ACTIVE VERSION: {csVersion}
-                        </span>
-                        <select value={selectedCust.id} onChange={(e) => { const c = customers.find(x => x.id === e.target.value); if (c) setSelectedCust(c); }} style={{ background: '#0f172a', color: '#38bdf8', border: '1px solid #334155', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: '800' }}>
-                          {customers.map(c => <option key={c.id} value={c.id}>{c.name} ({c.customer_number})</option>)}
-                        </select>
-                      </div>
-                    </div>
 
-                    {/* DYNAMIC COST SHEET BREAKDOWN FORM & SUMMARY */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '20px' }}>
-                      
-                      {/* CHARGES FORM */}
-                      <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#38bdf8', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>
-                          1. Configurable Property Cost Components
-                        </h4>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Base Agreement Value (INR)</label>
-                            <input type="number" value={csBasePrice} onChange={(e) => setCsBasePrice(Number(e.target.value))} style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontWeight: '800', fontSize: '0.85rem' }} />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>PLC (Facing Charge)</label>
-                            <input type="number" value={csPlc} onChange={(e) => setCsPlc(Number(e.target.value))} style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontWeight: '800', fontSize: '0.85rem' }} />
-                          </div>
-                        </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Floor Rise Charge</label>
-                            <input type="number" value={csFloorRise} onChange={(e) => setCsFloorRise(Number(e.target.value))} style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Covered Parking Slot</label>
-                            <input type="number" value={csParking} onChange={(e) => setCsParking(Number(e.target.value))} style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Clubhouse & Amenities</label>
-                            <input type="number" value={csAmenities} onChange={(e) => setCsAmenities(Number(e.target.value))} style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                          </div>
-                        </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Advance Maintenance</label>
-                            <input type="number" value={csMaintenance} onChange={(e) => setCsMaintenance(Number(e.target.value))} style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Negotiated Discount (INR)</label>
-                            <input type="number" value={csDiscount} onChange={(e) => setCsDiscount(Number(e.target.value))} style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#ef4444', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                          </div>
-                        </div>
-
-                        <button onClick={() => {
-                          const newV = `CS-2026-000145-V${csVersionHistory.length + 1}`;
-                          setCsVersion(newV);
-                          const netVal = csBasePrice + csPlc + csFloorRise + csParking + csAmenities + csMaintenance - csDiscount;
-                          const gstVal = Math.round(netVal * 0.05);
-                          const stampVal = Math.round(netVal * 0.075);
-                          const totalVal = netVal + gstVal + stampVal;
-                          setCsVersionHistory([{ version: newV, date: new Date().toLocaleString(), user: 'Priya Nair (Sales Exec)', amount: `₹${totalVal.toLocaleString('en-IN')}`, reason: 'Recalculated with updated component values' }, ...csVersionHistory]);
-                          alert(`📄 Generated Cost Sheet Version ${newV} totaling ₹${totalVal.toLocaleString('en-IN')}!`);
-                        }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '900', marginTop: '6px', cursor: 'pointer' }}>
-                          ⚡ Recalculate & Save New Cost Sheet Version
-                        </button>
-                      </div>
-
-                      {/* COMPUTED SUMMARY BOX */}
-                      <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#4ade80', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>
-                          2. Cost Sheet Summary Statement
-                        </h4>
-
-                        {(() => {
-                          const netVal = csBasePrice + csPlc + csFloorRise + csParking + csAmenities + csMaintenance - csDiscount;
-                          const gstVal = Math.round(netVal * 0.05);
-                          const stampVal = Math.round(netVal * 0.075);
-                          const totalVal = netVal + gstVal + stampVal;
-
-                          return (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: '#94a3b8' }}>Base Agreement Value:</span>
-                                <strong style={{ color: '#ffffff' }}>₹{csBasePrice.toLocaleString('en-IN')}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: '#94a3b8' }}>PLC + Floor Rise:</span>
-                                <strong style={{ color: '#ffffff' }}>₹{(csPlc + csFloorRise).toLocaleString('en-IN')}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: '#94a3b8' }}>Parking & Amenities:</span>
-                                <strong style={{ color: '#ffffff' }}>₹{(csParking + csAmenities).toLocaleString('en-IN')}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: '#ef4444', fontWeight: '800' }}>Less Negotiated Discount:</span>
-                                <strong style={{ color: '#ef4444' }}>- ₹{csDiscount.toLocaleString('en-IN')}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #334155', paddingTop: '6px' }}>
-                                <span style={{ color: '#ffffff', fontWeight: '800' }}>Net Consideration:</span>
-                                <strong style={{ color: '#ffffff' }}>₹{netVal.toLocaleString('en-IN')}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: '#94a3b8' }}>Estimated GST (5%):</span>
-                                <strong style={{ color: '#fbbf24' }}>₹{gstVal.toLocaleString('en-IN')}</strong>
-                              </div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <span style={{ color: '#94a3b8' }}>Stamp Duty & Reg. (7.5%):</span>
-                                <strong style={{ color: '#fbbf24' }}>₹{stampVal.toLocaleString('en-IN')}</strong>
-                              </div>
-
-                              <div style={{ background: '#1e293b', border: '1px solid #22c55e', padding: '12px', borderRadius: '8px', textAlign: 'center', marginTop: '6px' }}>
-                                <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>TOTAL ESTIMATED ACQUISITION COST</span>
-                                <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>
-                                  ₹{totalVal.toLocaleString('en-IN')}
-                                </h3>
-                              </div>
-                            </div>
-                          );
-                        })()}
-                      </div>
-
-                    </div>
-
-                    {/* PDF & MULTI-CHANNEL DISPATCH TOOLBAR */}
-                    <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                      <div>
-                        <span style={{ fontSize: '0.78rem', color: '#ffffff', fontWeight: '800' }}>
-                          Dispatch Cost Sheet {csVersion} to {selectedCust.name} ({selectedCust.mobile})
-                        </span>
-                        <p style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-                          Send personalized branding PDF, breakdown table, and secure token link.
-                        </p>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button onClick={() => alert(`📲 WhatsApp Cost Sheet ${csVersion} dispatched to ${selectedCust.name} (${selectedCust.mobile})`)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Share2 size={14} /> Send via WhatsApp
-                        </button>
-                        <button onClick={() => alert(`📧 Email PDF Cost Sheet ${csVersion} dispatched to ${selectedCust.email}`)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <FileText size={14} /> Send via Email
-                        </button>
-                        <button onClick={() => alert(`📄 Downloading Official PDF Cost Sheet ${csVersion}.pdf...`)} style={{ background: '#1e293b', color: '#fbbf24', border: '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}>
-                          📄 Download PDF
-                        </button>
-                        <button onClick={() => alert(`🔗 Generated Secure Token Link: https://swaramayi-crm.com/cs/sec-token-${Date.now()}`)} style={{ background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}>
-                          🔗 Copy Secure Token Link
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* COST SHEET VERSION CONTROL HISTORY TABLE */}
-                    <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <h4 style={{ fontSize: '0.9rem', fontWeight: '800', color: '#ffffff' }}>📜 Cost Sheet Version Control & Modification History</h4>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                        <thead>
-                          <tr style={{ background: '#1e293b', color: '#94a3b8', textAlign: 'left', borderBottom: '1px solid #334155' }}>
-                            <th style={{ padding: '8px' }}>Version ID</th>
-                            <th style={{ padding: '8px' }}>Prepared Date & Time</th>
-                            <th style={{ padding: '8px' }}>Prepared By</th>
-                            <th style={{ padding: '8px' }}>Total Acquisition Amount</th>
-                            <th style={{ padding: '8px' }}>Reason for Modification</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {csVersionHistory.map((vh, i) => (
-                            <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
-                              <td style={{ padding: '8px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{vh.version}</td>
-                              <td style={{ padding: '8px', color: '#94a3b8' }}>{vh.date}</td>
-                              <td style={{ padding: '8px', color: '#ffffff', fontWeight: '700' }}>{vh.user}</td>
-                              <td style={{ padding: '8px', color: '#4ade80', fontWeight: '900' }}>{vh.amount}</td>
-                              <td style={{ padding: '8px', color: '#cbd5e1' }}>{vh.reason}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                  </div>
-
-                </div>
-              )}
-
-              {/* SUB-TAB 3: SITE VISIT MANAGEMENT & OTP CHECK-IN ENGINE */}
-              {activeCustomerSubTab === 'site_visit_engine' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
-                  {/* SITE VISIT SCHEDULER & OTP VERIFICATION BOARD */}
-                  <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '14px' }}>
-                      <div>
-                        <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          🚘 SITE VISIT SCHEDULING & OTP VERIFICATION HUB
-                        </h3>
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '2px' }}>
-                          OTP verification, GPS Geofencing Check-In & structured 5-star customer feedback.
-                        </p>
-                      </div>
-
-                      <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 12px', borderRadius: '20px', fontWeight: '900', fontSize: '0.8rem' }}>
-                        Visit ID: VIS-2026-000145
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '20px' }}>
-                      
-                      {/* OTP & GPS GEOFENCE CHECK-IN ENGINE */}
-                      <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#38bdf8', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>
-                          1. 6-Digit Mobile OTP & GPS Geofence Verification
-                        </h4>
-
-                        <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '12px', borderRadius: '8px', fontSize: '0.82rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                          <div><span style={{ color: '#94a3b8' }}>Scheduled Customer:</span> <strong style={{ color: '#ffffff' }}>{selectedCust.name} ({selectedCust.mobile})</strong></div>
-                          <div><span style={{ color: '#94a3b8' }}>Target Property:</span> <strong style={{ color: '#fbbf24' }}>My Home Tarkshya (Kondapur)</strong></div>
-                          <div><span style={{ color: '#94a3b8' }}>Field Executive:</span> <strong style={{ color: '#38bdf8' }}>Kiran Kumar (USR-07)</strong></div>
-                        </div>
-
-                        {/* OTP VERIFICATION FORM */}
-                        <div>
-                          <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Enter 6-Digit Customer Mobile OTP:</label>
-                          <div style={{ display: 'flex', gap: '10px' }}>
-                            <input type="text" value={visitOtpInput} onChange={(e) => setVisitOtpInput(e.target.value)} placeholder="849201" style={{ flex: 1, background: '#1e293b', border: '1px solid #334155', color: '#4ade80', fontFamily: 'monospace', fontWeight: '900', padding: '8px 12px', borderRadius: '6px', fontSize: '1.1rem', textAlign: 'center' }} />
-                            <button onClick={() => {
-                              if (visitOtpInput.length === 6) {
-                                setVisitOtpVerified(true);
-                                alert(`🟢 OTP ${visitOtpInput} Verified Successfully! Timestamp logged in audit vault.`);
-                              } else {
-                                alert('⚠️ Please enter 6-digit OTP!');
-                              }
-                            }} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>
-                              Verify OTP
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* GPS GEOFENCE STATUS BOX */}
-                        <div style={{ background: geofenceVerified ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', border: geofenceVerified ? '1px solid #22c55e' : '1px solid #ef4444', borderRadius: '8px', padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <MapPin size={18} color={geofenceVerified ? '#4ade80' : '#ef4444'} />
-                            <div>
-                              <span style={{ fontSize: '0.8rem', color: geofenceVerified ? '#4ade80' : '#ef4444', fontWeight: '900' }}>
-                                {geofenceVerified ? '🟢 GPS GEOFENCE VERIFIED (17.4612° N, 78.3685° E)' : '⚠️ OUTSIDE SITE RADIUS (> 500m)'}
-                              </span>
-                              <p style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px' }}>
-                                Executive Device Geofence Verification: Within 100 meters of My Home Tarkshya site office.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        <button onClick={() => alert('🟢 Check-In Completed Successfully! Status set to CHECKED_IN & Visit Timer Started.')} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>
-                          🚀 Execute Official Site Check-In & Start Visit Timer
-                        </button>
-                      </div>
-
-                      {/* STRUCTURED 5-STAR CUSTOMER FEEDBACK FORM */}
-                      <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: '#fbbf24', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>
-                          2. Post-Visit Structured 5-Star Feedback & Intent
-                        </h4>
-
-                        <div>
-                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Purchase Intent Tier:</label>
-                          <select value={visitFeedbackIntent} onChange={(e) => setVisitFeedbackIntent(e.target.value as any)} style={{ width: '100%', background: '#1e293b', color: '#ef4444', fontWeight: '900', border: '1px solid #334155', borderRadius: '6px', padding: '8px', fontSize: '0.85rem' }}>
-                            <option value="HOT">🔥 HOT Priority (Immediate Negotiation)</option>
-                            <option value="WARM">⚡ WARM Priority (Follow-up in 3 Days)</option>
-                            <option value="COLD">❄️ COLD Priority (Re-engage Later)</option>
-                            <option value="NOT_INTERESTED">🔴 NOT INTERESTED (Log Lost Reason)</option>
-                          </select>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Layout Rating (1-5):</label>
-                            <select value={visitFeedbackRating} onChange={(e) => setVisitFeedbackRating(Number(e.target.value))} style={{ width: '100%', background: '#1e293b', color: '#fbbf24', fontWeight: '900', border: '1px solid #334155', borderRadius: '6px', padding: '6px', fontSize: '0.85rem' }}>
-                              <option value="5">⭐⭐⭐⭐⭐ (5/5 Excellent)</option>
-                              <option value="4">⭐⭐⭐⭐ (4/5 Very Good)</option>
-                              <option value="3">⭐⭐⭐ (3/5 Average)</option>
-                              <option value="2">⭐⭐ (2/5 Poor)</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Location Rating (1-5):</label>
-                            <select style={{ width: '100%', background: '#1e293b', color: '#fbbf24', fontWeight: '900', border: '1px solid #334155', borderRadius: '6px', padding: '6px', fontSize: '0.85rem' }}>
-                              <option value="5">⭐⭐⭐⭐⭐ (5/5 Prime)</option>
-                              <option value="4">⭐⭐⭐⭐ (4/5 Good)</option>
-                            </select>
-                          </div>
-                        </div>
-
-                        <div>
-                          <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Field Executive Comments & Observations:</label>
-                          <textarea rows={3} defaultValue="Customer liked 14th floor pool view flat. Husband requested ₹2,00,000 discount negotiation with Team Lead." style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem', resize: 'vertical' }} />
-                        </div>
-
-                        <button onClick={() => alert('📝 Feedback Recorded Successfully! Site Visit marked COMPLETED and Negotiation task created.')} style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '10px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>
-                          📝 Complete Visit & Submit Structured Feedback
-                        </button>
-                      </div>
-
-                    </div>
-                  </div>
-
-                </div>
-              )}
-
-              {/* SUB-TAB 1: AI SMART MATCHING ENGINE & AUTOMATIC PROPERTY SEARCH */}
-              {activeCustomerSubTab === 'smart_matching_engine' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
-                  {/* ADVANCED CUSTOMER SEARCH & REQUIREMENT FILTER PANEL */}
-                  <div style={{ background: '#1e293b', border: '1px solid #0284c7', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <Users size={22} color="#38bdf8" />
-                        <div>
-                          <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>SELECT CUSTOMER REQUIREMENT FOR AUTOMATIC PROPERTY MATCHING</h3>
-                          <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>Search customers by ID, Name, Mobile or filter by Locality, BHK & Priority to run real-time matching.</p>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button onClick={() => setShowAdvCustFilters(!showAdvCustFilters)} style={{ background: showAdvCustFilters ? '#0284c7' : '#0f172a', color: '#ffffff', border: '1px solid #334155', padding: '6px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Filter size={14} /> {showAdvCustFilters ? 'Hide Filters' : '🔍 Advanced Filters'}
-                        </button>
-                        <select value={selectedCust.id} onChange={(e) => { const c = customers.find(x => x.id === e.target.value); if (c) setSelectedCust(c); }} style={{ background: '#0f172a', color: '#38bdf8', border: '1px solid #334155', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: '800' }}>
-                          {filteredCustomersForMatching.map(c => <option key={c.id} value={c.id}>{c.name} ({c.customer_number}) — {c.configuration} | {c.preferredArea}</option>)}
-                        </select>
-                      </div>
-                    </div>
-
-                    {/* ADVANCED MULTI-PARAMETER FILTER CONTROLS */}
-                    {showAdvCustFilters && (
-                      <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: '12px' }}>
-                          
-                          {/* INSTANT CUSTOMER SEARCH INPUT */}
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', display: 'block', marginBottom: '4px' }}>🔍 Instant Customer Search (Name / ID / Mobile):</label>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#1e293b', border: '1px solid #0284c7', borderRadius: '6px', padding: '6px 10px' }}>
-                              <Search size={15} color="#38bdf8" />
-                              <input 
-                                type="text" 
-                                value={custSearchQuery} 
-                                onChange={(e) => {
-                                  const val = e.target.value;
-                                  setCustSearchQuery(val);
-                                  if (val.trim()) {
-                                    const q = val.trim().toLowerCase();
-                                    const match = customers.find(c => 
-                                      c.customer_number.toLowerCase().includes(q) || 
-                                      c.id.toLowerCase().includes(q) ||
-                                      c.name.toLowerCase().includes(q) ||
-                                      c.mobile.includes(q)
-                                    );
-                                    if (match) {
-                                      setSelectedCust(match);
-                                    }
-                                  }
-                                }} 
-                                placeholder="e.g. SRM-CUS-2026-000186, Ramesh or 98490" 
-                                style={{ background: 'transparent', border: 'none', color: '#ffffff', outline: 'none', fontSize: '0.85rem', width: '100%', fontWeight: '800' }} 
-                              />
-                            </div>
-                          </div>
-
-                          {/* LOCALITY FILTER */}
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📍 Locality Filter:</label>
-                            <select value={filterLocality} onChange={(e) => setFilterLocality(e.target.value)} style={{ width: '100%', background: '#1e293b', color: '#ffffff', border: '1px solid #334155', borderRadius: '6px', padding: '6px 10px', fontSize: '0.82rem' }}>
-                              <option value="ALL">ALL Preferred Localities</option>
-                              <option value="Kondapur">Kondapur / Gachibowli</option>
-                              <option value="Financial District">Financial District</option>
-                              <option value="Hitec City">Hitec City</option>
-                              <option value="Madinaguda">Madinaguda</option>
-                              <option value="Kokapet">Kokapet</option>
-                            </select>
-                          </div>
-
-                          {/* BHK FILTER */}
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🏢 BHK Requirement:</label>
-                            <select value={filterBhk} onChange={(e) => setFilterBhk(e.target.value)} style={{ width: '100%', background: '#1e293b', color: '#38bdf8', fontWeight: '800', border: '1px solid #334155', borderRadius: '6px', padding: '6px 10px', fontSize: '0.82rem' }}>
-                              <option value="ALL">ALL Configurations</option>
-                              <option value="2BHK">2BHK Flat</option>
-                              <option value="3BHK">3BHK Flat</option>
-                              <option value="4BHK">4BHK Luxury Apartment</option>
-                              <option value="Villa">Gated Villa</option>
-                            </select>
-                          </div>
-
-                          {/* PRIORITY TIER FILTER */}
-                          <div>
-                            <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🔥 Customer Priority:</label>
-                            <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} style={{ width: '100%', background: '#1e293b', color: '#ef4444', fontWeight: '800', border: '1px solid #334155', borderRadius: '6px', padding: '6px 10px', fontSize: '0.82rem' }}>
-                              <option value="ALL">ALL Priority Tiers</option>
-                              <option value="HOT">🔥 HOT Priority (80+ Score)</option>
-                              <option value="WARM">⚡ WARM Priority (60+ Score)</option>
-                              <option value="COLD">❄️ COLD Priority</option>
-                            </select>
-                          </div>
-
-                        </div>
-
-                        {/* MATCHING CUSTOMERS QUICK BADGES STRIP */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #334155', paddingTop: '10px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '700' }}>Matching Customers ({filteredCustomersForMatching.length}):</span>
-                            {filteredCustomersForMatching.map(c => (
-                              <button key={c.id} onClick={() => setSelectedCust(c)} style={{ background: selectedCust.id === c.id ? '#0284c7' : '#1e293b', color: selectedCust.id === c.id ? '#ffffff' : '#38bdf8', border: selectedCust.id === c.id ? '1px solid #38bdf8' : '1px solid #334155', padding: '4px 10px', borderRadius: '16px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
-                                {c.name} ({c.customer_number})
-                              </button>
-                            ))}
-                          </div>
-
-                          <button onClick={() => alert(`⚡ Recalculated live AI property match ranker for ${selectedCust.name}!`)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '900', cursor: 'pointer' }}>
-                            ⚡ Run Real-Time AI Matcher
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* ACTIVE SELECTED CUSTOMER REQUIREMENT SUMMARY CARD */}
-                    <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px' }}>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>CUSTOMER TRACKING ID</span>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#38bdf8' }}>{selectedCust.customer_number}</h4>
-                        <span style={{ fontSize: '0.75rem', color: '#ffffff', fontWeight: '800' }}>{selectedCust.name}</span>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>BUDGET RANGE</span>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#4ade80' }}>{selectedCust.budget}</h4>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>PREFERRED AREA</span>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#ffffff' }}>{selectedCust.preferredArea}</h4>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>REQUIRED CONFIG</span>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#fbbf24' }}>{selectedCust.configuration}</h4>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>INTENT SCORE</span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                          <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '2px 8px', borderRadius: '4px', fontWeight: '900', fontSize: '0.75rem' }}>🔥 {selectedCust.priority} ({selectedCust.score}/100)</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* AUTOMATIC MATCH RANKING TABLE */}
-                  <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>🎯 RANKED PROPERTY MATCHES FOR {selectedCust.name.toUpperCase()}</h3>
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Evaluated against 5 factors: Location (25%), Budget (25%), BHK (20%), Type (15%), Facing (15%).</p>
-                      </div>
-                      <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '800' }}>
-                        {properties.length} Available Properties Analyzed
-                      </span>
-                    </div>
-
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                      <thead>
-                        <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
-                          <th style={{ padding: '12px', textAlign: 'center' }}>Select</th>
-                          <th style={{ padding: '12px' }}>Property Code & Title</th>
-                          <th style={{ padding: '12px' }}>Locality & Project</th>
-                          <th style={{ padding: '12px' }}>BHK & Area</th>
-                          <th style={{ padding: '12px' }}>Final Price</th>
-                          <th style={{ padding: '12px', textAlign: 'center' }}>Match Score</th>
-                          <th style={{ padding: '12px' }}>5-Factor Match Breakdown</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {properties
-                          .map(p => {
-                            const res = calculatePropertyMatchScore(selectedCust, p);
-                            return { ...p, matchTotal: res.total, breakdown: res.breakdown };
-                          })
-                          .sort((a, b) => b.matchTotal - a.matchTotal)
-                          .map((p, idx) => {
-                            const pct = p.matchTotal;
-                            return (
-                              <tr key={p.id} style={{ borderBottom: '1px solid #334155' }}>
-                                <td style={{ padding: '12px', textAlign: 'center' }}>
-                                  <input type="checkbox" defaultChecked={idx < 2} style={{ width: '16px', height: '16px', cursor: 'pointer' }} />
-                                </td>
-                                <td style={{ padding: '12px' }}>
-                                  <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800', fontSize: '0.75rem' }}>{p.property_code}</span>
-                                  <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#ffffff', marginTop: '2px' }}>{p.title}</h4>
-                                </td>
-                                <td style={{ padding: '12px' }}>
-                                  <strong style={{ color: '#ffffff' }}>{p.locality}</strong>
-                                  <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{p.developer}</span>
-                                </td>
-                                <td style={{ padding: '12px' }}>
-                                  <span style={{ color: '#fbbf24', fontWeight: '800' }}>{p.configuration}</span>
-                                  <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{p.carpet_area}</span>
-                                </td>
-                                <td style={{ padding: '12px', color: '#4ade80', fontWeight: '900', fontSize: '0.95rem' }}>
-                                  {p.final_price}
-                                </td>
-                                <td style={{ padding: '12px', textAlign: 'center' }}>
-                                  <span style={{ background: pct >= 85 ? 'rgba(34, 197, 94, 0.2)' : pct >= 70 ? 'rgba(234, 179, 8, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: pct >= 85 ? '#4ade80' : pct >= 70 ? '#fbbf24' : '#ef4444', padding: '4px 10px', borderRadius: '20px', fontWeight: '900', fontSize: '0.8rem' }}>
-                                    {pct >= 85 ? '🔥' : pct >= 70 ? '⚡' : '❄️'} {pct}% MATCH
-                                  </span>
-                                </td>
-                                <td style={{ padding: '12px' }}>
-                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', fontSize: '0.68rem' }}>
-                                    <span style={{ background: '#0f172a', border: '1px solid #334155', padding: '2px 6px', borderRadius: '4px', color: p.breakdown.loc >= 20 ? '#4ade80' : '#ef4444' }}>Loc: {p.breakdown.loc}/25</span>
-                                    <span style={{ background: '#0f172a', border: '1px solid #334155', padding: '2px 6px', borderRadius: '4px', color: p.breakdown.bud >= 20 ? '#4ade80' : p.breakdown.bud >= 15 ? '#fbbf24' : '#ef4444' }}>Bud: {p.breakdown.bud}/25</span>
-                                    <span style={{ background: '#0f172a', border: '1px solid #334155', padding: '2px 6px', borderRadius: '4px', color: p.breakdown.bhk >= 20 ? '#fbbf24' : '#ef4444' }}>BHK: {p.breakdown.bhk}/25</span>
-                                    <span style={{ background: '#0f172a', border: '1px solid #334155', padding: '2px 6px', borderRadius: '4px', color: p.breakdown.type >= 10 ? '#38bdf8' : '#ef4444' }}>Type: {p.breakdown.type}/15</span>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                      </tbody>
-                    </table>
-
-                    {/* DISPATCH ACTION TOOLBAR */}
-                    <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                      <div>
-                        <span style={{ fontSize: '0.75rem', color: '#ffffff', fontWeight: '800' }}>2 Matched Properties Selected for {selectedCust.name}</span>
-                        <p style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Send complete property brochure, pricing, floor plan, and location link directly to customer.</p>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button onClick={() => alert(`📲 Sent WhatsApp Property Recommendations to ${selectedCust.name} (${selectedCust.mobile})`)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Share2 size={14} /> Send via WhatsApp
-                        </button>
-                        <button onClick={() => alert(`📧 Sent Email Portfolio to ${selectedCust.name} (${selectedCust.email})`)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <FileText size={14} /> Send via Email
-                        </button>
-                        <button onClick={() => alert(`🔗 Generated Public Customer Share URL: https://swaramayi-crm.com/p/REC-2026-90412`)} style={{ background: '#1e293b', color: '#38bdf8', border: '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}>
-                          🔗 Copy Public Share Link
-                        </button>
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* 14-STAGE COMPLETE WORKFLOW CONVERSION FUNNEL BAR */}
-                  <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>📈 Complete 14-Stage Customer Match & Conversion Workflow Funnel</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '8px' }}>
-                      {[
-                        { stage: '1. CUSTOMER', count: 184, color: '#38bdf8' },
-                        { stage: '2. REQUIREMENT', count: 172, color: '#38bdf8' },
-                        { stage: '3. AUTO SEARCH', count: 160, color: '#38bdf8' },
-                        { stage: '4. MATCH SCORE', count: 145, color: '#38bdf8' },
-                        { stage: '5. SP REVIEWS', count: 138, color: '#38bdf8' },
-                        { stage: '6. SP SELECTS', count: 130, color: '#38bdf8' },
-                        { stage: '7. SENT TO CUS', count: 115, color: '#fbbf24' },
-                        { stage: '8. CUS VIEWS', count: 98, color: '#fbbf24' },
-                        { stage: '9. CUS RESPONSE', count: 82, color: '#fbbf24' },
-                        { stage: '10. FOLLOW-UP', count: 65, color: '#fbbf24' },
-                        { stage: '11. SITE VISIT', count: 48, color: '#4ade80' },
-                        { stage: '12. NEGOTIATION', count: 28, color: '#4ade80' },
-                        { stage: '13. BOOKING', count: 18, color: '#4ade80' },
-                        { stage: '14. BROKERAGE', count: 18, color: '#22c55e' }
-                      ].map((s, idx) => (
-                        <div key={idx} style={{ background: '#0f172a', border: '1px solid #334155', padding: '10px 6px', borderRadius: '8px', textAlign: 'center' }}>
-                          <span style={{ fontSize: '0.62rem', color: '#94a3b8', fontWeight: '800' }}>{s.stage}</span>
-                          <h4 style={{ fontSize: '1.15rem', fontWeight: '900', color: s.color, marginTop: '2px' }}>{s.count}</h4>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                </div>
-              )}
 
               {/* SUB-TAB 1: CUSTOMER MASTER VAULT */}
               {activeCustomerSubTab === 'customer_master_vault' && (
@@ -2583,12 +2391,59 @@ export default function App() {
                     </div>
                   </div>
 
+                  {/* PERMANENT CUSTOMER 360° TRANSACTION IDENTITY PANEL (SECTION 21) */}
+                  <div style={{ background: '#1e293b', border: '1px solid #0284c7', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '10px' }}>
+                      <div>
+                        <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          🆔 PERMANENT CUSTOMER JOURNEY TRANSACTION IDENTIFIERS CHAIN
+                        </h4>
+                        <p style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                          Every business action receives an immutable, database-backed Transaction ID linked to {selectedCust.name} ({selectedCust.customer_number}).
+                        </p>
+                      </div>
+                      <span style={{ background: '#0284c7', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+                        CHAIN INTEGRITY: VERIFIED (SHA-256)
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                      {[
+                        { label: '1. CUSTOMER MASTER ID', id: selectedCust.customer_number || 'SRM-CUS-2026-000184', status: 'PERMANENT', color: '#38bdf8' },
+                        { label: '2. LEAD INTAKE ID', id: 'SRM-LEAD-2026-000184', status: 'VERIFIED', color: '#38bdf8' },
+                        { label: '3. REQUIREMENT ID', id: 'SRM-REQ-2026-000094', status: 'SAVED', color: '#38bdf8' },
+                        { label: '4. MATCHING REQUEST ID', id: 'SRM-MAT-2026-000421', status: 'MATCHED', color: '#38bdf8' },
+                        { label: '5. PROPERTY MASTER ID', id: 'SRM-PROP-2026-000231', status: 'SHORTLISTED', color: '#38bdf8' },
+                        { label: '6. COST SHEET ID', id: 'SRM-CS-2026-000145', status: 'CS-V1 ACTIVE', color: '#fbbf24' },
+                        { label: '7. COST SHEET SHARE ID', id: 'SRM-CSS-2026-000055', status: 'DELIVERED', color: '#fbbf24' },
+                        { label: '8. VISIT SCHEDULE ID', id: 'SRM-VS-2026-000087', status: 'CONFIRMED', color: '#4ade80' },
+                        { label: '9. OTP VERIFICATION ID', id: 'SRM-VOTP-2026-000032', status: '849201 VERIFIED', color: '#4ade80' },
+                        { label: '10. VISIT CHECK-IN ID', id: 'SRM-VIN-2026-000044', status: 'CHECKED_IN', color: '#4ade80' },
+                        { label: '11. VISIT DONE ID', id: 'SRM-VD-2026-000052', status: 'COMPLETED', color: '#4ade80' },
+                        { label: '12. VISIT FEEDBACK ID', id: 'SRM-VFB-2026-000028', status: '5-STAR HIGH', color: '#4ade80' },
+                        { label: '13. AGREEMENT ID', id: 'SRM-AGR-2026-000009', status: 'DRAFT SIGNED', color: '#fbbf24' },
+                        { label: '14. BOOKING ID', id: 'SRM-BKG-2026-000012', status: 'CONFIRMED', color: '#22c55e' },
+                        { label: '15. PAYMENT ID', id: 'SRM-PAY-2026-000018', status: 'RECEIVED', color: '#22c55e' },
+                        { label: '16. INVOICE ID', id: 'SRM-INV-2026-000031', status: 'PAID', color: '#22c55e' },
+                        { label: '17. BROKERAGE ID', id: 'SRM-BRO-2026-000011', status: 'PROCESSED', color: '#22c55e' }
+                      ].map((item, idx) => (
+                        <div key={idx} onClick={() => alert(`🔍 Master Transaction Detail Log for ${item.id}:\n\nType: ${item.label}\nCustomer: ${selectedCust.name} (${selectedCust.customer_number})\nStatus: ${item.status}\nCreated: 17 Aug 2026\nAudit Hash: SHA256-VERIFIED-SRM-90412\nTraceability: PERMANENTLY LINKED TO MASTER ID`)} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '8px', padding: '10px', cursor: 'pointer' }}>
+                          <span style={{ fontSize: '0.62rem', color: '#94a3b8', fontWeight: '800', display: 'block' }}>{item.label}</span>
+                          <h5 style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{item.id}</h5>
+                          <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: item.color, padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', display: 'inline-block', marginTop: '4px' }}>
+                            ● {item.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* 360° DATA STREAMS GRID */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
                     
                     {/* CARD 1: PRIMARY PROFILE & CONTACT INFORMATION */}
                     <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#38bdf8', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>👤 Primary Customer Details</h4>
+                      <h4 style={{ fontSize: '1rem', fontWeight: '800', color: '#38bdf8', borderBottom: '1px solid #334155', paddingBottom: '8px' }}>👤 Primary Customer Details & Executive Assignment</h4>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.82rem' }}>
                         <div><span style={{ color: '#94a3b8' }}>Mobile Phone:</span> <strong style={{ color: '#ffffff', display: 'block' }}>{maskPhone(selectedCust.mobile)}</strong></div>
                         <div><span style={{ color: '#94a3b8' }}>Alternate Phone:</span> <strong style={{ color: '#ffffff', display: 'block' }}>+91 98491 *****</strong></div>
@@ -2596,6 +2451,29 @@ export default function App() {
                         <div><span style={{ color: '#94a3b8' }}>City & Location:</span> <strong style={{ color: '#ffffff', display: 'block' }}>{selectedCust.preferredArea}, Hyderabad</strong></div>
                         <div><span style={{ color: '#94a3b8' }}>Budget Range:</span> <strong style={{ color: '#4ade80', display: 'block' }}>{selectedCust.budget}</strong></div>
                         <div><span style={{ color: '#94a3b8' }}>Configuration:</span> <strong style={{ color: '#fbbf24', display: 'block' }}>{selectedCust.configuration}</strong></div>
+                      </div>
+
+                      {/* CLIENT ASSIGNMENT WIDGET */}
+                      <div style={{ background: '#0f172a', border: '1px solid #0284c7', borderRadius: '8px', padding: '10px', marginTop: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '900' }}>👤 ASSIGNED SALES EXECUTIVE / RELATIONSHIP MANAGER</span>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <select 
+                            defaultValue={selectedCust.assigned_employee_id || 'Priya Nair (Sales Exec)'} 
+                            style={{ flex: 1, background: '#1e293b', border: '1px solid #334155', color: '#38bdf8', fontWeight: '900', padding: '6px 10px', borderRadius: '6px', fontSize: '0.8rem' }}
+                          >
+                            <option value="Priya Nair (Sales Exec)">Priya Nair — Senior Executive</option>
+                            <option value="Amit Patel (Lead Manager)">Amit Patel — Lead Manager</option>
+                            <option value="Rahul Sharma (Property Specialist)">Rahul Sharma — Property Specialist</option>
+                            <option value="Sneha Reddy (CRM Exec)">Sneha Reddy — CRM Executive</option>
+                            <option value="Vikram Varma (Branch Director)">Vikram Varma — Branch Director</option>
+                          </select>
+                          <button 
+                            onClick={() => alert(`👤 Successfully updated executive assignment for ${selectedCust.name}!`)} 
+                            style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer' }}
+                          >
+                            Reassign
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -2743,7 +2621,822 @@ export default function App() {
             </div>
           )}
 
-          {/* CATEGORY 5: BILLING MANAGEMENT (RESTORED FULL GST INVOICE MODAL & TABLE) */}
+          {/* CATEGORY: MATCHING MANAGEMENT */}
+          {activeTab === 'matching_management' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff' }}>SMART AI PROPERTY MATCHING & INVENTORY ENGINE</h2>
+                    <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>AI MATCHER ACTIVE</span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
+                    5-Factor Multivariate Matching (Location 25%, Budget 25%, BHK 20%, Type 15%, Facing 15%) • Inventory Matrix • Portfolio Dispatcher
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button onClick={() => alert(`⚡ Recalculated live AI property match ranker for ${selectedCust.name}!`)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Zap size={15} /> ⚡ Run Real-Time AI Matcher
+                  </button>
+                </div>
+              </div>
+
+              {/* 3 SUB-TABS NAVIGATION FOR MATCHING MANAGEMENT */}
+              <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
+                <button onClick={() => setActiveMatchingSubTab('ai_matching_engine')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeMatchingSubTab === 'ai_matching_engine' ? '#0284c7' : '#1e293b', color: activeMatchingSubTab === 'ai_matching_engine' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  🤖 Smart AI Property Matcher
+                </button>
+                <button onClick={() => setActiveMatchingSubTab('req_inventory_matrix')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeMatchingSubTab === 'req_inventory_matrix' ? '#0284c7' : '#1e293b', color: activeMatchingSubTab === 'req_inventory_matrix' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  📋 Requirement vs Inventory Matrix
+                </button>
+                <button onClick={() => setActiveMatchingSubTab('portfolio_dispatcher')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeMatchingSubTab === 'portfolio_dispatcher' ? '#0284c7' : '#1e293b', color: activeMatchingSubTab === 'portfolio_dispatcher' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  📤 Match Portfolio Dispatcher
+                </button>
+              </div>
+
+              {/* SUB-TAB 1: AI MATCHING ENGINE (MATCHING ID CENTERED WORKSPACE) */}
+              {activeMatchingSubTab === 'ai_matching_engine' && (() => {
+                const activeMatchingReq = matchingRequestsQueue.find(r => 
+                  r.requestId.toLowerCase() === selectedMatchingId.toLowerCase() || 
+                  r.customerNumber.toLowerCase() === selectedMatchingId.toLowerCase()
+                ) || matchingRequestsQueue[0];
+
+                return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  
+                  {/* TOP MATCHING DASHBOARD KPI CARDS (SECTION 19) */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '10px' }}>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '800' }}>MATCHING REQUESTS</span>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{matchingRequestsQueue.length + 15}</h4>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '800' }}>PENDING</span>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>4</h4>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '800' }}>IN PROGRESS</span>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>2</h4>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '800' }}>MATCHED</span>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>12</h4>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '800' }}>SELECTED</span>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>6</h4>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '800' }}>SHARED WITH CUS</span>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>5</h4>
+                    </div>
+                    <div style={{ background: '#1e293b', border: '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: '800' }}>SITE VISIT REQ</span>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#22c55e', marginTop: '2px' }}>2</h4>
+                    </div>
+                  </div>
+
+                  {/* INBOUND MATCHING REQUESTS SNAPSHOT VAULT (SECTION 20) */}
+                  <div style={{ background: '#1e293b', border: '1px solid #22c55e', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>📥 INBOUND MATCHING REQUESTS SNAPSHOT VAULT ({matchingRequestsQueue.length})</h3>
+                        <span style={{ background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900' }}>QUALIFIED HANDOFF ACTIVE</span>
+                      </div>
+                      <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Transferred automatically from Lead Management Intake Wizard</span>
+                    </div>
+
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                          <th style={{ padding: '10px' }}>Matching ID & Date</th>
+                          <th style={{ padding: '10px' }}>Customer & Contact</th>
+                          <th style={{ padding: '10px' }}>Customer ID</th>
+                          <th style={{ padding: '10px' }}>Requirement ID</th>
+                          <th style={{ padding: '10px' }}>Structured Requirement</th>
+                          <th style={{ padding: '10px' }}>Budget</th>
+                          <th style={{ padding: '10px' }}>Status</th>
+                          <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {matchingRequestsQueue.map((req) => (
+                          <tr key={req.requestId} style={{ borderBottom: '1px solid #334155', background: selectedMatchingId === req.requestId ? 'rgba(2, 132, 199, 0.15)' : 'transparent' }}>
+                            <td style={{ padding: '10px' }}>
+                              <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{req.requestId}</span>
+                              <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{req.date}</span>
+                            </td>
+                            <td style={{ padding: '10px' }}>
+                              <strong style={{ color: '#ffffff' }}>{req.customerName}</strong>
+                              <br /><span style={{ fontSize: '0.72rem', color: '#4ade80' }}>{req.mobile}</span>
+                            </td>
+                            <td style={{ padding: '10px', fontFamily: 'monospace', color: '#38bdf8' }}>{req.customerNumber}</td>
+                            <td style={{ padding: '10px', fontFamily: 'monospace', color: '#fbbf24' }}>{req.requirementId || 'SRM-REQ-2026-000094'}</td>
+                            <td style={{ padding: '10px' }}>
+                              <span style={{ color: '#fbbf24', fontWeight: '800' }}>{req.configuration} {req.propertyType}</span>
+                              <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{req.preferredArea} (Radius: {req.radiusKm || 10} KM)</span>
+                            </td>
+                            <td style={{ padding: '10px', color: '#4ade80', fontWeight: '900' }}>
+                              {req.budget}
+                            </td>
+                            <td style={{ padding: '10px' }}>
+                              <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '2px 8px', borderRadius: '12px', fontWeight: '900', fontSize: '0.75rem' }}>
+                                🟢 {req.status}
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                <button 
+                                  onClick={() => {
+                                    setSelectedMatchingId(req.requestId);
+                                    const cust = customers.find(c => c.customer_number === req.customerNumber || c.name === req.customerName);
+                                    if (cust) setSelectedCust(cust);
+                                  }} 
+                                  style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer' }}
+                                >
+                                  📂 Open Workspace
+                                </button>
+                                <button 
+                                  onClick={() => {
+                                    setSelectedMatchingId(req.requestId);
+                                    alert(`⚡ Running automated inventory matcher for ${req.customerName} (${req.requestId})`);
+                                  }} 
+                                  style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer' }}
+                                >
+                                  Run Matcher
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* PRIMARY SEARCH MATCHING REQUEST BAR (SECTION 1 & 31) */}
+                  <div style={{ background: '#1e293b', border: '1px solid #0284c7', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <Zap size={22} color="#38bdf8" />
+                        <div>
+                          <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#ffffff' }}>SEARCH MATCHING REQUEST</h3>
+                          <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>
+                            Primary Operational ID: Enter Matching Request ID (e.g. SRM-MAT-2026-000421 or MATREQ-2026-000002).
+                          </p>
+                        </div>
+                      </div>
+
+                      <select 
+                        value={selectedMatchingId} 
+                        onChange={(e) => {
+                          setSelectedMatchingId(e.target.value);
+                          const req = matchingRequestsQueue.find(r => r.requestId === e.target.value);
+                          if (req) {
+                            const cust = customers.find(c => c.customer_number === req.customerNumber || c.name === req.customerName);
+                            if (cust) setSelectedCust(cust);
+                          }
+                        }} 
+                        style={{ background: '#0f172a', color: '#38bdf8', border: '1px solid #334155', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: '800' }}
+                      >
+                        {matchingRequestsQueue.map((req) => (
+                          <option key={req.requestId} value={req.requestId}>
+                            {req.requestId} — {req.customerName} ({req.configuration}, {req.preferredArea})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* SEARCH INPUT BAR */}
+                    <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px' }}>
+                      <label style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', display: 'block', marginBottom: '4px' }}>🔍 Search Matching Request (Primary ID: SRM-MAT-2026-000421):</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#1e293b', border: '1px solid #0284c7', borderRadius: '6px', padding: '6px 10px' }}>
+                        <Search size={15} color="#38bdf8" />
+                        <input 
+                          type="text" 
+                          value={matchingSearchQuery} 
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setMatchingSearchQuery(val);
+                            if (val.trim()) {
+                              const q = val.trim().toLowerCase();
+                              const match = matchingRequestsQueue.find(r => 
+                                r.requestId.toLowerCase().includes(q) ||
+                                r.customerNumber.toLowerCase().includes(q) ||
+                                r.customerName.toLowerCase().includes(q) ||
+                                r.mobile.includes(q)
+                              );
+                              if (match) {
+                                setSelectedMatchingId(match.requestId);
+                                const cust = customers.find(c => c.customer_number === match.customerNumber || c.name === match.customerName);
+                                if (cust) setSelectedCust(cust);
+                              }
+                            }
+                          }} 
+                          placeholder="Enter Matching ID (e.g. SRM-MAT-2026-000421), Customer ID, or Phone..." 
+                          style={{ background: 'transparent', border: 'none', color: '#ffffff', outline: 'none', fontSize: '0.85rem', width: '100%', fontWeight: '800' }} 
+                        />
+                      </div>
+                    </div>
+
+                    {/* MATCHING REQUEST HEADER (SECTION 2 & 21) */}
+                    <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', fontSize: '0.82rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>PRIMARY MATCHING ID</span>
+                        <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#38bdf8', fontFamily: 'monospace' }}>{activeMatchingReq.requestId}</h4>
+                        <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>● MATCHING WORKSPACE ACTIVE</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>CUSTOMER IDENTITY</span>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#ffffff' }}>{activeMatchingReq.customerName}</h4>
+                        <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>{activeMatchingReq.customerNumber} ({activeMatchingReq.mobile})</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>LINKED REQ & LEAD IDs</span>
+                        <h4 style={{ fontSize: '0.82rem', fontWeight: '800', color: '#fbbf24', fontFamily: 'monospace' }}>{activeMatchingReq.requirementId || 'SRM-REQ-2026-000094'}</h4>
+                        <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'monospace' }}>{activeMatchingReq.leadId || 'SRM-LEAD-2026-000184'}</span>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>CREATED BY & STATUS</span>
+                        <h4 style={{ fontSize: '0.82rem', fontWeight: '800', color: '#ffffff' }}>{activeMatchingReq.assignedExecutive || 'Priya Nair (Sales Exec)'}</h4>
+                        <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>{activeMatchingReq.status}</span>
+                      </div>
+                    </div>
+
+                    {/* LOCKED CUSTOMER REQUIREMENT SNAPSHOT (SECTION 3 & 24) */}
+                    <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: '900' }}>🔒 LOCKED CUSTOMER REQUIREMENT SNAPSHOT FOR {activeMatchingReq.requestId}</span>
+                        <span style={{ background: '#334155', color: '#fbbf24', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800' }}>REQUIREMENT VERSION: {activeMatchingReq.version || 'SNAPSHOT V1'}</span>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '10px', fontSize: '0.8rem' }}>
+                        <div><span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Property Type:</span> <strong style={{ color: '#ffffff', display: 'block' }}>{activeMatchingReq.propertyType || 'Apartment / Flat'}</strong></div>
+                        <div><span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>BHK Config:</span> <strong style={{ color: '#fbbf24', display: 'block' }}>{activeMatchingReq.configuration || '3 BHK'}</strong></div>
+                        <div><span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Budget Range:</span> <strong style={{ color: '#4ade80', display: 'block' }}>{activeMatchingReq.budget}</strong></div>
+                        <div><span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Preferred Location:</span> <strong style={{ color: '#ffffff', display: 'block' }}>{activeMatchingReq.preferredArea} ({activeMatchingReq.radiusKm || 10} KM)</strong></div>
+                        <div><span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Possession & Facing:</span> <strong style={{ color: '#ffffff', display: 'block' }}>{activeMatchingReq.possessionStatus || 'Ready to Move'} | {activeMatchingReq.facing || 'East Facing'}</strong></div>
+                      </div>
+
+                      {/* RUN MATCHER BUTTON (SECTION 4) */}
+                      <div style={{ borderTop: '1px solid #334155', paddingTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                        <button onClick={() => alert(`⚡ Executed real-time property matching engine for ${activeMatchingReq.requestId} snapshot!`)} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Zap size={15} /> ⚡ RUN / RE-RUN MATCHER FOR {activeMatchingReq.requestId}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MATCHED PROPERTIES RESULTS & TABLE (SECTION 5, 7, 8, 9) */}
+                  <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>🎯 MATCHED PROPERTIES FOR {activeMatchingReq.requestId} ({activeMatchingReq.customerName})</h3>
+                        <p style={{ fontSize: '0.78rem', color: '#94a3b8' }}>18 Properties Found • 6 Excellent Matches • 8 Good Matches • 4 Possible Matches</p>
+                      </div>
+                      <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '900' }}>
+                        {selectedPropertyIds.length} PROPERTIES SELECTED
+                      </span>
+                    </div>
+
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                          <th style={{ padding: '12px', textAlign: 'center' }}>Select</th>
+                          <th style={{ padding: '12px' }}>Property Code & Title</th>
+                          <th style={{ padding: '12px' }}>Locality & Project</th>
+                          <th style={{ padding: '12px' }}>BHK & Area</th>
+                          <th style={{ padding: '12px' }}>Final Price</th>
+                          <th style={{ padding: '12px', textAlign: 'center' }}>Match Score</th>
+                          <th style={{ padding: '12px' }}>Match Explanation (Why Matched)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {properties
+                          .map(p => {
+                            const currentMatchingCust = {
+                              ...selectedCust,
+                              name: activeMatchingReq.customerName,
+                              customer_number: activeMatchingReq.customerNumber,
+                              budget: activeMatchingReq.budget,
+                              preferredArea: activeMatchingReq.preferredArea,
+                              configuration: activeMatchingReq.configuration
+                            };
+                            const res = calculatePropertyMatchScore(currentMatchingCust, p);
+                            return { ...p, matchTotal: res.total, breakdown: res.breakdown };
+                          })
+                          .sort((a, b) => b.matchTotal - a.matchTotal)
+                          .map((p) => {
+                            const pct = p.matchTotal;
+                            const isChecked = selectedPropertyIds.includes(p.property_code);
+                            return (
+                              <tr key={p.id} style={{ borderBottom: '1px solid #334155', background: isChecked ? 'rgba(2, 132, 199, 0.1)' : 'transparent' }}>
+                                <td style={{ padding: '12px', textAlign: 'center' }}>
+                                  <input 
+                                    type="checkbox" 
+                                    checked={isChecked} 
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedPropertyIds([...selectedPropertyIds, p.property_code]);
+                                      } else {
+                                        setSelectedPropertyIds(selectedPropertyIds.filter(id => id !== p.property_code));
+                                      }
+                                    }} 
+                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }} 
+                                  />
+                                </td>
+                                <td style={{ padding: '12px' }}>
+                                  <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', fontSize: '0.78rem' }}>{p.property_code}</span>
+                                  <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#ffffff', marginTop: '2px' }}>{p.title}</h4>
+                                </td>
+                                <td style={{ padding: '12px' }}>
+                                  <strong style={{ color: '#ffffff' }}>{p.locality}</strong>
+                                  <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{p.developer}</span>
+                                </td>
+                                <td style={{ padding: '12px' }}>
+                                  <span style={{ color: '#fbbf24', fontWeight: '800' }}>{p.configuration}</span>
+                                  <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{p.carpet_area}</span>
+                                </td>
+                                <td style={{ padding: '12px', color: '#4ade80', fontWeight: '900', fontSize: '0.95rem' }}>
+                                  {p.final_price}
+                                </td>
+                                <td style={{ padding: '12px', textAlign: 'center' }}>
+                                  <span style={{ background: pct >= 85 ? 'rgba(34, 197, 94, 0.2)' : pct >= 70 ? 'rgba(234, 179, 8, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: pct >= 85 ? '#4ade80' : pct >= 70 ? '#fbbf24' : '#ef4444', padding: '4px 10px', borderRadius: '20px', fontWeight: '900', fontSize: '0.8rem' }}>
+                                    {pct >= 85 ? '🔥' : pct >= 70 ? '⚡' : '❄️'} {pct}% MATCH
+                                  </span>
+                                </td>
+                                <td style={{ padding: '12px' }}>
+                                  {/* MATCH EXPLANATION (SECTION 9) */}
+                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', fontSize: '0.68rem' }}>
+                                    <span style={{ background: '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ Preferred Location</span>
+                                    <span style={{ background: '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ Within 10 KM Radius</span>
+                                    <span style={{ background: '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ Within Budget</span>
+                                    <span style={{ background: '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ 3 BHK Satisfied</span>
+                                    <span style={{ background: '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ Ready-to-Move</span>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* FIXED SELECTED PROPERTY SUMMARY PANEL & SELECTION ID GENERATOR (SECTION 6, 10, 11, 12, 13, 14, 15, 16) */}
+                  <div style={{ background: '#0f172a', border: '2px solid #0284c7', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', position: 'sticky', bottom: '10px', zIndex: 100, boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', textTransform: 'uppercase' }}>
+                          📌 PROPERTY SELECTION WORKSPACE & DISPATCHER
+                        </span>
+                        <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#ffffff', marginTop: '2px' }}>
+                          {selectedPropertyIds.length} PROPERTIES SELECTED FOR {activeMatchingReq.customerName.toUpperCase()} ({activeMatchingReq.requestId})
+                        </h3>
+                      </div>
+
+                      {activeSelectionRecord && (
+                        <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 12px', borderRadius: '20px', fontWeight: '900', fontSize: '0.78rem', fontFamily: 'monospace' }}>
+                          ACTIVE SELECTION ID: {activeSelectionRecord.selectionId}
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      {selectedPropertyIds.map((code, idx) => (
+                        <div key={idx} style={{ background: '#1e293b', border: '1px solid #334155', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem' }}>
+                          <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{code}</span>
+                          <span style={{ color: '#ffffff', fontWeight: '700' }}>{properties.find(p => p.property_code === code)?.title || code}</span>
+                          <X size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => setSelectedPropertyIds(selectedPropertyIds.filter(id => id !== code))} />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* SELECTION ACTION BUTTONS (SECTION 11, 12, 14, 15, 16, 26) */}
+                    <div style={{ borderTop: '1px solid #334155', paddingTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                      <button 
+                        onClick={() => {
+                          const newSel = {
+                            selectionId: `SRM-SEL-2026-0000${Math.floor(Math.random() * 90 + 10)}`,
+                            matchingId: activeMatchingReq.requestId,
+                            customerId: activeMatchingReq.customerNumber,
+                            propertyIds: selectedPropertyIds,
+                            date: '18 Aug 2026 01:25 PM',
+                            status: 'SELECTION_CONFIRMED'
+                          };
+                          setActiveSelectionRecord(newSel);
+                          alert(`📌 Property Selection Confirmed!\n\nGenerated PROPERTY SELECTION ID: ${newSel.selectionId}\nLinked Matching ID: ${activeMatchingReq.requestId}\nSelected Properties Count: ${selectedPropertyIds.length}`);
+                        }} 
+                        style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
+                      >
+                        📌 CONFIRM SELECTION & GENERATE SELECTION ID (SRM-SEL-2026)
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          setActiveCustomerSubTab('cost_sheet_engine');
+                          setActiveTab('customer_management');
+                          alert(`📄 Generated Individual Cost Sheets for ${selectedPropertyIds.length} Selected Properties:\n\n1. Property A -> SRM-CS-2026-000145\n2. Property B -> SRM-CS-2026-000146\n3. Property C -> SRM-CS-2026-000147`);
+                        }} 
+                        style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
+                      >
+                        📄 CREATE INDIVIDUAL COST SHEETS (SRM-CS-2026)
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          alert(`📲 Selected Properties Shared with Customer ${activeMatchingReq.customerName}!\n\nGenerated PROPERTY SHARE ID: SRM-PSH-2026-000032\nChannel: WhatsApp & Email\nStatus: SENT & DELIVERED`);
+                        }} 
+                        style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
+                      >
+                        📲 SHARE SELECTED PROPERTIES (SRM-PSH-2026)
+                      </button>
+
+                      <button 
+                        onClick={() => {
+                          setActiveTab('visit_management');
+                          alert(`🚘 Handed over Selected Properties to Visit Management!\n\nGenerated VISIT SCHEDULE ID: SRM-VS-2026-000087\nCustomer: ${activeMatchingReq.customerName}\nStatus: SCHEDULED`);
+                        }} 
+                        style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
+                      >
+                        🚘 HANDOVER TO VISIT MANAGEMENT (SRM-VS-2026)
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+                );
+              })()}
+
+              {/* SUB-TAB 2: REQUIREMENT VS INVENTORY MATRIX */}
+              {activeMatchingSubTab === 'req_inventory_matrix' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>📋 Customer Requirements vs Stock Inventory Availability Matrix</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                    {['Kondapur', 'Gachibowli', 'Financial District', 'Hitec City'].map((loc, i) => (
+                      <div key={i} style={{ background: '#0f172a', border: '1px solid #334155', padding: '16px', borderRadius: '12px' }}>
+                        <h4 style={{ color: '#38bdf8', fontWeight: '800' }}>📍 {loc} Sector</h4>
+                        <p style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '4px' }}>Matching Inventory: 12 Units Available</p>
+                        <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800', marginTop: '8px', display: 'block' }}>🟢 95% High Demand Alignment</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 3: PORTFOLIO DISPATCHER */}
+              {activeMatchingSubTab === 'portfolio_dispatcher' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>📤 Multi-Channel Property Recommendation Portfolio Dispatcher</h3>
+                  <div style={{ display: 'flex', gap: '12px' }}>
+                    <button onClick={() => alert(`📲 WhatsApp Portfolio dispatched to ${selectedCust.name} (${selectedCust.mobile})`)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}>
+                      📲 Dispatch via WhatsApp
+                    </button>
+                    <button onClick={() => alert(`📧 Email Portfolio dispatched to ${selectedCust.email}`)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}>
+                      📧 Dispatch via Email
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CATEGORY: COST SHEET SHARING MANAGEMENT */}
+          {activeTab === 'cost_sheet_share' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              
+              {/* SYSTEM HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: '#1e293b', border: '1px solid #0284c7', borderRadius: '16px', padding: '20px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Share2 size={24} color="#38bdf8" /> COST SHEET SHARING & CUSTOMER DELIVERY HUB
+                    </h2>
+                    <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+                      SRM-PSH / DISPATCHER ACTIVE
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
+                    Multi-Channel Cost Sheet Sharing • WhatsApp & Email Gateway • Open Counter Analytics • Customer Interest Handoff
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => setShowCreateShareModal(true)} 
+                    style={{ background: 'linear-gradient(135deg, #38bdf8 0%, #0284c7 100%)', color: '#0f172a', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(56, 189, 248, 0.3)' }}
+                  >
+                    <Plus size={16} color="#0f172a" /> + Create Share against ID
+                  </button>
+                  <button onClick={handleDeleteAllCurrentInside} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Trash2 size={15} color="#ffffff" /> 🗑️ Delete All Current Inside
+                  </button>
+                  <button onClick={() => alert('📲 Dispatched WhatsApp Cost Sheet Batch to selected active customers!')} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Share2 size={15} /> Batch WhatsApp Share
+                  </button>
+                  <button onClick={() => alert('📧 Dispatched Email PDF Attachments to selected customers!')} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Printer size={15} /> Batch Email Share
+                  </button>
+                </div>
+              </div>
+
+              {/* CREATE SHARE AGAINST TRANSACTION ID BAR */}
+              <div style={{ background: '#0f172a', border: '1px solid #0284c7', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Share2 size={20} color="#fbbf24" />
+                    <div>
+                      <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#ffffff' }}>⚡ QUICK CREATE COST SHEET SHARE AGAINST PARENT TRANSACTION ID</h4>
+                      <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>Select parent Cost Sheet ID, Selection ID, or Customer ID to generate a new Share ID (SRM-PSH-2026).</p>
+                    </div>
+                  </div>
+
+                  <button 
+                    onClick={() => setShowCreateShareModal(true)} 
+                    style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <Plus size={15} color="#0f172a" /> + Open ID Builder Modal
+                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', display: 'block', marginBottom: '4px' }}>🎯 Select Target Transaction / Cost Sheet ID:</label>
+                    <select 
+                      value={newShareForm.parentId} 
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        if (id.includes('CS-2026-000145')) {
+                          setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Rohan Deshmukh', customerNumber: 'SRM-CUS-2026-000184', mobile: '+91 98490 11223', propertyTitle: 'Aparna Zenon Premium 3BHK Residence', finalPrice: '₹84 Lakhs' });
+                        } else if (id.includes('CS-2026-000146')) {
+                          setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Avishek Das', customerNumber: 'SRM-CUS-2026-000187', mobile: '9432328947', propertyTitle: 'Madhyamgram Premium 3BHK Flat', finalPrice: '55 Lakhs' });
+                        } else if (id.includes('CS-2026-000147')) {
+                          setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Sumanth Varma', customerNumber: 'SRM-CUS-2026-000186', mobile: '+91 98490 88888', propertyTitle: 'My Home Tarkshya Luxury 3BHK', finalPrice: '₹1.54 Crores' });
+                        }
+                      }}
+                      style={{ width: '100%', background: '#1e293b', border: '1px solid #0284c7', color: '#ffffff', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    >
+                      <option value="SRM-CS-2026-000145">SRM-CS-2026-000145 — Rohan Deshmukh (Aparna Zenon 3BHK, ₹84 Lakhs)</option>
+                      <option value="SRM-CS-2026-000146">SRM-CS-2026-000146 — Avishek Das (Madhyamgram 3BHK, 55 Lakhs)</option>
+                      <option value="SRM-CS-2026-000147">SRM-CS-2026-000147 — Sumanth Varma (My Home Tarkshya 3BHK, ₹1.54 Crores)</option>
+                      <option value="SRM-SEL-2026-000078">SRM-SEL-2026-000078 — Selection Record (Rohan Deshmukh, 3 Properties)</option>
+                      <option value="MATREQ-2026-000002">MATREQ-2026-000002 — Avishek Das Matching Request</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📲 Delivery Channel Gateway:</label>
+                    <select value={newShareForm.channel} onChange={(e) => setNewShareForm({ ...newShareForm, channel: e.target.value })} style={{ width: '100%', background: '#1e293b', border: '1px solid #334155', color: '#22c55e', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="WhatsApp & Email Gateway">WhatsApp & Email Gateway</option>
+                      <option value="WhatsApp Gateway Only">WhatsApp Business API Only</option>
+                      <option value="Email PDF Attachment">Email PDF Attachment</option>
+                      <option value="SMS Token Link">SMS Secure Token Link</option>
+                    </select>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'flex-end' }}>
+                    <button 
+                      onClick={() => {
+                        const newShareId = `SRM-PSH-2026-0000${Math.floor(Math.random() * 90 + 10)}`;
+                        alert(`🚀 Generated Share ID ${newShareId} against ${newShareForm.parentId}!\n\nCustomer: ${newShareForm.customerName} (${newShareForm.mobile})\nProperty: ${newShareForm.propertyTitle}\nChannel: ${newShareForm.channel}\nAudit Trail: SHA256-LOGGED`);
+                      }} 
+                      style={{ width: '100%', background: '#22c55e', color: '#ffffff', border: 'none', padding: '9px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
+                    >
+                      🚀 Dispatch Share ID
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* TOP KPI CARDS STRIP */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px' }}>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '800' }}>TOTAL SHARED</span>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>148 Shares</h3>
+                </div>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '800' }}>WHATSAPP SENT</span>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#22c55e', marginTop: '2px' }}>94 Sent</h3>
+                </div>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '800' }}>EMAIL SENT</span>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0284c7', marginTop: '2px' }}>54 Sent</h3>
+                </div>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '800' }}>PORTAL OPENED</span>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>112 Views</h3>
+                </div>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '800' }}>PDF DOWNLOADS</span>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#a855f7', marginTop: '2px' }}>76 PDFs</h3>
+                </div>
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '14px', textAlign: 'center' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: '800' }}>CONVERTED TO VISIT</span>
+                  <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>38 Visits</h3>
+                </div>
+              </div>
+
+              {/* MASTER SHARED COST SHEETS AUDIT TABLE */}
+              <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>📋 Master Cost Sheet Share Vault ({costSheetShares.length} Active Shares)</h3>
+                  <span style={{ fontSize: '0.78rem', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.15)', padding: '4px 10px', borderRadius: '20px', fontWeight: '800' }}>
+                    IMMUTABLE AUDIT TRAIL LOGGED
+                  </span>
+                </div>
+
+                {costSheetShares.length === 0 ? (
+                  <div style={{ padding: '36px 20px', textAlign: 'center', background: '#0f172a', borderRadius: '12px', border: '1px dashed #ef4444' }}>
+                    <Trash2 size={32} color="#ef4444" style={{ margin: '0 auto 10px auto' }} />
+                    <h4 style={{ color: '#ffffff', fontWeight: '900', fontSize: '1.05rem' }}>📭 ALL COST SHEET SHARES DELETED — WORKSPACE CLEAN</h4>
+                    <p style={{ color: '#94a3b8', fontSize: '0.82rem', marginTop: '4px' }}>
+                      No active cost sheet share records found inside. Click "+ Create Share against ID" to dispatch your first cost sheet.
+                    </p>
+                  </div>
+                ) : (
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                        <th style={{ padding: '12px' }}>Share ID & Time</th>
+                        <th style={{ padding: '12px' }}>Customer Details</th>
+                        <th style={{ padding: '12px' }}>Property & Cost Sheet ID</th>
+                        <th style={{ padding: '12px' }}>Delivery Channel</th>
+                        <th style={{ padding: '12px', textAlign: 'center' }}>Engagement Analytics</th>
+                        <th style={{ padding: '12px' }}>Customer Interest Status</th>
+                        <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {costSheetShares.map((item, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{item.shareId}</span>
+                          <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{item.sentTime}</span>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <strong style={{ color: '#ffffff', fontSize: '0.88rem' }}>{item.customerName}</strong>
+                          <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{item.mobile}</span>
+                          <br /><span style={{ fontSize: '0.72rem', color: '#38bdf8' }}>{item.customerNumber}</span>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <strong style={{ color: '#ffffff' }}>{item.propertyTitle}</strong>
+                          <br /><span style={{ fontSize: '0.75rem', color: '#fbbf24', fontFamily: 'monospace' }}>{item.costSheetId} ({item.finalPrice})</span>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ background: '#0f172a', border: '1px solid #334155', color: '#22c55e', padding: '3px 8px', borderRadius: '4px', fontWeight: '800', fontSize: '0.75rem' }}>
+                            {item.channel}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'center' }}>
+                            <span style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '900' }}>
+                              👁️ {item.viewCount} Portal Views
+                            </span>
+                            <span style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#a855f7', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '900' }}>
+                              📥 {item.downloadCount} PDF Downloads
+                            </span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '3px 8px', borderRadius: '4px', fontWeight: '900', fontSize: '0.75rem' }}>
+                            {item.interest}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                            <button onClick={() => alert(`📲 Resent Cost Sheet ${item.costSheetId} via WhatsApp to ${item.customerName} (${item.mobile})`)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
+                              Resend WhatsApp
+                            </button>
+                            <button onClick={() => { setActiveTab('visit_management'); alert(`🚘 Handed over ${item.customerName} to Site Visit Management!`); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}>
+                              Handover to Visit
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+
+            </div>
+          )}
+
+          {/* CATEGORY: VISIT MANAGEMENT */}
+          {activeTab === 'visit_management' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff' }}>SITE VISIT SCHEDULING, OTP & GEOFENCE VERIFICATION SYSTEM</h2>
+                    <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>VISIT ENGINE ACTIVE</span>
+                  </div>
+                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', marginTop: '4px' }}>
+                    Conflict-Free Executive Scheduling • 6-Digit Mobile OTP Verification • GPS Geofence Radius Audit • 5-Star Customer Feedback
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button onClick={() => alert('🚘 Opening Schedule Site Visit Modal...')} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Plus size={15} /> + Schedule Site Visit
+                  </button>
+                </div>
+              </div>
+
+              {/* 4 SUB-TABS NAVIGATION FOR VISIT MANAGEMENT */}
+              <div style={{ display: 'flex', gap: '10px', borderBottom: '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
+                <button onClick={() => setActiveVisitSubTab('visit_scheduler')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_scheduler' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_scheduler' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  📅 Site Visit Scheduler
+                </button>
+                <button onClick={() => setActiveVisitSubTab('visit_otp_checkin')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_otp_checkin' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_otp_checkin' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  🔐 OTP Verification & Check-In
+                </button>
+                <button onClick={() => setActiveVisitSubTab('visit_feedback')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_feedback' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_feedback' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  ⭐ Structured 5-Star Feedback
+                </button>
+                <button onClick={() => setActiveVisitSubTab('visit_analytics')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_analytics' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_analytics' ? '#ffffff' : '#94a3b8', border: '1px solid #334155' }}>
+                  📊 Visit Conversion Analytics
+                </button>
+              </div>
+
+              {/* SUB-TAB 1: VISIT SCHEDULER */}
+              {activeVisitSubTab === 'visit_scheduler' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>📅 Scheduled Site Visits Register</h3>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                    <thead>
+                      <tr style={{ background: '#0f172a', color: '#94a3b8', textAlign: 'left', borderBottom: '2px solid #334155' }}>
+                        <th style={{ padding: '10px' }}>Visit ID</th>
+                        <th style={{ padding: '10px' }}>Customer & Contact</th>
+                        <th style={{ padding: '10px' }}>Target Property</th>
+                        <th style={{ padding: '10px' }}>Visit Date & Time</th>
+                        <th style={{ padding: '10px' }}>Assigned Field Exec</th>
+                        <th style={{ padding: '10px' }}>Conflict Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid #334155' }}>
+                        <td style={{ padding: '10px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>VIS-2026-000145</td>
+                        <td style={{ padding: '10px', color: '#ffffff', fontWeight: '800' }}>{selectedCust.name} ({selectedCust.mobile})</td>
+                        <td style={{ padding: '10px', color: '#fbbf24' }}>My Home Tarkshya (Kondapur)</td>
+                        <td style={{ padding: '10px', color: '#94a3b8' }}>20 Aug 2026 at 03:30 PM</td>
+                        <td style={{ padding: '10px', color: '#38bdf8' }}>Kiran Kumar (USR-07)</td>
+                        <td style={{ padding: '10px', color: '#4ade80', fontWeight: '800' }}>🟢 NO OVERLAP CONFLICT</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* SUB-TAB 2: OTP & GEOFENCE CHECK-IN */}
+              {activeVisitSubTab === 'visit_otp_checkin' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>🔐 6-Digit Mobile OTP & GPS Geofence Verification</h3>
+                  <div style={{ background: '#0f172a', border: '1px solid #334155', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ color: '#4ade80', fontWeight: '800' }}>🟢 Customer Mobile OTP Verified (849201)</div>
+                    <div style={{ color: '#38bdf8', fontWeight: '800' }}>🟢 GPS Geofence Verified: 17.4612° N, 78.3685° E (Within 100m of Site)</div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 3: VISIT FEEDBACK */}
+              {activeVisitSubTab === 'visit_feedback' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>⭐ Structured 5-Star Customer Feedback Vault</h3>
+                  <div style={{ background: '#0f172a', border: '1px solid #334155', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ color: '#fbbf24', fontWeight: '800' }}>Overall Property Rating: ⭐⭐⭐⭐⭐ (5/5)</div>
+                    <div style={{ color: '#ffffff' }}>Observations: "Customer liked 14th floor pool view flat. Ready for negotiation."</div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 4: VISIT ANALYTICS */}
+              {activeVisitSubTab === 'visit_analytics' && (
+                <div style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: '#ffffff' }}>📊 Site Visit Conversion Analytics</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+                    <div style={{ background: '#0f172a', padding: '14px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Total Site Visits</span>
+                      <h3 style={{ fontSize: '1.3rem', color: '#38bdf8', fontWeight: '900' }}>100 Visits</h3>
+                    </div>
+                    <div style={{ background: '#0f172a', padding: '14px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Interested Prospects</span>
+                      <h3 style={{ fontSize: '1.3rem', color: '#4ade80', fontWeight: '900' }}>42 Prospects</h3>
+                    </div>
+                    <div style={{ background: '#0f172a', padding: '14px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Active Negotiations</span>
+                      <h3 style={{ fontSize: '1.3rem', color: '#fbbf24', fontWeight: '900' }}>20 Deals</h3>
+                    </div>
+                    <div style={{ background: '#0f172a', padding: '14px', borderRadius: '10px', textAlign: 'center' }}>
+                      <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Confirmed Bookings</span>
+                      <h3 style={{ fontSize: '1.3rem', color: '#22c55e', fontWeight: '900' }}>8 Bookings (8.0%)</h3>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* CATEGORY 5: BILLING MANAGEMENT */}
           {activeTab === 'billing_management' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -3465,36 +4158,635 @@ export default function App() {
         </div>
       )}
 
-      {/* INGEST LEAD MODAL */}
-      {showLeadModal && (
+      {/* 10-STEP ENTERPRISE LEAD INTAKE & QUALIFICATION WIZARD MODAL */}
+      {(showLeadModal || showAddCustomerModal) && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ background: '#1e293b', border: '1px solid #334155', width: '600px', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: '#ffffff' }}>📋 Ingest New Lead Opportunity</h3>
-              <X size={20} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowLeadModal(false)} />
+          <div style={{ background: '#1e293b', border: '1px solid #0284c7', width: '920px', maxHeight: '92vh', borderRadius: '18px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)' }}>
+            
+            {/* WIZARD HEADER & PROGRESS INDICATOR */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '16px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#ffffff' }}>🚀 10-STEP ENTERPRISE LEAD INTAKE & QUALIFICATION WIZARD</h3>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#ffffff' }}>🚀 9-STEP ENTERPRISE LEAD INTAKE & QUALIFICATION WIZARD</h3>
+                  <span style={{ background: '#0284c7', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>
+                    STEP {leadIntakeStep} OF 9
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '4px' }}>
+                  Central Qualification Gate • Structured Customer Requirement Capture • Matching Handoff System
+                </p>
+              </div>
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => { setShowLeadModal(false); setShowAddCustomerModal(false); setLeadIntakeStep(1); }} />
             </div>
 
-            <form onSubmit={handleCreateLeadSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Lead / Customer Name *</label>
-                <input type="text" value={newLeadForm.customer_name} onChange={(e) => setNewLeadForm({ ...newLeadForm, customer_name: e.target.value })} placeholder="e.g. Sumanth Varma" style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+            {/* STEP PROGRESS BAR */}
+            <div style={{ display: 'flex', gap: '4px', background: '#0f172a', padding: '6px', borderRadius: '10px' }}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(s => (
+                <div 
+                  key={s} 
+                  onClick={() => setLeadIntakeStep(s)} 
+                  style={{ 
+                    flex: 1, 
+                    height: '8px', 
+                    borderRadius: '4px', 
+                    background: s <= leadIntakeStep ? '#0284c7' : '#334155', 
+                    cursor: 'pointer',
+                    transition: 'all 0.2s' 
+                  }} 
+                  title={`Step ${s}`}
+                />
+              ))}
+            </div>
+
+            {/* STEP STEPPER TAB STRIP */}
+            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '4px', borderBottom: '1px solid #334155' }}>
+              {[
+                { s: 1, label: '1. Lead Source' },
+                { s: 2, label: '2. Identity & Contact' },
+                { s: 3, label: '3. Purpose & Type' },
+                { s: 4, label: '4. BHK & Condition' },
+                { s: 5, label: '5. Location & Radius' },
+                { s: 6, label: '6. Budget & Area' },
+                { s: 7, label: '7. Parking & Amenities' },
+                { s: 8, label: '8. Loan & Possession' },
+                { s: 9, label: '9. Review & Send to Match' }
+              ].map(item => (
+                <button 
+                  key={item.s} 
+                  type="button" 
+                  onClick={() => setLeadIntakeStep(item.s)} 
+                  style={{ 
+                    padding: '6px 10px', 
+                    borderRadius: '6px', 
+                    fontSize: '0.72rem', 
+                    fontWeight: '800', 
+                    cursor: 'pointer', 
+                    whiteSpace: 'nowrap',
+                    background: leadIntakeStep === item.s ? '#0284c7' : '#0f172a', 
+                    color: leadIntakeStep === item.s ? '#ffffff' : '#94a3b8', 
+                    border: '1px solid #334155' 
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            {/* LIVE DUPLICATE CHECKER WARNING BANNER */}
+            {newCustomerForm.mobile.length >= 10 && (
+              <div style={{ background: '#0f172a', border: '1px solid #fbbf24', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <ShieldAlert size={18} color="#fbbf24" />
+                  <span style={{ fontSize: '0.78rem', color: '#fbbf24', fontWeight: '800' }}>
+                    🔍 Live Duplicate Scanner: Phone {newCustomerForm.mobile} scanned across 1,842 customer master records.
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: '800' }}>🟢 NO DUPLICATE FOUND</span>
+              </div>
+            )}
+
+            {/* STEP 1: LEAD SOURCE & ATTRIBUTION */}
+            {leadIntakeStep === 1 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 1: Lead Source Attribution & Executive Assignment</h4>
+                
+                {/* ASSIGN EXECUTIVE SELECTOR */}
+                <div style={{ background: '#0f172a', border: '1px solid #0284c7', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <label style={{ fontSize: '0.8rem', color: '#fbbf24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    👤 ASSIGN SALES EXECUTIVE / CLIENT RELATIONSHIP MANAGER *
+                  </label>
+                  <select 
+                    value={newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)'} 
+                    onChange={(e) => setNewCustomerForm({ ...newCustomerForm, assigned_employee_id: e.target.value })} 
+                    style={{ width: '100%', background: '#1e293b', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: '900', padding: '10px 12px', borderRadius: '8px', fontSize: '0.9rem' }}
+                  >
+                    <option value="Priya Nair (Sales Exec)">👤 Priya Nair — Senior Executive (Kondapur/Gachibowli)</option>
+                    <option value="Amit Patel (Lead Manager)">👤 Amit Patel — Lead Manager (West Zone)</option>
+                    <option value="Rahul Sharma (Property Specialist)">👤 Rahul Sharma — Property Specialist (Luxury Residential)</option>
+                    <option value="Sneha Reddy (CRM Exec)">👤 Sneha Reddy — Customer Relationship Manager</option>
+                    <option value="Vikram Varma (Branch Director)">👤 Vikram Varma — Branch Director</option>
+                  </select>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Lead Source *</label>
+                    <select value={newCustomerForm.lead_source} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, lead_source: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="Google Ads">Google Ads</option>
+                      <option value="Meta Ads">Meta / Facebook / Instagram</option>
+                      <option value="MagicBricks">MagicBricks Portal</option>
+                      <option value="99acres">99acres Portal</option>
+                      <option value="Housing.com">Housing.com Portal</option>
+                      <option value="Direct Website">Direct Website Form</option>
+                      <option value="WhatsApp Business">WhatsApp Business Inbound</option>
+                      <option value="Walk-in Branch">Walk-in HQ / Branch</option>
+                      <option value="Existing Customer Referral">Existing Customer Referral</option>
+                      <option value="Developer Partner Referral">Developer Partner Referral</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Campaign ID</label>
+                    <input type="text" value={newCustomerForm.campaign_id} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, campaign_id: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>UTM Source / Medium</label>
+                    <input type="text" value={newCustomerForm.utm_source} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, utm_source: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Referrer Name & Contact (If Applicable)</label>
+                  <input type="text" value={newCustomerForm.referral_name} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, referral_name: e.target.value })} placeholder="e.g. Dr. Rajesh Sharma (+91 98480 12345)" style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                </div>
+              </div>
+            )}
+
+            {/* STEP 2: CUSTOMER IDENTITY & CONTACT */}
+            {leadIntakeStep === 2 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 2: Customer Basic Identity & Contact Info</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Full Name *</label>
+                    <input type="text" value={newCustomerForm.name} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })} placeholder="e.g. Sumanth Varma" style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Primary Mobile Phone *</label>
+                    <input type="text" value={newCustomerForm.mobile} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, mobile: e.target.value })} placeholder="+91 98490 88888" style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>WhatsApp Number</label>
+                    <input type="text" value={newCustomerForm.whatsapp || newCustomerForm.mobile} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, whatsapp: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Email Address</label>
+                    <input type="email" value={newCustomerForm.email} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, email: e.target.value })} placeholder="sumanth@example.com" style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Preferred Language</label>
+                    <select value={newCustomerForm.language} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, language: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="English">English</option>
+                      <option value="Telugu">Telugu</option>
+                      <option value="Hindi">Hindi</option>
+                      <option value="Bengali">Bengali</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>City</label>
+                    <input type="text" value={newCustomerForm.city} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, city: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Current Residential Locality</label>
+                    <input type="text" value={newCustomerForm.address} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, address: e.target.value })} placeholder="e.g. Jubilee Hills, Hyderabad" style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>PIN Code</label>
+                    <input type="text" value={newCustomerForm.pincode} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, pincode: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 3: PROPERTY PURPOSE & TYPE */}
+            {leadIntakeStep === 3 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 3: Property Purchase Purpose & Category Type</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Purpose *</label>
+                    <select value={newCustomerForm.investment_purpose} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, investment_purpose: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#4ade80', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="Self Use">🏡 SELF USE (End User Residence)</option>
+                      <option value="Investment">📈 INVESTMENT (Capital Appreciation)</option>
+                      <option value="Rental Income">💰 RENTAL INCOME (Monthly Yield)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Category Type *</label>
+                    <select value={newCustomerForm.property_type} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, property_type: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#38bdf8', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="Flat / Apartment">🏢 RESIDENTIAL (Apartment / Flat)</option>
+                      <option value="Independent Villa">🏰 VILLA / TOWNHOUSE</option>
+                      <option value="Open Plot">📐 LAND / OPEN PLOT</option>
+                      <option value="Commercial Office">🏢 COMMERCIAL OFFICE SPACE</option>
+                      <option value="Retail Shop">🛍️ COMMERCIAL RETAIL SHOP</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 4: BHK, FLOOR & CONDITION */}
+            {leadIntakeStep === 4 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 4: Required BHK Configuration, Condition & Floor Preference</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>BHK Configuration *</label>
+                    <select value={newCustomerForm.configuration} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, configuration: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="1BHK">1 BHK</option>
+                      <option value="2BHK">2 BHK</option>
+                      <option value="3BHK">3 BHK</option>
+                      <option value="4BHK">4 BHK</option>
+                      <option value="5+ BHK / Duplex">5+ BHK / Duplex Penthouse</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Condition *</label>
+                    <select value={newCustomerForm.condition} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, condition: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#4ade80', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="Ready to Move">Ready to Move</option>
+                      <option value="Under Construction">Under Construction</option>
+                      <option value="Pre-Launch">New Pre-Launch</option>
+                      <option value="Resale">Resale Unit</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Floor Preference</label>
+                    <input type="text" value={newCustomerForm.floor_pref} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, floor_pref: e.target.value })} placeholder="e.g. 10th Floor or Higher" style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 5: LOCATION & MAP RADIUS */}
+            {leadIntakeStep === 5 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 5: Location Requirements, Secondary Localities & Map Radius</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Primary Preferred Locality *</label>
+                    <input type="text" value={newCustomerForm.preferredArea} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, preferredArea: e.target.value })} placeholder="e.g. Kondapur / Gachibowli or Madhyamgram" style={{ width: '100%', background: '#0f172a', border: '1px solid #0284c7', color: '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Secondary Preferred Localities</label>
+                    <input type="text" value={newCustomerForm.secondary_areas} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, secondary_areas: e.target.value })} placeholder="e.g. Hitec City, Barasat, Sodepur" style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Maximum Map Radius Distance (KM)</label>
+                    <select value={newCustomerForm.radius_km} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, radius_km: Number(e.target.value) })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#38bdf8', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="5">Within 5 KM Radius</option>
+                      <option value="10">Within 10 KM Radius</option>
+                      <option value="15">Within 15 KM Radius</option>
+                      <option value="25">Within 25 KM Radius</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Vastu Facing Preference</label>
+                    <select value={newCustomerForm.facing} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, facing: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="East Facing">East Facing</option>
+                      <option value="North-East Facing">North-East Facing</option>
+                      <option value="North Facing">North Facing</option>
+                      <option value="West Facing">West Facing</option>
+                      <option value="Any Facing">Any Facing Acceptable</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 6: BUDGET & AREA DIMENSIONS */}
+            {leadIntakeStep === 6 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 6: Budget Flexibility Limits & Carpet Area Dimensions</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Minimum Budget *</label>
+                    <input type="text" value={newCustomerForm.budget_min} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, budget_min: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#4ade80', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Maximum Budget *</label>
+                    <input type="text" value={newCustomerForm.budget_max} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, budget_max: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#4ade80', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Budget Flexibility</label>
+                    <select value={newCustomerForm.budget_flexibility} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, budget_flexibility: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="Fixed Strict">Fixed Strict</option>
+                      <option value="+5% Flexible">+5% Flexible</option>
+                      <option value="+10% Negotiable">+10% Negotiable</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Min Carpet Area</label>
+                    <input type="text" value={newCustomerForm.carpet_area_min} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, carpet_area_min: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Max Carpet Area</label>
+                    <input type="text" value={newCustomerForm.carpet_area_max} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, carpet_area_max: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Area Unit</label>
+                    <select value={newCustomerForm.area_unit} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, area_unit: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="Sq.Ft.">Sq.Ft.</option>
+                      <option value="Sq.Meter">Sq.Meter</option>
+                      <option value="Katha">Katha</option>
+                      <option value="Cottah">Cottah</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 7: PARKING & AMENITIES */}
+            {leadIntakeStep === 7 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 7: Parking Requirements & Gated Amenities Multi-Select</h4>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Parking Type Required</label>
+                  <select value={newCustomerForm.parking} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, parking: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    <option value="Covered Slot + EV Charger">Covered Slot + EV Charger</option>
+                    <option value="Covered Slot">Covered Car Parking</option>
+                    <option value="Open Parking">Open Parking</option>
+                    <option value="Not Required">Not Required</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Required Gated Amenities</label>
+                  <input type="text" value={newCustomerForm.amenities} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, amenities: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                </div>
+              </div>
+            )}
+
+            {/* STEP 8: LOAN & POSSESSION */}
+            {leadIntakeStep === 8 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 8: Home Loan Readiness & Possession Timeline</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Bank Loan Required *</label>
+                    <select value={newCustomerForm.loan_required} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, loan_required: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#38bdf8', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="Yes">Yes</option>
+                      <option value="No">No (Self Funded / Cash)</option>
+                      <option value="Maybe">Maybe</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Loan Pre-Approval Status</label>
+                    <select value={newCustomerForm.loan_status} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, loan_status: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#4ade80', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="Pre-Approved">🟢 Pre-Approved</option>
+                      <option value="In Process">⚡ Applied / In Process</option>
+                      <option value="Not Applied Yet">⚪ Planning to Apply</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Expected Decision Timeline</label>
+                    <select value={newCustomerForm.decision_timeline} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, decision_timeline: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                      <option value="Immediate (< 30 Days)">🔥 Immediate (&lt; 30 Days)</option>
+                      <option value="Within 60 Days">⚡ Within 60 Days</option>
+                      <option value="3+ Months">❄️ 3+ Months</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* STEP 9: REVIEW & SEND TO MATCHING MANAGEMENT */}
+            {leadIntakeStep === 9 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ background: '#0f172a', border: '1px solid #22c55e', borderRadius: '12px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: '800' }}>REQUIREMENT COMPLETENESS AUDIT SCORE</span>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: '900', color: '#ffffff', marginTop: '2px' }}>94% COMPLETE</h2>
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Meets strict 80% minimum threshold for property matching engine.</p>
+                  </div>
+                  <span style={{ background: '#22c55e', color: '#ffffff', padding: '6px 16px', borderRadius: '20px', fontWeight: '900', fontSize: '0.85rem' }}>
+                    READY FOR MATCHING
+                  </span>
+                </div>
+
+                <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', fontSize: '0.82rem' }}>
+                  <div>
+                    <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Customer Name:</span>
+                    <strong style={{ display: 'block', color: '#ffffff' }}>{newCustomerForm.name || 'Sumanth Varma'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Mobile Phone:</span>
+                    <strong style={{ display: 'block', color: '#4ade80' }}>{newCustomerForm.mobile || '+91 98490 88888'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Assigned Executive:</span>
+                    <strong style={{ display: 'block', color: '#38bdf8', fontWeight: '900' }}>{newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)'}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Budget Range:</span>
+                    <strong style={{ display: 'block', color: '#fbbf24' }}>{newCustomerForm.budget_min} - {newCustomerForm.budget_max}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>Preferred Area:</span>
+                    <strong style={{ display: 'block', color: '#38bdf8' }}>{newCustomerForm.preferredArea} ({newCustomerForm.configuration})</strong>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                  <button type="button" onClick={() => setLeadIntakeStep(8)} style={{ flex: 1, background: '#334155', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}>
+                    ← Back to Step 8
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      const mobileStr = newCustomerForm.mobile || '+91 98490 88888';
+                      const nameStr = newCustomerForm.name || 'Sumanth Varma';
+                      const existingIdx = matchingRequestsQueue.findIndex(r => r.mobile === mobileStr || (r.customerName === nameStr && r.customerName.length > 0));
+                      
+                      const reqId = existingIdx >= 0 ? matchingRequestsQueue[existingIdx].requestId : `MATREQ-2026-000${matchingRequestsQueue.length + 1}`;
+                      
+                      const newReq = {
+                        requestId: reqId,
+                        date: '18 Aug 2026 12:20 PM',
+                        customerName: nameStr,
+                        customerNumber: existingIdx >= 0 ? matchingRequestsQueue[existingIdx].customerNumber : `SRM-CUS-2026-000${185 + matchingRequestsQueue.length}`,
+                        leadId: `SRM-LEAD-2026-000${140 + matchingRequestsQueue.length}`,
+                        requirementId: `SRM-REQ-2026-0000${90 + matchingRequestsQueue.length}`,
+                        mobile: mobileStr,
+                        purpose: newCustomerForm.investment_purpose,
+                        propertyType: newCustomerForm.property_type,
+                        configuration: newCustomerForm.configuration,
+                        budget: `${newCustomerForm.budget_min} - ${newCustomerForm.budget_max}`,
+                        preferredArea: newCustomerForm.preferredArea,
+                        secondaryAreas: newCustomerForm.secondary_areas,
+                        radiusKm: newCustomerForm.radius_km,
+                        possessionStatus: newCustomerForm.possession_status,
+                        carpetArea: `${newCustomerForm.carpet_area_min} – ${newCustomerForm.carpet_area_max}`,
+                        facing: newCustomerForm.facing,
+                        parking: newCustomerForm.parking,
+                        amenities: newCustomerForm.amenities,
+                        completenessScore: 94,
+                        priority: 'HOT',
+                        leadScore: 92,
+                        assignedExecutive: newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)',
+                        status: 'MATCHING_PENDING',
+                        version: 'Snapshot V1'
+                      };
+
+                      if (existingIdx >= 0) {
+                        const updatedQueue = [...matchingRequestsQueue];
+                        updatedQueue[existingIdx] = newReq;
+                        setMatchingRequestsQueue(updatedQueue);
+                      } else {
+                        setMatchingRequestsQueue([newReq, ...matchingRequestsQueue]);
+                      }
+
+                      setSelectedMatchingId(reqId);
+                      setShowLeadModal(false);
+                      setShowAddCustomerModal(false);
+                      setActiveTab('matching_management');
+                      alert(`🚀 Created Matching Request ${reqId}! Requirement snapshot transferred seamlessly into Matching Management.`);
+                    }}
+                    style={{ flex: 2, background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                  >
+                    🚀 SEND TO MATCHING MANAGEMENT (Generate Snapshot MATREQ-2026)
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* STEP NAVIGATION BUTTONS (FOR STEPS 1 TO 8) */}
+            {leadIntakeStep < 9 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', borderTop: '1px solid #334155', paddingTop: '16px' }}>
+                <button type="button" disabled={leadIntakeStep === 1} onClick={() => setLeadIntakeStep(Math.max(1, leadIntakeStep - 1))} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', opacity: leadIntakeStep === 1 ? 0.5 : 1 }}>
+                  ← Previous
+                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button type="button" onClick={() => { setShowLeadModal(false); setShowAddCustomerModal(false); }} style={{ background: '#0f172a', color: '#94a3b8', border: '1px solid #334155', padding: '10px 16px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
+                    Save Draft
+                  </button>
+                  <button type="button" onClick={() => setLeadIntakeStep(Math.min(9, leadIntakeStep + 1))} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>
+                    Next Step →
+                  </button>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      )}
+
+      {/* CREATE COST SHEET SHARE AGAINST ID MODAL */}
+      {showCreateShareModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ background: '#1e293b', border: '2px solid #0284c7', width: '700px', maxHeight: '90vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #334155', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Share2 size={22} color="#38bdf8" />
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#ffffff' }}>CREATE COST SHEET SHARE AGAINST TRANSACTION ID</h3>
+                  <p style={{ fontSize: '0.78rem', color: '#94a3b8', marginTop: '2px' }}>Generate unique Property Share ID (SRM-PSH-2026) linked permanently to Parent ID.</p>
+                </div>
+              </div>
+              <X size={20} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowCreateShareModal(false)} />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              {/* PARENT TYPE & PARENT ID SELECTOR */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Parent ID Category *</label>
+                  <select 
+                    value={newShareForm.parentType} 
+                    onChange={(e) => setNewShareForm({ ...newShareForm, parentType: e.target.value })} 
+                    style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
+                  >
+                    <option value="COST_SHEET_ID">1. Cost Sheet ID (SRM-CS-2026)</option>
+                    <option value="SELECTION_ID">2. Property Selection ID (SRM-SEL-2026)</option>
+                    <option value="MATCHING_ID">3. Matching Request ID (SRM-MAT-2026)</option>
+                    <option value="CUSTOMER_ID">4. Customer Master ID (SRM-CUS-2026)</option>
+                    <option value="LEAD_ID">5. Lead Intake ID (SRM-LEAD-2026)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '900', display: 'block', marginBottom: '4px' }}>Select Target Parent Transaction ID *</label>
+                  <select 
+                    value={newShareForm.parentId} 
+                    onChange={(e) => {
+                      const id = e.target.value;
+                      if (id.includes('CS-2026-000145') || id.includes('000184')) {
+                        setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Rohan Deshmukh', customerNumber: 'SRM-CUS-2026-000184', mobile: '+91 98490 11223', propertyTitle: 'Aparna Zenon Premium 3BHK Residence', finalPrice: '₹84 Lakhs' });
+                      } else if (id.includes('CS-2026-000146') || id.includes('000187')) {
+                        setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Avishek Das', customerNumber: 'SRM-CUS-2026-000187', mobile: '9432328947', propertyTitle: 'Madhyamgram Premium 3BHK Flat', finalPrice: '55 Lakhs' });
+                      } else if (id.includes('CS-2026-000147') || id.includes('000186')) {
+                        setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Sumanth Varma', customerNumber: 'SRM-CUS-2026-000186', mobile: '+91 98490 88888', propertyTitle: 'My Home Tarkshya Luxury 3BHK', finalPrice: '₹1.54 Crores' });
+                      }
+                    }} 
+                    style={{ width: '100%', background: '#0f172a', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  >
+                    <option value="SRM-CS-2026-000145">SRM-CS-2026-000145 — Rohan Deshmukh (Aparna Zenon 3BHK)</option>
+                    <option value="SRM-CS-2026-000146">SRM-CS-2026-000146 — Avishek Das (Madhyamgram 3BHK)</option>
+                    <option value="SRM-CS-2026-000147">SRM-CS-2026-000147 — Sumanth Varma (My Home Tarkshya 3BHK)</option>
+                    <option value="SRM-SEL-2026-000078">SRM-SEL-2026-000078 — Selection Record (3 Properties)</option>
+                    <option value="MATREQ-2026-000002">MATREQ-2026-000002 — Avishek Das Matching Request</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Mobile Phone *</label>
-                <input type="text" value={newLeadForm.mobile} onChange={(e) => setNewLeadForm({ ...newLeadForm, mobile: e.target.value })} placeholder="+91 98490 88888" style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+              {/* AUTO-FILLED CUSTOMER & PROPERTY AUDIT SUMMARY */}
+              <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.82rem' }}>
+                <div><span style={{ color: '#94a3b8' }}>Target Customer:</span> <strong style={{ color: '#ffffff', display: 'block' }}>{newShareForm.customerName} ({newShareForm.mobile})</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>Customer Master ID:</span> <strong style={{ color: '#38bdf8', fontFamily: 'monospace', display: 'block' }}>{newShareForm.customerNumber}</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>Linked Property:</span> <strong style={{ color: '#ffffff', display: 'block' }}>{newShareForm.propertyTitle}</strong></div>
+                <div><span style={{ color: '#94a3b8' }}>Final Price:</span> <strong style={{ color: '#4ade80', fontWeight: '900', display: 'block' }}>{newShareForm.finalPrice}</strong></div>
               </div>
 
+              {/* DELIVERY CHANNEL GATEWAY */}
               <div>
-                <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Budget Limit</label>
-                <input type="text" value={newLeadForm.budget} onChange={(e) => setNewLeadForm({ ...newLeadForm, budget: e.target.value })} style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                <label style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', display: 'block', marginBottom: '4px' }}>Delivery Channel Gateway *</label>
+                <select 
+                  value={newShareForm.channel} 
+                  onChange={(e) => setNewShareForm({ ...newShareForm, channel: e.target.value })} 
+                  style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                >
+                  <option value="WhatsApp & Email Gateway">WhatsApp Business API + Email PDF Attachment</option>
+                  <option value="WhatsApp Gateway Only">WhatsApp Business API Only</option>
+                  <option value="Email PDF Attachment">Email PDF Attachment Gateway</option>
+                  <option value="SMS Token Link">SMS Secure Token Link</option>
+                </select>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
-                <button type="button" onClick={() => setShowLeadModal(false)} style={{ flex: 1, background: '#334155', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '700' }}>Cancel</button>
-                <button type="submit" style={{ flex: 1, background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '900' }}>Ingest Lead</button>
+              {/* NOTES */}
+              <div>
+                <label style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Custom Delivery Message / Executive Notes</label>
+                <textarea 
+                  rows={3} 
+                  value={newShareForm.notes} 
+                  onChange={(e) => setNewShareForm({ ...newShareForm, notes: e.target.value })} 
+                  style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem', resize: 'vertical' }} 
+                />
               </div>
-            </form>
+
+            </div>
+
+            {/* ACTION BUTTONS */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: '1px solid #334155', paddingTop: '14px' }}>
+              <button onClick={() => setShowCreateShareModal(false)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button 
+                onClick={() => {
+                  const generatedShareId = `SRM-PSH-2026-0000${Math.floor(Math.random() * 90 + 10)}`;
+                  setShowCreateShareModal(false);
+                  alert(`🚀 Generated PROPERTY SHARE ID ${generatedShareId} against ${newShareForm.parentId}!\n\nTarget Customer: ${newShareForm.customerName} (${newShareForm.mobile})\nLinked Property: ${newShareForm.propertyTitle}\nDelivery Channel: ${newShareForm.channel}\nAudit Status: SENT & LOGGED (SHA-256)`);
+                }} 
+                style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.9rem' }}
+              >
+                🚀 Generate Share ID & Dispatch
+              </button>
+            </div>
+
           </div>
         </div>
       )}
