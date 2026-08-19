@@ -120,91 +120,111 @@ export default function App() {
     notes: 'Sharing updated cost sheet with special discount pricing.'
   });
 
-  // 10-Step Lead Intake Wizard Step State & Matching Requests Queue
+  // 10-Step Lead Intake Wizard Step State & Matching Requests Queue (Persistent)
   const [leadIntakeStep, setLeadIntakeStep] = useState<number>(1);
-  const [matchingRequestsQueue, setMatchingRequestsQueue] = useState<any[]>([
-    {
-      requestId: 'SRM-MAT-2026-000421',
-      date: '18 Aug 2026 10:22 AM',
-      customerName: 'Rohan Deshmukh',
-      customerNumber: 'SRM-CUS-2026-000184',
-      leadId: 'SRM-LEAD-2026-000184',
-      requirementId: 'SRM-REQ-2026-000094',
-      mobile: '+91 98490 11223',
-      purpose: 'Self Use',
-      propertyType: 'Flat / Apartment',
-      configuration: '3BHK',
-      budget: '₹70 Lakhs – ₹85 Lakhs',
-      preferredArea: 'Kondapur / Gachibowli',
-      secondaryAreas: 'Hitec City',
-      radiusKm: 10,
-      possessionStatus: 'Ready to Move',
-      carpetArea: '1,200 – 1,800 Sq.Ft.',
-      facing: 'East / Any',
-      parking: 'Covered Slot + EV',
-      amenities: 'Lift, Security, Gym, Clubhouse',
-      completenessScore: 96,
-      priority: 'HOT',
-      leadScore: 88,
-      assignedExecutive: 'Priya Nair (Sales Exec)',
-      status: 'MATCHING_COMPLETED',
-      version: 'Snapshot V1'
-    },
-    {
-      requestId: 'MATREQ-2026-000002',
-      date: '18 Aug 2026 12:20 PM',
-      customerName: 'Avishek Das',
-      customerNumber: 'SRM-CUS-2026-000187',
-      leadId: 'SRM-LEAD-2026-000143',
-      requirementId: 'SRM-REQ-2026-000095',
-      mobile: '9432328947',
-      purpose: 'Self Use',
-      propertyType: 'Flat / Apartment',
-      configuration: '3BHK',
-      budget: '50 lakh – 60 Lakh',
-      preferredArea: 'Madhyamgram',
-      secondaryAreas: 'New Barrackpur',
-      radiusKm: 10,
-      possessionStatus: 'Ready to Move',
-      carpetArea: '1,000 – 1,400 Sq.Ft.',
-      facing: 'North-East Facing',
-      parking: 'Covered Slot',
-      amenities: 'Security, Lift, Power Backup',
-      completenessScore: 94,
-      priority: 'HOT',
-      leadScore: 92,
-      assignedExecutive: 'Priya Nair (Sales Exec)',
-      status: 'MATCHING_PENDING',
-      version: 'Snapshot V1'
-    },
-    {
-      requestId: 'MATREQ-2026-000001',
-      date: '18 Aug 2026 11:30 AM',
-      customerName: 'Sumanth Varma',
-      customerNumber: 'SRM-CUS-2026-000186',
-      leadId: 'SRM-LEAD-2026-000142',
-      requirementId: 'SRM-REQ-2026-000094',
-      mobile: '+91 98490 88888',
-      purpose: 'Self Use',
-      propertyType: 'Flat / Apartment',
-      configuration: '3BHK',
-      budget: '₹1.20 Crore - ₹1.80 Crore',
-      preferredArea: 'Kondapur / Gachibowli',
-      secondaryAreas: 'Hitec City, Financial District',
-      radiusKm: 10,
-      possessionStatus: 'Ready to Move',
-      carpetArea: '1,400 – 2,200 Sq.Ft.',
-      facing: 'East Facing',
-      parking: 'Covered Slot + EV Charger',
-      amenities: 'Swimming Pool, Gym, Clubhouse, Power Backup',
-      completenessScore: 94,
-      priority: 'HOT',
-      leadScore: 92,
-      assignedExecutive: 'Priya Nair (Sales Exec)',
-      status: 'MATCHING_PENDING',
-      version: 'Snapshot V1'
+  const [matchingVaultFilter, setMatchingVaultFilter] = useState<'PENDING_ONLY' | 'ALL'>('PENDING_ONLY');
+  const [matchingRequestsQueue, setMatchingRequestsQueue] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_matching_queue_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading matching queue from localStorage:', e);
     }
-  ]);
+    return [
+      {
+        requestId: 'SRM-MAT-2026-000421',
+        date: '18 Aug 2026 10:22 AM',
+        customerName: 'Rohan Deshmukh',
+        customerNumber: 'SRM-CUS-2026-000184',
+        leadId: 'SRM-LEAD-2026-000184',
+        requirementId: 'SRM-REQ-2026-000094',
+        mobile: '+91 98490 11223',
+        purpose: 'Self Use',
+        propertyType: 'Flat / Apartment',
+        configuration: '3BHK',
+        budget: '₹70 Lakhs – ₹85 Lakhs',
+        preferredArea: 'Kondapur / Gachibowli',
+        secondaryAreas: 'Hitec City',
+        radiusKm: 10,
+        possessionStatus: 'Ready to Move',
+        carpetArea: '1,200 – 1,800 Sq.Ft.',
+        facing: 'East / Any',
+        parking: 'Covered Slot + EV',
+        amenities: 'Lift, Security, Gym, Clubhouse',
+        completenessScore: 96,
+        priority: 'HOT',
+        leadScore: 88,
+        assignedExecutive: 'Priya Nair (Sales Exec)',
+        status: 'MATCHING_COMPLETED',
+        version: 'Snapshot V1'
+      },
+      {
+        requestId: 'MATREQ-2026-000002',
+        date: '18 Aug 2026 12:20 PM',
+        customerName: 'Avishek Das',
+        customerNumber: 'SRM-CUS-2026-000187',
+        leadId: 'SRM-LEAD-2026-000143',
+        requirementId: 'SRM-REQ-2026-000095',
+        mobile: '9432328947',
+        purpose: 'Self Use',
+        propertyType: 'Flat / Apartment',
+        configuration: '3BHK',
+        budget: '50 lakh – 60 Lakh',
+        preferredArea: 'Madhyamgram',
+        secondaryAreas: 'New Barrackpur',
+        radiusKm: 10,
+        possessionStatus: 'Ready to Move',
+        carpetArea: '1,000 – 1,400 Sq.Ft.',
+        facing: 'North-East Facing',
+        parking: 'Covered Slot',
+        amenities: 'Security, Lift, Power Backup',
+        completenessScore: 94,
+        priority: 'HOT',
+        leadScore: 92,
+        assignedExecutive: 'Priya Nair (Sales Exec)',
+        status: 'MATCHING_PENDING',
+        version: 'Snapshot V1'
+      },
+      {
+        requestId: 'MATREQ-2026-000001',
+        date: '18 Aug 2026 11:30 AM',
+        customerName: 'Sumanth Varma',
+        customerNumber: 'SRM-CUS-2026-000186',
+        leadId: 'SRM-LEAD-2026-000142',
+        requirementId: 'SRM-REQ-2026-000094',
+        mobile: '+91 98490 88888',
+        purpose: 'Self Use',
+        propertyType: 'Flat / Apartment',
+        configuration: '3BHK',
+        budget: '₹1.20 Crore - ₹1.80 Crore',
+        preferredArea: 'Kondapur / Gachibowli',
+        secondaryAreas: 'Hitec City, Financial District',
+        radiusKm: 10,
+        possessionStatus: 'Ready to Move',
+        carpetArea: '1,400 – 2,200 Sq.Ft.',
+        facing: 'East Facing',
+        parking: 'Covered Slot + EV Charger',
+        amenities: 'Swimming Pool, Gym, Clubhouse, Power Backup',
+        completenessScore: 94,
+        priority: 'HOT',
+        leadScore: 92,
+        assignedExecutive: 'Priya Nair (Sales Exec)',
+        status: 'MATCHING_PENDING',
+        version: 'Snapshot V1'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_matching_queue_v3', JSON.stringify(matchingRequestsQueue));
+    } catch (e) {
+      console.error('Error saving matching queue to localStorage:', e);
+    }
+  }, [matchingRequestsQueue]);
 
   const [selectedMatchingId, setSelectedMatchingId] = useState<string>('SRM-MAT-2026-000421');
   const [matchingSearchQuery, setMatchingSearchQuery] = useState<string>('');
@@ -396,9 +416,17 @@ export default function App() {
   const handleCreateCostSheetForProperty = (prop: any) => {
     const newCSCode = generateNextCostSheetCode();
     const newShareId = `SRM-PSH-2026-0000${Math.floor(10 + Math.random() * 89)}`;
-    const custName = activeMatchingReq?.customerName || selectedCust.name || 'Sumanth Varma';
-    const custNum = activeMatchingReq?.customerNumber || selectedCust.customer_number || 'SRM-CUS-2026-000188';
-    const custMobile = activeMatchingReq?.mobile || selectedCust.mobile || '+91 98490 88888';
+
+    // Resolve matching request from current queue or selected matching ID
+    const currentReq = matchingRequestsQueue.find(r => 
+      r.requestId.toLowerCase() === selectedMatchingId.toLowerCase() || 
+      r.customerNumber.toLowerCase() === selectedMatchingId.toLowerCase()
+    ) || matchingRequestsQueue[0];
+
+    const custName = currentReq?.customerName || selectedCust?.name || 'Avishek Das';
+    const custNum = currentReq?.customerNumber || selectedCust?.customer_number || 'SRM-CUS-2026-000187';
+    const custMobile = currentReq?.mobile || selectedCust?.mobile || '9432328947';
+    const matchingReqId = currentReq?.requestId || selectedMatchingId || 'MATREQ-2026-000002';
 
     const newShare = {
       shareId: newShareId,
@@ -406,24 +434,36 @@ export default function App() {
       customerName: custName,
       customerNumber: custNum,
       mobile: custMobile,
-      propertyTitle: `${prop.title} (${prop.property_code})`,
-      finalPrice: prop.final_price,
+      propertyTitle: `${prop.title || 'Selected Property'} (${prop.property_code || 'PROP'})`,
+      finalPrice: prop.final_price || '₹55 Lakhs',
       channel: 'WhatsApp & Email Gateway',
       sentTime: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
       viewsCount: 1,
       pdfDownloaded: true,
       interestStatus: 'QUOTATION_GENERATED',
-      parentMatchingId: activeMatchingReq?.requestId || 'SRM-MAT-2026-000421'
+      parentMatchingId: matchingReqId
     };
 
     setCostSheetShares(prev => [newShare, ...prev]);
+
+    // Update matching request in queue with generated Cost Sheet ID and status
+    setMatchingRequestsQueue(prev => prev.map(req => {
+      if (req.requestId === matchingReqId || req.customerNumber === custNum) {
+        return {
+          ...req,
+          costSheetId: newCSCode,
+          status: 'COST_SHEET_CREATED'
+        };
+      }
+      return req;
+    }));
 
     if (prop.property_code && !selectedPropertyIds.includes(prop.property_code)) {
       setSelectedPropertyIds(prev => [...prev, prop.property_code]);
     }
 
     setActiveTab('cost_sheet_share');
-    alert(`🚀 Generated Cost Sheet ID ${newCSCode} for Customer ${custName} (${custNum}) against Property ${prop.title}!\n\nTransferred seamlessly to Cost Sheet Sharing category.`);
+    alert(`🚀 Successfully Generated Cost Sheet ID ${newCSCode}!\n\nCustomer: ${custName} (${custNum})\nProperty: ${prop.title || prop.property_code}\nLinked Matching ID: ${matchingReqId}\nStatus Updated: COST_SHEET_CREATED\n\nTransferred seamlessly to Cost Sheet Sharing Category!`);
   };
 
   // Universal Interactive ID Details Modal State & Handler
@@ -570,14 +610,34 @@ export default function App() {
     { id: 'SES-01', user: 'Rajesh Varma (Super Admin)', role: 'SUPER_ADMIN', ip: '127.0.0.1 (Localhost)', device: 'Chrome / Windows 11', login_time: '16 Aug 09:00 AM', status: 'ACTIVE' }
   ]);
 
-  // 4. BULK PROPERTIES MASTER STOCK (12 REAL ESTATE PROJECTS)
-  const [properties, setProperties] = useState([
-    { id: 'PROP-01', property_code: 'SRM-PROP-2026-000421', title: 'Aparna Zenon Premium 3BHK Residence', type: 'Apartment', developer: 'Aparna Constructions', project: 'Aparna Zenon', tower: 'Tower A', floor: 5, unit: 'A-504', configuration: '3BHK', carpet_area: '1,450 sq.ft.', facing: 'East', final_price: '₹84 Lakhs', base_price: '₹85 Lakhs', status: 'AVAILABLE', locality: 'Kondapur', map_x: 45, map_y: 35, latitude: '17.4612° N', longitude: '78.3689° E', owner_phone: '+91 40 2335 8888', price_sqft: '₹5,862 / sq.ft.' },
-    { id: 'PROP-02', property_code: 'SRM-PROP-2026-000422', title: 'Financial Towers Luxury 4BHK Sky Suite', type: 'Penthouse', developer: 'My Home Group', project: 'Financial Towers', tower: 'Tower B', floor: 12, unit: 'B-1202', configuration: '4BHK', carpet_area: '2,400 sq.ft.', facing: 'North-East', final_price: '₹2.08 Crores', base_price: '₹2.10 Crores', status: 'AVAILABLE', locality: 'Financial District', map_x: 28, map_y: 55, latitude: '17.4401° N', longitude: '78.3489° E', owner_phone: '+91 40 6688 9999', price_sqft: '₹8,750 / sq.ft.' },
-    { id: 'PROP-03', property_code: 'SRM-PROP-2026-000423', title: 'My Home Jewel Executive 2BHK Flat', type: 'Apartment', developer: 'My Home Group', project: 'My Home Jewel', tower: 'Block C', floor: 3, unit: 'C-308', configuration: '2BHK', carpet_area: '1,245 sq.ft.', facing: 'North', final_price: '₹68 Lakhs', base_price: '₹69 Lakhs', status: 'AVAILABLE', locality: 'Madinaguda', map_x: 32, map_y: 20, latitude: '17.4921° N', longitude: '78.3412° E', owner_phone: '+91 40 6688 1111', price_sqft: '₹5,542 / sq.ft.' },
-    { id: 'PROP-04', property_code: 'SRM-PROP-2026-000424', title: 'Jayabheri Silicon County Ultra Villa', type: 'Villa', developer: 'Jayabheri Properties', project: 'Silicon County', tower: 'Villa 14', floor: 2, unit: 'V-14', configuration: '5BHK Villa', carpet_area: '4,200 sq.ft.', facing: 'East', final_price: '₹4.50 Crores', base_price: '₹4.60 Crores', status: 'BOOKED', locality: 'Hitec City', map_x: 58, map_y: 42, latitude: '17.4478° N', longitude: '78.3789° E', owner_phone: '+91 40 2311 5555', price_sqft: '₹10,952 / sq.ft.' },
-    { id: 'PROP-05', property_code: 'SRM-PROP-2026-000425', title: 'Prestige High Fields Corner 3BHK', type: 'Apartment', developer: 'Prestige Estates', project: 'Prestige High Fields', tower: 'Tower 8', floor: 18, unit: 'T8-1804', configuration: '3BHK', carpet_area: '1,725 sq.ft.', facing: 'East', final_price: '₹1.35 Crores', base_price: '₹1.38 Crores', status: 'HOLD', locality: 'Nanakramguda', map_x: 22, map_y: 65, latitude: '17.4201° N', longitude: '78.3410° E', owner_phone: '+91 40 4477 8888', price_sqft: '₹8,000 / sq.ft.' }
-  ]);
+  // 4. BULK PROPERTIES MASTER STOCK (WITH LOCALSTORAGE PERSISTENCE)
+  const [properties, setProperties] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_properties_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading properties from localStorage:', e);
+    }
+    return [
+      { id: 'PROP-01', property_code: 'SRM-PROP-2026-000421', title: 'Aparna Zenon Premium 3BHK Residence', type: 'Apartment', developer: 'Aparna Constructions', project: 'Aparna Zenon', tower: 'Tower A', floor: 5, unit: 'A-504', configuration: '3BHK', carpet_area: '1,450 sq.ft.', facing: 'East', final_price: '₹84 Lakhs', base_price: '₹85 Lakhs', status: 'AVAILABLE', locality: 'Kondapur', map_x: 45, map_y: 35, latitude: '17.4612° N', longitude: '78.3689° E', owner_phone: '+91 40 2335 8888', price_sqft: '₹5,862 / sq.ft.' },
+      { id: 'PROP-02', property_code: 'SRM-PROP-2026-000422', title: 'Financial Towers Luxury 4BHK Sky Suite', type: 'Penthouse', developer: 'My Home Group', project: 'Financial Towers', tower: 'Tower B', floor: 12, unit: 'B-1202', configuration: '4BHK', carpet_area: '2,400 sq.ft.', facing: 'North-East', final_price: '₹2.08 Crores', base_price: '₹2.10 Crores', status: 'AVAILABLE', locality: 'Financial District', map_x: 28, map_y: 55, latitude: '17.4401° N', longitude: '78.3489° E', owner_phone: '+91 40 6688 9999', price_sqft: '₹8,750 / sq.ft.' },
+      { id: 'PROP-03', property_code: 'SRM-PROP-2026-000423', title: 'My Home Jewel Executive 2BHK Flat', type: 'Apartment', developer: 'My Home Group', project: 'My Home Jewel', tower: 'Block C', floor: 3, unit: 'C-308', configuration: '2BHK', carpet_area: '1,245 sq.ft.', facing: 'North', final_price: '₹68 Lakhs', base_price: '₹69 Lakhs', status: 'AVAILABLE', locality: 'Madinaguda', map_x: 32, map_y: 20, latitude: '17.4921° N', longitude: '78.3412° E', owner_phone: '+91 40 6688 1111', price_sqft: '₹5,542 / sq.ft.' },
+      { id: 'PROP-04', property_code: 'SRM-PROP-2026-000424', title: 'Jayabheri Silicon County Ultra Villa', type: 'Villa', developer: 'Jayabheri Properties', project: 'Silicon County', tower: 'Villa 14', floor: 2, unit: 'V-14', configuration: '5BHK Villa', carpet_area: '4,200 sq.ft.', facing: 'East', final_price: '₹4.50 Crores', base_price: '₹4.60 Crores', status: 'BOOKED', locality: 'Hitec City', map_x: 58, map_y: 42, latitude: '17.4478° N', longitude: '78.3789° E', owner_phone: '+91 40 2311 5555', price_sqft: '₹10,952 / sq.ft.' },
+      { id: 'PROP-05', property_code: 'SRM-PROP-2026-000425', title: 'Prestige High Fields Corner 3BHK', type: 'Apartment', developer: 'Prestige Estates', project: 'Prestige High Fields', tower: 'Tower 8', floor: 18, unit: 'T8-1804', configuration: '3BHK', carpet_area: '1,725 sq.ft.', facing: 'East', final_price: '₹1.35 Crores', base_price: '₹1.38 Crores', status: 'HOLD', locality: 'Nanakramguda', map_x: 22, map_y: 65, latitude: '17.4201° N', longitude: '78.3410° E', owner_phone: '+91 40 4477 8888', price_sqft: '₹8,000 / sq.ft.' }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_properties_v3', JSON.stringify(properties));
+    } catch (e) {
+      console.error('Error saving properties to localStorage:', e);
+    }
+  }, [properties]);
+
   const [selectedProperty, setSelectedProperty] = useState(properties[0]);
 
   // 5. Property Units Inventory
@@ -586,45 +646,85 @@ export default function App() {
     { id: 'UN-02', unit_code: 'SRM-UNIT-2026-000002', tower: 'Tower A', floor: 1, unit_num: 'A-102', bhk: '3BHK', area: '1,450 sq.ft.', price: '₹84 Lakhs', status: 'BOOKED', customer: 'Rohan Deshmukh' }
   ]);
 
-  // 6. CUSTOMERS MASTER VAULT
-  const [customers, setCustomers] = useState<any[]>([
-    { id: 'CUST-01', customer_number: 'SRM-CUS-2026-000184', name: 'Rohan Deshmukh', mobile: '+91 98490 12345', email: 'rohan.d@gmail.com', budget: '₹70 Lakhs - ₹85 Lakhs', preferredArea: 'Kondapur / Gachibowli', configuration: '3BHK', status: 'QUALIFIED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 88, source: 'Meta Ads' },
-    { id: 'CUST-02', customer_number: 'SRM-CUS-2026-000185', name: 'Priya Sharma', mobile: '+91 99887 76655', email: 'priya.s@yahoo.com', budget: '₹1.8 Crore - ₹2.2 Crore', preferredArea: 'Financial District', configuration: '4BHK', status: 'SITE_VISIT_SCHEDULED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 94, source: 'Google Search' },
-    { id: 'CUST-03', customer_number: 'SRM-CUS-2026-000186', name: 'Dr. Ananth Kulkarni', mobile: '+91 98480 33445', email: 'drananth@apollo.com', budget: '₹4.0 Crore - ₹5.0 Crore', preferredArea: 'Hitec City', configuration: '5BHK Villa', status: 'BOOKED', priority: 'HOT', assigned_agent: 'Rahul Sharma (TL)', score: 98, source: 'Referral' }
-  ]);
+  // 6. CUSTOMERS MASTER VAULT (WITH LOCALSTORAGE PERSISTENCE)
+  const [customers, setCustomers] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_customers_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading customers from localStorage:', e);
+    }
+    return [
+      { id: 'CUST-01', customer_number: 'SRM-CUS-2026-000184', name: 'Rohan Deshmukh', mobile: '+91 98490 12345', email: 'rohan.d@gmail.com', budget: '₹70 Lakhs - ₹85 Lakhs', preferredArea: 'Kondapur / Gachibowli', configuration: '3BHK', status: 'QUALIFIED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 88, source: 'Meta Ads' },
+      { id: 'CUST-02', customer_number: 'SRM-CUS-2026-000185', name: 'Priya Sharma', mobile: '+91 99887 76655', email: 'priya.s@yahoo.com', budget: '₹1.8 Crore - ₹2.2 Crore', preferredArea: 'Financial District', configuration: '4BHK', status: 'SITE_VISIT_SCHEDULED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 94, source: 'Google Search' },
+      { id: 'CUST-03', customer_number: 'SRM-CUS-2026-000186', name: 'Dr. Ananth Kulkarni', mobile: '+91 98480 33445', email: 'drananth@apollo.com', budget: '₹4.0 Crore - ₹5.0 Crore', preferredArea: 'Hitec City', configuration: '5BHK Villa', status: 'BOOKED', priority: 'HOT', assigned_agent: 'Rahul Sharma (TL)', score: 98, source: 'Referral' },
+      { id: 'CUST-04', customer_number: 'SRM-CUS-2026-000187', name: 'Avishek Das', mobile: '9432328947', email: 'avishek.das@gmail.com', budget: '50 lakh – 60 Lakh', preferredArea: 'Madhyamgram', configuration: '3BHK', status: 'QUALIFIED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 92, source: 'Meta Ads' }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_customers_v3', JSON.stringify(customers));
+    } catch (e) {
+      console.error('Error saving customers to localStorage:', e);
+    }
+  }, [customers]);
+
   const [selectedCust, setSelectedCust] = useState<any>(customers[0]);
 
-  // Master Cost Sheet Shares State
-  const [costSheetShares, setCostSheetShares] = useState<any[]>([
-    {
-      shareId: 'SRM-PSH-2026-000032',
-      costSheetId: 'SRM-CS-2026-000145',
-      customerName: 'Rohan Deshmukh',
-      customerNumber: 'SRM-CUS-2026-000184',
-      mobile: '+91 98490 11223',
-      propertyTitle: 'Aparna Zenon Premium 3BHK Residence',
-      finalPrice: '₹84 Lakhs',
-      channel: 'WhatsApp & Email',
-      sentTime: '18 Aug 2026 11:35 AM',
-      viewCount: 4,
-      downloadCount: 2,
-      interest: '🔥 HOT Priority (Requested Site Visit)'
-    },
-    {
-      shareId: 'SRM-PSH-2026-000033',
-      costSheetId: 'SRM-CS-2026-000146',
-      customerName: 'Avishek Das',
-      customerNumber: 'SRM-CUS-2026-000187',
-      mobile: '9432328947',
-      propertyTitle: 'Madhyamgram Premium 3BHK Flat',
-      finalPrice: '55 Lakhs',
-      channel: 'WhatsApp Gateway',
-      sentTime: '18 Aug 2026 12:45 PM',
-      viewCount: 2,
-      downloadCount: 1,
-      interest: '⚡ WARM Priority (Callback Scheduled)'
+  // Master Cost Sheet Shares State (WITH LOCALSTORAGE PERSISTENCE)
+  const [costSheetShares, setCostSheetShares] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_cost_sheet_shares_v3');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading cost sheet shares from localStorage:', e);
     }
-  ]);
+    return [
+      {
+        shareId: 'SRM-PSH-2026-000032',
+        costSheetId: 'SRM-CS-2026-000145',
+        customerName: 'Rohan Deshmukh',
+        customerNumber: 'SRM-CUS-2026-000184',
+        mobile: '+91 98490 11223',
+        propertyTitle: 'Aparna Zenon Premium 3BHK Residence',
+        finalPrice: '₹84 Lakhs',
+        channel: 'WhatsApp & Email',
+        sentTime: '18 Aug 2026 11:35 AM',
+        viewCount: 4,
+        downloadCount: 2,
+        interest: '🔥 HOT Priority (Requested Site Visit)'
+      },
+      {
+        shareId: 'SRM-PSH-2026-000033',
+        costSheetId: 'SRM-CS-2026-000146',
+        customerName: 'Avishek Das',
+        customerNumber: 'SRM-CUS-2026-000187',
+        mobile: '9432328947',
+        propertyTitle: 'Madhyamgram Premium 3BHK Flat',
+        finalPrice: '55 Lakhs',
+        channel: 'WhatsApp Gateway',
+        sentTime: '18 Aug 2026 12:45 PM',
+        viewCount: 2,
+        downloadCount: 1,
+        interest: '⚡ WARM Priority (Callback Scheduled)'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_cost_sheet_shares_v3', JSON.stringify(costSheetShares));
+    } catch (e) {
+      console.error('Error saving cost sheet shares to localStorage:', e);
+    }
+  }, [costSheetShares]);
 
   // DELETE ALL CURRENT RECORDS INSIDE FUNCTION
   const handleDeleteAllCurrentInside = () => {
@@ -3062,12 +3162,45 @@ export default function App() {
 
                   {/* INBOUND MATCHING REQUESTS SNAPSHOT VAULT (SECTION 20) */}
                   <div style={{ background: '#1e293b', border: '1px solid #22c55e', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>📥 INBOUND MATCHING REQUESTS SNAPSHOT VAULT ({matchingRequestsQueue.length})</h3>
                         <span style={{ background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900' }}>QUALIFIED HANDOFF ACTIVE</span>
                       </div>
-                      <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Transferred automatically from Lead Management Intake Wizard</span>
+
+                      {/* VAULT FILTER TOGGLE BUTTONS */}
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button 
+                          onClick={() => setMatchingVaultFilter('PENDING_ONLY')}
+                          style={{ 
+                            background: matchingVaultFilter === 'PENDING_ONLY' ? '#fbbf24' : '#0f172a', 
+                            color: matchingVaultFilter === 'PENDING_ONLY' ? '#0f172a' : '#94a3b8', 
+                            border: '1px solid #fbbf24', 
+                            padding: '4px 12px', 
+                            borderRadius: '20px', 
+                            fontWeight: '900', 
+                            fontSize: '0.75rem', 
+                            cursor: 'pointer' 
+                          }}
+                        >
+                          ⚡ PENDING COST SHEETS ONLY ({matchingRequestsQueue.filter(r => !r.costSheetId && r.status !== 'COST_SHEET_CREATED').length})
+                        </button>
+                        <button 
+                          onClick={() => setMatchingVaultFilter('ALL')}
+                          style={{ 
+                            background: matchingVaultFilter === 'ALL' ? '#0284c7' : '#0f172a', 
+                            color: matchingVaultFilter === 'ALL' ? '#ffffff' : '#94a3b8', 
+                            border: '1px solid #334155', 
+                            padding: '4px 12px', 
+                            borderRadius: '20px', 
+                            fontWeight: '900', 
+                            fontSize: '0.75rem', 
+                            cursor: 'pointer' 
+                          }}
+                        >
+                          📋 ALL MATCHING REQUESTS ({matchingRequestsQueue.length})
+                        </button>
+                      </div>
                     </div>
 
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
@@ -3078,73 +3211,84 @@ export default function App() {
                           <th style={{ padding: '10px' }}>Customer ID</th>
                           <th style={{ padding: '10px' }}>Structured Requirement</th>
                           <th style={{ padding: '10px' }}>Budget</th>
-                          <th style={{ padding: '10px' }}>Status</th>
+                          <th style={{ padding: '10px' }}>Cost Sheet Status</th>
                           <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {matchingRequestsQueue.map((req) => (
-                          <tr key={req.requestId} style={{ borderBottom: '1px solid #334155', background: selectedMatchingId === req.requestId ? 'rgba(2, 132, 199, 0.15)' : 'transparent' }}>
-                            <td style={{ padding: '10px' }}>
-                              <span 
-                                onClick={() => openIdDetailsModal(req.requestId, 'MATCHING_ID')}
-                                style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', cursor: 'pointer', textDecoration: 'underline', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}
-                                title="Click to view full Matching Request details"
-                              >
-                                🎯 {req.requestId}
-                              </span>
-                              <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px', display: 'block' }}>{req.date}</span>
-                            </td>
-                            <td style={{ padding: '10px' }}>
-                              <strong style={{ color: '#ffffff' }}>{req.customerName}</strong>
-                              <br /><span style={{ fontSize: '0.72rem', color: '#4ade80' }}>{req.mobile}</span>
-                            </td>
-                            <td style={{ padding: '10px' }}>
-                              <span 
-                                onClick={() => openIdDetailsModal(req.customerNumber, 'CUSTOMER_ID')}
-                                style={{ fontFamily: 'monospace', color: '#4ade80', fontWeight: '900', cursor: 'pointer', textDecoration: 'underline', background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}
-                                title="Click to view full Customer details"
-                              >
-                                🆔 {req.customerNumber}
-                              </span>
-                            </td>
-                            <td style={{ padding: '10px' }}>
-                              <span style={{ color: '#fbbf24', fontWeight: '800' }}>{req.configuration} {req.propertyType}</span>
-                              <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{req.preferredArea} (Radius: {req.radiusKm || 10} KM)</span>
-                            </td>
-                            <td style={{ padding: '10px', color: '#4ade80', fontWeight: '900' }}>
-                              {req.budget}
-                            </td>
-                            <td style={{ padding: '10px' }}>
-                              <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '2px 8px', borderRadius: '12px', fontWeight: '900', fontSize: '0.75rem' }}>
-                                🟢 {req.status}
-                              </span>
-                            </td>
-                            <td style={{ padding: '10px', textAlign: 'center' }}>
-                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                                <button 
-                                  onClick={() => {
-                                    setSelectedMatchingId(req.requestId);
-                                    const cust = customers.find(c => c.customer_number === req.customerNumber || c.name === req.customerName);
-                                    if (cust) setSelectedCust(cust);
-                                  }} 
-                                  style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer' }}
-                                >
-                                  📂 Open Workspace
-                                </button>
-                                <button 
-                                  onClick={() => {
-                                    setSelectedMatchingId(req.requestId);
-                                    alert(`⚡ Running automated inventory matcher for ${req.customerName} (${req.requestId})`);
-                                  }} 
-                                  style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer' }}
-                                >
-                                  Run Matcher
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                        {matchingRequestsQueue
+                          .filter(req => matchingVaultFilter === 'ALL' || (!req.costSheetId && req.status !== 'COST_SHEET_CREATED'))
+                          .map((req) => {
+                            const isCostSheetCreated = !!req.costSheetId || req.status === 'COST_SHEET_CREATED';
+                            return (
+                              <tr key={req.requestId} style={{ borderBottom: '1px solid #334155', background: selectedMatchingId === req.requestId ? 'rgba(2, 132, 199, 0.15)' : 'transparent' }}>
+                                <td style={{ padding: '10px' }}>
+                                  <span 
+                                    onClick={() => openIdDetailsModal(req.requestId, 'MATCHING_ID')}
+                                    style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', cursor: 'pointer', textDecoration: 'underline', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}
+                                    title="Click to view full Matching Request details"
+                                  >
+                                    🎯 {req.requestId}
+                                  </span>
+                                  <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '2px', display: 'block' }}>{req.date}</span>
+                                </td>
+                                <td style={{ padding: '10px' }}>
+                                  <strong style={{ color: '#ffffff' }}>{req.customerName}</strong>
+                                  <br /><span style={{ fontSize: '0.72rem', color: '#4ade80' }}>{req.mobile}</span>
+                                </td>
+                                <td style={{ padding: '10px' }}>
+                                  <span 
+                                    onClick={() => openIdDetailsModal(req.customerNumber, 'CUSTOMER_ID')}
+                                    style={{ fontFamily: 'monospace', color: '#4ade80', fontWeight: '900', cursor: 'pointer', textDecoration: 'underline', background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}
+                                    title="Click to view full Customer details"
+                                  >
+                                    🆔 {req.customerNumber}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '10px' }}>
+                                  <span style={{ color: '#fbbf24', fontWeight: '800' }}>{req.configuration} {req.propertyType}</span>
+                                  <br /><span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{req.preferredArea} (Radius: {req.radiusKm || 10} KM)</span>
+                                </td>
+                                <td style={{ padding: '10px', color: '#4ade80', fontWeight: '900' }}>
+                                  {req.budget}
+                                </td>
+                                <td style={{ padding: '10px' }}>
+                                  {isCostSheetCreated ? (
+                                    <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '2px 8px', borderRadius: '12px', fontWeight: '900', fontSize: '0.75rem', display: 'inline-block' }}>
+                                      🟢 COST SHEET CREATED ({req.costSheetId || 'SRM-CS-2026-000145'})
+                                    </span>
+                                  ) : (
+                                    <span style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', border: '1px solid #fbbf24', padding: '2px 8px', borderRadius: '12px', fontWeight: '900', fontSize: '0.75rem', display: 'inline-block' }}>
+                                      ⚡ PENDING (NO COST SHEET ID)
+                                    </span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '10px', textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                    <button 
+                                      onClick={() => {
+                                        setSelectedMatchingId(req.requestId);
+                                        const cust = customers.find(c => c.customer_number === req.customerNumber || c.name === req.customerName);
+                                        if (cust) setSelectedCust(cust);
+                                      }} 
+                                      style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer' }}
+                                    >
+                                      📂 Open Workspace
+                                    </button>
+                                    <button 
+                                      onClick={() => {
+                                        setSelectedMatchingId(req.requestId);
+                                        alert(`⚡ Running automated inventory matcher for ${req.customerName} (${req.requestId})`);
+                                      }} 
+                                      style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer' }}
+                                    >
+                                      Run Matcher
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
                       </tbody>
                     </table>
                   </div>
@@ -3366,7 +3510,7 @@ export default function App() {
                     </table>
                   </div>
 
-                  {/* FIXED SELECTED PROPERTY SUMMARY PANEL & SELECTION ID GENERATOR (SECTION 6, 10, 11, 12, 13, 14, 15, 16) */}
+                  {/* FIXED SELECTED PROPERTY SUMMARY PANEL & DISPATCHER */}
                   <div style={{ background: '#0f172a', border: '2px solid #0284c7', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', position: 'sticky', bottom: '10px', zIndex: 100, boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                       <div>
@@ -3378,11 +3522,9 @@ export default function App() {
                         </h3>
                       </div>
 
-                      {activeSelectionRecord && (
-                        <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 12px', borderRadius: '20px', fontWeight: '900', fontSize: '0.78rem', fontFamily: 'monospace' }}>
-                          ACTIVE SELECTION ID: {activeSelectionRecord.selectionId}
-                        </span>
-                      )}
+                      <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 12px', borderRadius: '20px', fontWeight: '900', fontSize: '0.78rem', border: '1px solid #22c55e' }}>
+                        ✓ {selectedPropertyIds.length} PROPERTIES READY TO DISPATCH
+                      </span>
                     </div>
 
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -3395,53 +3537,18 @@ export default function App() {
                       ))}
                     </div>
 
-                    {/* SELECTION ACTION BUTTONS (SECTION 11, 12, 14, 15, 16, 26) */}
+                    {/* SELECTION ACTION BUTTON - ONLY CREATE COST SHEET ID & SEND TO COST SHEET SHARING */}
                     <div style={{ borderTop: '1px solid #334155', paddingTop: '12px', display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                       <button 
                         onClick={() => {
-                          const newSel = {
-                            selectionId: `SRM-SEL-2026-0000${Math.floor(Math.random() * 90 + 10)}`,
-                            matchingId: activeMatchingReq.requestId,
-                            customerId: activeMatchingReq.customerNumber,
-                            propertyIds: selectedPropertyIds,
-                            date: '18 Aug 2026 01:25 PM',
-                            status: 'SELECTION_CONFIRMED'
-                          };
-                          setActiveSelectionRecord(newSel);
-                          alert(`📌 Property Selection Confirmed!\n\nGenerated PROPERTY SELECTION ID: ${newSel.selectionId}\nLinked Matching ID: ${activeMatchingReq.requestId}\nSelected Properties Count: ${selectedPropertyIds.length}`);
-                        }} 
-                        style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
-                      >
-                        📌 CONFIRM SELECTION & GENERATE SELECTION ID (SRM-SEL-2026)
-                      </button>
-
-                      <button 
-                        onClick={() => {
-                          const targetProp = properties.find(p => p.property_code === selectedPropertyIds[0]) || properties[0];
+                          const targetProp = selectedPropertyIds.length > 0
+                            ? (properties.find(p => p.property_code === selectedPropertyIds[0]) || properties[0])
+                            : properties[0];
                           handleCreateCostSheetForProperty(targetProp);
                         }} 
-                        style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
+                        style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', color: '#0f172a', border: 'none', padding: '12px 24px', borderRadius: '10px', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(251, 191, 36, 0.4)' }}
                       >
                         📄 CREATE COST SHEET ID & SEND TO COST SHEET SHARING
-                      </button>
-
-                      <button 
-                        onClick={() => {
-                          alert(`📲 Selected Properties Shared with Customer ${activeMatchingReq.customerName}!\n\nGenerated PROPERTY SHARE ID: SRM-PSH-2026-000032\nChannel: WhatsApp & Email\nStatus: SENT & DELIVERED`);
-                        }} 
-                        style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
-                      >
-                        📲 SHARE SELECTED PROPERTIES (SRM-PSH-2026)
-                      </button>
-
-                      <button 
-                        onClick={() => {
-                          setActiveTab('visit_management');
-                          alert(`🚘 Handed over Selected Properties to Visit Management!\n\nGenerated VISIT SCHEDULE ID: SRM-VS-2026-000087\nCustomer: ${activeMatchingReq.customerName}\nStatus: SCHEDULED`);
-                        }} 
-                        style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
-                      >
-                        🚘 HANDOVER TO VISIT MANAGEMENT (SRM-VS-2026)
                       </button>
                     </div>
                   </div>
@@ -5194,10 +5301,9 @@ export default function App() {
                     style={{ width: '100%', background: '#0f172a', border: '1px solid #334155', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
                   >
                     <option value="COST_SHEET_ID">1. Cost Sheet ID (SRM-CS-2026)</option>
-                    <option value="SELECTION_ID">2. Property Selection ID (SRM-SEL-2026)</option>
-                    <option value="MATCHING_ID">3. Matching Request ID (SRM-MAT-2026)</option>
-                    <option value="CUSTOMER_ID">4. Customer Master ID (SRM-CUS-2026)</option>
-                    <option value="LEAD_ID">5. Lead Intake ID (SRM-LEAD-2026)</option>
+                    <option value="MATCHING_ID">2. Matching Request ID (SRM-MAT-2026)</option>
+                    <option value="CUSTOMER_ID">3. Customer Master ID (SRM-CUS-2026)</option>
+                    <option value="LEAD_ID">4. Lead Intake ID (SRM-LEAD-2026)</option>
                   </select>
                 </div>
 
