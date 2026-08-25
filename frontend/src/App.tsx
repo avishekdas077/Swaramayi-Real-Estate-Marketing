@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 function ScheduleVisitModalContent({
+  isLight = false,
   initialCS,
   targetCustomerId,
   targetCustName,
@@ -490,6 +491,7 @@ function ScheduleVisitModalContent({
 }
 
 function VisitDetailModalContent({
+  isLight = false,
   plan,
   onClose,
   setShowIndividualStopModal,
@@ -832,6 +834,7 @@ function VisitDetailModalContent({
 }
 
 function IndividualStopModalContent({
+  isLight = false,
   stop,
   plan,
   onClose,
@@ -1126,6 +1129,7 @@ export default function App() {
 
   // 10-Step Lead Intake Wizard Step State & Matching Requests Queue (Persistent)
   const [leadIntakeStep, setLeadIntakeStep] = useState<number>(1);
+  const [customerWizardStep, setCustomerWizardStep] = useState<number>(1);
   const [matchingVaultFilter, setMatchingVaultFilter] = useState<'PENDING_ONLY' | 'ALL'>('PENDING_ONLY');
   const [matchingRequestsQueue, setMatchingRequestsQueue] = useState<any[]>(() => {
     try {
@@ -3755,35 +3759,18 @@ export default function App() {
     return matchesQuery && matchesLocality && matchesBhk && matchesPriority;
   });
 
-  // Dynamic 5-Factor Property Matching Algorithm
+  // Advanced 8-Criteria Real Estate Property Matching Algorithm (With Floor Preference)
   const calculatePropertyMatchScore = (customer: any, property: any) => {
-    let breakdown = { loc: 5, bud: 10, bhk: 5, type: 5, facing: 15 };
-
-    if (customer?.preferredArea && property?.locality) {
-      const prefLocs = customer.preferredArea.toLowerCase().split(/[\/,]/).map((s: string) => s.trim());
-      const propLoc = property.locality.toLowerCase().trim();
-      if (prefLocs.some((loc: string) => propLoc.includes(loc) || loc.includes(propLoc))) {
-        breakdown.loc = 25;
-      } else {
-        breakdown.loc = 5;
-      }
-    } else {
-      breakdown.loc = 15;
-    }
-
-    if (customer?.configuration && property?.configuration) {
-      const custBhk = customer.configuration.toUpperCase();
-      const propBhk = property.configuration.toUpperCase();
-      if (custBhk === propBhk || (custBhk.includes('VILLA') && propBhk.includes('VILLA'))) {
-        breakdown.bhk = 25;
-      } else if ((custBhk.includes('4BHK') && propBhk.includes('3BHK')) || (custBhk.includes('3BHK') && propBhk.includes('2BHK'))) {
-        breakdown.bhk = 15;
-      } else {
-        breakdown.bhk = 5;
-      }
-    } else {
-      breakdown.bhk = 15;
-    }
+    let breakdown = {
+      bud: 0,                  // 1. Min-Max Budget Range (25%)
+      loc: 10,                 // 2. Location & Locality Hub (20%)
+      bhk: 8,                  // 3. BHK Configuration (15%)
+      sqft: 8,                 // 4. Square Feet Area (15%)
+      possession_facing: 6,    // 5. Possession & Vastu Facing (10%)
+      floor_pref: 3,           // 6. Floor Preference (5%)
+      type: 3,                 // 7. Property Category Type (5%)
+      condition: 3             // 8. Property Condition & Furnishing (5%)
+    };
 
     const parseAmountInLakhs = (str: string) => {
       if (!str) return 100;
@@ -3793,36 +3780,125 @@ export default function App() {
       return num;
     };
 
-    const propPriceLakhs = parseAmountInLakhs(property?.final_price || '');
-    
+    // 1. MINIMUM & MAXIMUM BUDGET RANGE MATCH (STRICT 25%)
+    const propPriceLakhs = parseAmountInLakhs(property?.final_price || property?.base_price || '');
     if (customer?.budget) {
       const budgetParts = customer.budget.split('-').map(parseAmountInLakhs);
-      const minBud = budgetParts[0] || 50;
-      const maxBud = budgetParts[1] || budgetParts[0] * 1.25 || 1000;
+      const minBud = budgetParts[0] || 0;
+      const maxBud = budgetParts[1] || budgetParts[0] || 9999;
 
-      if (propPriceLakhs >= minBud * 0.8 && propPriceLakhs <= maxBud * 1.2) {
-        breakdown.bud = 25;
-      } else if (propPriceLakhs < minBud * 0.8) {
-        breakdown.bud = 18;
+      if (propPriceLakhs >= minBud && propPriceLakhs <= maxBud) {
+        breakdown.bud = 25; // 100% fit strictly between min & max budget
       } else {
-        breakdown.bud = 5;
+        breakdown.bud = 0;  // 0% match if less than min budget or more than max budget
       }
     } else {
-      breakdown.bud = 15;
+      breakdown.bud = 0;
     }
 
+    // 2. LOCATION & LOCALITY HUB MATCH (20%)
+    if (customer?.preferredArea && property?.locality) {
+      const prefLocs = customer.preferredArea.toLowerCase().split(/[\/,]/).map((s: string) => s.trim());
+      const propLoc = property.locality.toLowerCase().trim();
+      if (prefLocs.some((loc: string) => propLoc.includes(loc) || loc.includes(propLoc))) {
+        breakdown.loc = 20;
+      } else {
+        breakdown.loc = 10;
+      }
+    } else {
+      breakdown.loc = 15;
+    }
+
+    // 3. BHK CONFIGURATION MATCH (15%)
+    if (customer?.configuration && property?.configuration) {
+      const custBhk = customer.configuration.toUpperCase();
+      const propBhk = property.configuration.toUpperCase();
+      if (custBhk === propBhk || (custBhk.includes('VILLA') && propBhk.includes('VILLA'))) {
+        breakdown.bhk = 15;
+      } else if ((custBhk.includes('4BHK') && propBhk.includes('3BHK')) || (custBhk.includes('3BHK') && propBhk.includes('2BHK'))) {
+        breakdown.bhk = 10;
+      } else {
+        breakdown.bhk = 5;
+      }
+    } else {
+      breakdown.bhk = 12;
+    }
+
+    // 4. SQUARE FEET AREA MATCH (15%)
+    const parseSqft = (str: string) => {
+      if (!str) return 1500;
+      const num = parseFloat(str.replace(/[^0-9.]/g, '')) || 1500;
+      return num;
+    };
+    const propSqft = parseSqft(property?.carpet_area || property?.built_up_area_sqft || '');
+    if (customer?.carpet_area || customer?.configuration) {
+      if (propSqft >= 1200 && propSqft <= 3500) {
+        breakdown.sqft = 15;
+      } else {
+        breakdown.sqft = 10;
+      }
+    } else {
+      breakdown.sqft = 12;
+    }
+
+    // 5. POSSESSION & VASTU FACING MATCH (10%)
+    const facingStr = (property?.facing || '').toLowerCase();
+    const posStr = (property?.possession_status || property?.status || '').toLowerCase();
+    if (facingStr.includes('east') || facingStr.includes('north') || posStr.includes('ready') || posStr.includes('available')) {
+      breakdown.possession_facing = 10;
+    } else {
+      breakdown.possession_facing = 6;
+    }
+
+    // 6. FLOOR PREFERENCE MATCH (5%)
+    const propFloor = property?.floor !== undefined ? Number(property.floor) : 5;
+    const floorPrefStr = (customer?.floor_preference || customer?.preferred_floor || '').toLowerCase();
+    if (floorPrefStr.includes('low') || floorPrefStr.includes('1-5')) {
+      breakdown.floor_pref = (propFloor >= 1 && propFloor <= 5) ? 5 : 2;
+    } else if (floorPrefStr.includes('mid') || floorPrefStr.includes('6-12')) {
+      breakdown.floor_pref = (propFloor >= 6 && propFloor <= 12) ? 5 : 2;
+    } else if (floorPrefStr.includes('high') || floorPrefStr.includes('sky') || floorPrefStr.includes('13+')) {
+      breakdown.floor_pref = (propFloor >= 13) ? 5 : 2;
+    } else {
+      breakdown.floor_pref = 5; // Default match if any floor acceptable
+    }
+
+    // 7. PROPERTY CATEGORY TYPE MATCH (5%)
     if (customer?.property_type && property?.property_type) {
-      if (customer.property_type.toLowerCase() === property.property_type.toLowerCase()) {
-        breakdown.type = 15;
-      } else {
+      const cTypeRaw = customer.property_type.toLowerCase();
+      const pType = property.property_type.toLowerCase();
+      const selectedCats = cTypeRaw.split(',').map(s => s.trim());
+      
+      const isExactMatch = selectedCats.some(cat => cat === pType || pType.includes(cat) || cat.includes(pType));
+      if (isExactMatch) {
         breakdown.type = 5;
+      } else if (
+        (cTypeRaw.includes('flat') && pType.includes('flat')) ||
+        (cTypeRaw.includes('complex') && (pType.includes('complex') || pType.includes('flat') || pType.includes('commercial'))) ||
+        (cTypeRaw.includes('villa') && pType.includes('villa')) ||
+        (cTypeRaw.includes('commercial') && pType.includes('commercial')) ||
+        (cTypeRaw.includes('plot') && pType.includes('plot'))
+      ) {
+        const cResale = cTypeRaw.includes('resale');
+        const pResale = pType.includes('resale');
+        const cRent = cTypeRaw.includes('rent');
+        const pRent = pType.includes('rent');
+        if ((cResale === pResale) && (cRent === pRent)) {
+          breakdown.type = 5;
+        } else {
+          breakdown.type = 3;
+        }
+      } else {
+        breakdown.type = 1;
       }
     } else {
-      breakdown.type = 10;
+      breakdown.type = 5;
     }
 
-    breakdown.facing = 15;
-    const total = breakdown.loc + breakdown.bud + breakdown.bhk + breakdown.type + breakdown.facing;
+    // 8. PROPERTY CONDITION & FURNISHING MATCH (5%)
+    breakdown.condition = property?.furnishing_status || property?.status === 'AVAILABLE' ? 5 : 3;
+
+    const total = Math.min(100, breakdown.bud + breakdown.loc + breakdown.bhk + breakdown.sqft + breakdown.possession_facing + breakdown.floor_pref + breakdown.type + breakdown.condition);
     return { total, breakdown };
   };
 
@@ -4079,7 +4155,7 @@ export default function App() {
         />
       )}
 
-      {/* SIDEBAR NAVIGATION */}
+      {/* PERSISTENT SIDEBAR NAVIGATION IN EVERY CATEGORY */}
       <aside style={{ 
         width: '280px', 
         background: isLight ? '#ffffff' : '#0f172a', 
@@ -4087,9 +4163,9 @@ export default function App() {
         display: 'flex', 
         flexDirection: 'column', 
         flexShrink: 0,
-        position: isMobile ? 'fixed' : 'relative',
+        position: isMobile ? 'fixed' : 'sticky',
         top: 0,
-        bottom: 0,
+        height: isMobile ? '100%' : '100vh',
         left: isMobile ? (isMobileSidebarOpen ? 0 : '-300px') : 0,
         zIndex: 999,
         transition: 'left 0.3s ease',
@@ -4175,6 +4251,33 @@ export default function App() {
           </button>
         </nav>
       </aside>
+
+            {/* ALWAYS ACCESSIBLE FLOATING SIDEBAR TOGGLE IN EVERY CATEGORY */}
+      {isMobile && !isMobileSidebarOpen && (
+        <button
+          onClick={() => setIsMobileSidebarOpen(true)}
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            left: '24px',
+            zIndex: 1999,
+            background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            color: '#ffffff',
+            border: '2px solid #38bdf8',
+            borderRadius: '50px',
+            padding: '12px 20px',
+            fontWeight: '900',
+            fontSize: '0.85rem',
+            boxShadow: '0 8px 24px rgba(2, 132, 199, 0.4)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <Menu size={18} /> <span>CATEGORIES MENU</span>
+        </button>
+      )}
 
       {/* MAIN CONTENT AREA */}
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
@@ -5549,11 +5652,20 @@ export default function App() {
                           <div>
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Property Category Type</label>
                             <select value={newPropertyForm.property_type} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, property_type: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}>
-                              <option value="Flat / Apartment">Flat / Apartment</option>
-                              <option value="Gated Villa">Gated Villa</option>
-                              <option value="Independent House">Independent House</option>
-                              <option value="Commercial Space">Commercial Space</option>
-                              <option value="Open Plot">Open Plot</option>
+                              <option value="Flat / Apartment (New / Builder)">🏢 Flat / Apartment (New / Builder)</option>
+                              <option value="Flat / Apartment (Resale)">🔄 Flat / Apartment (Resale)</option>
+                              <option value="Flat / Apartment (For Rent)">🔑 Flat / Apartment (For Rent)</option>
+                              <option value="Gated Villa (New / Builder)">🏰 Gated Villa (New / Builder)</option>
+                              <option value="Gated Villa (Resale)">🔄 Gated Villa (Resale)</option>
+                              <option value="Gated Villa (For Rent)">🔑 Gated Villa (For Rent)</option>
+                              <option value="Independent House (Resale)">🔄 Independent House (Resale)</option>
+                              <option value="Independent House (For Rent)">🔑 Independent House (For Rent)</option>
+                              <option value="Commercial Space (New / Builder)">🏢 Commercial Space (New / Builder)</option>
+                              <option value="Commercial Space (Resale)">🔄 Commercial Space (Resale)</option>
+                              <option value="Commercial Space (For Lease / Rent)">🔑 Commercial Space (For Lease / Rent)</option>
+                              <option value="PG / Co-Living Space">🛌 PG / Co-Living Space (For Rent)</option>
+                              <option value="Open Plot / Land (New / Builder)">📐 Open Plot / Land (New / Builder)</option>
+                              <option value="Open Plot / Land (Resale)">📐 Open Plot / Land (Resale)</option>
                             </select>
                           </div>
                           <div>
@@ -7332,7 +7444,7 @@ export default function App() {
                                         setSelectedPropertyIds(selectedPropertyIds.filter(id => id !== p.property_code));
                                       }
                                     }} 
-                                    style={{ width: '16px', height: '16px', cursor: 'pointer' }} 
+                                    style={{ width: '18px', height: '18px', cursor: 'pointer' }} 
                                   />
                                 </td>
                                 <td style={{ padding: '12px' }}>
@@ -7363,13 +7475,43 @@ export default function App() {
                                   </span>
                                 </td>
                                 <td style={{ padding: '12px' }}>
-                                  {/* MATCH EXPLANATION (SECTION 9) */}
-                                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', fontSize: '0.68rem' }}>
-                                    <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ Preferred Location</span>
-                                    <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ Within 10 KM Radius</span>
-                                    <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ Within Budget</span>
-                                    <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ 3 BHK Satisfied</span>
-                                    <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '4px', color: '#4ade80', fontWeight: '700' }}>✓ Ready-to-Move</span>
+                                  {/* MATCH EXPLANATION (ALL 7 CRITERIA BREAKDOWN WITH ACHIEVED%/MAX% MATCH FORMATTING) */}
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{ background: pct >= 85 ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : pct >= 70 ? 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '12px', fontWeight: '900', fontSize: '0.78rem', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
+                                        🎯 {pct}% / 100% OVERALL MATCH
+                                      </span>
+                                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>
+                                        {pct >= 85 ? 'High Precision 7-Criteria Match' : pct >= 70 ? 'Good Compatibility' : 'Partial Criteria Match'}
+                                      </span>
+                                    </div>
+
+                                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', fontSize: '0.68rem' }}>
+                                      <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${p.breakdown.bud === 25 ? '#22c55e' : '#ef4444'}`, padding: '2px 6px', borderRadius: '4px', color: p.breakdown.bud === 25 ? '#4ade80' : '#ef4444', fontWeight: '700' }}>
+                                        {p.breakdown.bud === 25 ? '✓' : '✗'} Budget Range ({p.breakdown.bud}%/25% match)
+                                      </span>
+                                      <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${p.breakdown.loc >= 15 ? '#22c55e' : '#fbbf24'}`, padding: '2px 6px', borderRadius: '4px', color: p.breakdown.loc >= 15 ? '#4ade80' : '#fbbf24', fontWeight: '700' }}>
+                                        ✓ Location ({p.breakdown.loc}%/20% match)
+                                      </span>
+                                      <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${p.breakdown.bhk >= 12 ? '#22c55e' : '#fbbf24'}`, padding: '2px 6px', borderRadius: '4px', color: p.breakdown.bhk >= 12 ? '#4ade80' : '#fbbf24', fontWeight: '700' }}>
+                                        ✓ BHK Config ({p.breakdown.bhk}%/15% match)
+                                      </span>
+                                      <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${p.breakdown.sqft >= 10 ? '#22c55e' : '#fbbf24'}`, padding: '2px 6px', borderRadius: '4px', color: p.breakdown.sqft >= 10 ? '#4ade80' : '#fbbf24', fontWeight: '700' }}>
+                                        ✓ Sq.Ft Area ({p.breakdown.sqft}%/15% match)
+                                      </span>
+                                      <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${p.breakdown.possession_facing >= 7 ? '#22c55e' : '#fbbf24'}`, padding: '2px 6px', borderRadius: '4px', color: p.breakdown.possession_facing >= 7 ? '#4ade80' : '#fbbf24', fontWeight: '700' }}>
+                                        ✓ Possession & Facing ({p.breakdown.possession_facing}%/10% match)
+                                      </span>
+                                      <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${p.breakdown.floor_pref >= 4 ? '#22c55e' : '#fbbf24'}`, padding: '2px 6px', borderRadius: '4px', color: p.breakdown.floor_pref >= 4 ? '#4ade80' : '#fbbf24', fontWeight: '700' }}>
+                                        ✓ Floor Preference ({p.breakdown.floor_pref}%/5% match)
+                                      </span>
+                                      <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${p.breakdown.type >= 4 ? '#22c55e' : '#fbbf24'}`, padding: '2px 6px', borderRadius: '4px', color: p.breakdown.type >= 4 ? '#4ade80' : '#fbbf24', fontWeight: '700' }}>
+                                        ✓ Category Type ({p.breakdown.type}%/5% match)
+                                      </span>
+                                      <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${p.breakdown.condition >= 3 ? '#22c55e' : '#fbbf24'}`, padding: '2px 6px', borderRadius: '4px', color: p.breakdown.condition >= 3 ? '#4ade80' : '#fbbf24', fontWeight: '700' }}>
+                                        ✓ Condition ({p.breakdown.condition}%/5% match)
+                                      </span>
+                                    </div>
                                   </div>
                                 </td>
                                 <td style={{ padding: '12px', textAlign: 'center' }}>
@@ -9345,189 +9487,308 @@ export default function App() {
                 ✓ 100% AUTO-GENERATED & UNIQUE
               </span>
             </div>
-
-            {/* LIVE DUPLICATE SCANNER STATUS BANNER */}
-            <div style={{ background: newCustomerForm.mobile.length >= 10 ? 'rgba(34, 197, 94, 0.15)' : '#0f172a', border: newCustomerForm.mobile.length >= 10 ? '1px solid #22c55e' : '1px solid #334155', borderRadius: '8px', padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Search size={16} color={newCustomerForm.mobile.length >= 10 ? '#4ade80' : '#38bdf8'} />
-                <span style={{ fontSize: '0.8rem', color: newCustomerForm.mobile.length >= 10 ? '#4ade80' : '#cbd5e1', fontWeight: '700' }}>
-                  {newCustomerForm.mobile.length >= 10 ? `🟢 Live Duplicate Check: Mobile ${newCustomerForm.mobile} is Clean & Unclaimed!` : '🔍 Live Automated Duplicate Checker Active for Mobile & Email'}
-                </span>
-              </div>
-              <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>AUTO-DEDUP ENGINE</span>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              {[
+                { step: 1, label: '1. Personal & Contact' },
+                { step: 2, label: '2. Requirement & Type' },
+                { step: 3, label: '3. Location & Radius' },
+                { step: 4, label: '4. Min-Max Budget & Area' },
+                { step: 5, label: '5. Floor & Facing' },
+                { step: 6, label: '6. Executive & Handoff' }
+              ].map(s => (
+                <button
+                  key={s.step}
+                  type="button"
+                  onClick={() => setCustomerWizardStep(s.step)}
+                  style={{
+                    background: customerWizardStep === s.step ? '#0284c7' : isLight ? '#f1f5f9' : '#0f172a',
+                    color: customerWizardStep === s.step ? '#ffffff' : isLight ? '#64748b' : '#94a3b8',
+                    border: customerWizardStep === s.step ? '1px solid #0284c7' : isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    fontSize: '0.75rem',
+                    fontWeight: '800',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {s.label}
+                </button>
+              ))}
             </div>
 
             <form onSubmit={handleCreateCustomerSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
-              {/* SECTION 1: PRIMARY CONTACT & PERSONAL PROFILE */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.9rem', fontWeight: '800', color: '#38bdf8', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
-                  1. Primary Contact & Personal Information
-                </h4>
+              {/* STEP 1: PRIMARY CONTACT & PERSONAL PROFILE */}
+              {customerWizardStep === 1 && (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#38bdf8', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                    Step 1: Primary Contact & Personal Profile Details
+                  </h4>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Full Name *</label>
-                    <input type="text" value={newCustomerForm.name} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })} placeholder="e.g. Dr. Ramesh Kulkarni" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Full Name *</label>
+                      <input type="text" value={newCustomerForm.name} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })} placeholder="e.g. Dr. Ramesh Kulkarni" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>System Customer Code (Auto Created) *</label>
+                      <input type="text" value={newCustomerForm.customer_number || `SRM-CUS-2026-000${customers.length + 188}`} readOnly style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #38bdf8', color: '#38bdf8', fontFamily: 'monospace', fontWeight: '900', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                    </div>
                   </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Primary Mobile Phone *</label>
+                      <input type="text" value={newCustomerForm.mobile} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, mobile: e.target.value })} placeholder="+91 98490 12345" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Alternate Mobile Phone</label>
+                      <input type="text" value={newCustomerForm.alternate_mobile} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, alternate_mobile: e.target.value })} placeholder="+91 98491 54321" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Email Address</label>
+                      <input type="email" value={newCustomerForm.email} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, email: e.target.value })} placeholder="ramesh@example.com" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>City & State</label>
+                      <select value={newCustomerForm.city} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, city: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        <option value="Hyderabad">Hyderabad</option>
+                        <option value="Kolkata">Kolkata</option>
+                        <option value="Bangalore">Bangalore</option>
+                        <option value="Mumbai">Mumbai</option>
+                        <option value="Delhi-NCR">Delhi-NCR</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>System Customer Code (Auto Created) *</label>
-                    <input type="text" value={newCustomerForm.customer_number || `SRM-CUS-2026-000${customers.length + 188}`} readOnly style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #38bdf8', color: '#38bdf8', fontFamily: 'monospace', fontWeight: '900', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Residential Address</label>
+                    <input type="text" value={newCustomerForm.address} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, address: e.target.value })} placeholder="Flat 402, Jubilee Hills, Road No. 36" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
                   </div>
                 </div>
+              )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Primary Mobile Phone *</label>
-                    <input type="text" value={newCustomerForm.mobile} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, mobile: e.target.value })} placeholder="+91 98490 12345" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} required />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Alternate Mobile Phone</label>
-                    <input type="text" value={newCustomerForm.alternate_mobile} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, alternate_mobile: e.target.value })} placeholder="+91 98491 54321" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
+              {/* STEP 2: PROPERTY REQUIREMENT & BHK CONFIGURATION */}
+              {customerWizardStep === 2 && (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#4ade80', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                    Step 2: Property Category Type & BHK Configuration
+                  </h4>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                        Property Category Type (Multi-Select Allowed - Click to Toggle) *
+                      </label>
+                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '10px', maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {[
+                          "Flat / Apartment (New / Builder)",
+                          "Flat / Apartment (Resale)",
+                          "Flat / Apartment (For Rent)",
+                          "Residential Complex (New / Builder)",
+                          "Residential Complex (Resale)",
+                          "Residential Complex (For Rent)",
+                          "Gated Villa (New / Builder)",
+                          "Gated Villa (Resale)",
+                          "Gated Villa (For Rent)",
+                          "Commercial Complex (New / Builder)",
+                          "Commercial Complex (Resale)",
+                          "Commercial Complex (For Rent / Lease)",
+                          "Commercial Office (New / Builder)",
+                          "Commercial Office (Resale)",
+                          "Commercial Office (For Rent / Lease)",
+                          "Retail Shop (For Rent)",
+                          "PG / Co-Living Space (For Rent)",
+                          "Open Plot / Land (New / Builder)",
+                          "Open Plot / Land (Resale)"
+                        ].map(cat => {
+                          const selectedList = (newCustomerForm.property_type || '').split(',').map(s => s.trim()).filter(Boolean);
+                          const isChecked = selectedList.includes(cat);
+                          return (
+                            <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: isChecked ? '#38bdf8' : isLight ? '#0f172a' : '#cbd5e1', fontWeight: isChecked ? '800' : '500', cursor: 'pointer', background: isChecked ? 'rgba(56, 189, 248, 0.12)' : 'transparent', padding: '4px 6px', borderRadius: '4px' }}>
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={(e) => {
+                                  let updated: string[];
+                                  if (e.target.checked) {
+                                    updated = [...selectedList, cat];
+                                  } else {
+                                    updated = selectedList.filter(item => item !== cat);
+                                  }
+                                  setNewCustomerForm({ ...newCustomerForm, property_type: updated.join(', ') });
+                                }}
+                              />
+                              <span>{cat}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {newCustomerForm.property_type && (
+                        <div style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800', marginTop: '4px' }}>
+                          ✓ Selected Categories: {newCustomerForm.property_type}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>BHK Configuration *</label>
+                      <select value={newCustomerForm.configuration} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, configuration: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        <option value="1BHK">1BHK Studio</option>
+                        <option value="2BHK">2BHK Flat</option>
+                        <option value="3BHK">3BHK Flat</option>
+                        <option value="4BHK">4BHK Luxury Apartment</option>
+                        <option value="5BHK+ Villa">5BHK+ Villa</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {/* STEP 3: LOCATION HUB & SEARCH RADIUS */}
+              {customerWizardStep === 3 && (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#fbbf24', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                    Step 3: Preferred Locality Hub & Search Distance Radius
+                  </h4>
+
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Email Address</label>
-                    <input type="email" value={newCustomerForm.email} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, email: e.target.value })} placeholder="ramesh@example.com" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>City & State</label>
-                    <select value={newCustomerForm.city} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, city: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                      <option value="Hyderabad">Hyderabad</option>
-                      <option value="Kolkata">Kolkata</option>
-                      <option value="Bangalore">Bangalore</option>
-                      <option value="Mumbai">Mumbai</option>
-                      <option value="Delhi-NCR">Delhi-NCR</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Residential Address</label>
-                  <input type="text" value={newCustomerForm.address} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, address: e.target.value })} placeholder="Flat 402, Jubilee Hills, Road No. 36" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                </div>
-              </div>
-
-              {/* SECTION 2: PROPERTY REQUIREMENTS & FINANCIAL LIMITS */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.9rem', fontWeight: '800', color: '#4ade80', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
-                  2. Property Requirement & Budget Parameters
-                </h4>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Preferred Area / Locality *</label>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Preferred Area / Locality Hub *</label>
                     <input type="text" value={newCustomerForm.preferredArea} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, preferredArea: e.target.value })} placeholder="Kondapur / Gachibowli / Hitec City" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} required />
                   </div>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Type</label>
-                    <select value={newCustomerForm.property_type} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, property_type: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                      <option value="Flat / Apartment">Flat / Apartment</option>
-                      <option value="Gated Villa">Gated Villa</option>
-                      <option value="Open Plot / Land">Open Plot / Land</option>
-                      <option value="Commercial Space">Commercial Space</option>
-                    </select>
+                </div>
+              )}
+
+              {/* STEP 4: MIN-MAX BUDGET & AREA DIMENSIONS */}
+              {customerWizardStep === 4 && (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#38bdf8', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                    Step 4: Minimum & Maximum Budget Limits & Area Dimensions
+                  </h4>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Minimum Budget (₹ INR) *</label>
+                      <input type="text" value={newCustomerForm.budget_min} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, budget_min: e.target.value })} placeholder="70,00,000" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Maximum Budget (₹ INR) *</label>
+                      <input type="text" value={newCustomerForm.budget_max} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, budget_max: e.target.value })} placeholder="1,50,00,000" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Configuration</label>
-                    <select value={newCustomerForm.configuration} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, configuration: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                      <option value="2BHK">2BHK</option>
-                      <option value="3BHK">3BHK</option>
-                      <option value="4BHK">4BHK</option>
-                      <option value="5BHK+ Villa">5BHK+ Villa</option>
-                    </select>
-                  </div>
+              {/* STEP 5: FLOOR PREFERENCE & VASTU FACING */}
+              {customerWizardStep === 5 && (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#c084fc', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                    Step 5: Floor Preference & Vastu Facing
+                  </h4>
 
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Minimum Budget (₹)</label>
-                    <input type="text" value={newCustomerForm.budget_min} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, budget_min: e.target.value })} placeholder="70,00,000" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Floor Preference</label>
+                      <select value={newCustomerForm.floor_preference} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, floor_preference: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        <option value="Low Floor (1-5)">Low Floor (Floors 1 to 5)</option>
+                        <option value="Middle Floor (6-12)">Middle Floor (Floors 6 to 12)</option>
+                        <option value="High Floor (13+)">High Floor / Sky Villa (Floors 13+)</option>
+                        <option value="Any Floor Acceptable">Any Floor Acceptable</option>
+                      </select>
+                    </div>
 
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Maximum Budget (₹)</label>
-                    <input type="text" value={newCustomerForm.budget_max} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, budget_max: e.target.value })} placeholder="1,50,00,000" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Purchasing Intent Level</label>
-                    <select value={newCustomerForm.priority} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, priority: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}>
-                      <option value="HOT">🔥 HOT (Immediate Purchase in 15 Days)</option>
-                      <option value="WARM">⚡ WARM (Evaluating Options in 30 Days)</option>
-                      <option value="COLD">❄️ COLD (Future Prospect 60+ Days)</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Lead Source Channel</label>
-                    <select value={newCustomerForm.source} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, source: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                      <option value="Facebook Ads">Facebook / Meta Digital Ads</option>
-                      <option value="Google PPC Search">Google PPC Search</option>
-                      <option value="MagicBricks / 99acres">Property Portals (MagicBricks/99acres)</option>
-                      <option value="Walk-In / Site Hoarding">Walk-In / Site Hoarding</option>
-                      <option value="Existing Client Referral">Existing Client Referral</option>
-                      <option value="Channel Partner">Channel Partner (CP Broker)</option>
-                    </select>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Vastu Facing Preference</label>
+                      <select value={newCustomerForm.facing} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, facing: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        <option value="East Facing">East Facing</option>
+                        <option value="North Facing">North Facing</option>
+                        <option value="North-East Facing">North-East Facing</option>
+                        <option value="West Facing">West Facing</option>
+                        <option value="South Facing">South Facing</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Special Notes & Remarks</label>
-                  <input type="text" value={newCustomerForm.notes} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, notes: e.target.value })} placeholder="Wants East facing 3BHK with 2 car parkings near IT Hub" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
-                </div>
-              </div>
+              {/* STEP 6: EXECUTIVE ASSIGNMENT & HANDOFF */}
+              {customerWizardStep === 6 && (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <h4 style={{ fontSize: '0.92rem', fontWeight: '800', color: '#fbbf24', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                    Step 6: Executive Assignment, Channel Attribution & Handoff
+                  </h4>
 
-              {/* SECTION 3: ASSIGNED SALESPERSON & SECURITY */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.9rem', fontWeight: '800', color: '#fbbf24', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
-                  3. Executive Ownership & Access Security
-                </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Sales Executive *</label>
+                      <select value={newCustomerForm.assigned_employee_id} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, assigned_employee_id: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}>
+                        <option value="Priya Nair">Priya Nair (Sales Exec)</option>
+                        <option value="Rahul Sharma">Rahul Sharma (Team Lead)</option>
+                        <option value="Deepak Verma">Deepak Verma (Sales Mgr)</option>
+                        <option value="Suresh Kumar">Suresh Kumar (Branch Mgr)</option>
+                      </select>
+                    </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Sales Executive *</label>
-                    <select value={newCustomerForm.assigned_employee_id} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, assigned_employee_id: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}>
-                      <option value="Priya Nair">Priya Nair (Sales Exec)</option>
-                      <option value="Rahul Sharma">Rahul Sharma (Team Lead)</option>
-                      <option value="Deepak Verma">Deepak Verma (Sales Mgr)</option>
-                      <option value="Suresh Kumar">Suresh Kumar (Branch Mgr)</option>
-                    </select>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Lead Source Channel</label>
+                      <select value={newCustomerForm.source} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, source: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                        <option value="Facebook Ads">Facebook / Meta Digital Ads</option>
+                        <option value="Google PPC Search">Google PPC Search</option>
+                        <option value="MagicBricks / 99acres">Property Portals (MagicBricks/99acres)</option>
+                        <option value="Walk-In / Site Hoarding">Walk-In / Site Hoarding</option>
+                        <option value="Existing Client Referral">Existing Client Referral</option>
+                        <option value="Channel Partner">Channel Partner (CP Broker)</option>
+                      </select>
+                    </div>
                   </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Master Record Status</label>
-                    <select value={newCustomerForm.status} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, status: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}>
-                      <option value="ACTIVE_ENGAGED">🟢 ACTIVE_ENGAGED (Regular Site Visits & Followups)</option>
-                      <option value="NEW_UNASSIGNED">🟡 NEW_UNASSIGNED (Fresh Ingestion Pool)</option>
-                      <option value="DEAL_CONVERTED">🎉 DEAL_CONVERTED (Booking Completed)</option>
-                    </select>
-                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* MODAL ACTION FOOTER BUTTONS */}
-              <div style={{ display: 'flex', gap: '12px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '16px', justifyContent: 'flex-end' }}>
-                <button 
-                  type="button" 
-                  onClick={() => { setShowAddCustomerModal(false); setShowCustomerModal(false); }} 
-                  style={{ background: isLight ? '#f1f5f9' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
+              {/* WIZARD CONTROL BUTTONS */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  disabled={customerWizardStep === 1}
+                  onClick={() => setCustomerWizardStep(prev => Math.max(1, prev - 1))}
+                  style={{
+                    background: customerWizardStep === 1 ? '#334155' : '#0284c7',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '10px 18px',
+                    borderRadius: '8px',
+                    fontWeight: '800',
+                    fontSize: '0.82rem',
+                    cursor: customerWizardStep === 1 ? 'not-allowed' : 'pointer'
+                  }}
                 >
-                  Cancel & Exit
+                  ← Previous Step
                 </button>
-                <button 
-                  type="submit" 
-                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 28px', borderRadius: '8px', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)' }}
-                >
-                  🚀 Save & Register Customer Master Record
-                </button>
-              </div>
 
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button type="button" onClick={() => { setShowAddCustomerModal(false); setShowCustomerModal(false); }} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '700', fontSize: '0.82rem', cursor: 'pointer' }}>Cancel</button>
+
+                  {customerWizardStep < 6 ? (
+                    <button
+                      type="button"
+                      onClick={() => setCustomerWizardStep(prev => Math.min(6, prev + 1))}
+                      style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 22px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}
+                    >
+                      Next Step →
+                    </button>
+                  ) : (
+                    <button
+                      type="submit"
+                      style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)' }}
+                    >
+                      👤 SAVE CUSTOMER MASTER RECORD
+                    </button>
+                  )}
+                </div>
+              </div>
             </form>
           </div>
         </div>
@@ -9766,23 +10027,69 @@ export default function App() {
                 <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 3: Property Purchase Purpose & Category Type</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Purpose *</label>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Transaction Purpose *</label>
                     <select value={newCustomerForm.investment_purpose} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, investment_purpose: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                      <option value="Self Use">🏡 SELF USE (End User Residence)</option>
+                      <option value="Buy">🏡 BUY / OUTRIGHT PURCHASE</option>
+                      <option value="Rent">🔑 RESIDENTIAL RENT / LEASE</option>
+                      <option value="Commercial Lease">🏢 COMMERCIAL LEASE / RENT</option>
                       <option value="Investment">📈 INVESTMENT (Capital Appreciation)</option>
-                      <option value="Rental Income">💰 RENTAL INCOME (Monthly Yield)</option>
+                      <option value="Rental Income">💰 RENTAL YIELD INVESTOR</option>
                     </select>
                   </div>
 
-                  <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Category Type *</label>
-                    <select value={newCustomerForm.property_type} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, property_type: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                      <option value="Flat / Apartment">🏢 RESIDENTIAL (Apartment / Flat)</option>
-                      <option value="Independent Villa">🏰 VILLA / TOWNHOUSE</option>
-                      <option value="Open Plot">📐 LAND / OPEN PLOT</option>
-                      <option value="Commercial Office">🏢 COMMERCIAL OFFICE SPACE</option>
-                      <option value="Retail Shop">🛍️ COMMERCIAL RETAIL SHOP</option>
-                    </select>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>
+                      Property Category Type (Multi-Select Allowed - Click Checkboxes to Select Multiple) *
+                    </label>
+                    <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '10px', maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {[
+                        "Flat / Apartment (New / Builder)",
+                        "Flat / Apartment (Resale)",
+                        "Flat / Apartment (For Rent)",
+                        "Residential Complex (New / Builder)",
+                        "Residential Complex (Resale)",
+                        "Residential Complex (For Rent)",
+                        "Gated Villa (New / Builder)",
+                        "Gated Villa (Resale)",
+                        "Gated Villa (For Rent)",
+                        "Commercial Complex (New / Builder)",
+                        "Commercial Complex (Resale)",
+                        "Commercial Complex (For Rent / Lease)",
+                        "Commercial Office (New / Builder)",
+                        "Commercial Office (Resale)",
+                        "Commercial Office (For Rent / Lease)",
+                        "Retail Shop (For Rent)",
+                        "PG / Co-Living Space (For Rent)",
+                        "Open Plot / Land (New / Builder)",
+                        "Open Plot / Land (Resale)"
+                      ].map(cat => {
+                        const selectedList = (newCustomerForm.property_type || '').split(',').map(s => s.trim()).filter(Boolean);
+                        const isChecked = selectedList.includes(cat);
+                        return (
+                          <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: isChecked ? '#38bdf8' : isLight ? '#0f172a' : '#cbd5e1', fontWeight: isChecked ? '800' : '500', cursor: 'pointer', background: isChecked ? 'rgba(56, 189, 248, 0.12)' : 'transparent', padding: '4px 8px', borderRadius: '4px' }}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                let updated: string[];
+                                if (e.target.checked) {
+                                  updated = [...selectedList, cat];
+                                } else {
+                                  updated = selectedList.filter(item => item !== cat);
+                                }
+                                setNewCustomerForm({ ...newCustomerForm, property_type: updated.join(', ') });
+                              }}
+                            />
+                            <span>{cat}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {newCustomerForm.property_type && (
+                      <div style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800', marginTop: '4px' }}>
+                        ✓ Selected Categories: {newCustomerForm.property_type}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -11502,7 +11809,7 @@ export default function App() {
         const eligibleCostSheets = customerCostSheets.length >= 2 ? customerCostSheets : individualCostSheets.slice(0, 4);
 
         return (
-          <ScheduleVisitModalContent 
+          <ScheduleVisitModalContent isLight={isLight} 
             initialCS={initialCS}
             targetCustomerId={targetCustomerId}
             targetCustName={targetCustName}
@@ -11708,7 +12015,7 @@ export default function App() {
 
       {/* MODAL: FULL VISIT SCHEDULE DETAIL */}
       {showVisitDetailModal && showVisitDetailModal.open && showVisitDetailModal.plan && (
-        <VisitDetailModalContent 
+        <VisitDetailModalContent isLight={isLight} 
           plan={showVisitDetailModal.plan}
           onClose={() => setShowVisitDetailModal(null)}
           setShowIndividualStopModal={setShowIndividualStopModal}
@@ -11724,7 +12031,7 @@ export default function App() {
 
       {/* MODAL: INDIVIDUAL PROPERTY STOP DETAILS */}
       {showIndividualStopModal && showIndividualStopModal.open && showIndividualStopModal.stop && (
-        <IndividualStopModalContent 
+        <IndividualStopModalContent isLight={isLight} 
           stop={showIndividualStopModal.stop}
           plan={showIndividualStopModal.plan}
           onClose={() => setShowIndividualStopModal(null)}
