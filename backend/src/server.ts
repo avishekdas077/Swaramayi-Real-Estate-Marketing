@@ -11,6 +11,7 @@ import propertiesRoutes from './routes/properties.routes.js';
 import salesRoutes from './routes/sales.routes.js';
 import commissionsRoutes from './routes/commissions.routes.js';
 import matchingRoutes from './routes/matching.routes.js';
+import leadRoutes from './routes/lead.routes.js';
 
 dotenv.config();
 
@@ -38,6 +39,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
 app.use('/api/v1/security', securityRoutes);
 app.use('/api/v1/crm', crmRoutes);
+app.use('/api/v1/leads', leadRoutes);
 app.use('/api/v1/properties', propertiesRoutes);
 app.use('/api/v1/sales', salesRoutes);
 app.use('/api/v1/commissions', commissionsRoutes);

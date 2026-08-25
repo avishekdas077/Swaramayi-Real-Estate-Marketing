@@ -140,3 +140,37 @@ body {
 .btn-secondary:hover {
   background: #475569;
 }
+
+/* RESPONSIVE LAYOUT ENGINE UTILITIES */
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Touch friendly scrolling for horizontal steppers and button strips */
+.horizontal-scroll-touch {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+
+@media (max-width: 1024px) {
+  .responsive-main-content {
+    padding: 14px !important;
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .responsive-main-content {
+    padding: 10px !important;
+  }
+  .responsive-hide-mobile {
+    display: none !important;
+  }
+  .responsive-full-width {
+    width: 100% !important;
+  }
+}
+
