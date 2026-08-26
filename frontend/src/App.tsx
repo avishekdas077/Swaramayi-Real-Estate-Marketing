@@ -1292,7 +1292,6 @@ function PvaVerificationModalContent({
 
         {/* MODAL FOOTER */}
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
-          <button onClick={onClose} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
           <button 
             onClick={handleConfirmVerification}
             style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
@@ -1312,62 +1311,109 @@ function PvaDocumentModalContent({ isLight = false, pva, onClose }: any) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.88)' : 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2300, padding: '20px' }}>
-      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', width: '94vw', maxWidth: '820px', maxHeight: '94vh', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
+      <style>{`
+        @media print {
+          @page {
+            size: A4 portrait;
+            margin: 6mm 10mm 6mm 10mm;
+          }
+          html, body {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            height: 100% !important;
+            overflow: hidden !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          .printable-pva-card, .printable-pva-card * {
+            visibility: visible !important;
+          }
+          .printable-pva-card {
+            position: fixed !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            max-height: 98vh !important;
+            padding: 16px !important;
+            margin: 0 !important;
+            border: 2px solid #0284c7 !important;
+            box-shadow: none !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            overflow: hidden !important;
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+            border-radius: 8px !important;
+          }
+          .no-print {
+            display: none !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+        }
+      `}</style>
+      <div className="printable-pva-card" style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', width: '94vw', maxWidth: '820px', maxHeight: '94vh', borderRadius: '16px', padding: '22px', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto' }}>
         
         {/* DOCUMENT HEADER */}
-        <div style={{ borderBottom: '2px solid #0284c7', paddingBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div style={{ borderBottom: '2px solid #0284c7', paddingBottom: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
-            <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '900', letterSpacing: '1px' }}>
+            <span style={{ background: '#0284c7', color: '#ffffff', padding: '3px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', letterSpacing: '1px' }}>
               OFFICIAL BROKER INTRODUCTION RECORD
             </span>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '6px' }}>
+            <h2 style={{ fontSize: '1.3rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>
               SWARAMAYI REAL ESTATE MARKETING
             </h2>
-            <p style={{ fontSize: '0.82rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+            <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>
               Enterprise Real Estate Operating System • Project Visit Acknowledgement Document
             </p>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span style={{ background: '#22c55e', color: '#ffffff', padding: '4px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '900', fontFamily: 'monospace', display: 'inline-block' }}>
+            <span style={{ background: '#22c55e', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '900', fontFamily: 'monospace', display: 'inline-block' }}>
               {pva.projectVisitAgreementId}
             </span>
-            <br /><span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800', display: 'inline-block', marginTop: '4px' }}>Version: {pva.documentVersion || 'V1.0'}</span>
+            <br /><span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '800', display: 'inline-block', marginTop: '3px' }}>Version: {pva.documentVersion || 'V1.0'}</span>
           </div>
         </div>
 
         {/* DOCUMENT DETAILS GRID */}
-        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.85rem' }}>
+        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.8rem' }}>
           <div>
-            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CUSTOMER IDENTIFIER:</span>
-            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '1rem', marginTop: '2px' }}>👤 {pva.customerName}</h4>
+            <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CUSTOMER IDENTIFIER:</span>
+            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.92rem', marginTop: '2px' }}>👤 {pva.customerName}</h4>
             <span style={{ color: '#4ade80', fontFamily: 'monospace', fontWeight: '800' }}>Mobile: {pva.customerMobile}</span>
-            <br /><span style={{ color: '#38bdf8', fontSize: '0.75rem', fontFamily: 'monospace' }}>Customer ID: {pva.customerId}</span>
+            <br /><span style={{ color: '#38bdf8', fontSize: '0.72rem', fontFamily: 'monospace' }}>Customer ID: {pva.customerId}</span>
           </div>
 
           <div>
-            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>PROJECT & DEVELOPER:</span>
-            <h4 style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.98rem', marginTop: '2px' }}>🏢 {pva.projectTitle}</h4>
+            <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>PROJECT & DEVELOPER:</span>
+            <h4 style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.92rem', marginTop: '2px' }}>🏢 {pva.projectTitle}</h4>
             <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800' }}>Developer: {pva.developerName}</span>
-            <br /><span style={{ color: '#38bdf8', fontSize: '0.75rem', fontFamily: 'monospace' }}>Property Code: {pva.propertyId} | Cost Sheet: {pva.costSheetId}</span>
+            <br /><span style={{ color: '#38bdf8', fontSize: '0.72rem', fontFamily: 'monospace' }}>Property Code: {pva.propertyId} | Cost Sheet: {pva.costSheetId}</span>
           </div>
 
           <div>
-            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ASSIGNED SALES EXECUTIVE:</span>
-            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', fontSize: '0.9rem', marginTop: '2px' }}>{pva.salesPersonName}</h4>
-            <span style={{ color: '#22c55e', fontSize: '0.78rem', fontWeight: '800' }}>Visit Date: {pva.visitDate} at {pva.arrivalTime}</span>
+            <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ASSIGNED SALES EXECUTIVE:</span>
+            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', fontSize: '0.85rem', marginTop: '2px' }}>{pva.salesPersonName}</h4>
+            <span style={{ color: '#22c55e', fontSize: '0.75rem', fontWeight: '800' }}>Visit Date: {pva.visitDate} at {pva.arrivalTime}</span>
           </div>
 
           <div>
-            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BROKERAGE PROTECTION PERIOD:</span>
-            <h4 style={{ color: '#4ade80', fontWeight: '900', fontSize: '0.95rem', marginTop: '2px' }}>🛡️ {pva.protectionPeriodMonths} Months Protection Active</h4>
-            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem' }}>Protection Expiry: <strong>{pva.protectionEndDate}</strong></span>
+            <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BROKERAGE PROTECTION PERIOD:</span>
+            <h4 style={{ color: '#4ade80', fontWeight: '900', fontSize: '0.88rem', marginTop: '2px' }}>🛡️ {pva.protectionPeriodMonths || 12} Months Protection Active</h4>
+            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Protection Expiry: <strong>{pva.protectionEndDate}</strong></span>
           </div>
         </div>
 
         {/* VERIFICATION EVIDENCE AUDIT */}
-        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem' }}>
-          <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '0.85rem' }}>🔐 VERIFICATION EVIDENCE & AUDIT TRAIL</h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.75rem' }}>
+          <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '0.8rem' }}>🔐 VERIFICATION EVIDENCE & AUDIT TRAIL</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
             <div>GPS Status: <strong style={{ color: '#22c55e' }}>✓ GEOFENCE VERIFIED ({pva.gpsAccuracyMeters})</strong></div>
             <div>Customer OTP: <strong style={{ color: '#22c55e' }}>✓ VERIFIED ({pva.otpVerifiedAt})</strong></div>
             <div>Digital Ref: <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>{pva.digitalVerificationRef}</strong></div>
@@ -1375,41 +1421,58 @@ function PvaDocumentModalContent({ isLight = false, pva, onClose }: any) {
           </div>
         </div>
 
+        {/* LEGAL TERMS & CONDITIONS (T&C) */}
+        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.74rem' }}>
+          <h4 style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            📜 BINDING TERMS & CONDITIONS (T&C) — BROKERAGE PROTECTION & ANTI-BYPASS
+          </h4>
+          <ol style={{ margin: 0, paddingLeft: '16px', color: isLight ? '#334155' : '#cbd5e1', lineHeight: '1.4', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <li><strong>Broker Introduction & Non-Circumvention:</strong> Customer acknowledges that project introduction for <strong>{pva.projectTitle}</strong> was exclusively facilitated by <strong>Swaramayi Real Estate Marketing</strong>. Customer agrees not to bypass Swaramayi, deal directly with developer/owner, or engage third-party agents for this project.</li>
+            <li><strong>12-Month Protection Period:</strong> Swaramayi holds exclusive brokerage representation rights for a period of <strong>{pva.protectionPeriodMonths || 12} Months</strong> (Expires <strong>{pva.protectionEndDate}</strong>) for any unit booking or transaction in this project.</li>
+            <li><strong>Digital Evidence & Audit Consent:</strong> Customer OTP verification at <strong>{pva.otpVerifiedAt}</strong> and Geofence GPS audit ({pva.gpsAccuracyMeters}) constitute binding legal execution under the Information Technology Act.</li>
+          </ol>
+        </div>
+
         {/* SIGNATURE & LEGAL DISCLAIMER */}
-        <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CUSTOMER DIGITAL SIGNATURE:</span>
-            <div style={{ marginTop: '4px' }}>
-              {pva.customerSignature && <img src={pva.customerSignature} alt="Signature" style={{ maxHeight: '45px' }} />}
+            <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CUSTOMER DIGITAL SIGNATURE:</span>
+            <div style={{ marginTop: '2px' }}>
+              {pva.customerSignature && <img src={pva.customerSignature} alt="Signature" style={{ maxHeight: '38px' }} />}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>FOR SWARAMAYI REAL ESTATE MARKETING:</span>
-            <h4 style={{ color: '#0284c7', fontWeight: '900', fontSize: '0.9rem', marginTop: '4px' }}>Authorized Signature & Seal</h4>
+            <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>FOR SWARAMAYI REAL ESTATE MARKETING:</span>
+            <h4 style={{ color: '#0284c7', fontWeight: '900', fontSize: '0.82rem', marginTop: '2px' }}>Authorized Signature & Seal</h4>
           </div>
         </div>
 
         {/* MODAL FOOTER */}
-        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '16px', flexWrap: 'wrap' }}>
-          <button onClick={() => window.print()} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}>🖨️ PRINT ACKNOWLEDGEMENT PDF</button>
+        <div className="no-print" style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px', flexWrap: 'wrap' }}>
+          <button onClick={() => window.print()} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            🖨️ PRINT & DOWNLOAD AGREEMENT PDF
+          </button>
           <button 
             onClick={() => {
-              const msg = `📱 *SWARAMAYI REAL ESTATE MARKETING — PROJECT VISIT ACKNOWLEDGEMENT*\n\n` +
-                `*PVA ID*: ${pva.projectVisitAgreementId}\n` +
-                `*Project*: ${pva.projectTitle}\n` +
-                `*Customer*: ${pva.customerName}\n` +
-                `*Visit Date*: ${pva.visitDate}\n` +
-                `*Protection Active*: ${pva.protectionPeriodMonths} Months (Expires ${pva.protectionEndDate})\n\n` +
-                `Document Reference: ${pva.digitalVerificationRef}`;
+              const pdfUrl = `${window.location.origin}/pdf/agreements/${pva.projectVisitAgreementId}.pdf`;
+              const msg = `📱 *SWARAMAYI REAL ESTATE MARKETING — OFFICIAL AGREEMENT PDF*\n\n` +
+                `Dear ${pva.customerName},\n\n` +
+                `Here is your official *Project Visit Acknowledgement & Non-Circumvention Agreement*.\n\n` +
+                `📄 *Agreement Code*: ${pva.projectVisitAgreementId}\n` +
+                `🏢 *Project Name*: ${pva.projectTitle}\n` +
+                `📅 *Visit Date*: ${pva.visitDate} at ${pva.arrivalTime}\n` +
+                `🛡️ *Brokerage Protection*: ${pva.protectionPeriodMonths || 12} Months Active (Expires ${pva.protectionEndDate})\n` +
+                `🔐 *OTP Audit Hash*: ${pva.digitalVerificationRef}\n\n` +
+                `📜 *Terms & Conditions*: Non-Circumvention active. Exclusive representation by Swaramayi Real Estate Marketing.\n\n` +
+                `📥 *Download Official Agreement PDF*: ${pdfUrl}`;
               window.open(`https://api.whatsapp.com/send?phone=${pva.customerMobile.replace(/[^0-9]/g, '')}&text=${encodeURIComponent(msg)}`, '_blank');
             }}
-            style={{ background: '#25D366', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}
+            style={{ background: '#25D366', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            💬 SEND WHATSAPP TO CUSTOMER
+            💬 SEND WHATSAPP WITH AGREEMENT PDF
           </button>
-          <button onClick={onClose} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Close</button>
+          <button onClick={onClose} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.82rem' }}>Close</button>
         </div>
-
       </div>
     </div>
   );
@@ -2146,7 +2209,7 @@ export default function App() {
 
   // PROJECT VISIT AGREEMENT (PVA) MASTER STATE & SETTINGS
   // --------------------------------------------------------------------------
-  const [protectionPeriodMonths, setProtectionPeriodMonths] = useState<number>(6);
+  const [protectionPeriodMonths, setProtectionPeriodMonths] = useState<number>(12);
   const [geofenceRadiusMeters, setGeofenceRadiusMeters] = useState<number>(100);
 
   const [projectVisitAgreements, setProjectVisitAgreements] = useState<any[]>(() => {
@@ -2154,7 +2217,14 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_project_visit_agreements_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Normalize existing agreements to 12 months protection
+          return parsed.map((p: any) => ({
+            ...p,
+            protectionPeriodMonths: 12,
+            protectionEndDate: p.protectionStartDate ? `${parseInt(p.protectionStartDate.slice(0,4)) + 1}-${p.protectionStartDate.slice(5)}` : '2027-08-26'
+          }));
+        }
       }
     } catch (e) {
       console.error('Error loading project visit agreements from localStorage:', e);
@@ -2195,9 +2265,9 @@ export default function App() {
         documentVersion: 'V1.0',
         documentUrl: 'file:///pva_SRM-PVA-2026-000001.pdf',
         digitalVerificationRef: 'SHA256-SWARAMAYI-PVA-2026-000001-VERIFIED',
-        protectionPeriodMonths: 6,
+        protectionPeriodMonths: 12,
         protectionStartDate: '2026-08-22',
-        protectionEndDate: '2027-02-22',
+        protectionEndDate: '2027-08-22',
         status: 'VISIT_VERIFIED',
         createdAt: '2026-08-22 10:20 AM',
         updatedAt: '2026-08-22 10:20 AM',
@@ -2207,7 +2277,7 @@ export default function App() {
           { time: '22 Aug 10:20 AM', user: 'Rohan Deshmukh (Customer)', action: 'OTP_VERIFIED', details: 'Entered valid OTP 849201. Customer identity confirmed.' },
           { time: '22 Aug 10:20 AM', user: 'Rohan Deshmukh (Customer)', action: 'CUSTOMER_ACKNOWLEDGED', details: 'Accepted Project Introduction & Brokerage Protection Agreement V1.0.' },
           { time: '22 Aug 10:21 AM', user: 'Rohan Deshmukh (Customer)', action: 'SIGNATURE_COMPLETED', details: 'Digital Signature captured and timestamped.' },
-          { time: '22 Aug 10:21 AM', user: 'System Engine', action: 'PROJECT_VISIT_AGREEMENT_GENERATED', details: 'Generated Project Visit Agreement ID SRM-PVA-2026-000001 (6-Month Protection).' }
+          { time: '22 Aug 10:21 AM', user: 'System Engine', action: 'PROJECT_VISIT_AGREEMENT_GENERATED', details: 'Generated Project Visit Agreement ID SRM-PVA-2026-000001 (12-Month Protection).' }
         ]
       },
       {
@@ -2245,9 +2315,9 @@ export default function App() {
         documentVersion: 'V1.0',
         documentUrl: 'file:///pva_SRM-PVA-2026-000002.pdf',
         digitalVerificationRef: 'SHA256-SWARAMAYI-PVA-2026-000002-VERIFIED',
-        protectionPeriodMonths: 6,
+        protectionPeriodMonths: 12,
         protectionStartDate: '2026-08-22',
-        protectionEndDate: '2027-02-22',
+        protectionEndDate: '2027-08-22',
         status: 'VISIT_VERIFIED',
         createdAt: '2026-08-22 11:35 AM',
         updatedAt: '2026-08-22 11:35 AM',
@@ -4169,10 +4239,152 @@ export default function App() {
     { id: 'BKG-02', booking_code: 'SRM-BKG-2026-000202', customer_name: 'Priya Sharma', property_title: 'Financial Towers (Unit B-1202)', developer: 'My Home Group', booking_value: '₹2,08,00,000', brokerage_expected: '₹5,20,000', brokerage_received: '₹0', status: 'PENDING_APPROVAL', payment_status: 'PENDING' }
   ]);
 
-  // 8. AGREEMENTS VAULT
-  const [agreements, setAgreements] = useState([
-    { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' }
-  ]);
+  // 8. AGREEMENTS VAULT & CATEGORY STATES
+  const [agreementCategory, setAgreementCategory] = useState<'customer' | 'developer'>('customer');
+  const [showCreateDevAgreementModal, setShowCreateDevAgreementModal] = useState<boolean>(false);
+  const [newDevAgreementForm, setNewDevAgreementForm] = useState({
+    developer_name: 'My Home Constructions',
+    project_name: 'My Home Bhooja',
+    locality_hub: 'HITEC City Sector',
+    commission_rate: '2.0%',
+    protection_period: '12 Months',
+    agreement_title: 'Channel Partner Agreement',
+    developer_contact: '+91 98490 88776'
+  });
+
+  const [agreements, setAgreements] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_agreements_vault_v4');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading agreements from localStorage:', e);
+    }
+    return [
+      {
+        id: 'AGR-CUS-01',
+        agreement_code: 'SRM-AGR-CUS-2026-000301',
+        agreement_type: 'CUSTOMER_SITE_VISIT',
+        category: 'CUSTOMER',
+        title: 'Customer Site Visit Agreement — Aparna Zenon',
+        party_name: 'Rohan Deshmukh',
+        party_contact: '+91 98490 12345',
+        property_details: 'Aparna Zenon (Kondapur Hub)',
+        signed_status: 'EXECUTED_SIGNED',
+        signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG',
+        signed_at: '16 Aug 2026 11:35 AM'
+      },
+      {
+        id: 'AGR-DEV-01',
+        agreement_code: 'SRM-AGR-DEV-2026-000101',
+        agreement_type: 'DEVELOPER_PROJECT_TIEUP',
+        category: 'DEVELOPER',
+        title: 'Channel Partner Agreement — Aparna Zenon',
+        party_name: 'Aparna Constructions',
+        project_name: 'Aparna Zenon',
+        locality_hub: 'Kondapur Hub',
+        party_contact: '+91 98490 99887 (Srinivas Rao)',
+        property_details: 'Aparna Zenon • Aparna Constructions • Kondapur Hub',
+        commission_rate: '2.0% Direct Channel Partner Brokerage',
+        protection_period: '12-Month Protection Active',
+        signed_status: 'EXECUTED_SIGNED',
+        signature_hash: 'CORPORATE-DEV-STAMP-#948120',
+        signed_at: '20 Aug 2026 02:00 PM'
+      },
+      {
+        id: 'AGR-DEV-02',
+        agreement_code: 'SRM-AGR-DEV-2026-000102',
+        agreement_type: 'DEVELOPER_PROJECT_TIEUP',
+        category: 'DEVELOPER',
+        title: 'Channel Partner Agreement — Prestige High Fields',
+        party_name: 'Prestige Estates',
+        project_name: 'Prestige High Fields',
+        locality_hub: 'Nanakramguda Sector',
+        party_contact: '+91 98490 11223 (Venkat Reddy)',
+        property_details: 'Prestige High Fields • Prestige Estates • Nanakramguda Sector',
+        commission_rate: '2.0% Direct Channel Partner Brokerage',
+        protection_period: '12-Month Protection Active',
+        signed_status: 'EXECUTED_SIGNED',
+        signature_hash: 'CORPORATE-DEV-STAMP-#882104',
+        signed_at: '21 Aug 2026 04:30 PM'
+      },
+      {
+        id: 'AGR-DEV-03',
+        agreement_code: 'SRM-AGR-DEV-2026-000103',
+        agreement_type: 'DEVELOPER_PROJECT_TIEUP',
+        category: 'DEVELOPER',
+        title: 'Channel Partner Agreement — My Home Bhooja',
+        party_name: 'My Home Constructions',
+        project_name: 'My Home Bhooja',
+        locality_hub: 'HITEC City Sector',
+        party_contact: '+91 98490 88776 (Kiran Varma)',
+        property_details: 'My Home Bhooja • My Home Constructions • HITEC City Sector',
+        commission_rate: '2.0% Direct Channel Partner Brokerage',
+        protection_period: '12-Month Protection Active',
+        signed_status: 'EXECUTED_SIGNED',
+        signature_hash: 'CORPORATE-DEV-STAMP-#771209',
+        signed_at: '22 Aug 2026 09:15 AM'
+      },
+      {
+        id: 'AGR-DEV-04',
+        agreement_code: 'SRM-AGR-DEV-2026-000104',
+        agreement_type: 'DEVELOPER_PROJECT_TIEUP',
+        category: 'DEVELOPER',
+        title: 'Channel Partner Agreement — Dhriti Apartments',
+        party_name: 'Dhriti Builders',
+        project_name: 'Dhriti Apartments',
+        locality_hub: 'Gachibowli Sector',
+        party_contact: '+91 98490 44556 (Rajesh Kumar)',
+        property_details: 'Dhriti Apartments • Dhriti Builders • Gachibowli Sector',
+        commission_rate: '2.0% Direct Channel Partner Brokerage',
+        protection_period: '12-Month Protection Active',
+        signed_status: 'EXECUTED_SIGNED',
+        signature_hash: 'CORPORATE-DEV-STAMP-#663210',
+        signed_at: '24 Aug 2026 03:45 PM'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_agreements_vault_v4', JSON.stringify(agreements));
+    } catch (e) {
+      console.error('Error saving agreements to localStorage:', e);
+    }
+  }, [agreements]);
+
+  // DEVELOPER PROJECT-LEVEL OTP VERIFICATION STATE
+  const [devProjectOtpSent, setDevProjectOtpSent] = useState<boolean>(false);
+  const [devProjectOtpInput, setDevProjectOtpInput] = useState<string>('749201');
+  const [devProjectOtpVerified, setDevProjectOtpVerified] = useState<boolean>(false);
+  const [devProjectMobile, setDevProjectMobile] = useState<string>('+91 98490 88776');
+  const [verifiedDevProjectsList, setVerifiedDevProjectsList] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_verified_dev_projects_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading verified dev projects:', e);
+    }
+    return [
+      { developer: 'Aparna Constructions', project: 'Aparna Zenon', mobile: '+91 98490 99887', verifiedAt: '20 Aug 2026 02:00 PM', hash: 'SHA256-DEV-OTP-VERIFIED-#948120' },
+      { developer: 'Prestige Estates', project: 'Prestige High Fields', mobile: '+91 98490 11223', verifiedAt: '21 Aug 2026 04:30 PM', hash: 'SHA256-DEV-OTP-VERIFIED-#882104' },
+      { developer: 'My Home Constructions', project: 'My Home Bhooja', mobile: '+91 98490 88776', verifiedAt: '22 Aug 2026 09:15 AM', hash: 'SHA256-DEV-OTP-VERIFIED-#771209' },
+      { developer: 'Dhriti Builders', project: 'Dhriti Apartments', mobile: '+91 98490 44556', verifiedAt: '24 Aug 2026 03:45 PM', hash: 'SHA256-DEV-OTP-VERIFIED-#663210' }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_verified_dev_projects_v1', JSON.stringify(verifiedDevProjectsList));
+    } catch (e) {
+      console.error('Error saving verified dev projects to localStorage:', e);
+    }
+  }, [verifiedDevProjectsList]);
   const [rawSelectedAgreement, setSelectedAgreement] = useState<any>(null);
   const selectedAgreement = rawSelectedAgreement || agreements[0] || { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' };
 
@@ -6574,27 +6786,140 @@ export default function App() {
                   <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: windowWidth <= 640 ? '16px' : '28px', boxShadow: isLight ? '0 4px 16px rgba(0,0,0,0.04)' : 'none' }}>
                     <form onSubmit={handleCreatePropertySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                       
-                      {/* SECTION 1: BASIC PROPERTY & PROJECT IDENTIFICATION */}
-                      <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#0284c7' : '#38bdf8', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
-                          1. Basic Property & Project Identification
-                        </h4>
-
-                        <div>
-                          <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Property Title & Project Name *</label>
-                          <input type="text" value={newPropertyForm.title} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, title: e.target.value })} placeholder="e.g. My Home Tarkshya Executive Suite" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} required />
+                      {/* SECTION 1: PROJECT & DEVELOPER IDENTIFICATION */}
+                      <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px' }}>
+                          <h4 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0284c7' : '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            🏢 1. Project & Developer Identification
+                          </h4>
+                          <span style={{ fontSize: '0.75rem', background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                            1-Time Developer Project OTP Protocol
+                          </span>
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Developer / Builder Name *</label>
-                            <input type="text" value={newPropertyForm.developer} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, developer: e.target.value })} placeholder="My Home Constructions / Dhriti Apartments" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} required />
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Developer / Builder Name *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.developer} 
+                              onChange={(e) => setNewPropertyForm({ ...newPropertyForm, developer: e.target.value })} 
+                              placeholder="e.g. My Home Constructions / Dhriti Builders / Aparna" 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
+                              required 
+                            />
                           </div>
+
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Locality Hub / Sector *</label>
-                            <input type="text" value={newPropertyForm.locality} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, locality: e.target.value })} placeholder="Kondapur / Madhyamgram" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} required />
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Project Title & Name *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.title} 
+                              onChange={(e) => setNewPropertyForm({ ...newPropertyForm, title: e.target.value })} 
+                              placeholder="e.g. My Home Bhooja / Dhriti Apartments / Aparna Zenon" 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
+                              required 
+                            />
                           </div>
                         </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Developer Mobile Phone (for OTP) *</label>
+                            <input 
+                              type="text" 
+                              value={devProjectMobile} 
+                              onChange={(e) => setDevProjectMobile(e.target.value)} 
+                              placeholder="e.g. +91 98490 88776" 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
+                              required 
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Locality Hub / Sector *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.locality} 
+                              onChange={(e) => setNewPropertyForm({ ...newPropertyForm, locality: e.target.value })} 
+                              placeholder="e.g. Kondapur Hub / HITEC City Sector / Gachibowli" 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                              required 
+                            />
+                          </div>
+                        </div>
+
+                        {/* DEVELOPER 1-TIME PROJECT OTP VERIFICATION CONTAINER */}
+                        {(() => {
+                          const isAlreadyVerified = verifiedDevProjectsList.some(p => 
+                            p.developer.toLowerCase().includes((newPropertyForm.developer || '').toLowerCase().trim()) &&
+                            p.project.toLowerCase().includes((newPropertyForm.title || '').toLowerCase().trim())
+                          ) || devProjectOtpVerified;
+
+                          return (
+                            <div style={{ background: isAlreadyVerified ? 'rgba(34, 197, 94, 0.12)' : (isLight ? '#ffffff' : '#1e293b'), border: `2px solid ${isAlreadyVerified ? '#22c55e' : '#0284c7'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                                <div>
+                                  <h4 style={{ fontSize: '0.88rem', fontWeight: '900', color: isAlreadyVerified ? '#22c55e' : '#0284c7', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    {isAlreadyVerified ? '✅ DEVELOPER OTP VERIFIED (1-Time Project Verification Active)' : '🔐 DEVELOPER 1-TIME PROJECT OTP VERIFICATION'}
+                                  </h4>
+                                  <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                    {isAlreadyVerified ? `Verified for Developer: ${newPropertyForm.developer || 'Builder'} • Project: ${newPropertyForm.title || 'Project'}` : '1-Time OTP authentication per project. Developers with multiple projects verify once per project.'}
+                                  </span>
+                                </div>
+
+                                {!isAlreadyVerified && !devProjectOtpSent && (
+                                  <button 
+                                    type="button" 
+                                    onClick={() => setDevProjectOtpSent(true)}
+                                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
+                                  >
+                                    📱 SEND DEVELOPER 1-TIME OTP FOR THIS PROJECT
+                                  </button>
+                                )}
+                              </div>
+
+                              {!isAlreadyVerified && devProjectOtpSent && (
+                                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
+                                  <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: '800' }}>📲 Sent 6-Digit OTP to {devProjectMobile}:</span>
+                                  <input 
+                                    type="text" 
+                                    value={devProjectOtpInput} 
+                                    onChange={(e) => setDevProjectOtpInput(e.target.value)} 
+                                    placeholder="Enter 6-Digit OTP"
+                                    style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '6px 12px', borderRadius: '6px', fontSize: '0.9rem', width: '140px', fontFamily: 'monospace', textAlign: 'center' }}
+                                  />
+                                  <button 
+                                    type="button" 
+                                    onClick={() => {
+                                      if (devProjectOtpInput === '749201' || devProjectOtpInput.length === 6) {
+                                        setDevProjectOtpVerified(true);
+                                        const newVerifiedObj = {
+                                          developer: newPropertyForm.developer || 'Builder',
+                                          project: newPropertyForm.title || 'Project',
+                                          mobile: devProjectMobile,
+                                          verifiedAt: new Date().toLocaleString(),
+                                          hash: `SHA256-DEV-OTP-VERIFIED-#${Math.floor(100000 + Math.random() * 900000)}`
+                                        };
+                                        setVerifiedDevProjectsList([newVerifiedObj, ...verifiedDevProjectsList]);
+                                      }
+                                    }}
+                                    style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '7px 16px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
+                                  >
+                                    🔐 VERIFY DEVELOPER PROJECT OTP
+                                  </button>
+                                </div>
+                              )}
+
+                              {isAlreadyVerified && (
+                                <div style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace', fontWeight: '800', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                                  <span>Audit Stamp: SHA256-DEV-PROJECT-OTP-AUTHENTICATED</span>
+                                  <span>Status: 1-Time Verification Complete</span>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
 
                         {/* GPS LATITUDE & LONGITUDE INPUTS WITH LIVE LOCATION CAPTURE BUTTON */}
                         <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -6644,6 +6969,13 @@ export default function App() {
                             </div>
                           </div>
                         </div>
+                      </div>
+
+                      {/* SECTION 2: PROPERTY SPECIFICATIONS & UNIT DETAILS */}
+                      <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#d97706' : '#fbbf24', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                          2. Property Specifications & Unit Details
+                        </h4>
 
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
                           <div>
@@ -6676,13 +7008,6 @@ export default function App() {
                             </select>
                           </div>
                         </div>
-                      </div>
-
-                      {/* SECTION 2: AREA, FLOOR PLAN & TECHNICAL SPECIFICATIONS */}
-                      <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#d97706' : '#fbbf24', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
-                          2. Area Dimensions & Architectural Specifications
-                        </h4>
 
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
                           <div>
@@ -10366,18 +10691,71 @@ export default function App() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>Legal Agreements Vault & OTP Signature Stamps</h2>
-                  <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>Binding site-visit non-circumvention agreements and individual customer contracts created after OTP verification.</p>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>Legal Agreements Vault & Corporate Tie-Ups</h2>
+                  <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>Manage Customer Site Visit Non-Circumvention Agreements and Project-Wise Developer Channel Partner MOUs.</p>
                 </div>
+                
+                {agreementCategory === 'customer' ? (
+                  <button 
+                    onClick={() => {
+                      const plan = visitPlans[0];
+                      const stop = plan?.stops[0] || { stopId: 'SRM-VSTOP-2026-000001', propertyTitle: 'Aparna Zenon Premium 3BHK', propertyCode: 'SRM-PROP-2026-000421', costSheetId: 'SRM-CS-2026-000145', developer: 'Aparna Constructions', latitude: '17.4612° N', longitude: '78.3689° E' };
+                      setShowPvaVerificationModal({ open: true, plan, stop });
+                    }}
+                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}
+                  >
+                    <ShieldCheck size={16} /> + Create Agreement via Customer OTP Verification
+                  </button>
+                ) : (
+                  <button 
+                    onClick={() => setShowCreateDevAgreementModal(true)}
+                    style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
+                  >
+                    <Building size={16} /> + Create Agreement with Project wise Developer
+                  </button>
+                )}
+              </div>
+
+              {/* CATEGORY SELECTOR TABS */}
+              <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '2px solid #e2e8f0' : '2px solid #334155', paddingBottom: '12px' }}>
                 <button 
-                  onClick={() => {
-                    const plan = visitPlans[0];
-                    const stop = plan?.stops[0] || { stopId: 'SRM-VSTOP-2026-000001', propertyTitle: 'Aparna Zenon Premium 3BHK', propertyCode: 'SRM-PROP-2026-000421', costSheetId: 'SRM-CS-2026-000145', developer: 'Aparna Constructions', latitude: '17.4612° N', longitude: '78.3689° E' };
-                    setShowPvaVerificationModal({ open: true, plan, stop });
+                  onClick={() => setAgreementCategory('customer')}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    fontWeight: '800',
+                    background: agreementCategory === 'customer' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : (isLight ? '#f1f5f9' : '#0f172a'),
+                    color: agreementCategory === 'customer' ? '#ffffff' : (isLight ? '#475569' : '#94a3b8'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: agreementCategory === 'customer' ? '0 4px 12px rgba(2, 132, 199, 0.25)' : 'none'
                   }}
-                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}
                 >
-                  <ShieldCheck size={16} /> + Create Agreement via Customer OTP Verification
+                  <UserCheck size={16} /> Agreement With Customer ({agreements.filter(a => a.category === 'CUSTOMER' || a.agreement_type === 'CUSTOMER_SITE_VISIT').length + projectVisitAgreements.length})
+                </button>
+
+                <button 
+                  onClick={() => setAgreementCategory('developer')}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    fontWeight: '800',
+                    background: agreementCategory === 'developer' ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : (isLight ? '#f1f5f9' : '#0f172a'),
+                    color: agreementCategory === 'developer' ? '#ffffff' : (isLight ? '#475569' : '#94a3b8'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: agreementCategory === 'developer' ? '0 4px 12px rgba(22, 163, 74, 0.25)' : 'none'
+                  }}
+                >
+                  <Building size={16} /> Agreement with Project wise Developer ({agreements.filter(a => a.category === 'DEVELOPER' || a.agreement_type === 'DEVELOPER_PROJECT_TIEUP').length})
                 </button>
               </div>
 
@@ -10408,46 +10786,71 @@ export default function App() {
                     <thead>
                       <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
                         <th style={{ padding: '12px' }}>Agreement Code</th>
-                        <th style={{ padding: '12px' }}>Agreement Title</th>
-                        <th style={{ padding: '12px' }}>Party Name</th>
-                        <th style={{ padding: '12px' }}>Digital Signature Stamp</th>
+                        <th style={{ padding: '12px' }}>{agreementCategory === 'developer' ? 'Project Title & Locality Hub / Sector' : 'Agreement Title & Project Name'}</th>
+                        <th style={{ padding: '12px' }}>{agreementCategory === 'developer' ? 'Developer / Builder Name & Contact' : 'Party Name'}</th>
+                        <th style={{ padding: '12px' }}>{agreementCategory === 'developer' ? 'Channel Partner Terms & Brokerage' : 'Digital Signature Stamp'}</th>
                         <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(() => {
-                        const combinedAgreements = [
-                          ...agreements,
-                          ...projectVisitAgreements.filter(pva => !agreements.some(a => a.agreement_code === pva.projectVisitAgreementId)).map(pva => ({
-                            id: pva.projectVisitAgreementId,
-                            agreement_code: pva.projectVisitAgreementId,
-                            agreement_type: 'CUSTOMER_SITE_VISIT',
-                            title: `Customer Site Visit Agreement — ${pva.projectTitle || 'Site Visit'}`,
-                            party_name: pva.customerName,
-                            party_contact: pva.customerMobile,
-                            property_details: `${pva.propertyId} (${pva.projectTitle})`,
-                            signed_status: 'EXECUTED_SIGNED',
-                            signature_hash: `OTP VERIFIED #${pva.otpHashRef?.slice(-6) || '849201'} DIGITAL SIG`,
-                            signed_at: `${pva.visitDate} ${pva.otpVerifiedAt || '10:20 AM'}`,
-                            pvaData: pva
-                          }))
-                        ];
+                        let combinedAgreements: any[] = [];
+
+                        if (agreementCategory === 'customer') {
+                          combinedAgreements = [
+                            ...agreements.filter(a => a.category === 'CUSTOMER' || a.agreement_type === 'CUSTOMER_SITE_VISIT'),
+                            ...projectVisitAgreements.filter(pva => !agreements.some(a => a.agreement_code === pva.projectVisitAgreementId)).map(pva => ({
+                              id: pva.projectVisitAgreementId,
+                              agreement_code: pva.projectVisitAgreementId,
+                              agreement_type: 'CUSTOMER_SITE_VISIT',
+                              category: 'CUSTOMER',
+                              title: `Customer Site Visit Agreement — ${pva.projectTitle || 'Site Visit'}`,
+                              party_name: pva.customerName,
+                              party_contact: pva.customerMobile,
+                              property_details: `${pva.projectTitle || 'Site Visit'}`,
+                              signed_status: 'EXECUTED_SIGNED',
+                              signature_hash: `OTP VERIFIED #${pva.otpHashRef?.slice(-6) || '849201'} DIGITAL SIG`,
+                              signed_at: `${pva.visitDate} ${pva.otpVerifiedAt || '10:20 AM'}`,
+                              pvaData: pva
+                            }))
+                          ];
+                        } else {
+                          combinedAgreements = agreements.filter(a => a.category === 'DEVELOPER' || a.agreement_type === 'DEVELOPER_PROJECT_TIEUP');
+                        }
 
                         return combinedAgreements
                           .filter(a => matchesSearchQuery(a, searchQuery))
                           .map((a: any) => (
                             <tr key={a.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                               <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{a.agreement_code}</td>
-                              <td style={{ padding: '12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{a.title}</td>
                               <td style={{ padding: '12px' }}>
-                                <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{a.party_name}</strong>
+                                <strong style={{ color: agreementCategory === 'developer' ? '#fbbf24' : (isLight ? '#0f172a' : '#ffffff'), fontSize: '0.9rem' }}>
+                                  {agreementCategory === 'developer' ? `🏢 ${a.project_name || a.title}` : a.title}
+                                </strong>
+                                {agreementCategory === 'developer' && (
+                                  <div style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#38bdf8', marginTop: '2px', fontWeight: '700' }}>
+                                    📍 {a.locality_hub || 'Hyderabad Sector'}
+                                  </div>
+                                )}
+                              </td>
+                              <td style={{ padding: '12px' }}>
+                                <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.88rem' }}>{a.party_name}</strong>
                                 {a.party_contact && (
                                   <>
                                     <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{a.party_contact}</span>
                                   </>
                                 )}
                               </td>
-                              <td style={{ padding: '12px', color: '#4ade80', fontFamily: 'monospace', fontSize: '0.75rem' }}>{a.signature_hash}</td>
+                              <td style={{ padding: '12px' }}>
+                                {agreementCategory === 'developer' ? (
+                                  <div>
+                                    <span style={{ color: '#22c55e', fontWeight: '900', fontSize: '0.82rem' }}>💰 {a.commission_rate || '2.0% Direct Brokerage'}</span>
+                                    <br /><span style={{ color: '#38bdf8', fontSize: '0.72rem', fontWeight: '700' }}>🛡️ {a.protection_period || '12-Month Protection Active'}</span>
+                                  </div>
+                                ) : (
+                                  <span style={{ color: '#4ade80', fontFamily: 'monospace', fontSize: '0.75rem' }}>{a.signature_hash}</span>
+                                )}
+                              </td>
                               <td style={{ padding: '12px', textAlign: 'center' }}>
                                 {a.pvaData ? (
                                   <button 
@@ -10459,7 +10862,7 @@ export default function App() {
                                 ) : (
                                   <button 
                                     onClick={() => { setSelectedAgreement(a); setShowFullContractModal(true); }} 
-                                    style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}
+                                    style={{ background: agreementCategory === 'developer' ? '#16a34a' : '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}
                                   >
                                     <Printer size={14} /> View Contract PDF
                                   </button>
@@ -10700,29 +11103,213 @@ export default function App() {
         </div>
       )}
 
+      {/* CREATE DEVELOPER AGREEMENT MODAL */}
+      {showCreateDevAgreementModal && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2200, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', width: '680px', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '18px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+            <div style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Building size={24} color="#22c55e" />
+                <div>
+                  <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>🏢 Create Agreement with Project wise Developer</h3>
+                  <span style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>Channel partner tie-up with Project Name, Builder Name, Locality Hub, and 2% Brokerage T&C.</span>
+                </div>
+              </div>
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowCreateDevAgreementModal(false)} />
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const newId = `AGR-DEV-${Date.now().toString().slice(-4)}`;
+              const newCode = `SRM-AGR-DEV-2026-000${agreements.length + 1}`;
+              const fullTitle = `Channel Partner Agreement — ${newDevAgreementForm.project_name} (${newDevAgreementForm.developer_name})`;
+
+              const newAgreement = {
+                id: newId,
+                agreement_code: newCode,
+                agreement_type: 'DEVELOPER_PROJECT_TIEUP',
+                category: 'DEVELOPER',
+                title: fullTitle,
+                party_name: newDevAgreementForm.developer_name,
+                project_name: newDevAgreementForm.project_name,
+                locality_hub: newDevAgreementForm.locality_hub,
+                party_contact: newDevAgreementForm.developer_contact,
+                property_details: `${newDevAgreementForm.project_name} • ${newDevAgreementForm.developer_name} • ${newDevAgreementForm.locality_hub}`,
+                commission_rate: `${newDevAgreementForm.commission_rate} Direct Channel Partner Brokerage`,
+                protection_period: `${newDevAgreementForm.protection_period} Protection Active`,
+                signed_status: 'EXECUTED_SIGNED',
+                signature_hash: `CORPORATE-DEV-STAMP-#${Math.floor(100000 + Math.random() * 900000)}`,
+                signed_at: new Date().toLocaleString()
+              };
+
+              setAgreements([newAgreement, ...agreements]);
+              setShowCreateDevAgreementModal(false);
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Project Title & Name *</label>
+                  <input 
+                    type="text" 
+                    value={newDevAgreementForm.project_name} 
+                    onChange={(e) => setNewDevAgreementForm({ ...newDevAgreementForm, project_name: e.target.value })}
+                    placeholder="e.g. My Home Bhooja / Dhriti Apartments"
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800' }}
+                    required 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer / Builder Name *</label>
+                  <input 
+                    type="text" 
+                    value={newDevAgreementForm.developer_name} 
+                    onChange={(e) => setNewDevAgreementForm({ ...newDevAgreementForm, developer_name: e.target.value })}
+                    placeholder="e.g. My Home Constructions / Dhriti Builders"
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800' }}
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Locality Hub / Sector *</label>
+                  <input 
+                    type="text" 
+                    value={newDevAgreementForm.locality_hub} 
+                    onChange={(e) => setNewDevAgreementForm({ ...newDevAgreementForm, locality_hub: e.target.value })}
+                    placeholder="e.g. Kondapur Hub / HITEC City Sector"
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800' }}
+                    required 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer Contact Phone *</label>
+                  <input 
+                    type="text" 
+                    value={newDevAgreementForm.developer_contact} 
+                    onChange={(e) => setNewDevAgreementForm({ ...newDevAgreementForm, developer_contact: e.target.value })}
+                    placeholder="e.g. +91 98490 88776"
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Channel Partner Brokerage Rate *</label>
+                  <input 
+                    type="text" 
+                    value={newDevAgreementForm.commission_rate} 
+                    onChange={(e) => setNewDevAgreementForm({ ...newDevAgreementForm, commission_rate: e.target.value })}
+                    placeholder="e.g. 2.0%"
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900' }}
+                    required 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Protection Window *</label>
+                  <input 
+                    type="text" 
+                    value={newDevAgreementForm.protection_period} 
+                    onChange={(e) => setNewDevAgreementForm({ ...newDevAgreementForm, protection_period: e.target.value })}
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900' }}
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
+                <button type="button" onClick={() => setShowCreateDevAgreementModal(false)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', border: 'none', padding: '10px 22px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  🏢 Generate Developer Channel Partner Agreement
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* PRINTABLE LEGAL CONTRACT MODAL */}
       {showFullContractModal && selectedAgreement && (
         <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ background: '#ffffff', color: '#0f172a', width: '750px', borderRadius: '12px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ borderBottom: '2px solid #0f172a', paddingBottom: '12px', textAlign: 'center' }}>
-              <h2 style={{ fontSize: '1.3rem', fontWeight: '900' }}>CUSTOMER SITE VISIT & NON-CIRCUMVENTION AGREEMENT</h2>
-              <span style={{ fontSize: '0.8rem', fontFamily: 'monospace', color: '#0284c7' }}>{selectedAgreement.agreement_code}</span>
+              <span style={{ background: selectedAgreement.category === 'DEVELOPER' ? '#16a34a' : '#0284c7', color: '#ffffff', padding: '3px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '900', letterSpacing: '1px' }}>
+                {selectedAgreement.category === 'DEVELOPER' ? 'OFFICIAL CHANNEL PARTNER BROKERAGE TIE-UP AGREEMENT' : 'CUSTOMER SITE VISIT & NON-CIRCUMVENTION AGREEMENT'}
+              </span>
+              <h2 style={{ fontSize: '1.3rem', fontWeight: '900', marginTop: '6px' }}>
+                {selectedAgreement.category === 'DEVELOPER' ? `🏢 ${selectedAgreement.project_name || selectedAgreement.title} (${selectedAgreement.party_name})` : selectedAgreement.title}
+              </h2>
+              {selectedAgreement.locality_hub && (
+                <div style={{ fontSize: '0.82rem', color: '#0284c7', fontWeight: '800', marginTop: '2px' }}>
+                  📍 {selectedAgreement.locality_hub}
+                </div>
+              )}
+              <span style={{ fontSize: '0.78rem', fontFamily: 'monospace', color: '#64748b' }}>{selectedAgreement.agreement_code}</span>
             </div>
 
             <div style={{ fontSize: '0.85rem', lineHeight: '1.6', color: '#334155' }}>
-              <p>This legally binding agreement is entered between <strong>Swaramayi Real Estate Marketing</strong> and <strong>{selectedAgreement.party_name}</strong>.</p>
-              <p style={{ marginTop: '8px' }}><strong>Terms & Conditions:</strong> Client acknowledges that property inspection for <strong>{selectedAgreement.property_details}</strong> was facilitated exclusively by Swaramayi Real Estate Marketing.</p>
+              {selectedAgreement.category === 'DEVELOPER' ? (
+                <p>This Channel Partner Tie-Up Agreement is entered between <strong>Swaramayi Real Estate Marketing</strong> and Builder/Developer <strong>{selectedAgreement.party_name}</strong> for project sales marketing in <strong>{selectedAgreement.locality_hub || 'Hyderabad Sector'}</strong>.</p>
+              ) : (
+                <p>This legally binding agreement is entered between <strong>Swaramayi Real Estate Marketing</strong> and <strong>{selectedAgreement.party_name}</strong>.</p>
+              )}
+              
+              <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '14px', borderRadius: '8px', marginTop: '10px' }}>
+                <h4 style={{ fontSize: '0.85rem', color: '#0f172a', fontWeight: '800', marginBottom: '6px' }}>📜 CHANNEL PARTNER TERMS & CONDITIONS (T&C)</h4>
+                <ol style={{ margin: 0, paddingLeft: '18px', fontSize: '0.78rem', color: '#475569', lineHeight: '1.5' }}>
+                  {selectedAgreement.category === 'DEVELOPER' ? (
+                    <>
+                      <li><strong>2.0% Fixed Channel Partner Brokerage:</strong> Builder/Developer agrees to pay Swaramayi Real Estate Marketing a <strong>{selectedAgreement.commission_rate || '2.0% Direct Channel Partner Brokerage'}</strong> on agreement value for all customer bookings in <strong>{selectedAgreement.project_name || 'Project'}</strong>.</li>
+                      <li><strong>15-Day Milestone Disbursement:</strong> Commission payout shall be processed within 15 business days of customer booking/advance payment milestone.</li>
+                      <li><strong>12-Month Non-Circumvention Protection:</strong> Builder/Developer recognizes a 12-month exclusive client introduction protection period for all buyers introduced by Swaramayi.</li>
+                      <li><strong>Locality Hub Marketing Rights:</strong> Swaramayi is granted authorized Channel Partner marketing and promotion rights for <strong>{selectedAgreement.project_name}</strong> in <strong>{selectedAgreement.locality_hub || 'Hyderabad Sector'}</strong>.</li>
+                    </>
+                  ) : (
+                    <>
+                      <li><strong>Non-Circumvention:</strong> Client acknowledges that property inspection for <strong>{selectedAgreement.property_details}</strong> was facilitated exclusively by Swaramayi Real Estate Marketing and agrees not to deal directly with the owner/developer or third parties.</li>
+                      <li><strong>12-Month Brokerage Protection:</strong> Swaramayi holds exclusive representation rights for a period of 12 months for any transaction related to this property.</li>
+                      <li><strong>Digital Verification:</strong> Digital OTP stamp and Geofence coordinates recorded at site visit serve as binding authorization under IT Act provisions.</li>
+                    </>
+                  )}
+                </ol>
+              </div>
             </div>
 
             <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', padding: '16px', borderRadius: '8px', textAlign: 'center' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '700' }}>DIGITAL OTP SIGNATURE STAMP</span>
+              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: '700' }}>
+                {selectedAgreement.category === 'DEVELOPER' ? 'DEVELOPER / BUILDER CORPORATE SEAL & STAMP' : 'DIGITAL OTP SIGNATURE STAMP'}
+              </span>
               <h4 style={{ fontSize: '0.95rem', color: '#16a34a', fontFamily: 'monospace', fontWeight: '800' }}>{selectedAgreement.signature_hash}</h4>
               <span style={{ fontSize: '0.7rem', color: '#64748b' }}>Signed Date: {selectedAgreement.signed_at}</span>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowFullContractModal(false)} style={{ background: '#64748b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Close</button>
-              <button onClick={() => window.print()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800' }}>Print Contract PDF</button>
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              <button onClick={() => setShowFullContractModal(false)} style={{ background: '#64748b', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Close</button>
+              <button onClick={() => window.print()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>🖨️ Print & Save Contract PDF</button>
+              <button 
+                onClick={() => {
+                  const pdfUrl = `${window.location.origin}/pdf/agreements/${selectedAgreement.agreement_code}.pdf`;
+                  const msg = `📱 *SWARAMAYI REAL ESTATE MARKETING — ${selectedAgreement.category === 'DEVELOPER' ? 'DEVELOPER AGREEMENT' : 'CUSTOMER AGREEMENT'} PDF*\n\n` +
+                    `Dear ${selectedAgreement.party_name},\n\n` +
+                    `Here is your official *${selectedAgreement.category === 'DEVELOPER' ? 'Developer Channel Partner Agreement PDF' : 'Site Visit & Non-Circumvention Agreement PDF'}*.\n\n` +
+                    `📄 *Agreement Code*: ${selectedAgreement.agreement_code}\n` +
+                    `🏢 *Project & Builder*: ${selectedAgreement.project_name || selectedAgreement.title} (${selectedAgreement.party_name})\n` +
+                    `📍 *Locality Hub*: ${selectedAgreement.locality_hub || 'Hyderabad Sector'}\n` +
+                    `💰 *Brokerage Terms*: 2.0% Direct Channel Partner Brokerage\n` +
+                    `🔐 *Digital Signature*: ${selectedAgreement.signature_hash}\n\n` +
+                    `📥 *Download Agreement PDF*: ${pdfUrl}`;
+                  window.open(`https://api.whatsapp.com/send?phone=${(selectedAgreement.party_contact || '').replace(/[^0-9]/g, '')}&text=${encodeURIComponent(msg)}`, '_blank');
+                }}
+                style={{ background: '#25D366', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                💬 Send WhatsApp Agreement PDF
+              </button>
             </div>
           </div>
         </div>
