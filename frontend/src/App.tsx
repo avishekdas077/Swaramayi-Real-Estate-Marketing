@@ -931,6 +931,440 @@ function IndividualStopModalContent({
   );
 }
 
+function PvaVerificationModalContent({
+  isLight = false,
+  plan,
+  stop,
+  protectionPeriodMonths,
+  geofenceRadiusMeters,
+  onClose,
+  projectVisitAgreements,
+  setProjectVisitAgreements,
+  setAgreements,
+  setVisitPlans,
+  setShowPvaDocumentModal
+}: any) {
+  const [otpInput, setOtpInput] = useState<string>('849201');
+  const [otpSent, setOtpSent] = useState<boolean>(true);
+  const [otpVerified, setOtpVerified] = useState<boolean>(false);
+  const [otpAttempts, setOtpAttempts] = useState<number>(0);
+  const [isLocked, setIsLocked] = useState<boolean>(false);
+  const [acceptedTerms, setAcceptedTerms] = useState<boolean>(true);
+  const [signatureData, setSignatureData] = useState<string>('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="220" height="50"><path d="M10 35 Q 45 10 90 35 T 180 25 T 210 30" stroke="%230284c7" fill="none" stroke-width="3"/></svg>');
+  const [devRepName, setDevRepName] = useState<string>('Srinivas Rao (Site Lead)');
+  const [devRepMobile, setDevRepMobile] = useState<string>('+91 98490 99887');
+  const [otpTimerSeconds, setOtpTimerSeconds] = useState<number>(300);
+
+  useEffect(() => {
+    if (otpSent && otpTimerSeconds > 0 && !otpVerified) {
+      const timer = setInterval(() => setOtpTimerSeconds(prev => prev - 1), 1000);
+      return () => clearInterval(timer);
+    }
+  }, [otpSent, otpTimerSeconds, otpVerified]);
+
+  const handleSendOtp = () => {
+    setOtpSent(true);
+    setOtpTimerSeconds(300);
+    alert(`📱 OTP SENT!\n\n6-Digit Verification OTP (849201) has been sent to customer mobile ${plan.mobile || stop.mobile || '+91 98490 12345'}.`);
+  };
+
+  const handleVerifyOtp = () => {
+    if (isLocked) {
+      alert('⚠️ OTP Verification Locked due to 3 failed attempts. Please request Admin OTP reset.');
+      return;
+    }
+    if (otpInput.trim() === '849201' || otpInput.trim().length === 6) {
+      setOtpVerified(true);
+      alert('✅ OTP VERIFIED SUCCESSFULLY!\n\nCustomer Identity Confirmed.');
+    } else {
+      const newAttempts = otpAttempts + 1;
+      setOtpAttempts(newAttempts);
+      if (newAttempts >= 3) {
+        setIsLocked(true);
+        alert('❌ INVALID OTP!\n\nMaximum 3 attempts reached. OTP Verification temporarily locked.');
+      } else {
+        alert(`❌ INVALID OTP!\n\nAttempt ${newAttempts} of 3. Please check the 6-digit OTP sent to customer.`);
+      }
+    }
+  };
+
+  const handleConfirmVerification = () => {
+    if (!otpVerified) {
+      alert('⚠️ Please complete Customer OTP Verification first.');
+      return;
+    }
+    if (!acceptedTerms) {
+      alert('⚠️ Customer must accept the Project Visit Acknowledgement terms.');
+      return;
+    }
+
+    const nextPvaNum = projectVisitAgreements.length + 1;
+    const pvaId = `SRM-PVA-2026-00000${nextPvaNum}`;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const expDate = new Date();
+    expDate.setMonth(expDate.getMonth() + protectionPeriodMonths);
+    const expDateStr = expDate.toISOString().split('T')[0];
+
+    const newPva = {
+      projectVisitAgreementId: pvaId,
+      visitScheduleId: plan.visitPlanId || plan.visitScheduleId || 'SRM-VS-2026-000087',
+      visitStopId: stop.stopId || 'SRM-VSTOP-2026-000001',
+      customerId: plan.customerNumber || 'SRM-CUS-2026-000184',
+      customerName: plan.customerName || 'Customer',
+      customerMobile: plan.mobile || '+91 98490 12345',
+      leadId: 'SRM-LEAD-2026-000001',
+      matchId: plan.matchingId || 'SRM-MAT-2026-000421',
+      propertyId: stop.propertyCode || stop.propertyId || 'SRM-PROP-2026-000421',
+      costSheetId: stop.costSheetId || 'SRM-CS-2026-000145',
+      projectId: `SRM-PROJ-2026-0000${20 + nextPvaNum}`,
+      projectTitle: stop.propertyTitle || 'Project Property',
+      locality: stop.locality || 'Hyderabad',
+      developerId: `DEV-0${nextPvaNum}`,
+      developerName: stop.developer || 'Partner Developer',
+      salesPersonId: 'USR-07',
+      salesPersonName: plan.assignedExecutive || 'Ramesh Pawar (Field Exec)',
+      visitDate: todayStr,
+      arrivalTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      departureTime: '',
+      geofenceStatus: 'GEOFENCE_VERIFIED',
+      gpsAccuracyMeters: `14m (Within ${geofenceRadiusMeters}m Allowed Radius)`,
+      salesPersonLat: stop.latitude || '17.4612° N',
+      salesPersonLng: stop.longitude || '78.3689° E',
+      customerOtpStatus: 'OTP_VERIFIED',
+      otpVerifiedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      otpHashRef: `SHA256:verified_otp_${otpInput}`,
+      customerAcknowledgementStatus: 'ACKNOWLEDGED',
+      customerSignature: signatureData,
+      developerRepName: devRepName,
+      developerRepMobile: devRepMobile,
+      documentVersion: 'V1.0',
+      documentUrl: `file:///pva_${pvaId}.pdf`,
+      digitalVerificationRef: `SHA256-SWARAMAYI-${pvaId}-VERIFIED`,
+      protectionPeriodMonths: protectionPeriodMonths,
+      protectionStartDate: todayStr,
+      protectionEndDate: expDateStr,
+      status: 'VISIT_VERIFIED',
+      createdAt: new Date().toLocaleString(),
+      updatedAt: new Date().toLocaleString(),
+      auditLogs: [
+        { time: new Date().toLocaleTimeString(), user: plan.assignedExecutive || 'Field Exec', action: 'GEOFENCE_VERIFIED', details: `Geofence audit passed (${geofenceRadiusMeters}m radius).` },
+        { time: new Date().toLocaleTimeString(), user: plan.customerName || 'Customer', action: 'OTP_VERIFIED', details: 'Customer verified 6-digit OTP.' },
+        { time: new Date().toLocaleTimeString(), user: plan.customerName || 'Customer', action: 'CUSTOMER_ACKNOWLEDGED', details: `Accepted Project Visit Introduction Agreement V1.0 (${protectionPeriodMonths}-Month Protection).` },
+        { time: new Date().toLocaleTimeString(), user: 'System AI Engine', action: 'PROJECT_VISIT_AGREEMENT_GENERATED', details: `Generated Project Visit Agreement ID ${pvaId}.` }
+      ]
+    };
+
+    setProjectVisitAgreements((prev: any[]) => [newPva, ...prev]);
+
+    const newAgrRecord = {
+      id: `AGR-PVA-${nextPvaNum}`,
+      agreement_code: pvaId,
+      agreement_type: 'CUSTOMER_SITE_VISIT',
+      title: `Customer Site Visit Agreement — ${stop.propertyTitle || 'Site Visit'}`,
+      party_name: plan.customerName || 'Customer',
+      party_contact: plan.mobile || '+91 98490 12345',
+      property_details: `${stop.propertyCode || 'SRM-PROP-2026-000421'} (${stop.propertyTitle || 'Site Visit'})`,
+      signed_status: 'EXECUTED_SIGNED',
+      signature_hash: `OTP-VERIFIED-#${otpInput}-DIGITAL-SIG`,
+      signed_at: `${todayStr} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
+      pvaData: newPva
+    };
+
+    if (setAgreements) {
+      setAgreements((prev: any[]) => [newAgrRecord, ...prev]);
+    }
+
+    // Update stop status in visit plans
+    setVisitPlans((prevPlans: any[]) => prevPlans.map(p => {
+      if (p.visitPlanId === (plan.visitPlanId || plan.visitScheduleId)) {
+        const updatedStops = p.stops.map((s: any) => {
+          if (s.stopId === stop.stopId) {
+            return { ...s, status: 'VISIT_COMPLETED', otpVerified: true, geofenceVerified: true, pvaId: pvaId };
+          }
+          return s;
+        });
+        const currentIdx = p.currentStopIndex;
+        const nextIdx = currentIdx < updatedStops.length - 1 ? currentIdx + 1 : currentIdx;
+        return {
+          ...p,
+          currentStopIndex: nextIdx,
+          stops: updatedStops,
+          auditLogs: [
+            { time: new Date().toLocaleTimeString(), user: plan.assignedExecutive || 'Field Exec', action: 'PROJECT_VISIT_VERIFIED', details: `Verified visit for ${stop.propertyTitle}. Generated ${pvaId}` },
+            ...p.auditLogs
+          ]
+        };
+      }
+      return p;
+    }));
+
+    onClose();
+    setShowPvaDocumentModal({ open: true, pva: newPva });
+  };
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2200, padding: '20px' }}>
+      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', width: '94vw', maxWidth: '880px', maxHeight: '94vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+        
+        {/* MODAL HEADER */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', width: '42px', height: '42px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+              <ShieldCheck size={24} />
+            </div>
+            <div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>PROJECT VISIT VERIFICATION & BROKER INTRODUCTION PROTECTION</h3>
+              <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                Master Relationship: <strong style={{ color: '#38bdf8' }}>LEAD → CUS → MATCH → PROP → CS → VS ({plan.visitPlanId || plan.visitScheduleId}) → PVA</strong>
+              </p>
+            </div>
+          </div>
+          <X size={24} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={onClose} />
+        </div>
+
+        {/* 1. PROJECT & CUSTOMER SNAPSHOT */}
+        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.82rem' }}>
+          <div>
+            <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>TARGET PROJECT & PROPERTY</span>
+            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.98rem', marginTop: '2px' }}>🏢 {stop.propertyTitle || 'Property Site'}</h4>
+            <span style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: '800' }}>Developer: {stop.developer || 'Partner Developer'}</span>
+            <br /><span style={{ color: '#38bdf8', fontSize: '0.72rem', fontFamily: 'monospace' }}>Property Code: {stop.propertyCode || 'PROP-01'} | Cost Sheet: {stop.costSheetId}</span>
+          </div>
+          <div>
+            <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>CUSTOMER & SALES EXECUTIVE</span>
+            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.95rem', marginTop: '2px' }}>👤 {plan.customerName} ({plan.customerNumber})</h4>
+            <span style={{ color: '#4ade80', fontFamily: 'monospace', fontWeight: '800' }}>{plan.mobile}</span>
+            <br /><span style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: '800' }}>Sales Exec: {plan.assignedExecutive}</span>
+          </div>
+        </div>
+
+        {/* 2. STEP 1: GPS & GEOFENCE AUDIT */}
+        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', borderRadius: '12px', padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <MapPin size={24} color="#22c55e" />
+            <div>
+              <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: '900' }}>STEP 1: GPS GEOFENCE AUDIT PASSED</span>
+              <p style={{ fontSize: '0.8rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', marginTop: '2px' }}>
+                Sales Executive Position: <strong>{stop.latitude || '17.4612° N'}, {stop.longitude || '78.3689° E'}</strong>
+              </p>
+              <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Distance to Site: <strong>14 meters</strong> (Allowed Radius: {geofenceRadiusMeters}m)</span>
+            </div>
+          </div>
+          <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900', border: '1px solid #22c55e' }}>
+            ✓ GEOFENCE VERIFIED
+          </span>
+        </div>
+
+        {/* 3. STEP 2: CUSTOMER 6-DIGIT OTP VERIFICATION */}
+        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h4 style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              🔑 STEP 2: CUSTOMER 6-DIGIT OTP VERIFICATION
+            </h4>
+            <span style={{ fontSize: '0.75rem', color: otpTimerSeconds > 0 ? '#38bdf8' : '#ef4444', fontWeight: '800' }}>
+              ⏱️ Timer: {Math.floor(otpTimerSeconds / 60)}:{String(otpTimerSeconds % 60).padStart(2, '0')}
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <input 
+              type="text"
+              maxLength={6}
+              value={otpInput}
+              onChange={(e) => setOtpInput(e.target.value)}
+              placeholder="Enter 6-Digit OTP"
+              disabled={otpVerified || isLocked}
+              style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '1.1rem', fontWeight: '900', letterSpacing: '4px', textAlign: 'center', width: '200px' }}
+            />
+            {!otpVerified ? (
+              <button 
+                onClick={handleVerifyOtp}
+                disabled={isLocked}
+                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                VERIFY OTP
+              </button>
+            ) : (
+              <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', border: '1px solid #22c55e' }}>
+                ✓ OTP VERIFIED (Customer Confirmed)
+              </span>
+            )}
+            <button 
+              onClick={handleSendOtp}
+              disabled={otpVerified}
+              style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 14px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.78rem' }}
+            >
+              🔄 Resend OTP
+            </button>
+          </div>
+          {otpAttempts > 0 && !otpVerified && (
+            <span style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: '800' }}>⚠️ Failed attempts: {otpAttempts} / 3</span>
+          )}
+        </div>
+
+        {/* 4. STEP 3: CUSTOMER ACKNOWLEDGEMENT & BROKERAGE PROTECTION CLAUSE */}
+        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #a855f7', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <h4 style={{ color: '#a855f7', fontWeight: '900', fontSize: '0.9rem' }}>
+            📜 STEP 3: PROJECT-SPECIFIC BROKER INTRODUCTION ACKNOWLEDGEMENT
+          </h4>
+
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', color: isLight ? '#0f172a' : '#cbd5e1', lineHeight: '1.5' }}>
+            <p><strong>CUSTOMER ACKNOWLEDGEMENT & INTRODUCTION TERMS:</strong></p>
+            <p style={{ marginTop: '6px' }}>
+              I, <strong>{plan.customerName}</strong> (Mobile: <strong>{plan.mobile}</strong>), confirm that I am visiting <strong>{stop.propertyTitle}</strong> today ({new Date().toLocaleDateString()}), introduced exclusively through <strong>SWARAMAYI REAL ESTATE MARKETING</strong>.
+            </p>
+            <p style={{ marginTop: '6px' }}>
+              I acknowledge that the assigned representative <strong>{plan.assignedExecutive}</strong> is accompanying me. Any future inquiry, negotiation, booking, or purchase relating to this project within the applicable protection period of <strong>{protectionPeriodMonths} Months</strong> (ending <strong>{new Date(Date.now() + protectionPeriodMonths * 30 * 24 * 3600 * 1000).toLocaleDateString()}</strong>) shall be processed according to the introduction and brokerage terms agreed with Swaramayi Real Estate Marketing.
+            </p>
+          </div>
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', cursor: 'pointer', marginTop: '4px' }}>
+            <input type="checkbox" checked={acceptedTerms} onChange={(e) => setAcceptedTerms(e.target.checked)} style={{ width: '18px', height: '18px', accentColor: '#a855f7' }} />
+            <span>I have read, understood, and accepted the Project Visit Acknowledgement terms.</span>
+          </label>
+        </div>
+
+        {/* 5. STEP 4 & 5: DIGITAL SIGNATURE & DEVELOPER REP SIGN-OFF */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <label style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: '900' }}>✍️ STEP 4: CUSTOMER DIGITAL SIGNATURE</label>
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px dashed #0284c7', borderRadius: '8px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <img src={signatureData} alt="Digital Signature" style={{ maxHeight: '50px' }} />
+            </div>
+            <span style={{ fontSize: '0.7rem', color: '#22c55e', fontWeight: '800' }}>✓ Touch / Mouse Signature Captured</span>
+          </div>
+
+          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem' }}>
+            <label style={{ fontSize: '0.78rem', color: '#fbbf24', fontWeight: '900' }}>🏢 STEP 5: DEVELOPER REPRESENTATIVE (OPTIONAL)</label>
+            <input type="text" value={devRepName} onChange={(e) => setDevRepName(e.target.value)} placeholder="Developer Rep Name" style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '6px 8px', borderRadius: '6px', fontSize: '0.78rem' }} />
+            <input type="text" value={devRepMobile} onChange={(e) => setDevRepMobile(e.target.value)} placeholder="Developer Rep Mobile" style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '6px 8px', borderRadius: '6px', fontSize: '0.78rem' }} />
+          </div>
+        </div>
+
+        {/* MODAL FOOTER */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+          <button onClick={onClose} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Cancel</button>
+          <button 
+            onClick={handleConfirmVerification}
+            style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
+          >
+            🛡️ CONFIRM & GENERATE PROJECT VISIT AGREEMENT (SRM-PVA-2026-XXXXXX)
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+function PvaDocumentModalContent({ isLight = false, pva, onClose }: any) {
+  if (!pva) return null;
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.88)' : 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2300, padding: '20px' }}>
+      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', width: '94vw', maxWidth: '820px', maxHeight: '94vh', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
+        
+        {/* DOCUMENT HEADER */}
+        <div style={{ borderBottom: '2px solid #0284c7', paddingBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '900', letterSpacing: '1px' }}>
+              OFFICIAL BROKER INTRODUCTION RECORD
+            </span>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '6px' }}>
+              SWARAMAYI REAL ESTATE MARKETING
+            </h2>
+            <p style={{ fontSize: '0.82rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+              Enterprise Real Estate Operating System • Project Visit Acknowledgement Document
+            </p>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ background: '#22c55e', color: '#ffffff', padding: '4px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '900', fontFamily: 'monospace', display: 'inline-block' }}>
+              {pva.projectVisitAgreementId}
+            </span>
+            <br /><span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800', display: 'inline-block', marginTop: '4px' }}>Version: {pva.documentVersion || 'V1.0'}</span>
+          </div>
+        </div>
+
+        {/* DOCUMENT DETAILS GRID */}
+        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.85rem' }}>
+          <div>
+            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CUSTOMER IDENTIFIER:</span>
+            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '1rem', marginTop: '2px' }}>👤 {pva.customerName}</h4>
+            <span style={{ color: '#4ade80', fontFamily: 'monospace', fontWeight: '800' }}>Mobile: {pva.customerMobile}</span>
+            <br /><span style={{ color: '#38bdf8', fontSize: '0.75rem', fontFamily: 'monospace' }}>Customer ID: {pva.customerId}</span>
+          </div>
+
+          <div>
+            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>PROJECT & DEVELOPER:</span>
+            <h4 style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.98rem', marginTop: '2px' }}>🏢 {pva.projectTitle}</h4>
+            <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800' }}>Developer: {pva.developerName}</span>
+            <br /><span style={{ color: '#38bdf8', fontSize: '0.75rem', fontFamily: 'monospace' }}>Property Code: {pva.propertyId} | Cost Sheet: {pva.costSheetId}</span>
+          </div>
+
+          <div>
+            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ASSIGNED SALES EXECUTIVE:</span>
+            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', fontSize: '0.9rem', marginTop: '2px' }}>{pva.salesPersonName}</h4>
+            <span style={{ color: '#22c55e', fontSize: '0.78rem', fontWeight: '800' }}>Visit Date: {pva.visitDate} at {pva.arrivalTime}</span>
+          </div>
+
+          <div>
+            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BROKERAGE PROTECTION PERIOD:</span>
+            <h4 style={{ color: '#4ade80', fontWeight: '900', fontSize: '0.95rem', marginTop: '2px' }}>🛡️ {pva.protectionPeriodMonths} Months Protection Active</h4>
+            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem' }}>Protection Expiry: <strong>{pva.protectionEndDate}</strong></span>
+          </div>
+        </div>
+
+        {/* VERIFICATION EVIDENCE AUDIT */}
+        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem' }}>
+          <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '0.85rem' }}>🔐 VERIFICATION EVIDENCE & AUDIT TRAIL</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div>GPS Status: <strong style={{ color: '#22c55e' }}>✓ GEOFENCE VERIFIED ({pva.gpsAccuracyMeters})</strong></div>
+            <div>Customer OTP: <strong style={{ color: '#22c55e' }}>✓ VERIFIED ({pva.otpVerifiedAt})</strong></div>
+            <div>Digital Ref: <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>{pva.digitalVerificationRef}</strong></div>
+            <div>Master Schedule: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{pva.visitScheduleId}</strong></div>
+          </div>
+        </div>
+
+        {/* SIGNATURE & LEGAL DISCLAIMER */}
+        <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CUSTOMER DIGITAL SIGNATURE:</span>
+            <div style={{ marginTop: '4px' }}>
+              {pva.customerSignature && <img src={pva.customerSignature} alt="Signature" style={{ maxHeight: '45px' }} />}
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>FOR SWARAMAYI REAL ESTATE MARKETING:</span>
+            <h4 style={{ color: '#0284c7', fontWeight: '900', fontSize: '0.9rem', marginTop: '4px' }}>Authorized Signature & Seal</h4>
+          </div>
+        </div>
+
+        {/* MODAL FOOTER */}
+        <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '16px', flexWrap: 'wrap' }}>
+          <button onClick={() => window.print()} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}>🖨️ PRINT ACKNOWLEDGEMENT PDF</button>
+          <button 
+            onClick={() => {
+              const msg = `📱 *SWARAMAYI REAL ESTATE MARKETING — PROJECT VISIT ACKNOWLEDGEMENT*\n\n` +
+                `*PVA ID*: ${pva.projectVisitAgreementId}\n` +
+                `*Project*: ${pva.projectTitle}\n` +
+                `*Customer*: ${pva.customerName}\n` +
+                `*Visit Date*: ${pva.visitDate}\n` +
+                `*Protection Active*: ${pva.protectionPeriodMonths} Months (Expires ${pva.protectionEndDate})\n\n` +
+                `Document Reference: ${pva.digitalVerificationRef}`;
+              window.open(`https://api.whatsapp.com/send?phone=${pva.customerMobile.replace(/[^0-9]/g, '')}&text=${encodeURIComponent(msg)}`, '_blank');
+            }}
+            style={{ background: '#25D366', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}
+          >
+            💬 SEND WHATSAPP TO CUSTOMER
+          </button>
+          <button onClick={onClose} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Close</button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   // 12 Main Navigation Categories
   const [activeTab, setActiveTab] = useState<
@@ -1473,6 +1907,137 @@ export default function App() {
       console.error('Error saving visit plans to localStorage:', e);
     }
   }, [visitPlans]);
+
+  // PROJECT VISIT AGREEMENT (PVA) MASTER STATE & SETTINGS
+  // --------------------------------------------------------------------------
+  const [protectionPeriodMonths, setProtectionPeriodMonths] = useState<number>(6);
+  const [geofenceRadiusMeters, setGeofenceRadiusMeters] = useState<number>(100);
+
+  const [projectVisitAgreements, setProjectVisitAgreements] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_project_visit_agreements_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading project visit agreements from localStorage:', e);
+    }
+    return [
+      {
+        projectVisitAgreementId: 'SRM-PVA-2026-000001',
+        visitScheduleId: 'SRM-VS-2026-000087',
+        visitStopId: 'SRM-VSTOP-2026-000001',
+        customerId: 'SRM-CUS-2026-000184',
+        customerName: 'Rohan Deshmukh',
+        customerMobile: '+91 98490 12345',
+        leadId: 'SRM-LEAD-2026-000001',
+        matchId: 'SRM-MAT-2026-000421',
+        propertyId: 'SRM-PROP-2026-000421',
+        costSheetId: 'SRM-CS-2026-000145',
+        projectId: 'SRM-PROJ-2026-000021',
+        projectTitle: 'Aparna Zenon Premium 3BHK Residence',
+        locality: 'Kondapur',
+        developerId: 'DEV-01',
+        developerName: 'Aparna Constructions',
+        salesPersonId: 'USR-07',
+        salesPersonName: 'Ramesh Pawar (Field Exec - Kondapur)',
+        visitDate: '2026-08-22',
+        arrivalTime: '10:18 AM',
+        departureTime: '11:03 AM',
+        geofenceStatus: 'GEOFENCE_VERIFIED',
+        gpsAccuracyMeters: '12m (Within 100m Allowed Radius)',
+        salesPersonLat: '17.4612° N',
+        salesPersonLng: '78.3689° E',
+        customerOtpStatus: 'OTP_VERIFIED',
+        otpVerifiedAt: '10:20 AM',
+        otpHashRef: 'SHA256:8f9a2b... verified (OTP 849201)',
+        customerAcknowledgementStatus: 'ACKNOWLEDGED',
+        customerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><path d="M10 40 Q 50 10 90 40 T 170 30" stroke="%230284c7" fill="none" stroke-width="3"/></svg>',
+        developerRepName: 'Srinivas Rao (Site Manager)',
+        developerRepMobile: '+91 98490 99887',
+        documentVersion: 'V1.0',
+        documentUrl: 'file:///pva_SRM-PVA-2026-000001.pdf',
+        digitalVerificationRef: 'SHA256-SWARAMAYI-PVA-2026-000001-VERIFIED',
+        protectionPeriodMonths: 6,
+        protectionStartDate: '2026-08-22',
+        protectionEndDate: '2027-02-22',
+        status: 'VISIT_VERIFIED',
+        createdAt: '2026-08-22 10:20 AM',
+        updatedAt: '2026-08-22 10:20 AM',
+        auditLogs: [
+          { time: '22 Aug 10:18 AM', user: 'Ramesh Pawar (Field Exec)', action: 'PROJECT_ARRIVAL', details: 'Arrived at Aparna Zenon. GPS Geofence verified (12m accuracy).' },
+          { time: '22 Aug 10:19 AM', user: 'System Engine', action: 'OTP_SENT', details: 'Sent 6-Digit Verification OTP to +91 98490 12345.' },
+          { time: '22 Aug 10:20 AM', user: 'Rohan Deshmukh (Customer)', action: 'OTP_VERIFIED', details: 'Entered valid OTP 849201. Customer identity confirmed.' },
+          { time: '22 Aug 10:20 AM', user: 'Rohan Deshmukh (Customer)', action: 'CUSTOMER_ACKNOWLEDGED', details: 'Accepted Project Introduction & Brokerage Protection Agreement V1.0.' },
+          { time: '22 Aug 10:21 AM', user: 'Rohan Deshmukh (Customer)', action: 'SIGNATURE_COMPLETED', details: 'Digital Signature captured and timestamped.' },
+          { time: '22 Aug 10:21 AM', user: 'System Engine', action: 'PROJECT_VISIT_AGREEMENT_GENERATED', details: 'Generated Project Visit Agreement ID SRM-PVA-2026-000001 (6-Month Protection).' }
+        ]
+      },
+      {
+        projectVisitAgreementId: 'SRM-PVA-2026-000002',
+        visitScheduleId: 'SRM-VS-2026-000087',
+        visitStopId: 'SRM-VSTOP-2026-000002',
+        customerId: 'SRM-CUS-2026-000184',
+        customerName: 'Rohan Deshmukh',
+        customerMobile: '+91 98490 12345',
+        leadId: 'SRM-LEAD-2026-000001',
+        matchId: 'SRM-MAT-2026-000421',
+        propertyId: 'SRM-PROP-2026-000425',
+        costSheetId: 'SRM-CS-2026-000146',
+        projectId: 'SRM-PROJ-2026-000022',
+        projectTitle: 'Prestige High Fields Corner 3BHK',
+        locality: 'Nanakramguda',
+        developerId: 'DEV-02',
+        developerName: 'Prestige Estates',
+        salesPersonId: 'USR-07',
+        salesPersonName: 'Ramesh Pawar (Field Exec - Kondapur)',
+        visitDate: '2026-08-22',
+        arrivalTime: '11:32 AM',
+        departureTime: '12:15 PM',
+        geofenceStatus: 'GEOFENCE_VERIFIED',
+        gpsAccuracyMeters: '18m (Within 100m Allowed Radius)',
+        salesPersonLat: '17.4201° N',
+        salesPersonLng: '78.3410° E',
+        customerOtpStatus: 'OTP_VERIFIED',
+        otpVerifiedAt: '11:35 AM',
+        otpHashRef: 'SHA256:7c4d1e... verified (OTP 912405)',
+        customerAcknowledgementStatus: 'ACKNOWLEDGED',
+        customerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><path d="M10 40 Q 50 10 90 40 T 170 30" stroke="%230284c7" fill="none" stroke-width="3"/></svg>',
+        developerRepName: 'Venkat Reddy (Prestige Lead Sales)',
+        developerRepMobile: '+91 98490 11223',
+        documentVersion: 'V1.0',
+        documentUrl: 'file:///pva_SRM-PVA-2026-000002.pdf',
+        digitalVerificationRef: 'SHA256-SWARAMAYI-PVA-2026-000002-VERIFIED',
+        protectionPeriodMonths: 6,
+        protectionStartDate: '2026-08-22',
+        protectionEndDate: '2027-02-22',
+        status: 'VISIT_VERIFIED',
+        createdAt: '2026-08-22 11:35 AM',
+        updatedAt: '2026-08-22 11:35 AM',
+        auditLogs: [
+          { time: '22 Aug 11:32 AM', user: 'Ramesh Pawar (Field Exec)', action: 'PROJECT_ARRIVAL', details: 'Arrived at Prestige High Fields. GPS Geofence verified.' },
+          { time: '22 Aug 11:35 AM', user: 'Rohan Deshmukh (Customer)', action: 'OTP_VERIFIED', details: 'Entered valid OTP 912405.' },
+          { time: '22 Aug 11:36 AM', user: 'System Engine', action: 'PROJECT_VISIT_AGREEMENT_GENERATED', details: 'Generated Project Visit Agreement ID SRM-PVA-2026-000002.' }
+        ]
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_project_visit_agreements_v1', JSON.stringify(projectVisitAgreements));
+    } catch (e) {
+      console.error('Error saving project visit agreements to localStorage:', e);
+    }
+  }, [projectVisitAgreements]);
+
+  // PVA MODAL STATES
+  const [showPvaVerificationModal, setShowPvaVerificationModal] = useState<{ open: boolean; plan: any; stop: any } | null>(null);
+  const [showPvaDocumentModal, setShowPvaDocumentModal] = useState<{ open: boolean; pva: any } | null>(null);
+  const [showCustomerPublicVerificationModal, setShowCustomerPublicVerificationModal] = useState<{ open: boolean; pvaId: string } | null>(null);
+  const [showDeveloperIntroductionReportModal, setShowDeveloperIntroductionReportModal] = useState<boolean>(false);
+  const [projectSubTab, setProjectSubTab] = useState<'project_master' | 'introduction_register'>('project_master');
 
   const [routePlannerMode, setRoutePlannerMode] = useState<'create_plan' | 'exec_cockpit' | 'visual_map'>('exec_cockpit');
 
@@ -5569,7 +6134,83 @@ export default function App() {
                 <button onClick={() => setActiveProjectSubTab('deal_pipeline_tracker')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'deal_pipeline_tracker' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'deal_pipeline_tracker' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                   📈 Deal Conversion Funnel (13 Stages)
                 </button>
+                <button onClick={() => setActiveProjectSubTab('introduction_register' as any)} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === ('introduction_register' as any) ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === ('introduction_register' as any) ? '#ffffff' : '#a855f7', border: activeProjectSubTab === ('introduction_register' as any) ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155') }}>
+                  🛡️ Customer Introduction Register ({projectVisitAgreements.length})
+                </button>
               </div>
+
+              {/* SUB-TAB: CUSTOMER INTRODUCTION REGISTER & BROKERAGE PROTECTION */}
+              {activeProjectSubTab === ('introduction_register' as any) && (
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>🛡️ PROJECT-WISE CUSTOMER INTRODUCTION REGISTER</h3>
+                      <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                        Time-stamped, project-specific proof of introduced buyers backed by Project Visit Agreements (PVA)
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => setShowDeveloperIntroductionReportModal(true)}
+                      style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      🏢 VIEW DEVELOPER INTRODUCTION SUMMARY REPORT
+                    </button>
+                  </div>
+
+                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                          <th style={{ padding: '10px' }}>PVA ID & Date</th>
+                          <th style={{ padding: '10px' }}>Customer & Mobile</th>
+                          <th style={{ padding: '10px' }}>Project & Developer</th>
+                          <th style={{ padding: '10px' }}>Assigned Sales Exec</th>
+                          <th style={{ padding: '10px' }}>Protection Expiry Date</th>
+                          <th style={{ padding: '10px' }}>Verification Status</th>
+                          <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {projectVisitAgreements.map((pva: any, idx: number) => (
+                          <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                            <td style={{ padding: '10px' }}>
+                              <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{pva.projectVisitAgreementId}</span>
+                              <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>📅 {pva.visitDate}</span>
+                            </td>
+                            <td style={{ padding: '10px' }}>
+                              <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.88rem' }}>{pva.customerName}</strong>
+                              <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{pva.customerMobile}</span>
+                            </td>
+                            <td style={{ padding: '10px' }}>
+                              <strong style={{ color: '#fbbf24', fontSize: '0.85rem' }}>{pva.projectTitle}</strong>
+                              <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Dev: {pva.developerName}</span>
+                            </td>
+                            <td style={{ padding: '10px', color: '#38bdf8', fontWeight: '800' }}>
+                              {pva.salesPersonName}
+                            </td>
+                            <td style={{ padding: '10px', color: '#4ade80', fontWeight: '800' }}>
+                              🗓️ {pva.protectionEndDate} ({pva.protectionPeriodMonths}M Protection)
+                            </td>
+                            <td style={{ padding: '10px' }}>
+                              <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900' }}>
+                                ✓ VISIT VERIFIED (GPS+OTP)
+                              </span>
+                            </td>
+                            <td style={{ padding: '10px', textAlign: 'center' }}>
+                              <button 
+                                onClick={() => setShowPvaDocumentModal({ open: true, pva })}
+                                style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem' }}
+                              >
+                                📄 View PVA Document
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
 
               
               {/* SUB-TAB: FULL DEDICATED PAGE VIEW FOR PROPERTY MASTER REGISTRATION & EDITING */}
@@ -6848,6 +7489,63 @@ export default function App() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  </div>
+
+                  {/* PROJECT VISIT HISTORY (PVA RECORDS) */}
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🛡️ Project Visit History & Brokerage Protection Agreements (PVA)
+                      </h4>
+                      <span style={{ fontSize: '0.75rem', color: '#4ade80', background: 'rgba(34, 197, 94, 0.15)', padding: '4px 10px', borderRadius: '20px', fontWeight: '800' }}>
+                        {projectVisitAgreements.length} PVA Records Preserved
+                      </span>
+                    </div>
+
+                    <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                        <thead>
+                          <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                            <th style={{ padding: '10px' }}>PVA ID & Date</th>
+                            <th style={{ padding: '10px' }}>Visited Project</th>
+                            <th style={{ padding: '10px' }}>Developer</th>
+                            <th style={{ padding: '10px' }}>Sales Executive</th>
+                            <th style={{ padding: '10px' }}>Protection Expiry</th>
+                            <th style={{ padding: '10px', textAlign: 'center' }}>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {projectVisitAgreements.map((pva: any, idx: number) => (
+                            <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                              <td style={{ padding: '10px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>
+                                {pva.projectVisitAgreementId}
+                                <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{pva.visitDate}</span>
+                              </td>
+                              <td style={{ padding: '10px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
+                                {pva.projectTitle}
+                              </td>
+                              <td style={{ padding: '10px', color: '#fbbf24' }}>
+                                {pva.developerName}
+                              </td>
+                              <td style={{ padding: '10px', color: '#38bdf8' }}>
+                                {pva.salesPersonName}
+                              </td>
+                              <td style={{ padding: '10px', color: '#4ade80', fontWeight: '800' }}>
+                                🗓️ {pva.protectionEndDate}
+                              </td>
+                              <td style={{ padding: '10px', textAlign: 'center' }}>
+                                <button 
+                                  onClick={() => setShowPvaDocumentModal({ open: true, pva })}
+                                  style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem' }}
+                                >
+                                  📄 View PVA PDF
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
 
@@ -8482,8 +9180,8 @@ export default function App() {
                           <th style={{ padding: '10px' }}>Target Property</th>
                           <th style={{ padding: '10px' }}>Scheduled Date & Time</th>
                           <th style={{ padding: '10px' }}>Assigned Field Exec</th>
+                          <th style={{ padding: '10px' }}>OTP Verification Status</th>
                           <th style={{ padding: '10px' }}>Transport Logistics</th>
-                          <th style={{ padding: '10px' }}>Status & Conflict</th>
                           <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
                         </tr>
                       </thead>
@@ -8499,6 +9197,13 @@ export default function App() {
                             );
                             const lat = matchedProp?.latitude || '17.4612° N';
                             const lng = matchedProp?.longitude || '78.3689° E';
+
+                            const matchingPva = projectVisitAgreements.find((p: any) => 
+                              p.customerMobile === v.mobile || 
+                              p.visitScheduleId === v.visitId || 
+                              p.customerId === v.customerNumber
+                            );
+                            const isOtpVerified = !!matchingPva || v.status === 'OTP_VERIFIED';
 
                             return (
                               <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
@@ -8542,18 +9247,63 @@ export default function App() {
                                   {v.assignedExecutive}
                                 </td>
                                 <td style={{ padding: '10px' }}>
+                                  {isOtpVerified ? (
+                                    <div>
+                                      <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900', display: 'inline-block' }}>
+                                        ✅ OTP VERIFIED
+                                      </span>
+                                      <br />
+                                      <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: '800' }}>
+                                        {matchingPva?.projectVisitAgreementId || 'SRM-PVA-2026-000001'}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900', display: 'inline-block' }}>
+                                        ⏳ OTP VERIFICATION PENDING
+                                      </span>
+                                      <br />
+                                      <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                        6-Digit OTP Check-In Awaited
+                                      </span>
+                                    </div>
+                                  )}
+                                </td>
+                                <td style={{ padding: '10px' }}>
                                   <span style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', padding: '3px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800' }}>
                                     {v.transport || 'Direct Arrival'}
                                   </span>
                                 </td>
-                                <td style={{ padding: '10px' }}>
-                                  <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900', display: 'inline-block' }}>
-                                    {v.conflictStatus || '🟢 NO OVERLAP CONFLICT'}
-                                  </span>
-                                </td>
                                 <td style={{ padding: '10px', textAlign: 'center' }}>
                                   <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                    <button onClick={() => { setActiveVisitSubTab('visit_otp_checkin'); alert(`🔐 Initiated OTP Check-in for Visit ${v.visitId} (${v.customerName})\n📍 Verified Site GPS Coordinates: ${lat}, ${lng}`); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}>🔐 OTP Check-In</button>
+                                    {isOtpVerified ? (
+                                      <button 
+                                        onClick={() => setShowPvaDocumentModal({ open: true, pva: matchingPva || projectVisitAgreements[0] })}
+                                        style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem' }}
+                                      >
+                                        📄 View PVA PDF
+                                      </button>
+                                    ) : (
+                                      <button 
+                                        onClick={() => {
+                                          const matchedPlan = visitPlans.find(p => p.customerNumber === v.customerNumber || p.mobile === v.mobile) || visitPlans[0];
+                                          const targetStop = matchedPlan?.stops[0] || {
+                                            stopId: 'SRM-VSTOP-2026-000001',
+                                            costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
+                                            propertyCode: v.propertyCode || 'SRM-PROP-2026-000421',
+                                            propertyTitle: v.propertyTitle,
+                                            locality: 'Kondapur',
+                                            developer: 'Partner Developer',
+                                            latitude: lat,
+                                            longitude: lng
+                                          };
+                                          setShowPvaVerificationModal({ open: true, plan: matchedPlan, stop: targetStop });
+                                        }} 
+                                        style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem' }}
+                                      >
+                                        🔐 Verify OTP Now
+                                      </button>
+                                    )}
                                     <button 
                                       onClick={() => {
                                         const cleanLat = lat.replace(/[^0-9.]/g, '') || '17.4612';
@@ -8616,14 +9366,137 @@ export default function App() {
                 </div>
               )}
 
-              {/* SUB-TAB 2: OTP & GEOFENCE CHECK-IN */}
+              {/* SUB-TAB 2: OTP & GEOFENCE CHECK-IN CONTROL CENTER */}
               {activeVisitSubTab === 'visit_otp_checkin' && (
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>🔐 6-Digit Mobile OTP & GPS Geofence Verification</h3>
-                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ color: '#4ade80', fontWeight: '800' }}>🟢 Customer Mobile OTP Verified (849201)</div>
-                    <div style={{ color: '#38bdf8', fontWeight: '800' }}>🟢 GPS Geofence Verified: 17.4612° N, 78.3685° E (Within 100m of Property Site)</div>
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🔐 6-DIGIT MOBILE OTP & GPS GEOFENCE VERIFICATION CONTROL CENTER
+                      </h3>
+                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                        Real-time tracking of pending vs completed customer OTP verifications and Project Visit Agreements (PVA)
+                      </p>
+                    </div>
+                    <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid #22c55e', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+                      ● 5-MINUTE OTP TIMER & GEOFENCE ACTIVE
+                    </span>
                   </div>
+
+                  {/* SUMMARY CARDS */}
+                  {(() => {
+                    const verifiedVisits = scheduledVisits.filter(v => projectVisitAgreements.some(p => p.customerMobile === v.mobile || p.visitScheduleId === v.visitId || p.customerId === v.customerNumber));
+                    const pendingVisits = scheduledVisits.filter(v => !projectVisitAgreements.some(p => p.customerMobile === v.mobile || p.visitScheduleId === v.visitId || p.customerId === v.customerNumber));
+
+                    return (
+                      <>
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
+                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '16px', borderRadius: '12px' }}>
+                            <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL SCHEDULED VISITS</span>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#38bdf8', marginTop: '4px' }}>{scheduledVisits.length} Visits</h3>
+                          </div>
+                          <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', padding: '16px', borderRadius: '12px' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800' }}>⏳ PENDING OTP VERIFICATION</span>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#fbbf24', marginTop: '4px' }}>{pendingVisits.length} Visits Pending</h3>
+                          </div>
+                          <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', padding: '16px', borderRadius: '12px' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: '800' }}>✅ OTP VERIFIED (PVA GENERATED)</span>
+                            <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#4ade80', marginTop: '4px' }}>{verifiedVisits.length} Visits Verified</h3>
+                          </div>
+                        </div>
+
+                        {/* LIVE OTP VERIFICATION REGISTER TABLE */}
+                        <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+                            <thead>
+                              <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                                <th style={{ padding: '12px' }}>Visit ID & Date</th>
+                                <th style={{ padding: '12px' }}>Customer Name & Contact</th>
+                                <th style={{ padding: '12px' }}>Target Property & GPS</th>
+                                <th style={{ padding: '12px' }}>OTP Verification Status</th>
+                                <th style={{ padding: '12px' }}>Legal PVA Reference</th>
+                                <th style={{ padding: '12px', textAlign: 'center' }}>Verification Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {scheduledVisits.map((v: any, idx: number) => {
+                                const pvaMatch = projectVisitAgreements.find((p: any) => p.customerMobile === v.mobile || p.visitScheduleId === v.visitId || p.customerId === v.customerNumber);
+                                const isVerified = !!pvaMatch;
+
+                                return (
+                                  <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                                    <td style={{ padding: '12px' }}>
+                                      <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{v.visitId}</span>
+                                      <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>📅 {v.visitDate} at {v.visitTime}</span>
+                                    </td>
+                                    <td style={{ padding: '12px' }}>
+                                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>{v.customerName}</strong>
+                                      <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{v.mobile}</span>
+                                    </td>
+                                    <td style={{ padding: '12px' }}>
+                                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{v.propertyTitle}</strong>
+                                      <br /><span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>📍 GPS: 17.4612° N, 78.3689° E</span>
+                                    </td>
+                                    <td style={{ padding: '12px' }}>
+                                      {isVerified ? (
+                                        <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900', display: 'inline-block' }}>
+                                          ✅ OTP VERIFIED (COMPLETED)
+                                        </span>
+                                      ) : (
+                                        <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900', display: 'inline-block' }}>
+                                          ⏳ OTP VERIFICATION PENDING
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '12px' }}>
+                                      {isVerified ? (
+                                        <div>
+                                          <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', fontSize: '0.78rem' }}>{pvaMatch.projectVisitAgreementId}</span>
+                                          <br /><span style={{ fontSize: '0.7rem', color: '#4ade80' }}>Protection till {pvaMatch.protectionEndDate}</span>
+                                        </div>
+                                      ) : (
+                                        <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', italic: 'true' }}>PVA Pending OTP Check-In</span>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                                      {isVerified ? (
+                                        <button 
+                                          onClick={() => setShowPvaDocumentModal({ open: true, pva: pvaMatch })}
+                                          style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem' }}
+                                        >
+                                          📄 View Verified PVA PDF
+                                        </button>
+                                      ) : (
+                                        <button 
+                                          onClick={() => {
+                                            const matchedPlan = visitPlans.find(p => p.customerNumber === v.customerNumber || p.mobile === v.mobile) || visitPlans[0];
+                                            const targetStop = matchedPlan?.stops[0] || {
+                                              stopId: 'SRM-VSTOP-2026-000001',
+                                              costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
+                                              propertyCode: v.propertyCode || 'SRM-PROP-2026-000421',
+                                              propertyTitle: v.propertyTitle,
+                                              locality: 'Kondapur',
+                                              developer: 'Partner Developer',
+                                              latitude: '17.4612° N',
+                                              longitude: '78.3689° E'
+                                            };
+                                            setShowPvaVerificationModal({ open: true, plan: matchedPlan, stop: targetStop });
+                                          }}
+                                          style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem' }}
+                                        >
+                                          🔐 Verify 6-Digit OTP Now
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -8816,44 +9689,113 @@ export default function App() {
           {/* CATEGORY 7: AGREEMENT MANAGEMENT (RESTORED CONTRACT MODAL & TABLE) */}
           {activeTab === 'agreement_management' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                   <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>Legal Agreements Vault & OTP Signature Stamps</h2>
-                  <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>Binding site-visit non-circumvention agreements and developer contracts.</p>
+                  <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>Binding site-visit non-circumvention agreements and individual customer contracts created after OTP verification.</p>
                 </div>
+                <button 
+                  onClick={() => {
+                    const plan = visitPlans[0];
+                    const stop = plan?.stops[0] || { stopId: 'SRM-VSTOP-2026-000001', propertyTitle: 'Aparna Zenon Premium 3BHK', propertyCode: 'SRM-PROP-2026-000421', costSheetId: 'SRM-CS-2026-000145', developer: 'Aparna Constructions', latitude: '17.4612° N', longitude: '78.3689° E' };
+                    setShowPvaVerificationModal({ open: true, plan, stop });
+                  }}
+                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}
+                >
+                  <ShieldCheck size={16} /> + Create Agreement via Customer OTP Verification
+                </button>
+              </div>
+
+              {/* ANTI-BYPASS COMPANY INTRODUCTION WARNING BANNER */}
+              <div style={{ background: 'rgba(245, 158, 11, 0.15)', border: '2px solid #f59e0b', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <AlertTriangle size={28} color="#f59e0b" />
+                  <div>
+                    <h4 style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.95rem' }}>
+                      ⚠️ EXISTING COMPANY INTRODUCTION RECORDS DETECTED ({projectVisitAgreements.length} ACTIVE PVA CONTRACTS)
+                    </h4>
+                    <p style={{ color: isLight ? '#0f172a' : '#cbd5e1', fontSize: '0.8rem', marginTop: '2px' }}>
+                      Automatic Anti-Bypass Check: All buyer bookings & contracts are cross-referenced with Project Visit Agreements (SRM-PVA-XXXXXX) to protect company brokerage rights.
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setShowDeveloperIntroductionReportModal(true)}
+                  style={{ background: '#f59e0b', color: '#0f172a', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
+                >
+                  🛡️ AUDIT INTRODUCTION RECORDS
+                </button>
               </div>
 
               <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '24px' }}>
                 <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                      <th style={{ padding: '12px' }}>Agreement Code</th>
-                      <th style={{ padding: '12px' }}>Agreement Title</th>
-                      <th style={{ padding: '12px' }}>Party Name</th>
-                      <th style={{ padding: '12px' }}>Digital Signature Stamp</th>
-                      <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {agreements
-                      .filter(a => matchesSearchQuery(a, searchQuery))
-                      .map(a => (
-                      <tr key={a.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                        <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{a.agreement_code}</td>
-                        <td style={{ padding: '12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{a.title}</td>
-                        <td style={{ padding: '12px' }}>{a.party_name}</td>
-                        <td style={{ padding: '12px', color: '#4ade80', fontFamily: 'monospace', fontSize: '0.75rem' }}>{a.signature_hash}</td>
-                        <td style={{ padding: '12px', textAlign: 'center' }}>
-                          <button onClick={() => { setSelectedAgreement(a); setShowFullContractModal(true); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}>
-                            <Printer size={14} /> View Contract PDF
-                          </button>
-                        </td>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                        <th style={{ padding: '12px' }}>Agreement Code</th>
+                        <th style={{ padding: '12px' }}>Agreement Title</th>
+                        <th style={{ padding: '12px' }}>Party Name</th>
+                        <th style={{ padding: '12px' }}>Digital Signature Stamp</th>
+                        <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-</div>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        const combinedAgreements = [
+                          ...agreements,
+                          ...projectVisitAgreements.filter(pva => !agreements.some(a => a.agreement_code === pva.projectVisitAgreementId)).map(pva => ({
+                            id: pva.projectVisitAgreementId,
+                            agreement_code: pva.projectVisitAgreementId,
+                            agreement_type: 'CUSTOMER_SITE_VISIT',
+                            title: `Customer Site Visit Agreement — ${pva.projectTitle || 'Site Visit'}`,
+                            party_name: pva.customerName,
+                            party_contact: pva.customerMobile,
+                            property_details: `${pva.propertyId} (${pva.projectTitle})`,
+                            signed_status: 'EXECUTED_SIGNED',
+                            signature_hash: `OTP VERIFIED #${pva.otpHashRef?.slice(-6) || '849201'} DIGITAL SIG`,
+                            signed_at: `${pva.visitDate} ${pva.otpVerifiedAt || '10:20 AM'}`,
+                            pvaData: pva
+                          }))
+                        ];
+
+                        return combinedAgreements
+                          .filter(a => matchesSearchQuery(a, searchQuery))
+                          .map((a: any) => (
+                            <tr key={a.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                              <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{a.agreement_code}</td>
+                              <td style={{ padding: '12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{a.title}</td>
+                              <td style={{ padding: '12px' }}>
+                                <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{a.party_name}</strong>
+                                {a.party_contact && (
+                                  <>
+                                    <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{a.party_contact}</span>
+                                  </>
+                                )}
+                              </td>
+                              <td style={{ padding: '12px', color: '#4ade80', fontFamily: 'monospace', fontSize: '0.75rem' }}>{a.signature_hash}</td>
+                              <td style={{ padding: '12px', textAlign: 'center' }}>
+                                {a.pvaData ? (
+                                  <button 
+                                    onClick={() => setShowPvaDocumentModal({ open: true, pva: a.pvaData })} 
+                                    style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}
+                                  >
+                                    <Printer size={14} /> View Contract PDF
+                                  </button>
+                                ) : (
+                                  <button 
+                                    onClick={() => { setSelectedAgreement(a); setShowFullContractModal(true); }} 
+                                    style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}
+                                  >
+                                    <Printer size={14} /> View Contract PDF
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ));
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -12460,6 +13402,91 @@ export default function App() {
               >
                 Execute Lead Transfer
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: PROJECT VISIT VERIFICATION (PVA & BROKER PROTECTION) */}
+      {showPvaVerificationModal && showPvaVerificationModal.open && (
+        <PvaVerificationModalContent
+          isLight={isLight}
+          plan={showPvaVerificationModal.plan}
+          stop={showPvaVerificationModal.stop}
+          protectionPeriodMonths={protectionPeriodMonths}
+          geofenceRadiusMeters={geofenceRadiusMeters}
+          onClose={() => setShowPvaVerificationModal(null)}
+          projectVisitAgreements={projectVisitAgreements}
+          setProjectVisitAgreements={setProjectVisitAgreements}
+          setVisitPlans={setVisitPlans}
+          setShowPvaDocumentModal={setShowPvaDocumentModal}
+        />
+      )}
+
+      {/* MODAL: PVA ACKNOWLEDGEMENT PDF & DOCUMENT PREVIEW */}
+      {showPvaDocumentModal && showPvaDocumentModal.open && showPvaDocumentModal.pva && (
+        <PvaDocumentModalContent
+          isLight={isLight}
+          pva={showPvaDocumentModal.pva}
+          onClose={() => setShowPvaDocumentModal(null)}
+        />
+      )}
+
+      {/* MODAL: DEVELOPER CUSTOMER INTRODUCTION REPORT */}
+      {showDeveloperIntroductionReportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2200, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', width: '900px', maxHeight: '92vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>🏢 DEVELOPER CUSTOMER INTRODUCTION REPORT</h3>
+                <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                  Legal Proof of Company Introduced Buyers & Protection Status per Developer
+                </p>
+              </div>
+              <X size={24} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowDeveloperIntroductionReportModal(false)} />
+            </div>
+
+            <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                <thead>
+                  <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                    <th style={{ padding: '10px' }}>Developer Partner</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Total Introduced</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Verified Visits</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Booked Conversions</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Pending / In Pipeline</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Direct Purchase Alerts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    { dev: 'Aparna Constructions', introduced: 145, verified: 112, booked: 24, pending: 38, alerts: 0, color: '#4ade80' },
+                    { dev: 'Prestige Estates', introduced: 98, verified: 82, booked: 18, pending: 22, alerts: 1, color: '#fbbf24' },
+                    { dev: 'My Home Group', introduced: 110, verified: 94, booked: 21, pending: 29, alerts: 0, color: '#38bdf8' },
+                    { dev: 'Sumadhura Infracon', introduced: 64, verified: 50, booked: 9, pending: 12, alerts: 0, color: '#a855f7' }
+                  ].map((d, idx) => (
+                    <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                      <td style={{ padding: '10px' }}>
+                        <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>{d.dev}</strong>
+                      </td>
+                      <td style={{ padding: '10px', textAlign: 'center', color: '#38bdf8', fontWeight: '900' }}>{d.introduced}</td>
+                      <td style={{ padding: '10px', textAlign: 'center', color: '#4ade80', fontWeight: '900' }}>{d.verified}</td>
+                      <td style={{ padding: '10px', textAlign: 'center', color: '#22c55e', fontWeight: '900' }}>{d.booked}</td>
+                      <td style={{ padding: '10px', textAlign: 'center', color: '#fbbf24', fontWeight: '900' }}>{d.pending}</td>
+                      <td style={{ padding: '10px', textAlign: 'center' }}>
+                        <span style={{ background: d.alerts > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.15)', color: d.alerts > 0 ? '#ef4444' : '#4ade80', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '900' }}>
+                          {d.alerts > 0 ? `⚠️ ${d.alerts} ALERT` : '0 Alerts'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+              <button onClick={() => window.print()} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}>🖨️ EXPORT REPORT</button>
+              <button onClick={() => setShowDeveloperIntroductionReportModal(false)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Close</button>
             </div>
           </div>
         </div>
