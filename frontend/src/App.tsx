@@ -12,7 +12,7 @@ import {
   Compass, QrCode, Share2, Layers3, Activity, CheckSquare1, Eye, EyeOff, ThumbsUp, ThumbsDown,
   Upload, FileUp, FileDown, Table, FileSignature, Scale, PenTool, ReceiptText, Calculator, Landmark,
   Grid, List, Columns, Edit3, Trash2, CheckStack, Layers2, Navigation, Map, PieChart, BarChart2,
-  GitMerge, ArrowDown, Sun, Moon, Menu, LogOut
+  GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck
 } from 'lucide-react';
 
 function ScheduleVisitModalContent({
@@ -1664,9 +1664,9 @@ function InteractiveLeafletMap({
 }
 
 export default function App() {
-  // 12 Main Navigation Categories
+  // 13 Main Navigation Categories
   const [activeTab, setActiveTab] = useState<
-    'main_dashboard' | 'lead_management' | 'customer_management' | 'matching_management' | 'cost_sheet_share' | 'visit_management' | 'project_management' | 'agreement_management' | 'billing_management' | 'map_management' | 'role_management' | 'profile'
+    'main_dashboard' | 'lead_management' | 'customer_management' | 'matching_management' | 'cost_sheet_share' | 'visit_management' | 'project_management' | 'agreement_management' | 'booking_management' | 'billing_management' | 'map_management' | 'role_management' | 'profile'
   >(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -1756,9 +1756,10 @@ export default function App() {
   const [activeMatchingSubTab, setActiveMatchingSubTab] = useState<'ai_matching_engine' | 'req_inventory_matrix' | 'portfolio_dispatcher'>('ai_matching_engine');
   const [activeCostSheetShareSubTab, setActiveCostSheetShareSubTab] = useState<'individual_cost_sheets' | 'dispatcher' | 'delivery_analytics' | 'portal_tokens' | 'interest_handoff'>('individual_cost_sheets');
   const [activeRoleSubTab, setActiveRoleSubTab] = useState<'user_directory' | 'permission_matrix' | 'org_hierarchy' | 'approval_queue' | 'session_security' | 'exit_handover'>('user_directory');
-  const [activeProjectSubTab, setActiveProjectSubTab] = useState<'property_master' | 'live_inventory_board' | 'map_radius' | 'price_security' | 'deal_pipeline_tracker' | 'add_property_master'>('property_master');
+  const [activeProjectSubTab, setActiveProjectSubTab] = useState<'advance_dashboard' | 'property_master' | 'live_inventory_board' | 'map_radius' | 'price_security' | 'deal_pipeline_tracker' | 'add_property_master' | 'introduction_register'>('advance_dashboard');
   const [activeCustomerSubTab, setActiveCustomerSubTab] = useState<'sales_journey_funnel' | 'cost_sheet_engine' | 'site_visit_engine' | 'smart_matching_engine' | 'customer_master_vault' | 'customer_360_profile' | 'anti_leakage_engine' | 'selected_properties_connections' | 'secure_customer_portal'>('customer_master_vault');
   const [activeAgreementSubTab, setActiveAgreementSubTab] = useState<'all_agreements' | 'customer_agreements' | 'developer_agreements' | 'tc_templates'>('all_agreements');
+  const [activeBookingSubTab, setActiveBookingSubTab] = useState<'all_bookings' | 'create_booking' | 'booking_approvals' | 'allotment_letters'>('all_bookings');
   const [activeBillingSubTab, setActiveBillingSubTab] = useState<'tax_invoices' | 'developer_commission' | 'payment_receipts' | 'financial_ledger'>('tax_invoices');
 
   // Advanced Customer Search & Requirement Filter States
@@ -1766,6 +1767,8 @@ export default function App() {
   const [filterLocality, setFilterLocality] = useState('ALL');
   const [filterBhk, setFilterBhk] = useState('ALL');
   const [filterPriority, setFilterPriority] = useState('ALL');
+  const [custStageFilter, setCustStageFilter] = useState('ALL');
+  const [custSourceFilter, setCustSourceFilter] = useState('ALL');
   const [showAdvCustFilters, setShowAdvCustFilters] = useState(true);
 
   // Dynamic Cost Sheet Engine State
@@ -2421,6 +2424,8 @@ export default function App() {
     loan_amount: '₹80 Lakhs',
     loan_status: 'Pre-Approved',
     decision_timeline: 'Within 30 Days',
+    brokerage_rate: '2.0%',
+    brokerage_payer: 'DEVELOPER',
     preferred_projects: 'My Home, Rajapushpa, Aparna',
     family_requirements: 'East Facing, High Floor, Pool View',
     sub_source: 'Kondapur 3BHK Campaign',
@@ -2788,11 +2793,11 @@ export default function App() {
       console.error('Error reading properties from localStorage:', e);
     }
     return [
-      { id: 'PROP-01', property_code: 'SRM-PROP-2026-000421', title: 'Aparna Zenon Premium 3BHK Residence', type: 'Apartment', developer: 'Aparna Constructions', project: 'Aparna Zenon', tower: 'Tower A', floor: 5, unit: 'A-504', configuration: '3BHK', carpet_area: '1,450 sq.ft.', facing: 'East', final_price: '₹84 Lakhs', base_price: '₹85 Lakhs', status: 'AVAILABLE', locality: 'Kondapur', map_x: 45, map_y: 35, latitude: '17.4612° N', longitude: '78.3689° E', owner_phone: '+91 40 2335 8888', price_sqft: '₹5,862 / sq.ft.' },
-      { id: 'PROP-02', property_code: 'SRM-PROP-2026-000422', title: 'Financial Towers Luxury 4BHK Sky Suite', type: 'Penthouse', developer: 'My Home Group', project: 'Financial Towers', tower: 'Tower B', floor: 12, unit: 'B-1202', configuration: '4BHK', carpet_area: '2,400 sq.ft.', facing: 'North-East', final_price: '₹2.08 Crores', base_price: '₹2.10 Crores', status: 'AVAILABLE', locality: 'Financial District', map_x: 28, map_y: 55, latitude: '17.4401° N', longitude: '78.3489° E', owner_phone: '+91 40 6688 9999', price_sqft: '₹8,750 / sq.ft.' },
-      { id: 'PROP-03', property_code: 'SRM-PROP-2026-000423', title: 'My Home Jewel Executive 2BHK Flat', type: 'Apartment', developer: 'My Home Group', project: 'My Home Jewel', tower: 'Block C', floor: 3, unit: 'C-308', configuration: '2BHK', carpet_area: '1,245 sq.ft.', facing: 'North', final_price: '₹68 Lakhs', base_price: '₹69 Lakhs', status: 'AVAILABLE', locality: 'Madinaguda', map_x: 32, map_y: 20, latitude: '17.4921° N', longitude: '78.3412° E', owner_phone: '+91 40 6688 1111', price_sqft: '₹5,542 / sq.ft.' },
-      { id: 'PROP-04', property_code: 'SRM-PROP-2026-000424', title: 'Jayabheri Silicon County Ultra Villa', type: 'Villa', developer: 'Jayabheri Properties', project: 'Silicon County', tower: 'Villa 14', floor: 2, unit: 'V-14', configuration: '5BHK Villa', carpet_area: '4,200 sq.ft.', facing: 'East', final_price: '₹4.50 Crores', base_price: '₹4.60 Crores', status: 'BOOKED', locality: 'Hitec City', map_x: 58, map_y: 42, latitude: '17.4478° N', longitude: '78.3789° E', owner_phone: '+91 40 2311 5555', price_sqft: '₹10,952 / sq.ft.' },
-      { id: 'PROP-05', property_code: 'SRM-PROP-2026-000425', title: 'Prestige High Fields Corner 3BHK', type: 'Apartment', developer: 'Prestige Estates', project: 'Prestige High Fields', tower: 'Tower 8', floor: 18, unit: 'T8-1804', configuration: '3BHK', carpet_area: '1,725 sq.ft.', facing: 'East', final_price: '₹1.35 Crores', base_price: '₹1.38 Crores', status: 'HOLD', locality: 'Nanakramguda', map_x: 22, map_y: 65, latitude: '17.4201° N', longitude: '78.3410° E', owner_phone: '+91 40 4477 8888', price_sqft: '₹8,000 / sq.ft.' }
+      { id: 'PROP-01', property_code: 'SRM-PROP-2026-000421', title: 'Aparna Zenon Premium 3BHK Residence', type: 'Apartment', developer: 'Aparna Constructions', project: 'Aparna Zenon', tower: 'Tower A', floor: 5, unit: 'A-504', configuration: '3BHK', carpet_area: '1,450 sq.ft.', facing: 'East', final_price: '₹84 Lakhs', base_price: '₹85 Lakhs', status: 'AVAILABLE', locality: 'Kondapur', map_x: 45, map_y: 35, latitude: '17.4612° N', longitude: '78.3689° E', owner_phone: '+91 40 2335 8888', price_sqft: '₹5,862 / sq.ft.', added_date: '2026-08-26', added_by: 'Priya Nair (Sales Exec)' },
+      { id: 'PROP-02', property_code: 'SRM-PROP-2026-000422', title: 'Financial Towers Luxury 4BHK Sky Suite', type: 'Penthouse', developer: 'My Home Group', project: 'Financial Towers', tower: 'Tower B', floor: 12, unit: 'B-1202', configuration: '4BHK', carpet_area: '2,400 sq.ft.', facing: 'North-East', final_price: '₹2.08 Crores', base_price: '₹2.10 Crores', status: 'AVAILABLE', locality: 'Financial District', map_x: 28, map_y: 55, latitude: '17.4401° N', longitude: '78.3489° E', owner_phone: '+91 40 6688 9999', price_sqft: '₹8,750 / sq.ft.', added_date: '2026-08-26', added_by: 'Rahul Sharma (TL)' },
+      { id: 'PROP-03', property_code: 'SRM-PROP-2026-000423', title: 'My Home Jewel Executive 2BHK Flat', type: 'Apartment', developer: 'My Home Group', project: 'My Home Jewel', tower: 'Block C', floor: 3, unit: 'C-308', configuration: '2BHK', carpet_area: '1,245 sq.ft.', facing: 'North', final_price: '₹68 Lakhs', base_price: '₹69 Lakhs', status: 'AVAILABLE', locality: 'Madinaguda', map_x: 32, map_y: 20, latitude: '17.4921° N', longitude: '78.3412° E', owner_phone: '+91 40 6688 1111', price_sqft: '₹5,542 / sq.ft.', added_date: '2026-08-26', added_by: 'Priya Nair (Sales Exec)' },
+      { id: 'PROP-04', property_code: 'SRM-PROP-2026-000424', title: 'Jayabheri Silicon County Ultra Villa', type: 'Villa', developer: 'Jayabheri Properties', project: 'Silicon County', tower: 'Villa 14', floor: 2, unit: 'V-14', configuration: '5BHK Villa', carpet_area: '4,200 sq.ft.', facing: 'East', final_price: '₹4.50 Crores', base_price: '₹4.60 Crores', status: 'BOOKED', locality: 'Hitec City', map_x: 58, map_y: 42, latitude: '17.4478° N', longitude: '78.3789° E', owner_phone: '+91 40 2311 5555', price_sqft: '₹10,952 / sq.ft.', added_date: '2026-08-25', added_by: 'Vikram Reddy (GM)' },
+      { id: 'PROP-05', property_code: 'SRM-PROP-2026-000425', title: 'Prestige High Fields Corner 3BHK', type: 'Apartment', developer: 'Prestige Estates', project: 'Prestige High Fields', tower: 'Tower 8', floor: 18, unit: 'T8-1804', configuration: '3BHK', carpet_area: '1,725 sq.ft.', facing: 'East', final_price: '₹1.35 Crores', base_price: '₹1.38 Crores', status: 'HOLD', locality: 'Nanakramguda', map_x: 22, map_y: 65, latitude: '17.4201° N', longitude: '78.3410° E', owner_phone: '+91 40 4477 8888', price_sqft: '₹8,000 / sq.ft.', added_date: '2026-08-25', added_by: 'Rahul Sharma (TL)' }
     ];
   });
 
@@ -4253,10 +4258,69 @@ export default function App() {
     { id: 'SV-01', visit_code: 'SRM-SV-2026-000095', customer_name: 'Priya Sharma', property_code: 'SRM-PROP-2026-000422', project: 'Financial Towers', salesperson: 'Priya Nair', visit_date: '16 Aug 2026 04:00 PM', status: 'SCHEDULED' }
   ]);
 
-  const [bookings, setBookings] = useState([
-    { id: 'BKG-01', booking_code: 'SRM-BKG-2026-000201', customer_name: 'Rohan Deshmukh', property_title: 'Aparna Zenon (Unit A-504)', developer: 'Aparna Constructions', booking_value: '₹84,00,000', brokerage_expected: '₹2,10,000', brokerage_received: '₹2,10,000', status: 'CONFIRMED', payment_status: 'PAID' },
-    { id: 'BKG-02', booking_code: 'SRM-BKG-2026-000202', customer_name: 'Priya Sharma', property_title: 'Financial Towers (Unit B-1202)', developer: 'My Home Group', booking_value: '₹2,08,00,000', brokerage_expected: '₹5,20,000', brokerage_received: '₹0', status: 'PENDING_APPROVAL', payment_status: 'PENDING' }
-  ]);
+  const [bookings, setBookings] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_bookings_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading bookings from localStorage:', e);
+    }
+    return [
+      {
+        id: 'BKG-01',
+        booking_code: 'SRM-BKG-2026-000201',
+        customer_name: 'Rohan Deshmukh',
+        customer_number: 'SRM-CUS-2026-000184',
+        customer_mobile: '+91 98490 12345',
+        project_name: 'Aparna Zenon',
+        developer_name: 'Aparna Constructions',
+        property_title: 'Aparna Zenon Premium 3BHK Residence',
+        tower_unit: 'Tower A - Unit A-504 (3BHK)',
+        agreement_value: '₹84,00,000',
+        token_amount: 500000,
+        payment_mode: 'Bank Transfer / NEFT',
+        payment_ref: 'NEFT-AXIS-994821',
+        booking_date: '2026-08-25',
+        sales_executive: 'Priya Nair (Sales Exec)',
+        brokerage_rate: '2.0%',
+        brokerage_amount: 168000,
+        approval_status: 'APPROVED_LOCKED',
+        status: 'CONFIRMED'
+      },
+      {
+        id: 'BKG-02',
+        booking_code: 'SRM-BKG-2026-000202',
+        customer_name: 'Dr. Ananth Kulkarni',
+        customer_number: 'SRM-CUS-2026-000186',
+        customer_mobile: '+91 98480 33445',
+        project_name: 'My Home Bhooja',
+        developer_name: 'My Home Constructions',
+        property_title: 'My Home Bhooja Luxury 5BHK Villa',
+        tower_unit: 'Tower C - Unit C-1201 (5BHK)',
+        agreement_value: '₹4,50,00,000',
+        token_amount: 1000000,
+        payment_mode: 'Cheque / RTGS',
+        payment_ref: 'CHQ-HDFC-771209',
+        booking_date: '2026-08-26',
+        sales_executive: 'Rahul Sharma (TL)',
+        brokerage_rate: '2.0%',
+        brokerage_amount: 900000,
+        approval_status: 'APPROVED_LOCKED',
+        status: 'CONFIRMED'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_bookings_v2', JSON.stringify(bookings));
+    } catch (e) {
+      console.error('Error saving bookings to localStorage:', e);
+    }
+  }, [bookings]);
 
   // 8. AGREEMENTS VAULT & CATEGORY STATES
   const [agreementCategory, setAgreementCategory] = useState<'customer' | 'developer'>('customer');
@@ -4431,12 +4495,119 @@ export default function App() {
   const [rawSelectedAgreement, setSelectedAgreement] = useState<any>(null);
   const selectedAgreement = rawSelectedAgreement || agreements[0] || { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' };
 
-  // 9. INVOICES VAULT
-  const [invoices, setInvoices] = useState([
-    { id: 'INV-01', invoice_number: 'SRM-INV-2026-000401', customer_name: 'Rohan Deshmukh', developer_name: 'Aparna Constructions', property_title: 'Aparna Zenon 3BHK', agreement_value: '₹84,00,000', taxable_value: 210000, cgst_amount: 18900, sgst_amount: 18900, total_invoice_amount: 247800, payment_status: 'PAID_SETTLED' }
-  ]);
+
+
+  const [showNewBookingModal, setShowNewBookingModal] = useState<boolean>(false);
+  const [showAllotmentModal, setShowAllotmentModal] = useState<{ open: boolean; booking: any } | null>(null);
+  const [newBookingForm, setNewBookingForm] = useState({
+    customer_name: 'Rohan Deshmukh',
+    customer_number: 'SRM-CUS-2026-000184',
+    customer_mobile: '+91 98490 12345',
+    project_name: 'Aparna Zenon',
+    developer_name: 'Aparna Constructions',
+    property_title: 'Aparna Zenon Premium 3BHK Residence',
+    tower_unit: 'Tower A - Unit A-504',
+    agreement_value: '8400000',
+    token_amount: '500000',
+    payment_mode: 'Bank Transfer / NEFT',
+    payment_ref: 'NEFT-AXIS-994821',
+    sales_executive: 'Priya Nair (Sales Exec)'
+  });
+
+  // VISIT SATISFACTION, REQUIREMENT UPDATE & ALTERNATIVE PROPERTY RECOMMENDATION STATES
+  const [showUpdateRequirementModal, setShowUpdateRequirementModal] = useState<{ open: boolean; customer: any } | null>(null);
+  const [showAlternativePropertyModal, setShowAlternativePropertyModal] = useState<{ open: boolean; customer: any; currentProperty: any } | null>(null);
+  const [showLogSalesFeedbackModal, setShowLogSalesFeedbackModal] = useState<boolean>(false);
+  const [salesFeedbackForm, setSalesFeedbackForm] = useState({
+    visitPlanId: 'SRM-VP-2026-000001',
+    customerName: 'Rohan Deshmukh',
+    propertyTitle: 'Aparna Zenon 3BHK',
+    rating: '5',
+    satisfaction: '😍 Highly Satisfied (Ready for Booking)',
+    dislike_reason: 'None',
+    buyer_intent: '🔥 HOT - Booking Lead',
+    executive_notes: 'Customer loved the balcony view and project amenities.'
+  });
+  const [billingInvoiceCategory, setBillingInvoiceCategory] = useState<'CUSTOMER' | 'DEVELOPER'>('CUSTOMER');
+  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState<boolean>(false);
+  const [showPrintInvoiceModal, setShowPrintInvoiceModal] = useState<{ open: boolean; invoice: any } | null>(null);
+
+  const [invoices, setInvoices] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_invoices_v4');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading invoices from localStorage:', e);
+    }
+    return [
+      {
+        id: 'INV-CUS-01',
+        invoice_number: 'SRM-INV-CUS-2026-000401',
+        invoice_category: 'CUSTOMER',
+        customer_name: 'Rohan Deshmukh',
+        customer_number: 'SRM-CUS-2026-000184',
+        customer_mobile: '+91 98490 12345',
+        developer_name: 'Aparna Constructions',
+        property_title: 'Aparna Zenon 3BHK (Unit A-504)',
+        particulars: 'Property Consultation & Site Visit Processing Fee',
+        agreement_value: '₹84,00,000',
+        taxable_value: 200000,
+        cgst_rate: '9%',
+        cgst_amount: 18000,
+        sgst_rate: '9%',
+        sgst_amount: 18000,
+        total_invoice_amount: 236000,
+        payment_status: 'PAID_SETTLED',
+        created_date: '2026-08-25'
+      },
+      {
+        id: 'INV-DEV-01',
+        invoice_number: 'SRM-INV-DEV-2026-000501',
+        invoice_category: 'DEVELOPER',
+        developer_name: 'Aparna Constructions',
+        developer_gstin: '36AAACA1234F1Z5',
+        customer_name: 'Rohan Deshmukh',
+        customer_number: 'SRM-CUS-2026-000184',
+        property_title: 'Aparna Zenon 3BHK (Unit A-504)',
+        particulars: '2.0% Channel Partner Success Fee / Commission for Unit A-504',
+        agreement_value: '₹84,00,000',
+        taxable_value: 168000,
+        cgst_rate: '9%',
+        cgst_amount: 15120,
+        sgst_rate: '9%',
+        sgst_amount: 15120,
+        total_invoice_amount: 198240,
+        payment_status: 'UNPAID_PENDING',
+        created_date: '2026-08-26'
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_invoices_v4', JSON.stringify(invoices));
+    } catch (e) {
+      console.error('Error saving invoices to localStorage:', e);
+    }
+  }, [invoices]);
+
+  const [createInvoiceForm, setCreateInvoiceForm] = useState({
+    invoice_category: 'CUSTOMER',
+    customer_name: 'Rohan Deshmukh',
+    customer_number: 'SRM-CUS-2026-000184',
+    customer_mobile: '+91 98490 12345',
+    developer_name: 'Aparna Constructions',
+    developer_gstin: '36AAACA1234F1Z5',
+    property_title: 'Aparna Zenon Premium 3BHK Residence',
+    particulars: 'Property Consulting / Channel Partner Success Commission',
+    agreement_value: '8400000',
+    taxable_value: '200000'
+  });
   const [rawSelectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const selectedInvoice = rawSelectedInvoice || invoices[0] || { id: 'INV-01', invoice_number: 'SRM-INV-2026-000401', customer_name: 'Rohan Deshmukh', developer_name: 'Aparna Constructions', property_title: 'Aparna Zenon 3BHK', agreement_value: '₹84,00,000', taxable_value: 210000, cgst_amount: 18900, sgst_amount: 18900, total_invoice_amount: 247800, payment_status: 'PAID_SETTLED' };
+  const selectedInvoice = rawSelectedInvoice || invoices[0];
 
   // Forms
   const [newUserForm, setNewUserForm] = useState({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_EXEC', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', manager_name: 'Rahul Sharma (TL)' });
@@ -4836,21 +5007,75 @@ export default function App() {
   const handleCreateLeadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const newCustNumber = newCustomerForm.customer_number || generateNextCustomerCode();
+    const custName = newLeadForm.customer_name || newCustomerForm.name || 'Ingested Lead Customer';
+    const mob = newLeadForm.mobile || newCustomerForm.mobile || '+91 98490 99999';
+    const em = newLeadForm.email || newCustomerForm.email || 'lead@swaramayi.com';
+    const loc = newLeadForm.preferred_location || newCustomerForm.preferredArea || 'Kondapur / Hitec City';
+    const bhkConf = newLeadForm.bhk || newCustomerForm.configuration || '3BHK';
+    const bud = newCustomerForm.budget || `${newLeadForm.budget_min || '70L'} - ${newLeadForm.budget_max || '85L'}`;
+    const prio = (newLeadForm.priority || newCustomerForm.priority || 'HOT') as any;
+
+    const callDisp = (newLeadForm as any).call_disposition || 'CONNECTED_INTERESTED';
+    let leadStat = 'INTERESTED';
+    if (callDisp === 'NOT_INTERESTED') leadStat = 'NOT_INTERESTED';
+    else if (callDisp === 'NO_RESPONSE') leadStat = 'NO_RESPONSE';
+    else if (callDisp === 'CALL_BACK_LATER') leadStat = 'CALL_BACK_LATER';
+
     const newC = {
       id: `CUS-${Date.now()}`,
       customer_number: newCustNumber,
-      name: newCustomerForm.name || newLeadForm.customer_name || 'Ingested Lead Customer',
-      mobile: newCustomerForm.mobile || newLeadForm.mobile || '+91 98490 99999',
-      email: newCustomerForm.email || 'lead@swaramayi.com',
-      budget: newCustomerForm.budget || `${newCustomerForm.budget_min} - ${newCustomerForm.budget_max}`,
-      preferredArea: newCustomerForm.preferredArea || 'Kondapur / Hitec City',
-      configuration: newCustomerForm.configuration || '3BHK',
-      priority: (newCustomerForm.priority || newLeadForm.priority || 'HOT') as any,
-      score: 85
+      name: custName,
+      mobile: mob,
+      email: em,
+      budget: bud,
+      preferredArea: loc,
+      configuration: bhkConf,
+      priority: prio,
+      score: callDisp === 'NOT_INTERESTED' ? 15 : (callDisp === 'NO_RESPONSE' ? 40 : 88),
+      source: newLeadForm.source || 'Meta Ads',
+      lead_status: leadStat,
+      call_disposition: callDisp
     };
+
+    const newLeadObj = {
+      id: `LEAD-${Date.now().toString().slice(-6)}`,
+      lead_number: `SRM-LEAD-2026-000${leadsList.length + 1}`,
+      customer_id: newCustNumber,
+      customer_number: newCustNumber,
+      customer_name: custName,
+      mobile: mob,
+      alternate_mobile: newLeadForm.alternate_mobile || '',
+      whatsapp_number: newLeadForm.whatsapp_number || mob,
+      email: em,
+      source: newLeadForm.source || 'Meta Ads',
+      campaign: newLeadForm.campaign || 'Direct Lead Ingestion',
+      preferred_location: loc,
+      preferred_project: newLeadForm.preferred_project || 'Aparna Zenon',
+      property_type: newLeadForm.property_type || 'Flat / Apartment',
+      bhk: bhkConf,
+      budget_min: newLeadForm.budget_min || 7000000,
+      budget_max: newLeadForm.budget_max || 8500000,
+      purpose: newLeadForm.purpose || 'Self Use',
+      possession_preference: newLeadForm.possession_preference || 'Immediate (< 30 Days)',
+      loan_required: newLeadForm.loan_required || true,
+      occupation: newLeadForm.occupation || 'Consultant / Professional',
+      priority: prio,
+      lead_status: leadStat,
+      call_disposition: callDisp,
+      next_action: callDisp === 'NOT_INTERESTED' ? 'Closed / Archived' : (callDisp === 'NO_RESPONSE' ? 'Retry Callback' : 'Initial Consultation'),
+      next_followup: new Date(Date.now() + (callDisp === 'NO_RESPONSE' ? 6 : 24) * 3600000).toISOString(),
+      assigned_employee_id: 'USR-07',
+      assigned_employee_name: 'Priya Nair (Sales Exec)',
+      created_by: 'USR-01',
+      quality_score: callDisp === 'NOT_INTERESTED' ? 15 : (callDisp === 'NO_RESPONSE' ? 40 : 88),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
     setCustomers([newC, ...customers]);
+    setLeadsList([newLeadObj, ...leadsList]);
     setShowLeadModal(false);
-    alert(`📋 New Lead & Customer Master ${newCustNumber} ingested successfully!`);
+    alert(`📋 New Lead (${newLeadObj.lead_number} - ${callDisp}) & Customer Master (${newCustNumber}) saved into Customer & Lead Management!`);
   };
 
   const handleRespondApproval = (reqId: string, action: 'APPROVED' | 'REJECTED') => {
@@ -5403,6 +5628,9 @@ export default function App() {
           </button>
           <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('agreement_management'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'agreement_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'agreement_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'agreement_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <FileCheck size={18} /> <span>Agreement Management</span>
+          </button>
+          <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('booking_management'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'booking_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'booking_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'booking_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <BookmarkCheck size={18} /> <span>Booking Management</span>
           </button>
           <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('billing_management'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'billing_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'billing_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'billing_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <CreditCard size={18} /> <span>Billing Management</span>
@@ -6853,6 +7081,9 @@ export default function App() {
 
               {/* SUB-TABS NAVIGATION BAR FOR PROJECT MANAGEMENT */}
               <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
+                <button onClick={() => setActiveProjectSubTab('advance_dashboard')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900', cursor: 'pointer', background: activeProjectSubTab === 'advance_dashboard' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'advance_dashboard' ? '#ffffff' : (isLight ? '#0f172a' : '#38bdf8'), border: activeProjectSubTab === 'advance_dashboard' ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155') }}>
+                  📊 Advance BI Command Center
+                </button>
                 <button onClick={() => setActiveProjectSubTab('property_master')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'property_master' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'property_master' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                   🏠 Property Master Stock ({properties.length})
                 </button>
@@ -6872,6 +7103,214 @@ export default function App() {
                   🛡️ Customer Introduction Register ({projectVisitAgreements.length})
                 </button>
               </div>
+
+              {/* SUB-TAB 0: ADVANCE BI DISPLAY & PROJECT COMMAND CENTER */}
+              {activeProjectSubTab === 'advance_dashboard' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  
+                  {/* KPI EXECUTIVE SUMMARY METRICS GRID */}
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(6, 1fr)', gap: '12px' }}>
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BUILDER PARTNERS</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>5 Projects</h3>
+                      <span style={{ fontSize: '0.7rem', color: '#4ade80', fontWeight: '700' }}>● Active MOUs</span>
+                    </div>
+
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL STOCK VALUE</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80' }}>₹48.50 Cr</h3>
+                      <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Portfolio Valuation</span>
+                    </div>
+
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>AVAILABLE UNITS</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#22c55e' }}>18 Units</h3>
+                      <span style={{ fontSize: '0.7rem', color: '#22c55e', fontWeight: '800' }}>Ready for Booking</span>
+                    </div>
+
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>UNDER NEGOTIATION</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24' }}>6 Units</h3>
+                      <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: '800' }}>Token Locked</span>
+                    </div>
+
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CONFIRMED BOOKED</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#a855f7' }}>12 Units</h3>
+                      <span style={{ fontSize: '0.7rem', color: '#a855f7', fontWeight: '800' }}>Sold & Executed</span>
+                    </div>
+
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BROKERAGE PIPELINE</span>
+                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>₹97.00 L</h3>
+                      <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '800' }}>Avg 2.0% Commission</span>
+                    </div>
+                  </div>
+
+                  {/* DAILY PROPERTY INGESTION TRACKER & AUDIT CARD */}
+                  {(() => {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const addedTodayList = properties.filter(p => p.added_date === todayStr || (!p.added_date && (p.id === 'PROP-01' || p.id === 'PROP-02' || p.id === 'PROP-03')));
+                    const addedTodayCount = addedTodayList.length;
+
+                    return (
+                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
+                              📅 DAILY PROPERTY INTAKE TRACKER
+                            </span>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              📈 Daily Property Addition Rate & Live Ingestion Audit Log
+                            </h3>
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <span style={{ background: '#22c55e', color: '#ffffff', padding: '6px 14px', borderRadius: '20px', fontWeight: '900', fontSize: '0.82rem' }}>
+                              🔥 +{addedTodayCount} PROPERTIES ADDED TODAY
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
+                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED TODAY ({todayStr})</span>
+                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#22c55e', marginTop: '2px' }}>+{addedTodayCount} Properties</h4>
+                            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Est Value: ₹3.60 Crore</p>
+                          </div>
+
+                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS WEEK</span>
+                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>+12 Properties</h4>
+                            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Avg 2.4 Props / Day</p>
+                          </div>
+
+                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS MONTH</span>
+                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>+28 Properties</h4>
+                            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Total ₹24.8 Cr Added</p>
+                          </div>
+
+                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>DAILY INGESTION VELOCITY</span>
+                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#a855f7', marginTop: '2px' }}>3.2 / Day</h4>
+                            <p style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>🟢 On Target Speed</p>
+                          </div>
+                        </div>
+
+                        {/* DAILY PROPERTY INGESTION TIMELINE LOG TABLE */}
+                        <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
+                          <h4 style={{ fontSize: '0.88rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginBottom: '8px' }}>
+                            📋 Live Ingestion Log — Properties Added Today & Recent Days
+                          </h4>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                            <thead>
+                              <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                                <th style={{ padding: '8px' }}>Ingestion Date</th>
+                                <th style={{ padding: '8px' }}>Property Code & Title</th>
+                                <th style={{ padding: '8px' }}>Developer & Project</th>
+                                <th style={{ padding: '8px' }}>Price & Sq.Ft. Rate</th>
+                                <th style={{ padding: '8px' }}>Status</th>
+                                <th style={{ padding: '8px' }}>Added By Executive</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {properties.slice(0, 5).map((p, idx) => (
+                                <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                                  <td style={{ padding: '8px', color: '#38bdf8', fontWeight: '900', fontFamily: 'monospace' }}>
+                                    📅 {p.added_date || '2026-08-26'}
+                                  </td>
+                                  <td style={{ padding: '8px' }}>
+                                    <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{p.title}</strong>
+                                    <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>{p.property_code}</div>
+                                  </td>
+                                  <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>
+                                    🏢 {p.developer} ({p.project})
+                                  </td>
+                                  <td style={{ padding: '8px' }}>
+                                    <span style={{ color: '#4ade80', fontWeight: '900' }}>{p.final_price}</span>
+                                    <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{p.price_sqft}</div>
+                                  </td>
+                                  <td style={{ padding: '8px' }}>
+                                    <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800' }}>
+                                      {p.status || 'AVAILABLE'}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '8px', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>
+                                    👤 {p.added_by || 'Priya Nair (Sales Exec)'}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* PROJECT PORTFOLIO CARDS GRID */}
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>🏢 MASTER DEVELOPER PROJECTS ADVANCE DISPLAY</h3>
+                        <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Real-time inventory availability, price rates, construction progress, and partner commission terms.</p>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '16px' }}>
+                      {[
+                        { name: 'Aparna Zenon', dev: 'Aparna Constructions', locality: 'Kondapur, Hyderabad', rate: '₹7,000 / Sq.Ft.', comm: '2.0% Direct', totalUnits: 28, freeUnits: 8, bookedUnits: 16, blockedUnits: 4, completion: 85, badge: 'HOT INVENTORY' },
+                        { name: 'Prestige High Fields', dev: 'Prestige Estates', locality: 'Financial District', rate: '₹8,500 / Sq.Ft.', comm: '2.5% Premium', totalUnits: 20, freeUnits: 5, bookedUnits: 12, blockedUnits: 3, completion: 92, badge: 'HIGH MARGIN' },
+                        { name: 'My Home Bhooja', dev: 'My Home Constructions', locality: 'HITEC City Sector', rate: '₹12,000 / Sq.Ft.', comm: '2.0% Direct', totalUnits: 15, freeUnits: 3, bookedUnits: 10, blockedUnits: 2, completion: 100, badge: 'READY TO MOVE' },
+                        { name: 'Sumadhura Acropolis', dev: 'Sumadhura Infracon', locality: 'Nanakramguda', rate: '₹7,800 / Sq.Ft.', comm: '2.0% Direct', totalUnits: 12, freeUnits: 2, bookedUnits: 8, blockedUnits: 2, completion: 78, badge: 'UNDER CONSTRUCTION' }
+                      ].map((p, idx) => (
+                        <div key={idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', fontFamily: 'monospace' }}>🏢 {p.dev}</span>
+                              <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>{p.name}</h4>
+                              <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>📍 {p.locality}</p>
+                            </div>
+                            <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid #38bdf8', padding: '3px 10px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900' }}>
+                              {p.badge}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '0.8rem', background: isLight ? '#ffffff' : '#1e293b', padding: '10px', borderRadius: '8px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                            <div>
+                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Base Rate:</span>
+                              <strong style={{ display: 'block', color: '#4ade80' }}>{p.rate}</strong>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Brokerage Term:</span>
+                              <strong style={{ display: 'block', color: '#fbbf24' }}>💰 {p.comm}</strong>
+                            </div>
+                            <div>
+                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Free Stock:</span>
+                              <strong style={{ display: 'block', color: '#22c55e' }}>🟢 {p.freeUnits} Units</strong>
+                            </div>
+                          </div>
+
+                          {/* CONSTRUCTION PROGRESS BAR */}
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: '800', marginBottom: '4px' }}>
+                              <span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Construction Progress:</span>
+                              <span style={{ color: '#38bdf8' }}>{p.completion}% Completed</span>
+                            </div>
+                            <div style={{ width: '100%', height: '8px', background: isLight ? '#cbd5e1' : '#334155', borderRadius: '4px', overflow: 'hidden' }}>
+                              <div style={{ width: `${p.completion}%`, height: '100%', background: 'linear-gradient(90deg, #0284c7 0%, #22c55e 100%)', borderRadius: '4px' }} />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                            <button onClick={() => setActiveProjectSubTab('live_inventory_board')} style={{ flex: 1, background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem', cursor: 'pointer' }}>🏢 View Tower Grid</button>
+                            <button onClick={() => setActiveProjectSubTab('property_master')} style={{ flex: 1, background: isLight ? '#e2e8f0' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem', cursor: 'pointer' }}>📋 Property Stock</button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* SUB-TAB: CUSTOMER INTRODUCTION REGISTER & BROKERAGE PROTECTION */}
               {activeProjectSubTab === ('introduction_register' as any) && (
@@ -8129,61 +8568,275 @@ export default function App() {
               {/* SUB-TAB 1: CUSTOMER MASTER VAULT */}
               {activeCustomerSubTab === 'customer_master_vault' && (
                 <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
                       <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>👥 Central Customer Master Registry</h3>
                       <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Company-owned customer records with permanent Customer Tracking IDs (SRM-CUS).</p>
                     </div>
                   </div>
 
+                  {/* INTERACTIVE SEARCH & MULTI-CRITERIA FILTER BAR */}
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
+                      {/* 1. INSTANT SEARCH INPUT */}
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🔍 Search Name / Phone / Code</label>
+                        <input 
+                          type="text" 
+                          value={custSearchQuery} 
+                          onChange={(e) => setCustSearchQuery(e.target.value)} 
+                          placeholder="Type Name, Mobile, SRM-CUS, SRM-LEAD..." 
+                          style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                        />
+                      </div>
+
+                      {/* 2. LOCALITY HUB FILTER */}
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📍 Locality Hub / Area</label>
+                        <select 
+                          value={filterLocality} 
+                          onChange={(e) => setFilterLocality(e.target.value)} 
+                          style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
+                        >
+                          <option value="ALL">ALL Locality Hubs</option>
+                          <option value="Kondapur">Kondapur / Gachibowli</option>
+                          <option value="Financial District">Financial District</option>
+                          <option value="Hitec City">HITEC City Sector</option>
+                          <option value="Madhyamgram">Madhyamgram Sector</option>
+                          <option value="Madinaguda">Madinaguda Sector</option>
+                          <option value="Nanakramguda">Nanakramguda Sector</option>
+                        </select>
+                      </div>
+
+                      {/* 3. LIFECYCLE STAGE FILTER */}
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📊 Lifecycle Stage</label>
+                        <select 
+                          value={custStageFilter} 
+                          onChange={(e) => setCustStageFilter(e.target.value)} 
+                          style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', padding: '8px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800' }}
+                        >
+                          <option value="ALL">ALL Lifecycle Stages</option>
+                          <option value="LEAD">🎯 Lead Ingested</option>
+                          <option value="MATCHING">🧩 Property Matched</option>
+                          <option value="COST_SHEET">📄 Cost Sheet Shared</option>
+                          <option value="VISIT">🚗 Site Visit OTP Verified</option>
+                          <option value="CONTRACT">📜 Contract / Booking Executed</option>
+                        </select>
+                      </div>
+
+                      {/* 4. LEAD SOURCE & PRIORITY FILTER */}
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🔥 Source & Priority</label>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                          <select 
+                            value={custSourceFilter} 
+                            onChange={(e) => setCustSourceFilter(e.target.value)} 
+                            style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 6px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '700' }}
+                          >
+                            <option value="ALL">All Sources</option>
+                            <option value="Meta Ads">Meta Ads</option>
+                            <option value="Google">Google Ads</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Website">Website</option>
+                            <option value="Walk-in">Walk-in</option>
+                          </select>
+
+                          <select 
+                            value={filterPriority} 
+                            onChange={(e) => setFilterPriority(e.target.value)} 
+                            style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#ef4444', padding: '8px 6px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800' }}
+                          >
+                            <option value="ALL">All Priority</option>
+                            <option value="HOT">🔥 HOT</option>
+                            <option value="WARM">⚡ WARM</option>
+                            <option value="COLD">❄️ COLD</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {(custSearchQuery || filterLocality !== 'ALL' || custStageFilter !== 'ALL' || custSourceFilter !== 'ALL' || filterPriority !== 'ALL') && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
+                        <button 
+                          onClick={() => {
+                            setCustSearchQuery('');
+                            setFilterLocality('ALL');
+                            setCustStageFilter('ALL');
+                            setCustSourceFilter('ALL');
+                            setFilterPriority('ALL');
+                          }}
+                          style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+                        >
+                          🔄 Reset Search & Filters
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                    <thead>
-                      <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                        <th style={{ padding: '12px' }}>Customer Tracking ID</th>
-                        <th style={{ padding: '12px' }}>Full Name</th>
-                        <th style={{ padding: '12px' }}>Budget Range</th>
-                        <th style={{ padding: '12px' }}>Preferred Area</th>
-                        <th style={{ padding: '12px' }}>Mobile</th>
-                        <th style={{ padding: '12px', textAlign: 'center' }}>Priority & Score</th>
-                        <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {customers
-                        .filter(c => matchesSearchQuery(c, searchQuery))
-                        .map(c => (
-                        <tr key={c.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <td style={{ padding: '12px' }}>
-                            <span 
-                              onClick={() => openIdDetailsModal(c.customer_number, 'CUSTOMER_ID')}
-                              style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', cursor: 'pointer', textDecoration: 'underline', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}
-                              title="Click to view full Customer details"
-                            >
-                              🆔 {c.customer_number}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{c.name}</td>
-                          <td style={{ padding: '12px', color: '#4ade80', fontWeight: '800' }}>{c.budget}</td>
-                          <td style={{ padding: '12px' }}>{c.preferredArea}</td>
-                          <td style={{ padding: '12px' }}>{maskPhone(c.mobile)}</td>
-                          <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <span style={{ background: c.priority === 'HOT' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.2)', color: c.priority === 'HOT' ? '#ef4444' : '#fbbf24', padding: '3px 10px', borderRadius: '20px', fontWeight: '900', fontSize: '0.75rem' }}>
-                              🔥 {c.priority} ({c.score}/100)
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                              <button onClick={() => { setSelectedCust(c); setActiveCustomerSubTab('customer_360_profile'); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>360° View</button>
-                              <button onClick={() => handleStartEditCustomer(c)} style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Edit</button>
-                              <button onClick={() => alert(`🔄 Initiated Transfer Request for Customer ${c.customer_number}`)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Transfer</button>
-                            </div>
-                          </td>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                          <th style={{ padding: '12px' }}>Customer Tracking ID</th>
+                          <th style={{ padding: '12px' }}>Full Name & Contact</th>
+                          <th style={{ padding: '12px' }}>Lead Ingestion Info</th>
+                          <th style={{ padding: '12px' }}>Stage Progression (Matching, Cost Sheet, Visit, Contract)</th>
+                          <th style={{ padding: '12px', textAlign: 'center' }}>Priority & Score</th>
+                          <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-</div>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          const mergedCustomerList = [
+                            ...customers,
+                            ...leadsList
+                              .filter(l => !customers.some(c => (c.customer_number && c.customer_number === l.customer_number) || (c.mobile && l.mobile && c.mobile.replace(/\D/g, '') === l.mobile.replace(/\D/g, ''))))
+                              .map(l => ({
+                                id: l.customer_id || `CUS-${l.id}`,
+                                customer_number: l.customer_number || `SRM-CUS-2026-000${l.id.slice(-3)}`,
+                                name: l.customer_name,
+                                mobile: l.mobile,
+                                email: l.email || 'lead@swaramayi.com',
+                                budget: `${l.budget_min ? Math.round(l.budget_min / 100000) + 'L' : '70L'} - ${l.budget_max ? Math.round(l.budget_max / 100000) + 'L' : '85L'}`,
+                                preferredArea: l.preferred_location || 'Kondapur',
+                                configuration: l.bhk || '3BHK',
+                                priority: l.priority || 'HOT',
+                                score: l.quality_score || 88,
+                                source: l.source || 'Lead Management Ingestion',
+                                lead_status: l.lead_status || 'NEW_INGESTED',
+                                leadData: l
+                              }))
+                          ];
+
+                          return mergedCustomerList
+                            .filter(c => {
+                              // Search Query Filter
+                              const q = custSearchQuery.trim().toLowerCase();
+                              const matchesQ = !q || 
+                                c.name.toLowerCase().includes(q) || 
+                                (c.mobile && c.mobile.includes(q)) || 
+                                (c.email && c.email.toLowerCase().includes(q)) || 
+                                (c.customer_number && c.customer_number.toLowerCase().includes(q)) ||
+                                (c.leadData?.lead_number && c.leadData.lead_number.toLowerCase().includes(q));
+
+                              // Locality Filter
+                              const matchesLoc = filterLocality === 'ALL' || (c.preferredArea && c.preferredArea.toLowerCase().includes(filterLocality.toLowerCase()));
+
+                              // Priority Filter
+                              const matchesPrio = filterPriority === 'ALL' || c.priority === filterPriority;
+
+                              // Source Filter
+                              const src = c.source || c.leadData?.source || '';
+                              const matchesSrc = custSourceFilter === 'ALL' || src.toLowerCase().includes(custSourceFilter.toLowerCase());
+
+                              // Stage Filter
+                              let matchesStage = true;
+                              if (custStageFilter !== 'ALL') {
+                                const matchingCostSheet = (individualCostSheets || []).find((cs: any) => cs.customerName === c.name || cs.customerNumber === c.customer_number);
+                                const matchingPva = (projectVisitAgreements || []).find((p: any) => p.customerName === c.name || p.customerMobile === c.mobile);
+                                const matchingAgreement = (agreements || []).find((a: any) => a.party_name === c.name || (a.party_contact && a.party_contact.includes(c.mobile)));
+                                const matchingBooking = (bookings || []).find((b: any) => b.customer_name === c.name);
+
+                                if (custStageFilter === 'COST_SHEET') matchesStage = !!matchingCostSheet;
+                                else if (custStageFilter === 'VISIT') matchesStage = !!matchingPva;
+                                else if (custStageFilter === 'CONTRACT') matchesStage = !!matchingAgreement || !!matchingBooking;
+                              }
+
+                              return matchesQ && matchesLoc && matchesPrio && matchesSrc && matchesStage;
+                            })
+                            .map(c => {
+                              const matchingLead = leadsList.find(l => (l.customer_number && l.customer_number === c.customer_number) || (l.mobile && c.mobile && l.mobile.replace(/\D/g, '') === c.mobile.replace(/\D/g, ''))) || c.leadData;
+                              const matchingCostSheet = (individualCostSheets || []).find((cs: any) => cs.customerName === c.name || cs.customerNumber === c.customer_number);
+                              const matchingPva = (projectVisitAgreements || []).find((p: any) => p.customerName === c.name || p.customerMobile === c.mobile);
+                              const matchingAgreement = (agreements || []).find((a: any) => a.party_name === c.name || (a.party_contact && a.party_contact.includes(c.mobile)));
+                              const matchingBooking = (bookings || []).find((b: any) => b.customer_name === c.name);
+
+                              return (
+                                <tr key={c.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                                  <td style={{ padding: '12px' }}>
+                                    <span 
+                                      onClick={() => openIdDetailsModal(c.customer_number, 'CUSTOMER_ID')}
+                                      style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', cursor: 'pointer', textDecoration: 'underline', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '3px 8px', borderRadius: '6px', display: 'inline-block' }}
+                                      title="Click to view full Customer details"
+                                    >
+                                      🆔 {c.customer_number}
+                                    </span>
+                                    {matchingLead && (
+                                      <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace', marginTop: '2px' }}>
+                                        📋 {matchingLead.lead_number}
+                                      </div>
+                                    )}
+                                  </td>
+                                  
+                                  <td style={{ padding: '12px' }}>
+                                    <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>{c.name}</strong>
+                                    <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{maskPhone(c.mobile)}</span>
+                                    {c.email && (
+                                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', display: 'block' }}>{c.email}</span>
+                                    )}
+                                  </td>
+
+                                  <td style={{ padding: '12px' }}>
+                                    <span style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800' }}>
+                                      📢 Source: {c.source || matchingLead?.source || 'Lead Ingestion'}
+                                    </span>
+                                    <div style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', marginTop: '4px', fontWeight: '700' }}>
+                                      📍 {c.preferredArea || matchingLead?.preferred_location} • <span style={{ color: '#4ade80' }}>💰 {c.budget || '70L - 85L'}</span>
+                                    </div>
+                                    {matchingLead && (
+                                      <div style={{ fontSize: '0.72rem', color: '#fbbf24', marginTop: '2px', fontWeight: '700' }}>
+                                        Status: {matchingLead.lead_status || matchingLead.call_disposition || 'CONNECTED'}
+                                      </div>
+                                    )}
+                                  </td>
+
+                                  <td style={{ padding: '12px' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem' }}>
+                                      {/* 1. MATCHING STAGE */}
+                                      <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '4px', padding: '3px 8px', color: '#38bdf8', fontWeight: '800' }}>
+                                        🎯 Matching Stage: 95% Match ({c.preferredArea || 'Kondapur'})
+                                      </div>
+
+                                      {/* 2. COST SHEET STAGE */}
+                                      <div style={{ background: matchingCostSheet ? 'rgba(34, 197, 94, 0.15)' : (isLight ? '#f8fafc' : '#0f172a'), border: `1px solid ${matchingCostSheet ? '#22c55e' : '#cbd5e1'}`, borderRadius: '4px', padding: '3px 8px', color: matchingCostSheet ? '#4ade80' : (isLight ? '#64748b' : '#94a3b8'), fontWeight: '800' }}>
+                                        📄 Cost Sheet: {matchingCostSheet ? `Shared (${matchingCostSheet.costSheetId || 'SRM-CS-01'})` : 'Ready to Share'}
+                                      </div>
+
+                                      {/* 3. VISIT STAGE */}
+                                      <div style={{ background: matchingPva ? 'rgba(34, 197, 94, 0.15)' : (isLight ? '#f8fafc' : '#0f172a'), border: `1px solid ${matchingPva ? '#22c55e' : '#cbd5e1'}`, borderRadius: '4px', padding: '3px 8px', color: matchingPva ? '#4ade80' : (isLight ? '#64748b' : '#94a3b8'), fontWeight: '800' }}>
+                                        🚗 Site Visit: {matchingPva ? `PVA OTP Verified (${matchingPva.projectVisitAgreementId})` : 'Visit Scheduled'}
+                                      </div>
+
+                                      {/* 4. AGREEMENT & BOOKING STAGE */}
+                                      {(matchingAgreement || matchingBooking) && (
+                                        <div style={{ background: 'rgba(234, 179, 8, 0.15)', border: '1px solid #f59e0b', borderRadius: '4px', padding: '3px 8px', color: '#fbbf24', fontWeight: '900' }}>
+                                          📜 Contract / Booking: {matchingAgreement ? matchingAgreement.agreement_code : 'SRM-BKG-2026-000201'}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </td>
+
+                                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                                    <span style={{ background: c.priority === 'HOT' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(234, 179, 8, 0.2)', color: c.priority === 'HOT' ? '#ef4444' : '#fbbf24', padding: '4px 10px', borderRadius: '20px', fontWeight: '900', fontSize: '0.75rem', display: 'inline-block' }}>
+                                      🔥 {c.priority || 'HOT'} ({c.score || 88}/100)
+                                    </span>
+                                  </td>
+
+                                  <td style={{ padding: '12px', textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                      <button onClick={() => { setSelectedCust(c); setActiveCustomerSubTab('customer_360_profile'); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>360° View</button>
+                                      <button onClick={() => handleStartEditCustomer(c)} style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Edit</button>
+                                      <button onClick={() => alert(`🔄 Initiated Transfer Request for Customer ${c.customer_number}`)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Transfer</button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            });
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
 
@@ -10347,28 +11000,175 @@ export default function App() {
                 </div>
               )}
 
-              {/* SUB-TAB 3: VISIT FEEDBACK & POST-VISIT PROJECT EXPANSION */}
+              {/* SUB-TAB 3: VISIT SATISFACTION, REQUIREMENT UPDATE & ALTERNATIVE PROPERTY RECOMMENDATIONS */}
               {activeVisitSubTab === 'visit_feedback' && (
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>⭐ Structured 5-Star Customer Feedback Vault</h3>
-                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '16px', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <div style={{ color: '#fbbf24', fontWeight: '800' }}>Overall Property Rating: ⭐⭐⭐⭐⭐ (5/5)</div>
-                    <div style={{ color: isLight ? '#0f172a' : '#ffffff' }}>Observations: "Customer completed visit. Requested additional project options in Kondapur / Gachibowli."</div>
-                    
-                    <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                      <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: '800' }}>
-                        💡 Customer wants to explore more project options post-visit?
-                      </span>
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  
+                  {/* HEADER */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        ⭐ Post-Visit Customer Satisfaction & Alternative Property Recommendation Cockpit
+                      </h3>
+                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                        Capture customer feedback, track objection reasons, update buyer requirements on-the-spot, and instantly recommend best alternative properties if not satisfied.
+                      </p>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button 
+                        onClick={() => setShowLogSalesFeedbackModal(true)}
+                        style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                      >
+                        ➕ Log Executive Visit Feedback
+                      </button>
                       <button 
                         onClick={() => {
                           setActiveTab('matching_management');
                           setActiveMatchingSubTab('ai_matching_engine');
                         }}
-                        style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
+                        style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                       >
-                        🎯 Switch to Matching Management for Additional Projects →
+                        🎯 AI Matching Engine →
                       </button>
                     </div>
+                  </div>
+
+                  {/* CUSTOMER SATISFACTION & ALTERNATIVE RECOMMENDATION REGISTER TABLE */}
+                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+                      <thead>
+                        <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                          <th style={{ padding: '12px' }}>Customer & Visit ID</th>
+                          <th style={{ padding: '12px' }}>Visited Property</th>
+                          <th style={{ padding: '12px' }}>Satisfaction & Rating</th>
+                          <th style={{ padding: '12px' }}>Sales Person Feedback & Objection</th>
+                          <th style={{ padding: '12px', textAlign: 'center' }}>Buyer Intent Status</th>
+                          <th style={{ padding: '12px', textAlign: 'center' }}>Salesperson Actions & Alternatives</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          {
+                            id: 'FB-01',
+                            visitId: 'SRM-VP-2026-000001',
+                            custName: 'Rohan Deshmukh',
+                            custMobile: '+91 98490 12345',
+                            custCode: 'SRM-CUS-2026-000184',
+                            propTitle: 'Prestige High Fields 3BHK',
+                            locality: 'Nanakramguda',
+                            rating: 2,
+                            satisfaction: '😕 Not Satisfied (Requires Alternative)',
+                            reason: 'Over Budget by ₹15L & East Facing Preferred',
+                            intent: '⚡ WARM - Needs Alternative',
+                            exec: 'Priya Nair (Sales Exec)',
+                            budget_min: '₹70 Lakhs',
+                            budget_max: '₹84 Lakhs',
+                            prefArea: 'Kondapur / Gachibowli'
+                          },
+                          {
+                            id: 'FB-02',
+                            visitId: 'SRM-VP-2026-000002',
+                            custName: 'Priya Sharma',
+                            custMobile: '+91 99887 76655',
+                            custCode: 'SRM-CUS-2026-000185',
+                            propTitle: 'Financial Towers 4BHK Sky Suite',
+                            locality: 'Financial District',
+                            rating: 5,
+                            satisfaction: '😍 Highly Satisfied (Ready for Booking)',
+                            reason: 'Loved 12th Floor Sky Suite View & Layout',
+                            intent: '🔥 HOT - Booking Lead',
+                            exec: 'Priya Nair (Sales Exec)',
+                            budget_min: '₹1.80 Crore',
+                            budget_max: '₹2.20 Crore',
+                            prefArea: 'Financial District'
+                          },
+                          {
+                            id: 'FB-03',
+                            visitId: 'SRM-VP-2026-000003',
+                            custName: 'Dr. Ananth Kulkarni',
+                            custMobile: '+91 98480 33445',
+                            custCode: 'SRM-CUS-2026-000186',
+                            propTitle: 'My Home Bhooja 5BHK Villa',
+                            locality: 'HITEC City',
+                            rating: 4,
+                            satisfaction: '🙂 Moderately Interested (Comparing Options)',
+                            reason: 'Comparing 5BHK Options with Jayabheri Silicon',
+                            intent: '⚡ WARM - Comparing Options',
+                            exec: 'Rahul Sharma (TL)',
+                            budget_min: '₹4.00 Crore',
+                            budget_max: '₹5.00 Crore',
+                            prefArea: 'HITEC City'
+                          }
+                        ].map((fb, idx) => (
+                          <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                            <td style={{ padding: '12px' }}>
+                              <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>{fb.custName}</strong>
+                              <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{fb.custMobile}</span>
+                              <br /><span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>{fb.visitId}</span>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <strong style={{ color: '#fbbf24', fontSize: '0.85rem' }}>🏢 {fb.propTitle}</strong>
+                              <div style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>📍 {fb.locality}</div>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <div style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.85rem' }}>
+                                {'⭐'.repeat(fb.rating)} ({fb.rating}/5 Stars)
+                              </div>
+                              <span style={{ fontSize: '0.75rem', color: fb.rating <= 2 ? '#ef4444' : fb.rating >= 4 ? '#4ade80' : '#fbbf24', fontWeight: '800' }}>
+                                {fb.satisfaction}
+                              </span>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <div style={{ fontSize: '0.8rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>
+                                "{fb.reason}"
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                                By Exec: {fb.exec}
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <span style={{ background: fb.intent.includes('HOT') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)', color: fb.intent.includes('HOT') ? '#4ade80' : '#fbbf24', border: `1px solid ${fb.intent.includes('HOT') ? '#22c55e' : '#eab308'}`, padding: '4px 10px', borderRadius: '20px', fontWeight: '900', fontSize: '0.72rem', display: 'inline-block' }}>
+                                {fb.intent}
+                              </span>
+                            </td>
+
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                {fb.rating <= 3 && (
+                                  <button 
+                                    onClick={() => setShowAlternativePropertyModal({ open: true, customer: fb, currentProperty: fb.propTitle })}
+                                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                  >
+                                    🔄 Recommend Best Alternative Property
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => {
+                                    setUpdateReqForm({
+                                      budget_min: fb.budget_min,
+                                      budget_max: fb.budget_max,
+                                      preferredArea: fb.prefArea,
+                                      configuration: '3BHK',
+                                      dislike_reason: fb.reason,
+                                      remarks: ''
+                                    });
+                                    setShowUpdateRequirementModal({ open: true, customer: fb });
+                                  }}
+                                  style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  ✏️ Update Requirement
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
               )}
@@ -10480,47 +11280,173 @@ export default function App() {
             </div>
           )}
 
-          {/* CATEGORY 5: BILLING MANAGEMENT */}
+          {/* CATEGORY 5: BILLING MANAGEMENT (TWO-CATEGORY: CUSTOMER VS DEVELOPER) */}
           {activeTab === 'billing_management' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              
+              {/* CATEGORY HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
-                  <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>Billing & GST Tax Invoices Vault</h2>
-                  <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>GST 18% Compliant tax invoice generation and financial ledgers.</p>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <CreditCard size={24} color="#38bdf8" /> GST Tax Billing & Invoice Management Vault
+                  </h2>
+                  <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>Generate and manage GST 18% tax invoices for direct Customer billing and Developer channel partner brokerage.</p>
+                </div>
+
+                <div>
+                  <button 
+                    onClick={() => {
+                      setCreateInvoiceForm({
+                        invoice_category: billingInvoiceCategory,
+                        customer_name: 'Rohan Deshmukh',
+                        customer_number: 'SRM-CUS-2026-000184',
+                        customer_mobile: '+91 98490 12345',
+                        developer_name: billingInvoiceCategory === 'DEVELOPER' ? 'Aparna Constructions' : 'Aparna Constructions',
+                        developer_gstin: '36AAACA1234F1Z5',
+                        property_title: 'Aparna Zenon Premium 3BHK Residence',
+                        particulars: billingInvoiceCategory === 'DEVELOPER' ? '2.0% Channel Partner Success Fee / Commission for Unit A-504' : 'Property Consultation & Processing Charges',
+                        agreement_value: '8400000',
+                        taxable_value: billingInvoiceCategory === 'DEVELOPER' ? '168000' : '200000'
+                      });
+                      setShowCreateInvoiceModal(true);
+                    }}
+                    style={{ background: billingInvoiceCategory === 'DEVELOPER' ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}
+                  >
+                    <Plus size={16} /> + Create {billingInvoiceCategory === 'DEVELOPER' ? 'Developer Brokerage Invoice' : 'Customer Tax Invoice'}
+                  </button>
                 </div>
               </div>
 
-              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '24px' }}>
+              {/* TWO MAIN CATEGORY SWITCHER TABS */}
+              <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '2px solid #e2e8f0' : '2px solid #334155', paddingBottom: '12px' }}>
+                <button 
+                  onClick={() => setBillingInvoiceCategory('CUSTOMER')}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    fontWeight: '800',
+                    background: billingInvoiceCategory === 'CUSTOMER' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : (isLight ? '#f1f5f9' : '#0f172a'),
+                    color: billingInvoiceCategory === 'CUSTOMER' ? '#ffffff' : (isLight ? '#475569' : '#94a3b8'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: billingInvoiceCategory === 'CUSTOMER' ? '0 4px 12px rgba(2, 132, 199, 0.25)' : 'none'
+                  }}
+                >
+                  👤 Customer Tax Invoices ({invoices.filter(i => i.invoice_category === 'CUSTOMER' || !i.invoice_category).length})
+                </button>
+
+                <button 
+                  onClick={() => setBillingInvoiceCategory('DEVELOPER')}
+                  style={{
+                    padding: '10px 20px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '0.88rem',
+                    fontWeight: '800',
+                    background: billingInvoiceCategory === 'DEVELOPER' ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : (isLight ? '#f1f5f9' : '#0f172a'),
+                    color: billingInvoiceCategory === 'DEVELOPER' ? '#ffffff' : (isLight ? '#475569' : '#94a3b8'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: billingInvoiceCategory === 'DEVELOPER' ? '0 4px 12px rgba(22, 163, 74, 0.25)' : 'none'
+                  }}
+                >
+                  🏢 Developer Brokerage Invoices ({invoices.filter(i => i.invoice_category === 'DEVELOPER').length})
+                </button>
+              </div>
+
+              {/* TABLE CONTAINER */}
+              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px' }}>
                 <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                      <th style={{ padding: '12px' }}>Invoice Number</th>
-                      <th style={{ padding: '12px' }}>Developer</th>
-                      <th style={{ padding: '12px' }}>Customer Name</th>
-                      <th style={{ padding: '12px' }}>Total Invoice Amount</th>
-                      <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices
-                      .filter(i => matchesSearchQuery(i, searchQuery))
-                      .map(i => (
-                        <tr key={i.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{i.invoice_number}</td>
-                          <td style={{ padding: '12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{i.developer_name}</td>
-                          <td style={{ padding: '12px' }}>{i.customer_name}</td>
-                          <td style={{ padding: '12px', color: '#4ade80', fontWeight: '900' }}>₹{i.total_invoice_amount.toLocaleString('en-IN')}</td>
-                          <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <button onClick={() => { setSelectedInvoice(i); setShowInvoiceModal(true); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}>
-                              <Printer size={14} /> Print GST Invoice PDF
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                    <thead>
+                      <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                        <th style={{ padding: '12px' }}>Invoice Number & Date</th>
+                        <th style={{ padding: '12px' }}>{billingInvoiceCategory === 'DEVELOPER' ? 'Developer / Builder Name & GSTIN' : 'Customer Name & Contact'}</th>
+                        <th style={{ padding: '12px' }}>Property Title & Particulars</th>
+                        <th style={{ padding: '12px' }}>Taxable Value & GST (18%)</th>
+                        <th style={{ padding: '12px' }}>Total Amount Billed</th>
+                        <th style={{ padding: '12px', textAlign: 'center' }}>Payment Status</th>
+                        <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {invoices
+                        .filter(i => (billingInvoiceCategory === 'DEVELOPER' ? i.invoice_category === 'DEVELOPER' : (i.invoice_category === 'CUSTOMER' || !i.invoice_category)))
+                        .filter(i => matchesSearchQuery(i, searchQuery))
+                        .map(i => (
+                          <tr key={i.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}>
+                                🆔 {i.invoice_number}
+                              </span>
+                              <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
+                                📅 {i.created_date || '2026-08-25'}
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              {billingInvoiceCategory === 'DEVELOPER' ? (
+                                <div>
+                                  <strong style={{ color: '#fbbf24', fontSize: '0.9rem' }}>🏢 {i.developer_name}</strong>
+                                  <div style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#38bdf8', fontFamily: 'monospace', marginTop: '2px' }}>
+                                    GSTIN: {i.developer_gstin || '36AAACA1234F1Z5'}
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>👤 {i.customer_name}</strong>
+                                  <div style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace', marginTop: '2px' }}>
+                                    {i.customer_mobile || '+91 98490 12345'}
+                                  </div>
+                                </div>
+                              )}
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.85rem' }}>{i.property_title}</strong>
+                              <div style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                                {i.particulars || 'Property Consultation & Service Charges'}
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800' }}>₹{Number(i.taxable_value || 200000).toLocaleString('en-IN')}</span>
+                              <div style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '700', marginTop: '2px' }}>
+                                + GST 18%: ₹{Number((i.cgst_amount || 18000) + (i.sgst_amount || 18000)).toLocaleString('en-IN')}
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ color: '#4ade80', fontWeight: '900', fontSize: '0.95rem' }}>
+                                ₹{Number(i.total_invoice_amount || 236000).toLocaleString('en-IN')}
+                              </span>
+                            </td>
+
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <span style={{ background: i.payment_status === 'PAID_SETTLED' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)', color: i.payment_status === 'PAID_SETTLED' ? '#4ade80' : '#fbbf24', border: `1px solid ${i.payment_status === 'PAID_SETTLED' ? '#22c55e' : '#eab308'}`, padding: '3px 10px', borderRadius: '20px', fontWeight: '900', fontSize: '0.72rem', display: 'inline-block' }}>
+                                {i.payment_status === 'PAID_SETTLED' ? '✓ PAID' : '⏳ UNPAID / PENDING'}
+                              </span>
+                            </td>
+
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <button 
+                                onClick={() => setShowPrintInvoiceModal({ open: true, invoice: i })} 
+                                style={{ background: billingInvoiceCategory === 'DEVELOPER' ? '#16a34a' : '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}
+                              >
+                                <Printer size={14} /> Print {billingInvoiceCategory === 'DEVELOPER' ? 'Developer' : 'Customer'} GST PDF
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -11070,6 +11996,200 @@ export default function App() {
                   </table>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* CATEGORY 8: BOOKING MANAGEMENT MODULE */}
+          {activeTab === 'booking_management' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* CATEGORY HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <BookmarkCheck size={24} color="#38bdf8" /> Property Unit Booking Management & Token Vault
+                  </h2>
+                  <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>Register new property unit bookings, lock units, record token advances, manage manager approvals, and issue Allotment Letters.</p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={() => setShowNewBookingModal(true)}
+                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}
+                  >
+                    <BookmarkCheck size={16} /> + Register New Unit Booking
+                  </button>
+                </div>
+              </div>
+
+              {/* SUB-TAB SELECTOR BAR */}
+              <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '2px solid #e2e8f0' : '2px solid #334155', paddingBottom: '12px' }}>
+                {[
+                  { id: 'all_bookings', label: '🏢 All Bookings Vault (' + bookings.length + ')' },
+                  { id: 'create_booking', label: '✍️ Register Booking' },
+                  { id: 'booking_approvals', label: '⚖️ Approvals & Token Lock (' + bookings.filter(b => b.approval_status === 'APPROVED_LOCKED').length + ')' },
+                  { id: 'allotment_letters', label: '📄 Allotment Letters' }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      if (tab.id === 'create_booking') {
+                        setShowNewBookingModal(true);
+                      } else {
+                        setActiveBookingSubTab(tab.id as any);
+                      }
+                    }}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: '8px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      fontSize: '0.85rem',
+                      fontWeight: '800',
+                      background: activeBookingSubTab === tab.id ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : (isLight ? '#f1f5f9' : '#0f172a'),
+                      color: activeBookingSubTab === tab.id ? '#ffffff' : (isLight ? '#475569' : '#94a3b8')
+                    }}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* SUB-TAB 1: ALL BOOKINGS VAULT */}
+              {activeBookingSubTab === 'all_bookings' && (
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>📋 Master Property Unit Booking Vault</h3>
+                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Central database of confirmed unit bookings, token advance receipts, and allotment statuses.</p>
+                    </div>
+                  </div>
+
+                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                      <thead>
+                        <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                          <th style={{ padding: '12px' }}>Booking Code & Date</th>
+                          <th style={{ padding: '12px' }}>Customer Name & Contact</th>
+                          <th style={{ padding: '12px' }}>Project, Builder & Unit Details</th>
+                          <th style={{ padding: '12px' }}>Agreement Value & Advance Token</th>
+                          <th style={{ padding: '12px' }}>Payment Mode & Ref</th>
+                          <th style={{ padding: '12px' }}>Channel Partner Brokerage</th>
+                          <th style={{ padding: '12px', textAlign: 'center' }}>Approval Status</th>
+                          <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bookings.map((b: any) => (
+                          <tr key={b.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}>
+                                🆔 {b.booking_code}
+                              </span>
+                              <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
+                                📅 {b.booking_date}
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>{b.customer_name}</strong>
+                              <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{b.customer_mobile}</span>
+                              <div style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>{b.customer_number}</div>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <strong style={{ color: '#fbbf24', fontSize: '0.88rem' }}>🏢 {b.project_name}</strong>
+                              <div style={{ fontSize: '0.78rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700', marginTop: '2px' }}>
+                                {b.developer_name} • {b.tower_unit}
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ color: '#4ade80', fontWeight: '900', fontSize: '0.9rem' }}>{b.agreement_value}</span>
+                              <div style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: '800', marginTop: '2px' }}>
+                                💸 Advance Paid: ₹{Number(b.token_amount).toLocaleString('en-IN')}
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800' }}>
+                                💳 {b.payment_mode}
+                              </span>
+                              <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace', marginTop: '2px' }}>
+                                Ref: {b.payment_ref}
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '12px' }}>
+                              <span style={{ color: '#22c55e', fontWeight: '900', fontSize: '0.82rem' }}>💰 {b.brokerage_rate || '2.0%'} Brokerage</span>
+                              <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                                Earned: ₹{Number(b.brokerage_amount || 168000).toLocaleString('en-IN')}
+                              </div>
+                            </td>
+
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid #22c55e', padding: '4px 10px', borderRadius: '20px', fontWeight: '900', fontSize: '0.75rem', display: 'inline-block' }}>
+                                ✓ {b.approval_status || 'APPROVED_LOCKED'}
+                              </span>
+                            </td>
+
+                            <td style={{ padding: '12px', textAlign: 'center' }}>
+                              <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                <button 
+                                  onClick={() => setShowAllotmentModal({ open: true, booking: b })} 
+                                  style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  📄 Allotment PDF
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 3: BOOKING APPROVALS & TOKEN LOCK */}
+              {activeBookingSubTab === 'booking_approvals' && (
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>⚖️ Manager Token Verification & Unit Lock Approval Queue</h3>
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <h4 style={{ color: '#4ade80', fontWeight: '900' }}>✓ All Current Bookings Verified & Locked</h4>
+                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Token advance payments verified by finance manager. Locked inventory units will not be available for other prospects.</p>
+                    </div>
+                    <span style={{ background: '#22c55e', color: '#ffffff', padding: '6px 14px', borderRadius: '20px', fontWeight: '900', fontSize: '0.8rem' }}>
+                      LOCKING SYSTEM ACTIVE
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 4: ALLOTMENT LETTERS */}
+              {activeBookingSubTab === 'allotment_letters' && (
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>📄 Automated Corporate Unit Allotment Letters</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '12px' }}>
+                    {bookings.map((b: any) => (
+                      <div key={b.id} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '800', fontFamily: 'monospace' }}>{b.booking_code}</span>
+                          <h4 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>{b.customer_name}</h4>
+                          <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>{b.project_name} • {b.tower_unit}</p>
+                        </div>
+                        <button 
+                          onClick={() => setShowAllotmentModal({ open: true, booking: b })} 
+                          style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}
+                        >
+                          📄 Print Allotment PDF
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -12567,7 +13687,79 @@ export default function App() {
             {leadIntakeStep === 2 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 2: Customer Basic Identity & Contact Info</h4>
+                  <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 2: Customer Identity, Contact & Engagement Status</h4>
+                </div>
+
+                {/* INITIAL LEAD DISPOSITION & ENGAGEMENT RESPONSE SELECTOR */}
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', display: 'block' }}>
+                    📞 Initial Customer Engagement & Call Disposition Status *
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(4, 1fr)', gap: '8px' }}>
+                    <button 
+                      type="button" 
+                      onClick={() => setNewLeadForm({ ...newLeadForm, call_disposition: 'CONNECTED_INTERESTED' })} 
+                      style={{ 
+                        background: ((newLeadForm as any).call_disposition || 'CONNECTED_INTERESTED') === 'CONNECTED_INTERESTED' ? 'rgba(34, 197, 94, 0.25)' : (isLight ? '#ffffff' : '#1e293b'), 
+                        border: ((newLeadForm as any).call_disposition || 'CONNECTED_INTERESTED') === 'CONNECTED_INTERESTED' ? '2px solid #22c55e' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), 
+                        color: ((newLeadForm as any).call_disposition || 'CONNECTED_INTERESTED') === 'CONNECTED_INTERESTED' ? '#22c55e' : (isLight ? '#0f172a' : '#ffffff'), 
+                        padding: '10px 8px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', textAlign: 'center' 
+                      }}
+                    >
+                      📞 Connected & Interested
+                    </button>
+
+                    <button 
+                      type="button" 
+                      onClick={() => setNewLeadForm({ ...newLeadForm, call_disposition: 'NOT_INTERESTED' })} 
+                      style={{ 
+                        background: (newLeadForm as any).call_disposition === 'NOT_INTERESTED' ? 'rgba(239, 68, 68, 0.25)' : (isLight ? '#ffffff' : '#1e293b'), 
+                        border: (newLeadForm as any).call_disposition === 'NOT_INTERESTED' ? '2px solid #ef4444' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), 
+                        color: (newLeadForm as any).call_disposition === 'NOT_INTERESTED' ? '#ef4444' : (isLight ? '#0f172a' : '#ffffff'), 
+                        padding: '10px 8px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', textAlign: 'center' 
+                      }}
+                    >
+                      ❌ NOT INTERESTED
+                    </button>
+
+                    <button 
+                      type="button" 
+                      onClick={() => setNewLeadForm({ ...newLeadForm, call_disposition: 'NO_RESPONSE' })} 
+                      style={{ 
+                        background: (newLeadForm as any).call_disposition === 'NO_RESPONSE' ? 'rgba(234, 179, 8, 0.25)' : (isLight ? '#ffffff' : '#1e293b'), 
+                        border: (newLeadForm as any).call_disposition === 'NO_RESPONSE' ? '2px solid #eab308' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), 
+                        color: (newLeadForm as any).call_disposition === 'NO_RESPONSE' ? '#eab308' : (isLight ? '#0f172a' : '#ffffff'), 
+                        padding: '10px 8px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', textAlign: 'center' 
+                      }}
+                    >
+                      📵 NO RESPONSE / UNANSWERED
+                    </button>
+
+                    <button 
+                      type="button" 
+                      onClick={() => setNewLeadForm({ ...newLeadForm, call_disposition: 'CALL_BACK_LATER' })} 
+                      style={{ 
+                        background: (newLeadForm as any).call_disposition === 'CALL_BACK_LATER' ? 'rgba(56, 189, 248, 0.25)' : (isLight ? '#ffffff' : '#1e293b'), 
+                        border: (newLeadForm as any).call_disposition === 'CALL_BACK_LATER' ? '2px solid #38bdf8' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), 
+                        color: (newLeadForm as any).call_disposition === 'CALL_BACK_LATER' ? '#38bdf8' : (isLight ? '#0f172a' : '#ffffff'), 
+                        padding: '10px 8px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', textAlign: 'center' 
+                      }}
+                    >
+                      ⏳ Call Back Later / Busy
+                    </button>
+                  </div>
+
+                  {(newLeadForm as any).call_disposition === 'NOT_INTERESTED' && (
+                    <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '8px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700' }}>
+                      ⚠️ Lead will be marked as <strong>NOT INTERESTED</strong> (Unqualified / Archived) and recorded into Customer & Lead Management.
+                    </div>
+                  )}
+
+                  {(newLeadForm as any).call_disposition === 'NO_RESPONSE' && (
+                    <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid #eab308', color: '#eab308', padding: '8px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700' }}>
+                      ⚠️ Lead will be marked as <strong>NO RESPONSE / UNANSWERED</strong> and automatically queued for follow-up retry callbacks.
+                    </div>
+                  )}
                 </div>
 
                 {/* SYSTEM CUSTOMER CODE CARD */}
@@ -12843,10 +14035,10 @@ export default function App() {
               </div>
             )}
 
-            {/* STEP 8: LOAN & POSSESSION */}
+            {/* STEP 8: LOAN, POSSESSION & AGREED BROKERAGE CHARGE */}
             {leadIntakeStep === 8 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 8: Home Loan Readiness & Possession Timeline</h4>
+                <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '1rem' }}>Step 8: Home Loan Readiness, Possession Timeline & Channel Partner Brokerage Terms</h4>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Bank Loan Required *</label>
@@ -12872,6 +14064,72 @@ export default function App() {
                       <option value="3+ Months">❄️ 3+ Months</option>
                     </select>
                   </div>
+                </div>
+
+                {/* AGREED BROKERAGE CHARGE SECTION */}
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label style={{ fontSize: '0.85rem', color: '#22c55e', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      💰 Agreed Channel Partner Brokerage Charge & Billing Terms *
+                    </label>
+                    <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid #22c55e', padding: '2px 10px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '800' }}>
+                      ✓ Auto-Calculates in Billing, Cost Sheet & Agreements
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Agreed Brokerage Rate (%) *</label>
+                      <select 
+                        value={newCustomerForm.brokerage_rate || '2.0%'} 
+                        onChange={(e) => {
+                          setNewCustomerForm({ ...newCustomerForm, brokerage_rate: e.target.value });
+                          setNewLeadForm({ ...newLeadForm, brokerage_rate: e.target.value } as any);
+                        }} 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.9rem' }}
+                      >
+                        <option value="2.0%">2.0% (Standard Channel Partner Brokerage)</option>
+                        <option value="1.0%">1.0% (Discounted / Low Margin Brokerage)</option>
+                        <option value="1.5%">1.5% (Special Package Rate)</option>
+                        <option value="2.5%">2.5% (High Incentive Commission)</option>
+                        <option value="3.0%">3.0% (Exclusive Developer Commission)</option>
+                        <option value="0.0%">0.0% (Direct Corporate / Zero Brokerage)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Payer & Billing Channel *</label>
+                      <select 
+                        value={newCustomerForm.brokerage_payer || 'DEVELOPER'} 
+                        onChange={(e) => {
+                          setNewCustomerForm({ ...newCustomerForm, brokerage_payer: e.target.value });
+                          setNewLeadForm({ ...newLeadForm, brokerage_payer: e.target.value } as any);
+                        }} 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                      >
+                        <option value="DEVELOPER">🏢 Billed to Developer / Builder (B2B 2.0% MOU)</option>
+                        <option value="CUSTOMER">👤 Billed to Customer Buyer (B2C Consultancy Fee)</option>
+                        <option value="SPLIT">⚖️ Split (1.0% Customer + 1.0% Developer)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* ESTIMATED BROKERAGE CALCULATION PREVIEW CARD */}
+                  {(() => {
+                    const ratePct = parseFloat(newCustomerForm.brokerage_rate || '2.0%') / 100;
+                    const estVal = 8400000;
+                    const estEarnings = estVal * ratePct;
+                    return (
+                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', borderRadius: '8px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>
+                          📊 Estimated Brokerage Fee ({newCustomerForm.brokerage_rate || '2.0%'} on ₹84 Lakhs est. agreement value):
+                        </span>
+                        <span style={{ fontSize: '1rem', fontWeight: '900', color: '#4ade80' }}>
+                          ₹{estEarnings.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             )}
@@ -12910,6 +14168,10 @@ export default function App() {
                   <div>
                     <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Preferred Area:</span>
                     <strong style={{ display: 'block', color: '#38bdf8' }}>{newCustomerForm.preferredArea} ({newCustomerForm.configuration})</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Agreed Brokerage:</span>
+                    <strong style={{ display: 'block', color: '#4ade80', fontWeight: '900' }}>💰 {newCustomerForm.brokerage_rate || '2.0%'} ({newCustomerForm.brokerage_payer || 'DEVELOPER'})</strong>
                   </div>
                 </div>
 
@@ -15126,6 +16388,666 @@ export default function App() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
               <button onClick={() => window.print()} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}>🖨️ EXPORT REPORT</button>
               <button onClick={() => setShowDeveloperIntroductionReportModal(false)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: REGISTER NEW UNIT BOOKING */}
+      {showNewBookingModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🏢 Register New Property Unit Booking & Lock Token Advance
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Generate official booking code, record advance token payment, and lock unit in inventory board.</p>
+              </div>
+              <button onClick={() => setShowNewBookingModal(false)} style={{ background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', fontSize: '1.2rem', cursor: 'pointer', fontWeight: '900' }}>✕</button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const newBkgCode = `SRM-BKG-2026-000${bookings.length + 201}`;
+              const tokAmt = Number(newBookingForm.token_amount || 500000);
+              const agrValNum = Number(newBookingForm.agreement_value || 8400000);
+              const brokAmt = agrValNum * 0.02;
+
+              const newBkgObj = {
+                id: `BKG-${Date.now()}`,
+                booking_code: newBkgCode,
+                customer_name: newBookingForm.customer_name,
+                customer_number: newBookingForm.customer_number || 'SRM-CUS-2026-000184',
+                customer_mobile: newBookingForm.customer_mobile,
+                project_name: newBookingForm.project_name,
+                developer_name: newBookingForm.developer_name,
+                property_title: newBookingForm.property_title,
+                tower_unit: newBookingForm.tower_unit,
+                agreement_value: '₹' + agrValNum.toLocaleString('en-IN'),
+                token_amount: tokAmt,
+                payment_mode: newBookingForm.payment_mode,
+                payment_ref: newBookingForm.payment_ref,
+                booking_date: new Date().toISOString().split('T')[0],
+                sales_executive: newBookingForm.sales_executive,
+                brokerage_rate: '2.0%',
+                brokerage_amount: brokAmt,
+                approval_status: 'APPROVED_LOCKED',
+                status: 'CONFIRMED'
+              };
+
+              setBookings([newBkgObj, ...bookings]);
+              setShowNewBookingModal(false);
+              alert(`🎉 Property Unit Booking ${newBkgCode} registered & unit locked successfully!`);
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
+                  <input type="text" value={newBookingForm.customer_name} onChange={(e) => setNewBookingForm({ ...newBookingForm, customer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Mobile *</label>
+                  <input type="text" value={newBookingForm.customer_mobile} onChange={(e) => setNewBookingForm({ ...newBookingForm, customer_mobile: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Project Name *</label>
+                  <input type="text" value={newBookingForm.project_name} onChange={(e) => setNewBookingForm({ ...newBookingForm, project_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer / Builder *</label>
+                  <input type="text" value={newBookingForm.developer_name} onChange={(e) => setNewBookingForm({ ...newBookingForm, developer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Tower, Floor & Unit Number *</label>
+                <input type="text" value={newBookingForm.tower_unit} onChange={(e) => setNewBookingForm({ ...newBookingForm, tower_unit: e.target.value })} placeholder="e.g. Tower A - Unit A-504 (3BHK)" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Total Agreement Value (₹) *</label>
+                  <input type="number" value={newBookingForm.agreement_value} onChange={(e) => setNewBookingForm({ ...newBookingForm, agreement_value: e.target.value })} placeholder="8400000" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Advance Token Amount Paid (₹) *</label>
+                  <input type="number" value={newBookingForm.token_amount} onChange={(e) => setNewBookingForm({ ...newBookingForm, token_amount: e.target.value })} placeholder="500000" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Payment Mode *</label>
+                  <select value={newBookingForm.payment_mode} onChange={(e) => setNewBookingForm({ ...newBookingForm, payment_mode: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    <option value="Bank Transfer / NEFT">Bank Transfer / NEFT</option>
+                    <option value="Cheque / RTGS">Cheque / RTGS</option>
+                    <option value="UPI / Online Transfer">UPI / Online Transfer</option>
+                    <option value="Credit Card / POS">Credit Card / POS</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Payment Reference / Transaction ID *</label>
+                  <input type="text" value={newBookingForm.payment_ref} onChange={(e) => setNewBookingForm({ ...newBookingForm, payment_ref: e.target.value })} placeholder="NEFT-AXIS-994821" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
+                <button type="button" onClick={() => setShowNewBookingModal(false)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>✓ Register Booking & Lock Unit</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: ALLOTMENT LETTER & TOKEN RECEIPT PRINT MODAL */}
+      {showAllotmentModal && showAllotmentModal.open && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
+          <div style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '750px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px', border: '2px solid #0284c7' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #0284c7', paddingBottom: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0284c7' }}>SWARAMAYI REAL ESTATE MARKETING</h2>
+                <p style={{ fontSize: '0.8rem', color: '#475569', margin: '2px 0 0 0' }}>Official Property Unit Allotment Letter & Advance Token Receipt</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: '900', color: '#0284c7', fontFamily: 'monospace' }}>{showAllotmentModal.booking.booking_code}</span>
+                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Date: {showAllotmentModal.booking.booking_date}</div>
+              </div>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem' }}>
+              <div><strong>Allottee Name:</strong> {showAllotmentModal.booking.customer_name}</div>
+              <div><strong>Customer ID:</strong> {showAllotmentModal.booking.customer_number}</div>
+              <div><strong>Contact Mobile:</strong> {showAllotmentModal.booking.customer_mobile}</div>
+              <div><strong>Project & Developer:</strong> {showAllotmentModal.booking.project_name} ({showAllotmentModal.booking.developer_name})</div>
+              <div><strong>Allotted Unit:</strong> <span style={{ color: '#0284c7', fontWeight: '900' }}>{showAllotmentModal.booking.tower_unit}</span></div>
+              <div><strong>Total Agreement Value:</strong> <span style={{ color: '#16a34a', fontWeight: '900' }}>{showAllotmentModal.booking.agreement_value}</span></div>
+            </div>
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', border: '1px solid #cbd5e1' }}>
+              <thead>
+                <tr style={{ background: '#0284c7', color: '#ffffff' }}>
+                  <th style={{ padding: '8px', textAlign: 'left' }}>Particulars</th>
+                  <th style={{ padding: '8px', textAlign: 'right' }}>Amount Paid (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '8px', borderBottom: '1px solid #cbd5e1' }}>Advance Booking Token Payment ({showAllotmentModal.booking.payment_mode})</td>
+                  <td style={{ padding: '8px', textAlign: 'right', borderBottom: '1px solid #cbd5e1', fontWeight: '900', color: '#16a34a' }}>₹{Number(showAllotmentModal.booking.token_amount).toLocaleString('en-IN')}</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px' }}>Payment Reference / Transaction ID</td>
+                  <td style={{ padding: '8px', textAlign: 'right', fontFamily: 'monospace' }}>{showAllotmentModal.booking.payment_ref}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid #cbd5e1', paddingTop: '16px' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Assigned Sales CRM Executive</span>
+                <div style={{ fontWeight: '800', color: '#0f172a' }}>{showAllotmentModal.booking.sales_executive}</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: '900' }}>● DIGITAL CORPORATE STAMP & LOCK VERIFIED</span>
+                <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace' }}>SHA256-BKG-STAMP-#904128</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+              <button onClick={() => window.print()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>🖨️ Print Allotment PDF</button>
+              <button onClick={() => setShowAllotmentModal(null)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: CREATE CUSTOMER OR DEVELOPER TAX INVOICE */}
+      {showCreateInvoiceModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🧾 Create GST 18% Tax Invoice ({createInvoiceForm.invoice_category === 'DEVELOPER' ? 'B2B Developer Brokerage' : 'B2C Customer Billing'})
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Generate GST 18% compliant tax invoice for Customer services or Developer 2.0% brokerage.</p>
+              </div>
+              <button onClick={() => setShowCreateInvoiceModal(false)} style={{ background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', fontSize: '1.2rem', cursor: 'pointer', fontWeight: '900' }}>✕</button>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const isDev = createInvoiceForm.invoice_category === 'DEVELOPER';
+              const invNum = isDev ? `SRM-INV-DEV-2026-000${invoices.length + 501}` : `SRM-INV-CUS-2026-000${invoices.length + 401}`;
+              const taxVal = Number(createInvoiceForm.taxable_value || 200000);
+              const cgst = taxVal * 0.09;
+              const sgst = taxVal * 0.09;
+              const totalInv = taxVal + cgst + sgst;
+
+              const newInvObj = {
+                id: `INV-${Date.now()}`,
+                invoice_number: invNum,
+                invoice_category: createInvoiceForm.invoice_category,
+                customer_name: createInvoiceForm.customer_name,
+                customer_number: createInvoiceForm.customer_number || 'SRM-CUS-2026-000184',
+                customer_mobile: createInvoiceForm.customer_mobile,
+                developer_name: createInvoiceForm.developer_name,
+                developer_gstin: createInvoiceForm.developer_gstin || '36AAACA1234F1Z5',
+                property_title: createInvoiceForm.property_title,
+                particulars: createInvoiceForm.particulars,
+                agreement_value: '₹' + Number(createInvoiceForm.agreement_value || 8400000).toLocaleString('en-IN'),
+                taxable_value: taxVal,
+                cgst_rate: '9%',
+                cgst_amount: cgst,
+                sgst_rate: '9%',
+                sgst_amount: sgst,
+                total_invoice_amount: totalInv,
+                payment_status: 'UNPAID_PENDING',
+                created_date: new Date().toISOString().split('T')[0]
+              };
+
+              setInvoices([newInvObj, ...invoices]);
+              setShowCreateInvoiceModal(false);
+              alert(`🎉 GST Tax Invoice ${invNum} created successfully for ${isDev ? createInvoiceForm.developer_name : createInvoiceForm.customer_name}!`);
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Invoice Category *</label>
+                <select 
+                  value={createInvoiceForm.invoice_category} 
+                  onChange={(e) => setCreateInvoiceForm({ 
+                    ...createInvoiceForm, 
+                    invoice_category: e.target.value,
+                    particulars: e.target.value === 'DEVELOPER' ? '2.0% Channel Partner Success Fee / Commission for Unit A-504' : 'Property Consultation & Processing Charges',
+                    taxable_value: e.target.value === 'DEVELOPER' ? '168000' : '200000'
+                  })} 
+                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #38bdf8', color: '#38bdf8', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
+                >
+                  <option value="CUSTOMER">👤 B2C CUSTOMER INVOICE (Consultancy / Booking Advance)</option>
+                  <option value="DEVELOPER">🏢 B2B DEVELOPER INVOICE (2.0% Channel Partner Brokerage)</option>
+                </select>
+              </div>
+
+              {createInvoiceForm.invoice_category === 'DEVELOPER' ? (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer / Builder Name *</label>
+                    <input type="text" value={createInvoiceForm.developer_name} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer GSTIN *</label>
+                    <input type="text" value={createInvoiceForm.developer_gstin} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_gstin: e.target.value })} placeholder="36AAACA1234F1Z5" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
+                    <input type="text" value={createInvoiceForm.customer_name} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Mobile *</label>
+                    <input type="text" value={createInvoiceForm.customer_mobile} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_mobile: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Property Title & Unit Details *</label>
+                <input type="text" value={createInvoiceForm.property_title} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, property_title: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Billed Particulars / Service Description *</label>
+                <input type="text" value={createInvoiceForm.particulars} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, particulars: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Total Agreement Value (₹)</label>
+                  <input type="number" value={createInvoiceForm.agreement_value} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, agreement_value: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Taxable Service Amount (₹) *</label>
+                  <input type="number" value={createInvoiceForm.taxable_value} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, taxable_value: e.target.value })} placeholder="200000" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+              </div>
+
+              {/* AUTO GST SUMMARY PREVIEW */}
+              {(() => {
+                const taxVal = Number(createInvoiceForm.taxable_value || 0);
+                const cgst = taxVal * 0.09;
+                const sgst = taxVal * 0.09;
+                const total = taxVal + cgst + sgst;
+                return (
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Taxable Value:</span>
+                      <strong>₹{taxVal.toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8' }}>
+                      <span>CGST (9%) + SGST (9%):</span>
+                      <strong>₹{(cgst + sgst).toLocaleString('en-IN')}</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #cbd5e1', paddingTop: '4px', color: '#22c55e', fontWeight: '900', fontSize: '0.9rem' }}>
+                      <span>TOTAL TAX INVOICE AMOUNT (18% GST):</span>
+                      <span>₹{total.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
+                <button type="button" onClick={() => setShowCreateInvoiceModal(false)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ background: createInvoiceForm.invoice_category === 'DEVELOPER' ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>✓ Generate GST Tax Invoice</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: PRINT GST TAX INVOICE PDF MODAL */}
+      {showPrintInvoiceModal && showPrintInvoiceModal.open && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
+          <div style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px', border: '2px solid #0284c7' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #0284c7', paddingBottom: '16px' }}>
+              <div>
+                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0284c7' }}>SWARAMAYI REAL ESTATE MARKETING</h2>
+                <p style={{ fontSize: '0.8rem', color: '#475569', margin: '2px 0 0 0' }}>GSTIN: 36AAACS9012F1Z8 • Official GST 18% Tax Invoice</p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ background: showPrintInvoiceModal.invoice.invoice_category === 'DEVELOPER' ? '#16a34a' : '#0284c7', color: '#ffffff', padding: '3px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900' }}>
+                  {showPrintInvoiceModal.invoice.invoice_category === 'DEVELOPER' ? 'B2B DEVELOPER BROKERAGE INVOICE' : 'B2C CUSTOMER SERVICE INVOICE'}
+                </span>
+                <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#0f172a', fontFamily: 'monospace', marginTop: '4px' }}>{showPrintInvoiceModal.invoice.invoice_number}</h4>
+                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Date: {showPrintInvoiceModal.invoice.created_date || '2026-08-25'}</div>
+              </div>
+            </div>
+
+            <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem' }}>
+              {showPrintInvoiceModal.invoice.invoice_category === 'DEVELOPER' ? (
+                <>
+                  <div><strong>Billed To (Developer):</strong> {showPrintInvoiceModal.invoice.developer_name}</div>
+                  <div><strong>Developer GSTIN:</strong> {showPrintInvoiceModal.invoice.developer_gstin || '36AAACA1234F1Z5'}</div>
+                  <div><strong>Customer Buyer:</strong> {showPrintInvoiceModal.invoice.customer_name} ({showPrintInvoiceModal.invoice.customer_number})</div>
+                  <div><strong>Property Unit:</strong> {showPrintInvoiceModal.invoice.property_title}</div>
+                </>
+              ) : (
+                <>
+                  <div><strong>Billed To (Customer):</strong> {showPrintInvoiceModal.invoice.customer_name}</div>
+                  <div><strong>Customer ID:</strong> {showPrintInvoiceModal.invoice.customer_number}</div>
+                  <div><strong>Contact Mobile:</strong> {showPrintInvoiceModal.invoice.customer_mobile || '+91 98490 12345'}</div>
+                  <div><strong>Property Unit:</strong> {showPrintInvoiceModal.invoice.property_title}</div>
+                </>
+              )}
+            </div>
+
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', border: '1px solid #cbd5e1' }}>
+              <thead>
+                <tr style={{ background: '#0284c7', color: '#ffffff' }}>
+                  <th style={{ padding: '10px', textAlign: 'left' }}>Description of Services / Particulars</th>
+                  <th style={{ padding: '10px', textAlign: 'right' }}>Taxable Value (₹)</th>
+                  <th style={{ padding: '10px', textAlign: 'right' }}>CGST (9%)</th>
+                  <th style={{ padding: '10px', textAlign: 'right' }}>SGST (9%)</th>
+                  <th style={{ padding: '10px', textAlign: 'right' }}>Total (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style={{ padding: '10px', borderBottom: '1px solid #cbd5e1' }}>{showPrintInvoiceModal.invoice.particulars || 'Real Estate Services'}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1' }}>₹{Number(showPrintInvoiceModal.invoice.taxable_value || 200000).toLocaleString('en-IN')}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1' }}>₹{Number(showPrintInvoiceModal.invoice.cgst_amount || 18000).toLocaleString('en-IN')}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1' }}>₹{Number(showPrintInvoiceModal.invoice.sgst_amount || 18000).toLocaleString('en-IN')}</td>
+                  <td style={{ padding: '10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1', fontWeight: '900', color: '#16a34a' }}>₹{Number(showPrintInvoiceModal.invoice.total_invoice_amount || 236000).toLocaleString('en-IN')}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid #cbd5e1', paddingTop: '16px' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Bank Account & UPI Details for Payment</span>
+                <div style={{ fontWeight: '800', color: '#0f172a', fontSize: '0.8rem' }}>HDFC Bank • A/C: 50200018942109 • IFSC: HDFC0000128</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: '900' }}>● AUTHORIZED DIGITAL SIGNATURE</span>
+                <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace' }}>SHA256-INV-STAMP-#904128</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+              <button onClick={() => window.print()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>🖨️ Print GST Invoice PDF</button>
+              <button onClick={() => setShowPrintInvoiceModal(null)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: INSTANT BEST ALTERNATIVE PROPERTY RECOMMENDATIONS */}
+      {showAlternativePropertyModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #38bdf8', width: '750px', maxHeight: '90vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '900' }}>⚡ AI INSTANT PROPERTY RECOMMENDER</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
+                  🔄 Best Alternative Properties for {showAlternativePropertyModal.customer.custName}
+                </h3>
+                <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                  Customer Disliked: {showAlternativePropertyModal.currentProperty} ({showAlternativePropertyModal.customer.reason})
+                </p>
+              </div>
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowAlternativePropertyModal(null)} />
+            </div>
+
+            <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid #0284c7', padding: '12px 16px', borderRadius: '10px', fontSize: '0.82rem', color: isLight ? '#0f172a' : '#ffffff' }}>
+              🎯 <strong>AI Property Matcher Result:</strong> Found 3 top alternative inventory matches in {showAlternativePropertyModal.customer.prefArea || 'Kondapur / Gachibowli'} matching revised budget criteria!
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {[
+                { title: 'Aparna Zenon 3BHK Residence', dev: 'Aparna Constructions', price: '₹84 Lakhs (Within Budget)', locality: 'Kondapur', facing: 'East Facing', match: '96% Match' },
+                { title: 'My Home Jewel 2BHK Flat', dev: 'My Home Group', price: '₹68 Lakhs (Under Budget)', locality: 'Madinaguda', facing: 'North Facing', match: '91% Match' },
+                { title: 'Sumadhura Acropolis 3BHK', dev: 'Sumadhura Infracon', price: '₹78 Lakhs (Special Offer)', locality: 'Nanakramguda', facing: 'East Facing', match: '88% Match' }
+              ].map((alt, idx) => (
+                <div key={idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '900' }}>
+                      🔥 {alt.match}
+                    </span>
+                    <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '1rem', marginTop: '4px' }}>🏢 {alt.title}</h4>
+                    <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>📍 {alt.locality} • {alt.dev} • {alt.facing}</p>
+                    <strong style={{ color: '#4ade80', fontSize: '0.88rem' }}>{alt.price}</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <button 
+                      onClick={() => {
+                        alert(`✅ Added ${alt.title} as alternative property for ${showAlternativePropertyModal.customer.custName}!\n\nDispatched instant WhatsApp brochure & scheduled follow-up site visit.`);
+                        setShowAlternativePropertyModal(null);
+                      }}
+                      style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer' }}
+                    >
+                      + Add to Visit Plan
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setActiveTab('cost_sheet_sharing');
+                        setShowAlternativePropertyModal(null);
+                      }}
+                      style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer' }}
+                    >
+                      📄 Send Cost Sheet
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: UPDATE CUSTOMER REQUIREMENT ON-THE-SPOT */}
+      {showUpdateRequirementModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', width: '600px', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900' }}>✏️ SALESPERSON ON-THE-SPOT REQUIREMENT UPDATE</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
+                  Update Requirement for {showUpdateRequirementModal.customer.custName}
+                </h3>
+                <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                  {showUpdateRequirementModal.customer.custCode} • Current Budget: {showUpdateRequirementModal.customer.budget_min} - {showUpdateRequirementModal.customer.budget_max}
+                </p>
+              </div>
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowUpdateRequirementModal(null)} />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Revised Budget Min *</label>
+                  <input 
+                    type="text"
+                    value={updateReqForm.budget_min} 
+                    onChange={(e) => setUpdateReqForm({ ...updateReqForm, budget_min: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Revised Budget Max *</label>
+                  <input 
+                    type="text"
+                    value={updateReqForm.budget_max} 
+                    onChange={(e) => setUpdateReqForm({ ...updateReqForm, budget_max: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Revised Preferred Area / Locality *</label>
+                <input 
+                  type="text"
+                  value={updateReqForm.preferredArea} 
+                  onChange={(e) => setUpdateReqForm({ ...updateReqForm, preferredArea: e.target.value })} 
+                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Primary Dislike / Objection Reason</label>
+                <select 
+                  value={updateReqForm.dislike_reason} 
+                  onChange={(e) => setUpdateReqForm({ ...updateReqForm, dislike_reason: e.target.value })} 
+                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                >
+                  <option value="Over Budget">Over Budget</option>
+                  <option value="Floor Plan / Layout Issue">Floor Plan / Layout Issue</option>
+                  <option value="High Floor / Facing Preference">High Floor / Facing Preference</option>
+                  <option value="Locality Traffic / Distance">Locality Traffic / Distance</option>
+                  <option value="Builder Preference">Builder Preference</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Sales Executive Notes / Customer Feedback</label>
+                <textarea 
+                  rows={2}
+                  value={updateReqForm.remarks} 
+                  onChange={(e) => setUpdateReqForm({ ...updateReqForm, remarks: e.target.value })} 
+                  placeholder="Enter customer specific feedback during site visit..."
+                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button onClick={() => setShowUpdateRequirementModal(null)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button 
+                  onClick={() => {
+                    alert(`✅ Updated requirements for ${showUpdateRequirementModal.customer.custName}!\n\nNew Budget: ${updateReqForm.budget_min} - ${updateReqForm.budget_max}\nLocality: ${updateReqForm.preferredArea}\n\nUpdated in Customer Master Vault and re-ranked AI Property Matcher.`);
+                    setShowUpdateRequirementModal(null);
+                  }} 
+                  style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}
+                >
+                  💾 Save & Re-Rank Matches
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: LOG EXECUTIVE VISIT FEEDBACK */}
+      {showLogSalesFeedbackModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', width: '650px', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '900' }}>📝 SALES EXECUTIVE VISIT AUDIT</span>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
+                  ➕ Log Post-Visit Customer Feedback
+                </h3>
+                <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                  Record customer satisfaction rating, dislike reasons, and buyer intent status.
+                </p>
+              </div>
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowLogSalesFeedbackModal(false)} />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
+                  <input 
+                    type="text"
+                    value={salesFeedbackForm.customerName} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, customerName: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Visited Property *</label>
+                  <input 
+                    type="text"
+                    value={salesFeedbackForm.propertyTitle} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, propertyTitle: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Rating *</label>
+                  <select 
+                    value={salesFeedbackForm.rating} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, rating: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  >
+                    <option value="5">⭐⭐⭐⭐⭐ 5/5 Stars (Highly Interested)</option>
+                    <option value="4">⭐⭐⭐⭐ 4/5 Stars (Interested)</option>
+                    <option value="3">⭐⭐⭐ 3/5 Stars (Neutral / Comparing)</option>
+                    <option value="2">⭐⭐ 2/5 Stars (Not Satisfied)</option>
+                    <option value="1">⭐ 1/5 Star (Rejected / Disliked)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Buying Intent Status *</label>
+                  <select 
+                    value={salesFeedbackForm.buyer_intent} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, buyer_intent: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  >
+                    <option value="🔥 HOT - Booking Lead">🔥 HOT - Booking Lead (Proceed to Agreement)</option>
+                    <option value="⚡ WARM - Needs Alternative">⚡ WARM - Needs Alternative Property</option>
+                    <option value="⚡ WARM - Comparing Options">⚡ WARM - Comparing Options</option>
+                    <option value="❄️ COLD - On Hold">❄️ COLD - On Hold</option>
+                    <option value="❌ DROP - Disinterested">❌ DROP - Disinterested</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Objection / Dislike Reason (If Any)</label>
+                <input 
+                  type="text"
+                  value={salesFeedbackForm.dislike_reason} 
+                  onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, dislike_reason: e.target.value })} 
+                  placeholder="e.g. Over Budget by ₹15L, Layout issue..."
+                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Sales Executive Detailed Remarks</label>
+                <textarea 
+                  rows={2}
+                  value={salesFeedbackForm.executive_notes} 
+                  onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, executive_notes: e.target.value })} 
+                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+                <button onClick={() => setShowLogSalesFeedbackModal(false)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button 
+                  onClick={() => {
+                    alert(`✅ Saved Visit Feedback for ${salesFeedbackForm.customerName}!\n\nRating: ${salesFeedbackForm.rating}/5 Stars\nStatus: ${salesFeedbackForm.buyer_intent}\n\nLogged into Customer Master Profile & Sales Audit Trail.`);
+                    setShowLogSalesFeedbackModal(false);
+                  }} 
+                  style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}
+                >
+                  💾 Save Executive Feedback
+                </button>
+              </div>
             </div>
           </div>
         </div>
