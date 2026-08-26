@@ -935,7 +935,25 @@ export default function App() {
   // 12 Main Navigation Categories
   const [activeTab, setActiveTab] = useState<
     'main_dashboard' | 'lead_management' | 'customer_management' | 'matching_management' | 'cost_sheet_share' | 'visit_management' | 'project_management' | 'agreement_management' | 'billing_management' | 'map_management' | 'role_management' | 'profile'
-  >('main_dashboard');
+  >(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('swaramayi_active_tab');
+        if (saved) return saved as any;
+      } catch (e) {
+        console.error('Error loading active tab:', e);
+      }
+    }
+    return 'main_dashboard';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_active_tab', activeTab);
+    } catch (e) {
+      console.error('Error saving active tab:', e);
+    }
+  }, [activeTab]);
 
   // Search & Global BI Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -1053,8 +1071,19 @@ export default function App() {
     return '/login';
   });
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => {
-    if (typeof window !== 'undefined' && window.location.pathname.toLowerCase().startsWith('/login')) {
-      return false;
+    if (typeof window !== 'undefined') {
+      if (window.location.pathname.toLowerCase().startsWith('/login')) {
+        return false;
+      }
+      try {
+        const saved = localStorage.getItem('swaramayi_is_logged_in');
+        if (saved !== null) {
+          return JSON.parse(saved);
+        }
+      } catch (e) {
+        console.error('Error reading login state:', e);
+      }
+      return true;
     }
     return false;
   });
@@ -4804,16 +4833,16 @@ export default function App() {
                     <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Categorized follow-up actions with instant WhatsApp and Calling triggers.</p>
                   </div>
                   <div style={{ display: 'flex', gap: '6px' }}>
-                    <button onClick={() => setFollowupSubTab('overdue')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'overdue' ? '#ef4444' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: 'none', cursor: 'pointer' }}>
+                    <button onClick={() => setFollowupSubTab('overdue')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'overdue' ? '#ef4444' : (isLight ? '#f1f5f9' : '#0f172a'), color: followupSubTab === 'overdue' ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff'), border: followupSubTab === 'overdue' ? 'none' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), cursor: 'pointer' }}>
                       OVERDUE (12)
                     </button>
-                    <button onClick={() => setFollowupSubTab('today')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'today' ? '#0284c7' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: 'none', cursor: 'pointer' }}>
+                    <button onClick={() => setFollowupSubTab('today')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'today' ? '#0284c7' : (isLight ? '#f1f5f9' : '#0f172a'), color: followupSubTab === 'today' ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff'), border: followupSubTab === 'today' ? 'none' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), cursor: 'pointer' }}>
                       DUE TODAY (8)
                     </button>
-                    <button onClick={() => setFollowupSubTab('tomorrow')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'tomorrow' ? '#334155' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: 'none', cursor: 'pointer' }}>
+                    <button onClick={() => setFollowupSubTab('tomorrow')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'tomorrow' ? '#0284c7' : (isLight ? '#f1f5f9' : '#0f172a'), color: followupSubTab === 'tomorrow' ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff'), border: followupSubTab === 'tomorrow' ? 'none' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), cursor: 'pointer' }}>
                       DUE TOMORROW (14)
                     </button>
-                    <button onClick={() => setFollowupSubTab('upcoming')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'upcoming' ? '#334155' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: 'none', cursor: 'pointer' }}>
+                    <button onClick={() => setFollowupSubTab('upcoming')} style={{ padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', background: followupSubTab === 'upcoming' ? '#0284c7' : (isLight ? '#f1f5f9' : '#0f172a'), color: followupSubTab === 'upcoming' ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff'), border: followupSubTab === 'upcoming' ? 'none' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), cursor: 'pointer' }}>
                       UPCOMING (22)
                     </button>
                   </div>
@@ -5967,14 +5996,14 @@ export default function App() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button onClick={() => setLeadViewMode(leadViewMode === 'pipeline' ? 'inbox' : 'pipeline')} style={{ background: leadViewMode === 'pipeline' ? '#0284c7' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: '1px solid #0284c7', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.2)' }}>
-                    <GitMerge size={15} color="#38bdf8" /> {leadViewMode === 'pipeline' ? '📋 Back to Central Inbox' : '🗺️ Lead Workflow Pipeline'}
+                  <button onClick={() => setLeadViewMode(leadViewMode === 'pipeline' ? 'inbox' : 'pipeline')} style={{ background: leadViewMode === 'pipeline' ? '#0284c7' : (isLight ? '#f1f5f9' : '#0f172a'), color: leadViewMode === 'pipeline' ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff'), border: leadViewMode === 'pipeline' ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.2)' }}>
+                    <GitMerge size={15} color={leadViewMode === 'pipeline' ? '#ffffff' : (isLight ? '#0284c7' : '#38bdf8')} /> {leadViewMode === 'pipeline' ? '📋 Back to Central Inbox' : '🗺️ Lead Workflow Pipeline'}
                   </button>
-                  <button onClick={() => setLeadViewMode(leadViewMode === 'calendar' ? 'inbox' : 'calendar')} style={{ background: leadViewMode === 'calendar' ? '#0284c7' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Calendar size={15} /> {leadViewMode === 'calendar' ? '📋 Back to Central Inbox' : '📅 Follow-Up Calendar'}
+                  <button onClick={() => setLeadViewMode(leadViewMode === 'calendar' ? 'inbox' : 'calendar')} style={{ background: leadViewMode === 'calendar' ? '#0284c7' : (isLight ? '#f1f5f9' : '#0f172a'), color: leadViewMode === 'calendar' ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff'), border: leadViewMode === 'calendar' ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Calendar size={15} color={leadViewMode === 'calendar' ? '#ffffff' : (isLight ? '#0284c7' : 'currentColor')} /> {leadViewMode === 'calendar' ? '📋 Back to Central Inbox' : '📅 Follow-Up Calendar'}
                   </button>
-                  <button onClick={() => setLeadViewMode(leadViewMode === 'analytics' ? 'inbox' : 'analytics')} style={{ background: leadViewMode === 'analytics' ? '#0284c7' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sparkles size={15} /> {leadViewMode === 'analytics' ? '📋 Back to Central Inbox' : '📊 Lead & Performance Analytics'}
+                  <button onClick={() => setLeadViewMode(leadViewMode === 'analytics' ? 'inbox' : 'analytics')} style={{ background: leadViewMode === 'analytics' ? '#0284c7' : (isLight ? '#f1f5f9' : '#0f172a'), color: leadViewMode === 'analytics' ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff'), border: leadViewMode === 'analytics' ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={15} color={leadViewMode === 'analytics' ? '#ffffff' : (isLight ? '#0284c7' : 'currentColor')} /> {leadViewMode === 'analytics' ? '📋 Back to Central Inbox' : '📊 Lead & Performance Analytics'}
                   </button>
                   <button onClick={() => setShowLeadModal(true)} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
                     <UserPlus size={16} /> + CREATE NEW LEAD
@@ -6009,16 +6038,16 @@ export default function App() {
                           fontWeight: '800',
                           whiteSpace: 'nowrap',
                           cursor: 'pointer',
-                          background: leadInboxTab === tab.id ? 'rgba(14, 165, 233, 0.18)' : '#1e293b',
-                          color: leadInboxTab === tab.id ? '#38bdf8' : '#94a3b8',
-                          border: leadInboxTab === tab.id ? '1px solid #38bdf8' : '1px solid #334155',
+                          background: leadInboxTab === tab.id ? (isLight ? 'rgba(14, 165, 233, 0.15)' : 'rgba(14, 165, 233, 0.18)') : (isLight ? '#ffffff' : '#1e293b'),
+                          color: leadInboxTab === tab.id ? (isLight ? '#0284c7' : '#38bdf8') : (isLight ? '#334155' : '#94a3b8'),
+                          border: leadInboxTab === tab.id ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px'
                         }}
                       >
                         <span>{tab.label}</span>
-                        <span style={{ background: tab.badgeBg || '#0f172a', color: tab.badgeBg ? '#ffffff' : tab.color, padding: '2px 6px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '900' }}>
+                        <span style={{ background: tab.badgeBg || (isLight ? '#e2e8f0' : '#0f172a'), color: tab.badgeBg ? '#ffffff' : (isLight ? (leadInboxTab === tab.id ? '#0284c7' : '#334155') : tab.color), padding: '2px 6px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '900' }}>
                           {tab.count}
                         </span>
                       </button>
@@ -12321,9 +12350,9 @@ export default function App() {
                     fontSize: '0.75rem',
                     fontWeight: '800',
                     cursor: 'pointer',
-                    background: showLead360Drawer.tab === t ? '#0284c7' : '#0f172a',
-                    color: isLight ? '#0f172a' : '#ffffff',
-                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155'
+                    background: showLead360Drawer.tab === t ? '#0284c7' : (isLight ? '#f1f5f9' : '#0f172a'),
+                    color: showLead360Drawer.tab === t ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff'),
+                    border: showLead360Drawer.tab === t ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155')
                   }}
                 >
                   {t}
