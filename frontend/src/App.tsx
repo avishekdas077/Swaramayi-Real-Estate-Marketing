@@ -2393,6 +2393,10 @@ export default function App() {
   const [showEditCustomerModal, setShowEditCustomerModal] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<any>(null);
 
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [editingProfile, setEditingProfile] = useState<any>(null);
+  const [profileToastMessage, setProfileToastMessage] = useState<string | null>(null);
+
   // Customer 360° and Property 360° Drawer States
   const [selectedCustomer360, setSelectedCustomer360] = useState<any>(null);
   const [selectedProperty360, setSelectedProperty360] = useState<any>(null);
@@ -4151,6 +4155,21 @@ export default function App() {
     setCustomers(customers.map(c => c.id === editingCustomer.id ? editingCustomer : c));
     setShowEditCustomerModal(false);
     alert(`✏️ Customer Record ${editingCustomer.customer_number} updated successfully!`);
+  };
+
+  const handleStartEditProfile = (userToEdit?: any) => {
+    const target = userToEdit || users.find(u => u.id === 'USR-01' || u.role === currentRole) || users[0];
+    setEditingProfile({ ...target });
+    setShowEditProfileModal(true);
+  };
+
+  const handleSaveEditedProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProfile) return;
+    setUsers(users.map(u => u.id === editingProfile.id ? editingProfile : u));
+    setShowEditProfileModal(false);
+    setProfileToastMessage(`✅ Profile details for ${editingProfile.full_name} updated successfully!`);
+    setTimeout(() => setProfileToastMessage(null), 5000);
   };
 
   const handleDeleteUser = (id: string, username: string) => {
@@ -9679,12 +9698,360 @@ export default function App() {
           )}
 
           {/* CATEGORY 6: PROFILE */}
-          {activeTab === 'profile' && (
-            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '24px' }}>
-              <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', marginBottom: '16px' }}>Active User Profile Scope</h2>
-              <p style={{ color: '#cbd5e1' }}>Logged in as: <strong style={{ color: '#38bdf8' }}>Rajesh Varma (Super Admin / Owner)</strong></p>
-            </div>
-          )}
+          {activeTab === 'profile' && (() => {
+            const currentUser = users.find(u => u.id === 'USR-01' || u.role === currentRole) || users[0] || {
+              id: 'USR-01',
+              username: 'Rajesh Varma (Owner)',
+              full_name: 'Rajesh Varma',
+              email: 'rajesh.varma@swaramayi.com',
+              mobile: '+91 98490 00001',
+              role: 'SUPER_ADMIN',
+              branch_name: 'Head Office',
+              department: 'Executive Board',
+              team_name: 'Core Management',
+              manager_name: 'Self',
+              is_active: true,
+              user_status: 'ACTIVE'
+            };
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                
+                {/* SUCCESS TOAST MESSAGE */}
+                {profileToastMessage && (
+                  <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: '12px', padding: '14px 20px', fontWeight: '800', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <CheckCircle2 size={20} color="#22c55e" />
+                    <span>{profileToastMessage}</span>
+                  </div>
+                )}
+
+                {/* PROFILE BANNER / HEADER CARD */}
+                <div style={{
+                  background: isLight 
+                    ? 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)' 
+                    : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+                  border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                  borderRadius: '16px',
+                  padding: '28px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '20px',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
+                    {/* AVATAR BADGE */}
+                    <div style={{ position: 'relative' }}>
+                      <div style={{
+                        width: '90px',
+                        height: '90px',
+                        borderRadius: '24px',
+                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#ffffff',
+                        fontSize: '2.2rem',
+                        fontWeight: '900',
+                        boxShadow: '0 8px 20px rgba(2, 132, 199, 0.4)',
+                        border: '3px solid #38bdf8'
+                      }}>
+                        {currentUser.full_name ? currentUser.full_name.split(' ').map((n: string) => n[0]).join('') : 'RV'}
+                      </div>
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '-4px',
+                        right: '-4px',
+                        background: '#22c55e',
+                        border: isLight ? '3px solid #ffffff' : '3px solid #0f172a',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%'
+                      }} title="Active Now" />
+                    </div>
+
+                    {/* USER INFO */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        <h1 style={{ fontSize: '1.75rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                          {currentUser.full_name}
+                        </h1>
+                        <span style={{
+                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                          color: '#ffffff',
+                          padding: '4px 12px',
+                          borderRadius: '20px',
+                          fontSize: '0.75rem',
+                          fontWeight: '900',
+                          letterSpacing: '0.5px'
+                        }}>
+                          👑 {currentUser.role === 'SUPER_ADMIN' ? 'SUPER ADMIN / OWNER' : currentUser.role}
+                        </span>
+                        <span style={{
+                          background: 'rgba(34, 197, 94, 0.15)',
+                          color: '#4ade80',
+                          border: '1px solid rgba(34, 197, 94, 0.3)',
+                          padding: '4px 10px',
+                          borderRadius: '20px',
+                          fontSize: '0.72rem',
+                          fontWeight: '800'
+                        }}>
+                          ● {currentUser.user_status || 'ACTIVE & VERIFIED'}
+                        </span>
+                      </div>
+
+                      <p style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.9rem', marginTop: '6px', marginBottom: '8px' }}>
+                        {currentUser.username} • User ID: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{currentUser.id}</strong>
+                      </p>
+
+                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '0.82rem', color: isLight ? '#475569' : '#cbd5e1' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Building size={15} color="#38bdf8" /> {currentUser.branch_name}
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Briefcase size={15} color="#fbbf24" /> {currentUser.department}
+                        </span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <ShieldCheck size={15} color="#4ade80" /> Security Level 5 (Highest)
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ACTION BUTTONS */}
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button 
+                      onClick={() => handleStartEditProfile(currentUser)}
+                      style={{
+                        background: '#0284c7',
+                        color: '#ffffff',
+                        border: 'none',
+                        padding: '10px 18px',
+                        borderRadius: '10px',
+                        fontWeight: '800',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Edit3 size={16} /> Edit Details
+                    </button>
+                    <button 
+                      onClick={() => alert('Security Audit Logs generated for Super Admin Rajesh Varma.')}
+                      style={{
+                        background: isLight ? '#e2e8f0' : '#334155',
+                        color: isLight ? '#0f172a' : '#ffffff',
+                        border: 'none',
+                        padding: '10px 18px',
+                        borderRadius: '10px',
+                        fontWeight: '800',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <Shield size={16} /> Security Audit
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3-COLUMN DETAIL GRID */}
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
+                  
+                  {/* COLUMN 1: CONTACT & PERSONAL INFORMATION */}
+                  <div style={{
+                    background: isLight ? '#ffffff' : '#1e293b',
+                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                    borderRadius: '14px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                      <User size={20} color="#38bdf8" />
+                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                        Personal & Contact Details
+                      </h3>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Full Name</span>
+                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.full_name}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Username & Alias</span>
+                        <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.username}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Email Address</span>
+                        <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.email}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Mobile Contact</span>
+                        <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', fontFamily: 'monospace', marginTop: '2px' }}>{currentUser.mobile}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Official Designation</span>
+                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>Managing Director & Founder</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* COLUMN 2: ORGANIZATION & HIERARCHY */}
+                  <div style={{
+                    background: isLight ? '#ffffff' : '#1e293b',
+                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                    borderRadius: '14px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                      <Building2 size={20} color="#fbbf24" />
+                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                        Organizational Hierarchy
+                      </h3>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Assigned Branch</span>
+                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.branch_name} (Kondapur)</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Department</span>
+                        <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.department}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Team Assignment</span>
+                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.team_name}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Reporting Manager</span>
+                        <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.manager_name} (Enterprise Owner)</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Direct Reports Managed</span>
+                        <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>14 Active Department Heads & Admins</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* COLUMN 3: RBAC PERMISSIONS & ENTERPRISE SCOPE */}
+                  <div style={{
+                    background: isLight ? '#ffffff' : '#1e293b',
+                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                    borderRadius: '14px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                      <Key size={20} color="#22c55e" />
+                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                        RBAC Scope & Privileges
+                      </h3>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Data Scope Level</span>
+                        <strong style={{ display: 'block', color: '#22c55e', fontSize: '0.9rem', marginTop: '2px' }}>ALL_DATA (Universal System Access)</strong>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                        {[
+                          'Full Read, Write & Delete Authority',
+                          'Maker-Checker Universal Approvals',
+                          'Executive Price Override Rights',
+                          'Brokerage & Commission Governance',
+                          'Emergency System Lockdown Switch'
+                        ].map((perm, pIdx) => (
+                          <div key={pIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: isLight ? '#334155' : '#cbd5e1' }}>
+                            <CheckCircle2 size={14} color="#22c55e" />
+                            <span>{perm}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* BOTTOM ROW: ACTIVE SESSIONS & RECENT ACTIVITY */}
+                <div style={{
+                  background: isLight ? '#ffffff' : '#1e293b',
+                  border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                  borderRadius: '14px',
+                  padding: '20px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Activity size={20} color="#0284c7" />
+                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                        Active Sessions & Security Authentication
+                      </h3>
+                    </div>
+                    <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: '800' }}>
+                      🔒 Hardware Key 2FA Active
+                    </span>
+                  </div>
+
+                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                          <th style={{ padding: '8px 12px' }}>Session ID</th>
+                          <th style={{ padding: '8px 12px' }}>Authenticated User</th>
+                          <th style={{ padding: '8px 12px' }}>IP Address</th>
+                          <th style={{ padding: '8px 12px' }}>Device / Browser</th>
+                          <th style={{ padding: '8px 12px' }}>Login Time</th>
+                          <th style={{ padding: '8px 12px', textAlign: 'center' }}>Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {activeSessions.map((s, idx) => (
+                          <tr key={s.id || idx} style={{ borderBottom: isLight ? '1px solid #f1f5f9' : '1px solid #334155' }}>
+                            <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{s.id}</td>
+                            <td style={{ padding: '10px 12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{s.user}</td>
+                            <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: isLight ? '#475569' : '#cbd5e1' }}>{s.ip}</td>
+                            <td style={{ padding: '10px 12px', color: isLight ? '#475569' : '#cbd5e1' }}>{s.device}</td>
+                            <td style={{ padding: '10px 12px', color: '#fbbf24' }}>{s.login_time}</td>
+                            <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                              <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '800' }}>
+                                ● {s.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            );
+          })()}
 
           {/* CATEGORY 7: AGREEMENT MANAGEMENT (RESTORED CONTRACT MODAL & TABLE) */}
           {activeTab === 'agreement_management' && (
@@ -9833,24 +10200,16 @@ export default function App() {
                     </div>
                     
                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                      {/* MODE SWITCHER */}
-                      <div style={{ background: isLight ? '#f1f5f9' : '#1e293b', borderRadius: '6px', padding: '3px', display: 'flex', gap: '4px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                        <button 
-                          onClick={() => setMapViewMode('google_map')} 
-                          style={{ background: mapViewMode === 'google_map' ? '#0284c7' : 'transparent', color: mapViewMode === 'google_map' ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
-                        >
-                          🗺️ Google Map
-                        </button>
-                        <button 
-                          onClick={() => setMapViewMode('radar')} 
-                          style={{ background: mapViewMode === 'radar' ? '#0284c7' : 'transparent', color: mapViewMode === 'radar' ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
-                        >
-                          📡 Radar Pins
-                        </button>
-                      </div>
+                      <span style={{ background: '#0284c7', color: '#ffffff', padding: '5px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        🗺️ Google Map
+                      </span>
 
                       <a 
-                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((selectedProperty ? selectedProperty.title + ' ' + selectedProperty.locality : selectedLocality) + ' Hyderabad')}`}
+                        href={
+                          (selectedProperty && selectedProperty.latitude && selectedProperty.longitude)
+                            ? `https://www.google.com/maps?q=${String(selectedProperty.latitude).replace(/[^\d.-]/g, '')},${String(selectedProperty.longitude).replace(/[^\d.-]/g, '')}`
+                            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((selectedProperty ? selectedProperty.title + ' ' + selectedProperty.locality : selectedLocality) + ' Hyderabad')}`
+                        }
                         target="_blank"
                         rel="noopener noreferrer"
                         style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', textDecoration: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)' }}
@@ -9860,8 +10219,8 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* MAP BODY */}
-                  {mapViewMode === 'google_map' ? (
+                  {/* MAP BODY WITH INTERACTIVE PROPERTY RADAR PINS ON GOOGLE MAP */}
+                  <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
                     <iframe
                       title="Google Maps Interactive View"
                       width="100%"
@@ -9870,34 +10229,68 @@ export default function App() {
                       loading="lazy"
                       allowFullScreen
                       src={`https://maps.google.com/maps?q=${
-  (selectedProperty && selectedProperty.latitude && selectedProperty.longitude)
-    ? `${String(selectedProperty.latitude).replace(/[^\d.-]/g, '')},${String(selectedProperty.longitude).replace(/[^\d.-]/g, '')}`
-    : encodeURIComponent((selectedProperty ? selectedProperty.title + ', ' + selectedProperty.locality : (selectedLocality === 'ALL' ? 'Hyderabad' : selectedLocality)) + ', Telangana, India')
-}&t=&z=16&ie=UTF8&iwloc=&output=embed`}
+                        (selectedProperty && selectedProperty.latitude && selectedProperty.longitude)
+                          ? `${String(selectedProperty.latitude).replace(/[^\d.-]/g, '')},${String(selectedProperty.longitude).replace(/[^\d.-]/g, '')}`
+                          : encodeURIComponent((selectedProperty ? selectedProperty.title + ', ' + selectedProperty.locality : (selectedLocality === 'ALL' ? 'Hyderabad' : selectedLocality)) + ', Telangana, India')
+                      }&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                     />
-                  ) : (
-                    <div style={{ flex: 1, position: 'relative', overflow: 'hidden', padding: '60px 20px 20px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', background: isLight ? '#f8fafc' : '#0f172a' }}>
-                      <div style={{ position: 'absolute', inset: 0, opacity: 0.15, backgroundImage: 'radial-gradient(#38bdf8 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-                      <div style={{ position: 'relative', flex: 1, margin: '20px 0' }}>
-                        {filteredProperties.map(p => (
+
+                    {/* OVERLAY ALL RADAR PINS FOR ALL TRACKED PROPERTIES */}
+                    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, padding: '60px 20px 20px 20px' }}>
+                      {filteredProperties.map(p => {
+                        const isSelected = selectedProperty && selectedProperty.id === p.id;
+
+                        return (
                           <div 
                             key={p.id} 
                             onClick={() => setSelectedProperty(p)}
                             style={{ 
-                              position: 'absolute', left: `${p.map_x || 40}%`, top: `${p.map_y || 40}%`, transform: 'translate(-50%, -50%)', zIndex: selectedProperty.id === p.id ? 30 : 20, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center'
+                              position: 'absolute', 
+                              left: `${p.map_x || 40}%`, 
+                              top: `${p.map_y || 40}%`, 
+                              transform: 'translate(-50%, -50%)', 
+                              zIndex: isSelected ? 30 : 20, 
+                              cursor: 'pointer', 
+                              pointerEvents: 'auto',
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              alignItems: 'center',
+                              transition: 'all 0.2s ease'
                             }}
                           >
-                            <div style={{ background: selectedProperty.id === p.id ? '#0284c7' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: selectedProperty.id === p.id ? '2px solid #38bdf8' : '1px solid #334155', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', whiteSpace: 'nowrap' }}>
+                            <div style={{ 
+                              background: isSelected ? '#0284c7' : 'rgba(15, 23, 42, 0.94)', 
+                              color: '#ffffff', 
+                              border: isSelected ? '2px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.3)', 
+                              padding: '5px 10px', 
+                              borderRadius: '8px', 
+                              fontSize: '0.75rem', 
+                              fontWeight: '900', 
+                              boxShadow: '0 4px 14px rgba(0,0,0,0.5)', 
+                              whiteSpace: 'nowrap',
+                              backdropFilter: 'blur(4px)'
+                            }}>
                               <span style={{ color: '#4ade80' }}>{p.final_price}</span> | {p.locality}
                             </div>
-                            <div style={{ background: selectedProperty.id === p.id ? '#38bdf8' : '#0284c7', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '4px', boxShadow: '0 0 15px #0284c7' }}>
-                              <MapPin size={13} color="#ffffff" />
+                            <div style={{ 
+                              background: isSelected ? '#38bdf8' : '#0284c7', 
+                              width: '24px', 
+                              height: '24px', 
+                              borderRadius: '50%', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justify: 'center', 
+                              marginTop: '4px', 
+                              boxShadow: isSelected ? '0 0 20px #38bdf8' : '0 4px 10px rgba(0,0,0,0.4)',
+                              border: '2px solid #ffffff'
+                            }}>
+                              <MapPin size={14} color="#ffffff" />
                             </div>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </div>
-                  )}
+                  </div>
 
                   {/* BOTTOM OVERLAY STATUS BAR */}
                   <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', zIndex: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(8px)', padding: '8px 14px', borderRadius: '8px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', fontSize: '0.75rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>
@@ -10086,6 +10479,200 @@ export default function App() {
                 <button type="button" onClick={() => setShowEditCustomerModal(false)} style={{ flex: 1, background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px', borderRadius: '6px' }}>Cancel</button>
                 <button type="submit" style={{ flex: 1, background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '800' }}>Save Changes</button>
               </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* EDIT USER PROFILE MODAL */}
+      {showEditProfileModal && editingProfile && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '2px solid #0284c7' : '2px solid #0284c7', width: '94vw', maxWidth: '800px', maxHeight: '92vh', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', boxShadow: '0 20px 40px rgba(0,0,0,0.4)' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', width: '42px', height: '42px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
+                  <Edit3 size={22} />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>
+                    ✏️ EDIT USER PROFILE — {(editingProfile.full_name || '').toUpperCase()}
+                  </h3>
+                  <span style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                    User ID: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{editingProfile.id}</strong> • Role: <strong style={{ color: '#fbbf24' }}>{editingProfile.role}</strong>
+                  </span>
+                </div>
+              </div>
+              <X size={24} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowEditProfileModal(false)} />
+            </div>
+
+            {/* FORM */}
+            <form onSubmit={handleSaveEditedProfile} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              {/* SECTION 1: PERSONAL & CONTACT INFORMATION */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <h4 style={{ color: '#38bdf8', fontSize: '0.88rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  👤 PERSONAL & CONTACT DETAILS
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Full Name *</label>
+                    <input 
+                      type="text" 
+                      value={editingProfile.full_name || ''} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, full_name: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                      required 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Username & Display Alias *</label>
+                    <input 
+                      type="text" 
+                      value={editingProfile.username || ''} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, username: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                      required 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Primary Email Address *</label>
+                    <input 
+                      type="email" 
+                      value={editingProfile.email || ''} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, email: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                      required 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Mobile Contact Number *</label>
+                    <input 
+                      type="text" 
+                      value={editingProfile.mobile || ''} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, mobile: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700', fontFamily: 'monospace' }} 
+                      required 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: ORGANIZATIONAL & BRANCH HIERARCHY */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <h4 style={{ color: '#fbbf24', fontSize: '0.88rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🏢 ORGANIZATIONAL & BRANCH GOVERNANCE
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Assigned Branch</label>
+                    <select 
+                      value={editingProfile.branch_name || 'Head Office'} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, branch_name: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}
+                    >
+                      <option value="Head Office">Head Office (Kondapur)</option>
+                      <option value="Gachibowli Branch">Gachibowli Branch</option>
+                      <option value="Jubilee Hills Office">Jubilee Hills Office</option>
+                      <option value="Banjara Hills Hub">Banjara Hills Hub</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Department</label>
+                    <select 
+                      value={editingProfile.department || 'Executive Board'} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, department: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}
+                    >
+                      <option value="Executive Board">Executive Board</option>
+                      <option value="System Admin">System Admin</option>
+                      <option value="Sales Operations">Sales Operations</option>
+                      <option value="Accounts & Finance">Accounts & Finance</option>
+                      <option value="Human Resources (HR)">Human Resources (HR)</option>
+                      <option value="Property Management">Property Management</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Team Assignment</label>
+                    <input 
+                      type="text" 
+                      value={editingProfile.team_name || ''} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, team_name: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Reporting Manager</label>
+                    <input 
+                      type="text" 
+                      value={editingProfile.manager_name || ''} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, manager_name: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: ACCOUNT STATUS & SECURITY PREFERENCES */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <h4 style={{ color: '#22c55e', fontSize: '0.88rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🔑 ACCOUNT STATUS & SECURITY PREFERENCES
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Account Status</label>
+                    <select 
+                      value={editingProfile.user_status || 'ACTIVE'} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, user_status: e.target.value, is_active: e.target.value === 'ACTIVE' })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: editingProfile.user_status === 'ACTIVE' ? '#4ade80' : '#f59e0b', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
+                    >
+                      <option value="ACTIVE">ACTIVE & VERIFIED</option>
+                      <option value="INACTIVE">INACTIVE / SUSPENDED</option>
+                      <option value="ON_LEAVE">ON LEAVE / TEMPORARY PAUSE</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>2FA Authentication Method</label>
+                    <select 
+                      defaultValue="Hardware Key (FIDO2)" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
+                    >
+                      <option value="Hardware Key (FIDO2)">🔒 Hardware Key (FIDO2 YubiKey)</option>
+                      <option value="SMS / WhatsApp OTP">📱 SMS / WhatsApp OTP Verification</option>
+                      <option value="Authenticator App (TOTP)">🔑 Authenticator App (Google/Microsoft TOTP)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* MODAL FOOTER BUTTONS */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '16px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowEditProfileModal(false)} 
+                  style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)' }}
+                >
+                  💾 SAVE PROFILE CHANGES
+                </button>
+              </div>
+
             </form>
           </div>
         </div>
