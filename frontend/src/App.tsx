@@ -8,7 +8,7 @@ import {
   Download, Printer, Filter, Star, Clock, AlertOctagon, UserX, Radio, Cpu, 
   CheckSquare, XCircle, RotateCw, Play, MessageCircle, Tag, UserPlus, 
   CheckCircle, Sliders, Zap, Shield, AlertCircle, Briefcase, Key, Repeat, 
-  CheckSquare2, Receipt, Target, Hash, LifeBuoy, FileCode, ArrowRightLeft, UserCheck2, X,
+  CheckSquare2, Receipt, Target, Hash, LifeBuoy, FileCode, ArrowRightLeft, ArrowRight, UserCheck2, X,
   Compass, QrCode, Share2, Layers3, Activity, CheckSquare1, Eye, EyeOff, ThumbsUp, ThumbsDown,
   Upload, FileUp, FileDown, Table, FileSignature, Scale, PenTool, ReceiptText, Calculator, Landmark,
   Grid, List, Columns, Edit3, Trash2, CheckStack, Layers2, Navigation, Map, PieChart, BarChart2,
@@ -32,6 +32,7 @@ function ScheduleVisitModalContent({
   setActiveVisitSubTab,
   setSelectedVisitPlanId
 }: any) {
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
   const [selectedCsIds, setSelectedCsIds] = useState<string[]>(
     eligibleCostSheets.map((c: any) => c.costSheetId)
   );
@@ -503,6 +504,7 @@ function VisitDetailModalContent({
   setShowSkipStopModal,
   setShowAddPropertyRouteModal
 }: any) {
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
   const [openSections, setOpenSections] = useState<{ [key: string]: boolean }>({
     customerDetails: true,
     visitRoute: true,
@@ -517,35 +519,59 @@ function VisitDetailModalContent({
     setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
+  const expandAllSections = () => {
+    setOpenSections({
+      customerDetails: true,
+      visitRoute: true,
+      propertyStops: true,
+      navigation: true,
+      otpGeofence: true,
+      feedback: true,
+      auditHistory: true
+    });
+  };
+
+  const collapseAllSections = () => {
+    setOpenSections({
+      customerDetails: false,
+      visitRoute: false,
+      propertyStops: false,
+      navigation: false,
+      otpGeofence: false,
+      feedback: false,
+      auditHistory: false
+    });
+  };
+
   const completedStops = plan.stops.filter((s: any) => s.status === 'VISIT_COMPLETED').length;
   const totalStops = plan.stops.length;
   const pct = Math.round((completedStops / totalStops) * 100);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
-      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', width: '94vw', maxWidth: '920px', maxHeight: '94vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', overflowY: 'auto' }}>
+    <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(15, 23, 42, 0.65)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
+      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '2px solid #0284c7' : '2px solid #38bdf8', width: '94vw', maxWidth: '940px', maxHeight: '92vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', overflowY: 'auto', boxShadow: isLight ? '0 20px 50px rgba(0,0,0,0.2)' : '0 20px 50px rgba(0,0,0,0.8)' }}>
         
         {/* HEADER */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '16px' }}>
+        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '16px' }}>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '900', fontFamily: 'monospace' }}>
                 {plan.visitPlanId || plan.visitScheduleId}
               </span>
-              <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '900' }}>
+              <span style={{ background: isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.2)', color: isLight ? '#15803d' : '#4ade80', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '900', border: isLight ? '1px solid #86efac' : 'none' }}>
                 {plan.status || 'IN_PROGRESS'}
               </span>
-              <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '800' }}>
+              <span style={{ background: isLight ? '#e0f2fe' : 'rgba(56, 189, 248, 0.15)', color: isLight ? '#0369a1' : '#38bdf8', padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '800', border: isLight ? '1px solid #7dd3fc' : 'none' }}>
                 🗓️ {plan.visitDate} ({plan.startTime})
               </span>
             </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '8px' }}>
               👤 VISIT SCHEDULE: {plan.customerName}
             </h2>
-            <div style={{ fontSize: '0.82rem', color: isLight ? '#64748b' : '#94a3b8', display: 'flex', gap: '14px', marginTop: '4px' }}>
-              <span>Customer ID: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{plan.customerNumber}</strong></span>
-              <span>Assigned Executive: <strong style={{ color: '#fbbf24' }}>{plan.assignedExecutive}</strong></span>
-              <span>Total Stops: <strong style={{ color: '#4ade80' }}>{plan.stops.length} Properties</strong></span>
+            <div style={{ fontSize: '0.82rem', color: isLight ? '#475569' : '#94a3b8', display: 'flex', gap: '14px', marginTop: '4px', flexWrap: 'wrap' }}>
+              <span>Customer ID: <strong style={{ color: isLight ? '#0284c7' : '#38bdf8', fontFamily: 'monospace' }}>{plan.customerNumber}</strong></span>
+              <span>Assigned Executive: <strong style={{ color: isLight ? '#b45309' : '#fbbf24' }}>{plan.assignedExecutive}</strong></span>
+              <span>Total Stops: <strong style={{ color: isLight ? '#15803d' : '#4ade80' }}>{plan.stops.length} Properties</strong></span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -555,173 +581,194 @@ function VisitDetailModalContent({
             >
               🗺️ VIEW ROUTE MAP
             </button>
-            <X size={24} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={onClose} />
+            <X size={24} color={isLight ? '#475569' : '#94a3b8'} style={{ cursor: 'pointer' }} onClick={onClose} />
           </div>
         </div>
 
-        {/* SECTION 1: CUSTOMER & LOGISTICS DETAILS (COLLAPSIBLE - DEFAULT OPEN) */}
-        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* CONTROLS: EXPAND ALL / COLLAPSE ALL TOGGLES */}
+        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isLight ? '#f1f5f9' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px' }}>
+          <span style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#94a3b8', fontWeight: '800' }}>
+            📑 VISIT DETAILS ACCORDION SECTIONS ({Object.values(openSections).filter(Boolean).length} / 7 Expanded)
+          </span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button 
+              onClick={expandAllSections} 
+              style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0284c7' : '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+            >
+              📂 Expand All Tabs
+            </button>
+            <button 
+              onClick={collapseAllSections} 
+              style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#475569' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+            >
+              📁 Collapse All Tabs
+            </button>
+          </div>
+        </div>
+
+        {/* SECTION 1: CUSTOMER & LOGISTICS DETAILS */}
+        <div style={{ flexShrink: 0, background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
           <div 
             onClick={() => toggleSection('customerDetails')}
-            style={{ padding: '14px 18px', background: isLight ? '#ffffff' : '#1e293b', borderBottom: openSections.customerDetails ? '1px solid #334155' : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{ padding: '14px 18px', background: isLight ? '#f8fafc' : '#1e293b', borderBottom: openSections.customerDetails ? (isLight ? '1px solid #cbd5e1' : '1px solid #334155') : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
-            <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4 style={{ color: isLight ? '#0284c7' : '#38bdf8', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               👤 CUSTOMER & TRANSPORT LOGISTICS DETAILS
             </h4>
-            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '900' }}>{openSections.customerDetails ? '▲' : '▼'}</span>
+            <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>{openSections.customerDetails ? '▲' : '▼'}</span>
           </div>
 
           {openSections.customerDetails && (
-            <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', fontSize: '0.82rem' }}>
+            <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '1fr 1fr', gap: '14px', fontSize: '0.82rem', background: isLight ? '#ffffff' : '#0f172a' }}>
               <div>
-                <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CUSTOMER NAME & CONTACT</span>
+                <span style={{ fontSize: '0.7rem', color: isLight ? '#475569' : '#94a3b8', fontWeight: '800' }}>CUSTOMER NAME & CONTACT</span>
                 <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.95rem', marginTop: '2px' }}>{plan.customerName}</h4>
-                <span style={{ color: '#4ade80', fontFamily: 'monospace', fontWeight: '800' }}>{plan.mobile}</span>
+                <span style={{ color: isLight ? '#16a34a' : '#4ade80', fontFamily: 'monospace', fontWeight: '800' }}>{plan.mobile}</span>
                 <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
                   <button onClick={() => window.open(`tel:${plan.mobile}`)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem', cursor: 'pointer' }}>📞 Call</button>
-                  <button onClick={() => window.open(`https://api.whatsapp.com/send?phone=${plan.mobile.replace(/[^0-9]/g, '')}`)} style={{ background: '#25D366', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem', cursor: 'pointer' }}>💬 WhatsApp</button>
+                  <button onClick={() => window.open(`https://api.whatsapp.com/send?phone=${plan.mobile.replace(/[^0-9]/g, '')}`)} style={{ background: '#25D366', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem', cursor: 'pointer' }}>💬 WhatsApp</button>
                 </div>
               </div>
 
               <div>
-                <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>PICKUP & DROP LOGISTICS</span>
+                <span style={{ fontSize: '0.7rem', color: isLight ? '#475569' : '#94a3b8', fontWeight: '800' }}>PICKUP & DROP LOGISTICS</span>
                 <p style={{ color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>🟢 Pickup: <strong>{plan.pickupAddress || 'Kondapur, Hyderabad'}</strong></p>
                 <p style={{ color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>🔴 Drop: <strong>{plan.dropAddress || 'Kondapur, Hyderabad'}</strong></p>
-                <span style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: '800', display: 'block', marginTop: '4px' }}>Transport Mode: {plan.transport || 'Chauffeur Cab Pick & Drop'}</span>
+                <span style={{ color: isLight ? '#b45309' : '#fbbf24', fontSize: '0.75rem', fontWeight: '800', display: 'block', marginTop: '4px' }}>Transport Mode: {plan.transport || 'Chauffeur Cab Pick & Drop'}</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* SECTION 2: VISIT ROUTE & PROGRESS SUMMARY (COLLAPSIBLE - DEFAULT OPEN) */}
-        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* SECTION 2: VISIT ROUTE & PROGRESS SUMMARY */}
+        <div style={{ flexShrink: 0, background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
           <div 
             onClick={() => toggleSection('visitRoute')}
-            style={{ padding: '14px 18px', background: isLight ? '#ffffff' : '#1e293b', borderBottom: openSections.visitRoute ? '1px solid #334155' : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{ padding: '14px 18px', background: isLight ? '#f8fafc' : '#1e293b', borderBottom: openSections.visitRoute ? (isLight ? '1px solid #cbd5e1' : '1px solid #334155') : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
-            <h4 style={{ color: '#4ade80', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4 style={{ color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               🗺️ VISIT ROUTE & PROGRESS SUMMARY
             </h4>
-            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '900' }}>{openSections.visitRoute ? '▲' : '▼'}</span>
+            <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>{openSections.visitRoute ? '▲' : '▼'}</span>
           </div>
 
           {openSections.visitRoute && (
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', background: isLight ? '#ffffff' : '#0f172a' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.82rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>
                   Progress: {completedStops} of {totalStops} Stops Completed
                 </span>
-                <span style={{ fontSize: '0.9rem', color: '#4ade80', fontWeight: '900' }}>{pct}%</span>
+                <span style={{ fontSize: '0.9rem', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900' }}>{pct}%</span>
               </div>
-              <div style={{ background: isLight ? '#ffffff' : '#1e293b', borderRadius: '8px', height: '10px', width: '100%', overflow: 'hidden' }}>
+              <div style={{ background: isLight ? '#e2e8f0' : '#1e293b', borderRadius: '8px', height: '10px', width: '100%', overflow: 'hidden' }}>
                 <div style={{ background: 'linear-gradient(90deg, #0284c7 0%, #22c55e 100%)', width: `${pct}%`, height: '100%', transition: 'width 0.3s ease' }}></div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px', background: isLight ? '#ffffff' : '#1e293b', padding: '10px', borderRadius: '8px', fontSize: '0.78rem' }}>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Total Distance:</span> <strong style={{ color: '#38bdf8', display: 'block' }}>{plan.totalDistanceKm || '14.8 KM'}</strong></div>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Total Duration:</span> <strong style={{ color: '#fbbf24', display: 'block' }}>~{plan.totalDurationMinutes || 195} Mins</strong></div>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Schedule Status:</span> <strong style={{ color: '#4ade80', display: 'block' }}>{plan.delayStatus || '🟢 ON SCHEDULE'}</strong></div>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Route Deviation:</span> <strong style={{ color: '#38bdf8', display: 'block' }}>{plan.deviationStatus || '🟢 ON ROUTE'}</strong></div>
+              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px', background: isLight ? '#f8fafc' : '#1e293b', border: isLight ? '1px solid #e2e8f0' : '1px solid #334155', padding: '10px', borderRadius: '8px', fontSize: '0.78rem' }}>
+                <div><span style={{ color: isLight ? '#475569' : '#94a3b8' }}>Total Distance:</span> <strong style={{ color: isLight ? '#0284c7' : '#38bdf8', display: 'block' }}>{plan.totalDistanceKm || '14.8 KM'}</strong></div>
+                <div><span style={{ color: isLight ? '#475569' : '#94a3b8' }}>Total Duration:</span> <strong style={{ color: isLight ? '#b45309' : '#fbbf24', display: 'block' }}>~{plan.totalDurationMinutes || 195} Mins</strong></div>
+                <div><span style={{ color: isLight ? '#475569' : '#94a3b8' }}>Schedule Status:</span> <strong style={{ color: isLight ? '#16a34a' : '#4ade80', display: 'block' }}>{plan.delayStatus || '🟢 ON SCHEDULE'}</strong></div>
+                <div><span style={{ color: isLight ? '#475569' : '#94a3b8' }}>Route Deviation:</span> <strong style={{ color: isLight ? '#0284c7' : '#38bdf8', display: 'block' }}>{plan.deviationStatus || '🟢 ON ROUTE'}</strong></div>
               </div>
             </div>
           )}
         </div>
 
-        {/* SECTION 3: PROPERTY STOPS COMPACT TABLE (COLLAPSIBLE - DEFAULT OPEN) */}
-        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* SECTION 3: PROPERTY STOPS COMPACT TABLE */}
+        <div style={{ flexShrink: 0, background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
           <div 
             onClick={() => toggleSection('propertyStops')}
-            style={{ padding: '14px 18px', background: isLight ? '#ffffff' : '#1e293b', borderBottom: openSections.propertyStops ? '1px solid #334155' : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{ padding: '14px 18px', background: isLight ? '#f8fafc' : '#1e293b', borderBottom: openSections.propertyStops ? (isLight ? '1px solid #cbd5e1' : '1px solid #334155') : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
-            <h4 style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4 style={{ color: isLight ? '#b45309' : '#fbbf24', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               🏢 PROPERTY STOPS REGISTER ({plan.stops.length} STOPS)
             </h4>
-            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '900' }}>{openSections.propertyStops ? '▲' : '▼'}</span>
+            <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>{openSections.propertyStops ? '▲' : '▼'}</span>
           </div>
 
           {openSections.propertyStops && (
-            <div style={{ padding: '16px' }}>
+            <div style={{ padding: '16px', background: isLight ? '#ffffff' : '#0f172a' }}>
               <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                <thead>
-                  <tr style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                    <th style={{ padding: '10px' }}>Stop #</th>
-                    <th style={{ padding: '10px' }}>Property Title</th>
-                    <th style={{ padding: '10px' }}>Cost Sheet ID</th>
-                    <th style={{ padding: '10px' }}>Scheduled Time</th>
-                    <th style={{ padding: '10px' }}>Status</th>
-                    <th style={{ padding: '10px', textAlign: 'center' }}>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {plan.stops.map((stop: any, idx: number) => {
-                    const isCompleted = stop.status === 'VISIT_COMPLETED';
-                    const isCurrent = idx === plan.currentStopIndex;
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                  <thead>
+                    <tr style={{ background: isLight ? '#f8fafc' : '#1e293b', color: isLight ? '#475569' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '1px solid #334155' }}>
+                      <th style={{ padding: '10px' }}>Stop #</th>
+                      <th style={{ padding: '10px' }}>Property Title</th>
+                      <th style={{ padding: '10px' }}>Cost Sheet ID</th>
+                      <th style={{ padding: '10px' }}>Scheduled Time</th>
+                      <th style={{ padding: '10px' }}>Status</th>
+                      <th style={{ padding: '10px', textAlign: 'center' }}>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {plan.stops.map((stop: any, idx: number) => {
+                      const isCompleted = stop.status === 'VISIT_COMPLETED';
+                      const isCurrent = idx === plan.currentStopIndex;
 
-                    return (
-                      <tr key={stop.stopId} style={{ borderBottom: '1px solid #1e293b' }}>
-                        <td style={{ padding: '10px', color: '#fbbf24', fontWeight: '900' }}>STOP 0{idx + 1}</td>
-                        <td style={{ padding: '10px' }}>
-                          <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.85rem' }}>{stop.propertyTitle}</strong>
-                          <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{stop.locality} ({stop.propertyCode})</span>
-                        </td>
-                        <td style={{ padding: '10px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{stop.costSheetId}</td>
-                        <td style={{ padding: '10px', color: '#cbd5e1' }}>{stop.scheduledTime}</td>
-                        <td style={{ padding: '10px' }}>
-                          <span style={{ background: isCompleted ? 'rgba(34, 197, 94, 0.2)' : isCurrent ? 'rgba(2, 132, 199, 0.2)' : 'rgba(148, 163, 184, 0.2)', color: isCompleted ? '#4ade80' : isCurrent ? '#38bdf8' : '#94a3b8', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900' }}>
-                            {isCompleted ? '✓ Done' : isCurrent ? '🟢 Current' : '⚪ Pending'}
-                          </span>
-                        </td>
-                        <td style={{ padding: '10px', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                            <button 
-                              onClick={() => setShowIndividualStopModal({ open: true, stop, plan })}
-                              style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}
-                            >
-                              👁️ View Stop
-                            </button>
-                            {isCurrent && !isCompleted && (
+                      return (
+                        <tr key={stop.stopId} style={{ borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155' }}>
+                          <td style={{ padding: '10px', color: isLight ? '#b45309' : '#fbbf24', fontWeight: '900' }}>STOP 0{idx + 1}</td>
+                          <td style={{ padding: '10px' }}>
+                            <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.85rem' }}>{stop.propertyTitle}</strong>
+                            <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#475569' : '#94a3b8' }}>{stop.locality} ({stop.propertyCode})</span>
+                          </td>
+                          <td style={{ padding: '10px', fontFamily: 'monospace', color: isLight ? '#0284c7' : '#38bdf8', fontWeight: '800' }}>{stop.costSheetId}</td>
+                          <td style={{ padding: '10px', color: isLight ? '#0f172a' : '#e2e8f0' }}>{stop.scheduledTime}</td>
+                          <td style={{ padding: '10px' }}>
+                            <span style={{ background: isCompleted ? (isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.2)') : isCurrent ? (isLight ? '#e0f2fe' : 'rgba(2, 132, 199, 0.2)') : (isLight ? '#f1f5f9' : 'rgba(148, 163, 184, 0.2)'), color: isCompleted ? (isLight ? '#15803d' : '#4ade80') : isCurrent ? (isLight ? '#0369a1' : '#38bdf8') : (isLight ? '#475569' : '#94a3b8'), padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900' }}>
+                              {isCompleted ? '✓ Done' : isCurrent ? '🟢 Current' : '⚪ Pending'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '10px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                               <button 
-                                onClick={() => {
-                                  const cleanLat = stop.latitude.replace(/[^0-9.]/g, '') || '17.4612';
-                                  const cleanLng = stop.longitude.replace(/[^0-9.]/g, '') || '78.3689';
-                                  window.open(`https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`, '_blank');
-                                }}
-                                style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}
+                                onClick={() => setShowIndividualStopModal({ open: true, stop, plan })}
+                                style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}
                               >
-                                🚀 Navigate
+                                👁️ View Stop
                               </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-</div>
+                              {isCurrent && !isCompleted && (
+                                <button 
+                                  onClick={() => {
+                                    const cleanLat = stop.latitude.replace(/[^0-9.]/g, '') || '17.4612';
+                                    const cleanLng = stop.longitude.replace(/[^0-9.]/g, '') || '78.3689';
+                                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`, '_blank');
+                                  }}
+                                  style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}
+                                >
+                                  🚀 Navigate
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
 
-        {/* SECTION 4: NAVIGATION & COCKPIT CONTROLS (COLLAPSIBLE - DEFAULT COLLAPSED) */}
-        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* SECTION 4: NAVIGATION & COCKPIT CONTROLS */}
+        <div style={{ flexShrink: 0, background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
           <div 
             onClick={() => toggleSection('navigation')}
-            style={{ padding: '14px 18px', background: isLight ? '#ffffff' : '#1e293b', borderBottom: openSections.navigation ? '1px solid #334155' : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{ padding: '14px 18px', background: isLight ? '#f8fafc' : '#1e293b', borderBottom: openSections.navigation ? (isLight ? '1px solid #cbd5e1' : '1px solid #334155') : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
-            <h4 style={{ color: '#a855f7', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4 style={{ color: isLight ? '#7e22ce' : '#a855f7', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               🚀 NAVIGATION & MOBILE COCKPIT CONTROLS
             </h4>
-            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '900' }}>{openSections.navigation ? '▲' : '▼'}</span>
+            <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>{openSections.navigation ? '▲' : '▼'}</span>
           </div>
 
           {openSections.navigation && (
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: isLight ? '#ffffff' : '#0f172a' }}>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <button 
                   onClick={() => {
-                    const cleanLat = plan.pickupLat.replace(/[^0-9.]/g, '') || '17.4478';
-                    const cleanLng = plan.pickupLng.replace(/[^0-9.]/g, '') || '78.3789';
+                    const cleanLat = plan.pickupLat ? plan.pickupLat.replace(/[^0-9.]/g, '') : '17.4478';
+                    const cleanLng = plan.pickupLng ? plan.pickupLng.replace(/[^0-9.]/g, '') : '78.3789';
                     window.open(`https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`, '_blank');
                   }}
                   style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer' }}
@@ -730,11 +777,11 @@ function VisitDetailModalContent({
                 </button>
                 <button 
                   onClick={() => {
-                    const cleanLat = plan.dropLat.replace(/[^0-9.]/g, '') || '17.4478';
-                    const cleanLng = plan.dropLng.replace(/[^0-9.]/g, '') || '78.3789';
+                    const cleanLat = plan.dropLat ? plan.dropLat.replace(/[^0-9.]/g, '') : '17.4478';
+                    const cleanLng = plan.dropLng ? plan.dropLng.replace(/[^0-9.]/g, '') : '78.3789';
                     window.open(`https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`, '_blank');
                   }}
-                  style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer' }}
+                  style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer' }}
                 >
                   🚀 Navigate to Drop Location
                 </button>
@@ -743,89 +790,89 @@ function VisitDetailModalContent({
           )}
         </div>
 
-        {/* SECTION 5: OTP & GEOFENCE (COLLAPSIBLE - DEFAULT COLLAPSED) */}
-        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* SECTION 5: OTP & GEOFENCE */}
+        <div style={{ flexShrink: 0, background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
           <div 
             onClick={() => toggleSection('otpGeofence')}
-            style={{ padding: '14px 18px', background: isLight ? '#ffffff' : '#1e293b', borderBottom: openSections.otpGeofence ? '1px solid #334155' : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{ padding: '14px 18px', background: isLight ? '#f8fafc' : '#1e293b', borderBottom: openSections.otpGeofence ? (isLight ? '1px solid #cbd5e1' : '1px solid #334155') : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
-            <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4 style={{ color: isLight ? '#0284c7' : '#38bdf8', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               🔐 OTP & GEOFENCE VERIFICATION AUDIT
             </h4>
-            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '900' }}>{openSections.otpGeofence ? '▲' : '▼'}</span>
+            <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>{openSections.otpGeofence ? '▲' : '▼'}</span>
           </div>
 
           {openSections.otpGeofence && (
-            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem' }}>
-              <span style={{ color: '#4ade80', fontWeight: '800' }}>🟢 GPS Geofence Radius: 100 Meters Verified</span>
-              <span style={{ color: '#fbbf24', fontWeight: '800' }}>🔐 Mobile OTP: 849201 Verified on Site</span>
+            <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.8rem', background: isLight ? '#ffffff' : '#0f172a' }}>
+              <span style={{ color: isLight ? '#15803d' : '#4ade80', fontWeight: '800' }}>🟢 GPS Geofence Radius: 100 Meters Verified</span>
+              <span style={{ color: isLight ? '#b45309' : '#fbbf24', fontWeight: '800' }}>🔐 Mobile OTP: 849201 Verified on Site</span>
             </div>
           )}
         </div>
 
-        {/* SECTION 6: CUSTOMER FEEDBACK (COLLAPSIBLE - DEFAULT COLLAPSED) */}
-        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* SECTION 6: CUSTOMER FEEDBACK */}
+        <div style={{ flexShrink: 0, background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
           <div 
             onClick={() => toggleSection('feedback')}
-            style={{ padding: '14px 18px', background: isLight ? '#ffffff' : '#1e293b', borderBottom: openSections.feedback ? '1px solid #334155' : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{ padding: '14px 18px', background: isLight ? '#f8fafc' : '#1e293b', borderBottom: openSections.feedback ? (isLight ? '1px solid #cbd5e1' : '1px solid #334155') : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
-            <h4 style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4 style={{ color: isLight ? '#b45309' : '#fbbf24', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               ⭐ CUSTOMER SITE VISIT FEEDBACK
             </h4>
-            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '900' }}>{openSections.feedback ? '▲' : '▼'}</span>
+            <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>{openSections.feedback ? '▲' : '▼'}</span>
           </div>
 
           {openSections.feedback && (
-            <div style={{ padding: '16px', fontSize: '0.82rem', color: '#cbd5e1' }}>
-              <p>Rating: ⭐⭐⭐⭐⭐ (5/5 Stars)</p>
-              <p style={{ marginTop: '4px' }}>Remarks: "Customer showed high interest in flat 1402 at Aparna Zenon. Requested revised cost sheet with floor rise discount."</p>
+            <div style={{ padding: '16px', fontSize: '0.82rem', color: isLight ? '#0f172a' : '#e2e8f0', background: isLight ? '#ffffff' : '#0f172a' }}>
+              <p style={{ fontWeight: '800', color: isLight ? '#b45309' : '#fbbf24' }}>Rating: ⭐⭐⭐⭐⭐ (5/5 Stars)</p>
+              <p style={{ marginTop: '4px', color: isLight ? '#0f172a' : '#e2e8f0' }}>Remarks: "Customer showed high interest in flat 1402 at Aparna Zenon. Requested revised cost sheet with floor rise discount."</p>
             </div>
           )}
         </div>
 
-        {/* SECTION 7: AUDIT LOG (COLLAPSIBLE - DEFAULT COLLAPSED) */}
-        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
+        {/* SECTION 7: AUDIT LOG */}
+        <div style={{ flexShrink: 0, background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', overflow: 'hidden' }}>
           <div 
             onClick={() => toggleSection('auditHistory')}
-            style={{ padding: '14px 18px', background: isLight ? '#ffffff' : '#1e293b', borderBottom: openSections.auditHistory ? '1px solid #334155' : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+            style={{ padding: '14px 18px', background: isLight ? '#f8fafc' : '#1e293b', borderBottom: openSections.auditHistory ? (isLight ? '1px solid #cbd5e1' : '1px solid #334155') : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
-            <h4 style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <h4 style={{ color: isLight ? '#475569' : '#94a3b8', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
               📜 VISIT HISTORY & IMMUTABLE AUDIT TRAIL
             </h4>
-            <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '900' }}>{openSections.auditHistory ? '▲' : '▼'}</span>
+            <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>{openSections.auditHistory ? '▲' : '▼'}</span>
           </div>
 
           {openSections.auditHistory && (
-            <div style={{ padding: '16px' }}>
+            <div style={{ padding: '16px', background: isLight ? '#ffffff' : '#0f172a' }}>
               <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
-                <thead>
-                  <tr style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                    <th style={{ padding: '6px' }}>Time</th>
-                    <th style={{ padding: '6px' }}>User</th>
-                    <th style={{ padding: '6px' }}>Action</th>
-                    <th style={{ padding: '6px' }}>Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(plan.auditLogs || []).map((log: any, idx: number) => (
-                    <tr key={idx} style={{ borderBottom: '1px solid #1e293b' }}>
-                      <td style={{ padding: '6px', color: '#fbbf24', fontFamily: 'monospace' }}>{log.time}</td>
-                      <td style={{ padding: '6px', color: '#38bdf8' }}>{log.user}</td>
-                      <td style={{ padding: '6px', color: '#4ade80', fontWeight: '800' }}>{log.action}</td>
-                      <td style={{ padding: '6px', color: '#cbd5e1' }}>{log.details}</td>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                  <thead>
+                    <tr style={{ background: isLight ? '#f8fafc' : '#1e293b', color: isLight ? '#475569' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '1px solid #334155' }}>
+                      <th style={{ padding: '6px' }}>Time</th>
+                      <th style={{ padding: '6px' }}>User</th>
+                      <th style={{ padding: '6px' }}>Action</th>
+                      <th style={{ padding: '6px' }}>Details</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-</div>
+                  </thead>
+                  <tbody>
+                    {(plan.auditLogs || []).map((log: any, idx: number) => (
+                      <tr key={idx} style={{ borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155' }}>
+                        <td style={{ padding: '6px', color: isLight ? '#b45309' : '#fbbf24', fontFamily: 'monospace' }}>{log.time}</td>
+                        <td style={{ padding: '6px', color: isLight ? '#0284c7' : '#38bdf8' }}>{log.user}</td>
+                        <td style={{ padding: '6px', color: isLight ? '#15803d' : '#4ade80', fontWeight: '800' }}>{log.action}</td>
+                        <td style={{ padding: '6px', color: isLight ? '#0f172a' : '#e2e8f0' }}>{log.details}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
 
         {/* FOOTER */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
-          <button onClick={onClose} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Close</button>
+        <div style={{ flexShrink: 0, display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+          <button onClick={onClose} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}>Close</button>
         </div>
 
       </div>
@@ -842,6 +889,7 @@ function IndividualStopModalContent({
   setActiveCostSheetShareSubTab,
   setActiveProjectSubTab
 }: any) {
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
   const cleanLat = stop.latitude.replace(/[^0-9.]/g, '') || '17.4612';
   const cleanLng = stop.longitude.replace(/[^0-9.]/g, '') || '78.3689';
   const mapsDirUrl = `https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`;
@@ -944,6 +992,7 @@ function PvaVerificationModalContent({
   setVisitPlans,
   setShowPvaDocumentModal
 }: any) {
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
   const [otpInput, setOtpInput] = useState<string>('849201');
   const [otpSent, setOtpSent] = useState<boolean>(true);
   const [otpVerified, setOtpVerified] = useState<boolean>(false);
@@ -1258,6 +1307,7 @@ function PvaVerificationModalContent({
 }
 
 function PvaDocumentModalContent({ isLight = false, pva, onClose }: any) {
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
   if (!pva) return null;
 
   return (
