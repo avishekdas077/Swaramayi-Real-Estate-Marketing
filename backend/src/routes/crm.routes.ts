@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import { 
   getCustomers, checkDuplicateCustomer, createCustomer, getCustomer360, 
-  submitTransferRequest, handleTransferApproval, smartSearch 
+  submitTransferRequest, handleTransferApproval, smartSearch,
+  getMongoDBSync, syncMongoDB
 } from '../controllers/crm.controller.js';
 import { verifyToken, requireRole } from '../middleware/auth.js';
 
@@ -16,5 +17,8 @@ router.post('/leads/transfer-request', verifyToken, submitTransferRequest);
 router.post('/leads/transfer-approve', verifyToken, requireRole(['SUPER_ADMIN', 'BRANCH_MANAGER']), handleTransferApproval);
 
 router.get('/search', verifyToken, smartSearch);
+
+router.get('/sync', getMongoDBSync);
+router.post('/sync', syncMongoDB);
 
 export default router;

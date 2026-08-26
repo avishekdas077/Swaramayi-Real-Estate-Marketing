@@ -380,3 +380,32 @@ export async function smartSearch(req: AuthRequest, res: Response) {
     }
   });
 }
+
+import { syncToMongoDB, loadDataFromMongoDB } from '../db/mongoPersistence.js';
+
+export async function getMongoDBSync(req: AuthRequest, res: Response) {
+  loadData();
+  const mongoData = await loadDataFromMongoDB();
+  return res.json({
+    status: 'SUCCESS',
+    data: mongoData || dbStore.data
+  });
+}
+
+export async function syncMongoDB(req: AuthRequest, res: Response) {
+  const payload = req.body;
+  if (payload) {
+    if (Array.isArray(payload.leads)) dbStore.data.leads = payload.leads;
+    if (Array.isArray(payload.properties)) dbStore.data.properties = payload.properties;
+    if (Array.isArray(payload.customers)) dbStore.data.customers = payload.customers;
+    if (Array.isArray(payload.agreements)) dbStore.data.agreements = payload.agreements;
+    if (Array.isArray(payload.users)) dbStore.data.users = payload.users;
+    saveData();
+    await syncToMongoDB(payload);
+  }
+  return res.json({
+    status: 'SUCCESS',
+    message: 'Data successfully synced with MongoDB Atlas Cluster',
+    synced_at: new Date().toISOString()
+  });
+}

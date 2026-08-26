@@ -712,12 +712,26 @@ export class MongoStoreDatabase {
 
 export const dbStore = new MongoStoreDatabase();
 
+import { syncToMongoDB, loadDataFromMongoDB } from './mongoPersistence.js';
+
 export function loadData() {
   dbStore.load();
+  loadDataFromMongoDB().then(mongoData => {
+    if (mongoData) {
+      if (mongoData.users) dbStore.data.users = mongoData.users as any;
+      if (mongoData.properties) dbStore.data.properties = mongoData.properties as any;
+      if (mongoData.customers) dbStore.data.customers = mongoData.customers as any;
+      if (mongoData.leads) dbStore.data.leads = mongoData.leads as any;
+      if (mongoData.agreements) dbStore.data.agreements = mongoData.agreements as any;
+      if (mongoData.bookings) dbStore.data.bookings = mongoData.bookings as any;
+      if (mongoData.invoices) dbStore.data.invoices = mongoData.invoices as any;
+    }
+  }).catch(() => {});
 }
 
 export function saveData() {
   dbStore.save();
+  syncToMongoDB(dbStore.data).catch(() => {});
 }
 
 export function generateID(type: 'SRM-CUS' | 'SRM-PROP' | 'SRM-UNIT' | 'SRM-LEAD' | 'SRM-REC' | 'SRM-SV' | 'SRM-BKG' | 'SRM-BRK' | 'SRM-AGR' | 'SRM-INV' | 'SRM-REQ' | 'SRM-FLP'): string {
