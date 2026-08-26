@@ -2727,7 +2727,7 @@ export default function App() {
   // 1. Employee Directory (Strict Single Super Admin Master Store with LocalStorage Persistence)
   const [users, setUsers] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_users_v5');
+      const saved = localStorage.getItem('swaramayi_users_v6');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -2742,7 +2742,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_users_v5', JSON.stringify(users));
+      localStorage.setItem('swaramayi_users_v6', JSON.stringify(users));
     } catch (e) {
       console.error('Error saving users to localStorage:', e);
     }
