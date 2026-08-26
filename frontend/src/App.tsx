@@ -1415,6 +1415,191 @@ function PvaDocumentModalContent({ isLight = false, pva, onClose }: any) {
   );
 }
 
+const getPropLatLng = (p: any) => {
+  if (p && p.latitude && p.longitude) {
+    const lat = parseFloat(String(p.latitude).replace(/[^\d.-]/g, ''));
+    const lng = parseFloat(String(p.longitude).replace(/[^\d.-]/g, ''));
+    if (!isNaN(lat) && !isNaN(lng) && lat > 0 && lng > 0) {
+      return { lat, lng };
+    }
+  }
+
+  const localityCoords: { [key: string]: { lat: number; lng: number } } = {
+    'Kondapur': { lat: 17.4612, lng: 78.3689 },
+    'Financial District': { lat: 17.4401, lng: 78.3489 },
+    'Madinaguda': { lat: 17.4921, lng: 78.3412 },
+    'Hitec City': { lat: 17.4478, lng: 78.3789 },
+    'Nanakramguda': { lat: 17.4201, lng: 78.3410 },
+    'Madhapur': { lat: 17.4486, lng: 78.3908 },
+    'Gachibowli': { lat: 17.4400, lng: 78.3489 },
+    'Kokapet': { lat: 17.3980, lng: 78.3300 },
+    'Tellapur': { lat: 17.4520, lng: 78.2850 },
+    'Kukatpally': { lat: 17.4849, lng: 78.4138 },
+    'Miyapur': { lat: 17.4968, lng: 78.3614 },
+    'Jubilee Hills': { lat: 17.4319, lng: 78.4071 },
+    'Banjara Hills': { lat: 17.4156, lng: 78.4347 },
+    'Begumpet': { lat: 17.4447, lng: 78.4664 },
+    'Madhamgram': { lat: 22.698021, lng: 88.463723 },
+    'Madhyamgram': { lat: 22.698021, lng: 88.463723 },
+    'Durganagar': { lat: 22.695051, lng: 88.465127 },
+    'Mehdipatnam': { lat: 17.3950, lng: 78.4400 },
+    'Attapur': { lat: 17.3750, lng: 78.4300 },
+    'Uppal': { lat: 17.4050, lng: 78.5600 },
+    'LB Nagar': { lat: 17.3450, lng: 78.5500 },
+    'Secunderabad': { lat: 17.4399, lng: 78.4983 },
+    'Kompally': { lat: 17.5350, lng: 78.4850 }
+  };
+
+  const loc = p ? (p.locality || p.title || '') : '';
+  const match = Object.keys(localityCoords).find(k => loc.toLowerCase().includes(k.toLowerCase()));
+  if (match) {
+    return localityCoords[match];
+  }
+
+  return { lat: 17.4478, lng: 78.3789 };
+};
+
+function InteractiveLeafletMap({
+  properties,
+  selectedProperty,
+  setSelectedProperty,
+  showAllOnMap,
+  isLight
+}: any) {
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<any>(null);
+  const markersRef = useRef<{ [key: string]: any }>({});
+  const [leafletReady, setLeafletReady] = useState<boolean>(false);
+  const lastAnimatedIdRef = useRef<string | null>(null);
+  const lastShowAllRef = useRef<boolean>(showAllOnMap);
+
+  useEffect(() => {
+    if ((window as any).L) {
+      setLeafletReady(true);
+      return;
+    }
+
+    if (!document.getElementById('leaflet-css')) {
+      const cssLink = document.createElement('link');
+      cssLink.id = 'leaflet-css';
+      cssLink.rel = 'stylesheet';
+      cssLink.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(cssLink);
+    }
+
+    if (!document.getElementById('leaflet-js')) {
+      const script = document.createElement('script');
+      script.id = 'leaflet-js';
+      script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      script.onload = () => setLeafletReady(true);
+      document.head.appendChild(script);
+    } else {
+      const checkInterval = setInterval(() => {
+        if ((window as any).L) {
+          setLeafletReady(true);
+          clearInterval(checkInterval);
+        }
+      }, 100);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!leafletReady || !mapContainerRef.current) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    if (!mapInstanceRef.current) {
+      const map = L.map(mapContainerRef.current, {
+        zoomControl: true,
+        scrollWheelZoom: true
+      }).setView([17.4478, 78.3789], 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors | Swaramayi Real Estate CRM'
+      }).addTo(map);
+
+      mapInstanceRef.current = map;
+    }
+  }, [leafletReady]);
+
+  // Update Markers and Handle Camera Movement ONLY on User Action
+  useEffect(() => {
+    if (!leafletReady || !mapInstanceRef.current) return;
+    const L = (window as any).L;
+    if (!L) return;
+
+    const map = mapInstanceRef.current;
+
+    // Clear existing markers
+    Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
+    markersRef.current = {};
+
+    const bounds: any[] = [];
+
+    properties.forEach((p: any) => {
+      const { lat, lng } = getPropLatLng(p);
+      if (!lat || !lng) return;
+
+      bounds.push([lat, lng]);
+      const isSelected = selectedProperty && selectedProperty.id === p.id;
+
+      const customIcon = L.divIcon({
+        className: 'leaflet-custom-marker-wrapper',
+        html: `
+          <div style="display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%); cursor: pointer;">
+            <div style="background: ${isSelected ? '#0284c7' : 'rgba(15, 23, 42, 0.92)'}; color: #ffffff; border: ${isSelected ? '2px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.3)'}; padding: 3px 8px; border-radius: 6px; font-size: 11px; font-weight: 900; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.5); margin-bottom: 2px;">
+              <span style="color: #4ade80">${p.final_price || ''}</span> | ${p.locality || ''}
+            </div>
+            <div style="width: ${isSelected ? '32px' : '26px'}; height: ${isSelected ? '32px' : '26px'}; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 2px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.4);">
+              <div style="width: ${isSelected ? '10px' : '8px'}; height: ${isSelected ? '10px' : '8px'}; background: #ffffff; border-radius: 50%; transform: rotate(45deg);"></div>
+            </div>
+          </div>
+        `,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
+      });
+
+      const marker = L.marker([lat, lng], { icon: customIcon }).addTo(map);
+      marker.on('click', () => {
+        setSelectedProperty(p);
+      });
+      markersRef.current[p.id] = marker;
+    });
+
+    const currentSelectedId = selectedProperty ? selectedProperty.id : null;
+    const isNewSelection = currentSelectedId !== lastAnimatedIdRef.current;
+    const isToggleShowAll = showAllOnMap !== lastShowAllRef.current;
+
+    // ONLY camera flyTo if the user selected a DIFFERENT property or clicked a toggle button!
+    // NEVER flyTo/zoom out when the user is manually scrolling/zooming or doing normal interactions.
+    if (isNewSelection && selectedProperty) {
+      const { lat, lng } = getPropLatLng(selectedProperty);
+      if (lat && lng) {
+        map.flyTo([lat, lng], showAllOnMap ? 14 : 16, { duration: 0.8 });
+        lastAnimatedIdRef.current = currentSelectedId;
+      }
+    } else if (isToggleShowAll) {
+      if (showAllOnMap && bounds.length > 0) {
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+      } else if (selectedProperty) {
+        const { lat, lng } = getPropLatLng(selectedProperty);
+        if (lat && lng) {
+          map.flyTo([lat, lng], 16, { duration: 0.8 });
+        }
+      }
+      lastShowAllRef.current = showAllOnMap;
+    }
+
+  }, [leafletReady, properties, selectedProperty, showAllOnMap]);
+
+  return (
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <div ref={mapContainerRef} style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, zIndex: 1 }} />
+    </div>
+  );
+}
+
 export default function App() {
   // 12 Main Navigation Categories
   const [activeTab, setActiveTab] = useState<
@@ -10220,8 +10405,10 @@ export default function App() {
 
           {/* DEDICATED LOCATION MAP CATEGORY */}
           {activeTab === 'map_management' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              
+              {/* CATEGORY HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                 <div>
                   <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <Compass size={24} color="#38bdf8" /> Project Location Wise Interactive Geographical Radar Map
@@ -10229,211 +10416,99 @@ export default function App() {
                   <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>Dedicated map portal: Click any location pin to inspect property specifications, prices, and owner contacts.</p>
                 </div>
 
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                  {localitiesList.map(loc => (
-                    <button key={loc} onClick={() => setSelectedLocality(loc)} style={{ padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer', background: selectedLocality === loc ? '#0284c7' : '#1e293b', color: selectedLocality === loc ? '#ffffff' : '#94a3b8', fontSize: '0.78rem', fontWeight: '700' }}>
-                      {loc === 'ALL' ? 'All Hubs' : loc}
-                    </button>
-                  ))}
+                <div>
+                  <button 
+                    onClick={() => setSelectedLocality('ALL')} 
+                    style={{ 
+                      padding: '6px 16px', 
+                      borderRadius: '6px', 
+                      border: 'none', 
+                      cursor: 'pointer', 
+                      background: selectedLocality === 'ALL' ? '#0284c7' : (isLight ? '#e2e8f0' : '#1e293b'), 
+                      color: selectedLocality === 'ALL' ? '#ffffff' : (isLight ? '#334155' : '#94a3b8'), 
+                      fontSize: '0.8rem', 
+                      fontWeight: '800',
+                      boxShadow: selectedLocality === 'ALL' ? '0 2px 8px rgba(2, 132, 199, 0.35)' : 'none'
+                    }}
+                  >
+                    🌐 All Hubs
+                  </button>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '20px' }}>
-                <div style={{ background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', height: '560px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 6px 20px rgba(0,0,0,0.15)' }}>
-                  
-                  {/* TOP OVERLAY CONTROL HEADER WITH TRACKED PROPERTIES SELECTOR */}
-                  <div style={{ position: 'absolute', top: '12px', left: '12px', right: '12px', zIndex: 20, display: 'flex', flexDirection: 'column', gap: '8px', background: isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(15, 23, 42, 0.95)', backdropFilter: 'blur(8px)', padding: '10px 14px', borderRadius: '12px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', boxShadow: '0 6px 20px rgba(0,0,0,0.25)' }}>
-                    
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                        <Compass size={18} color="#0284c7" />
-                        <span style={{ fontSize: '0.85rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
-                          📍 Selected: {selectedProperty ? `${selectedProperty.title} (${selectedProperty.locality})` : 'Select Property'}
-                        </span>
-                        <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
-                          GPS: {selectedProperty?.latitude || '17.4478'}, {selectedProperty?.longitude || '78.3789'}
-                        </span>
-                      </div>
-                      
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        {/* VIEW MODE TOGGLE BUTTONS */}
-                        <div style={{ background: isLight ? '#f1f5f9' : '#1e293b', borderRadius: '6px', padding: '3px', display: 'flex', gap: '4px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <button 
-                            onClick={() => setShowAllOnMap(true)} 
-                            style={{ background: showAllOnMap ? '#0284c7' : 'transparent', color: showAllOnMap ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
-                          >
-                            🌐 View All Properties Map
-                          </button>
-                          <button 
-                            onClick={() => setShowAllOnMap(false)} 
-                            style={{ background: !showAllOnMap ? '#0284c7' : 'transparent', color: !showAllOnMap ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
-                          >
-                            📍 Focus Selected Pin
-                          </button>
-                        </div>
-
-                        <a 
-                          href={
-                            (selectedProperty && selectedProperty.latitude && selectedProperty.longitude)
-                              ? `https://www.google.com/maps?q=${String(selectedProperty.latitude).replace(/[^\d.-]/g, '')},${String(selectedProperty.longitude).replace(/[^\d.-]/g, '')}`
-                              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((selectedProperty ? selectedProperty.title + ' ' + selectedProperty.locality : selectedLocality) + ' Hyderabad')}`
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', textDecoration: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)' }}
-                        >
-                          Open Google Maps ↗
-                        </a>
-                      </div>
-                    </div>
-
-                    {/* INTERACTIVE PROPERTY RADAR PINS SELECTOR CHIPS */}
-                    <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '2px', WebkitOverflowScrolling: 'touch' }}>
-                      {filteredProperties.map(p => {
-                        const isSelected = !showAllOnMap && selectedProperty && selectedProperty.id === p.id;
-                        return (
-                          <button
-                            key={p.id}
-                            onClick={() => {
-                              setSelectedProperty(p);
-                              setShowAllOnMap(false);
-                            }}
-                            style={{
-                              background: isSelected ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'),
-                              color: isSelected ? '#ffffff' : (isLight ? '#0f172a' : '#cbd5e1'),
-                              border: isSelected ? '2px solid #38bdf8' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
-                              padding: '4px 10px',
-                              borderRadius: '6px',
-                              fontSize: '0.75rem',
-                              fontWeight: '800',
-                              cursor: 'pointer',
-                              whiteSpace: 'nowrap',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              boxShadow: isSelected ? '0 4px 12px rgba(2, 132, 199, 0.4)' : 'none',
-                              flexShrink: 0
-                            }}
-                          >
-                            <MapPin size={12} color={isSelected ? '#ffffff' : '#38bdf8'} />
-                            <span>{p.locality}</span>
-                            <span style={{ color: isSelected ? '#4ade80' : '#22c55e', fontWeight: '900' }}>({p.final_price})</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
+              {/* TOOLBAR CONTROLS (ABOVE MAP CONTAINER TO PREVENT OVERLAP) */}
+              <div style={{ background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: 1, minWidth: 0 }}>
+                    <Compass size={18} color="#0284c7" />
+                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '400px' }} title={selectedProperty ? `${selectedProperty.title} (${selectedProperty.locality})` : 'Select Property'}>
+                      📍 Selected: {selectedProperty ? `${selectedProperty.title} (${selectedProperty.locality})` : 'Select Property'}
+                    </span>
+                    <span style={{ fontSize: '0.72rem', fontFamily: 'monospace', color: '#38bdf8', background: 'rgba(56, 189, 248, 0.12)', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                      GPS: {selectedProperty?.latitude || '17.4478'}, {selectedProperty?.longitude || '78.3789'}
+                    </span>
                   </div>
+                  
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ background: isLight ? '#f1f5f9' : '#1e293b', borderRadius: '6px', padding: '3px', display: 'flex', gap: '4px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                      <button 
+                        onClick={() => setShowAllOnMap(true)} 
+                        style={{ background: showAllOnMap ? '#0284c7' : 'transparent', color: showAllOnMap ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+                      >
+                        🌐 View All Properties Map
+                      </button>
+                      <button 
+                        onClick={() => setShowAllOnMap(false)} 
+                        style={{ background: !showAllOnMap ? '#0284c7' : 'transparent', color: !showAllOnMap ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+                      >
+                        📍 Focus Selected Pin
+                      </button>
+                    </div>
 
-                  {/* MAP BODY WITH INDIA / HYDERABAD GOOGLE MAPS EMBED */}
-                  <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-                    <iframe
-                      title="Google Maps Interactive View"
-                      width="100%"
-                      height="100%"
-                      style={{ border: 0 }}
-                      loading="lazy"
-                      allowFullScreen
-                      src={
-                        showAllOnMap 
-                          ? `https://maps.google.com/maps?q=${encodeURIComponent((selectedLocality === 'ALL' ? 'Hyderabad, Telangana, India' : selectedLocality + ', Hyderabad, Telangana, India'))}&t=&z=12&ie=UTF8&iwloc=&output=embed`
-                          : `https://maps.google.com/maps?q=${
-                              (selectedProperty && selectedProperty.latitude && selectedProperty.longitude)
-                                ? `${String(selectedProperty.latitude).replace(/[^\d.-]/g, '')},${String(selectedProperty.longitude).replace(/[^\d.-]/g, '')}`
-                                : encodeURIComponent((selectedProperty ? selectedProperty.title + ', ' + selectedProperty.locality : (selectedLocality === 'ALL' ? 'Hyderabad' : selectedLocality)) + ', Telangana, India')
-                            }&t=&z=15&ie=UTF8&iwloc=&output=embed`
+                    <a 
+                      href={
+                        (selectedProperty && selectedProperty.latitude && selectedProperty.longitude)
+                          ? `https://www.google.com/maps?q=${String(selectedProperty.latitude).replace(/[^\d.-]/g, '')},${String(selectedProperty.longitude).replace(/[^\d.-]/g, '')}`
+                          : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((selectedProperty ? selectedProperty.title + ' ' + selectedProperty.locality : selectedLocality) + ' Hyderabad')}`
                       }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', textDecoration: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)' }}
+                    >
+                      Open Google Maps ↗
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* MAIN CONTENT GRID (MAP LEFT, DETAILS RIGHT) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '20px' }}>
+                
+                {/* MAP CANVAS CONTAINER */}
+                <div style={{ background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', height: '580px', position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '0 6px 20px rgba(0,0,0,0.15)' }}>
+                  <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+                    <InteractiveLeafletMap 
+                      properties={filteredProperties}
+                      selectedProperty={selectedProperty}
+                      setSelectedProperty={setSelectedProperty}
+                      showAllOnMap={showAllOnMap}
+                      isLight={isLight}
                     />
 
-                    {/* OVERLAY PURE RED RADAR PINS FOR ALL PROPERTIES ON GOOGLE MAP */}
-                    {showAllOnMap && (
-                      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 10, padding: '70px 20px 20px 20px' }}>
-                        {filteredProperties.map(p => {
-                          const isSelected = selectedProperty && selectedProperty.id === p.id;
-
-                          return (
-                            <div 
-                              key={p.id} 
-                              onClick={() => setSelectedProperty(p)}
-                              style={{ 
-                                position: 'absolute', 
-                                left: `${p.map_x || 45}%`, 
-                                top: `${p.map_y || 35}%`, 
-                                transform: 'translate(-50%, -100%)', 
-                                zIndex: isSelected ? 35 : 25, 
-                                cursor: 'pointer', 
-                                pointerEvents: 'auto',
-                                display: 'flex', 
-                                flexDirection: 'column', 
-                                alignItems: 'center',
-                                transition: 'all 0.2s ease'
-                              }}
-                            >
-                              {/* PRICE & LOCALITY BADGE */}
-                              <div style={{ 
-                                background: isSelected ? '#0284c7' : 'rgba(15, 23, 42, 0.92)', 
-                                color: '#ffffff', 
-                                border: isSelected ? '2px solid #38bdf8' : '1px solid rgba(255, 255, 255, 0.3)', 
-                                padding: '4px 8px', 
-                                borderRadius: '6px', 
-                                fontSize: '0.72rem', 
-                                fontWeight: '900', 
-                                boxShadow: '0 4px 12px rgba(0,0,0,0.5)', 
-                                whiteSpace: 'nowrap',
-                                backdropFilter: 'blur(4px)',
-                                marginBottom: '3px'
-                              }}>
-                                <span style={{ color: '#4ade80' }}>{p.final_price}</span> | {p.locality}
-                              </div>
-
-                              {/* PURE RED PIN ICON (EXACT MATCH FOR IMAGE 1 RED MARKER) */}
-                              <div style={{
-                                position: 'relative',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                filter: isSelected ? 'drop-shadow(0 0 12px rgba(2, 132, 199, 0.9))' : 'drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5))'
-                              }}>
-                                <div style={{
-                                  width: isSelected ? '32px' : '26px',
-                                  height: isSelected ? '32px' : '26px',
-                                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-                                  borderRadius: '50% 50% 50% 0',
-                                  transform: 'rotate(-45deg)',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justify: 'center',
-                                  border: '2px solid #ffffff',
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.4)'
-                                }}>
-                                  <div style={{
-                                    width: isSelected ? '10px' : '8px',
-                                    height: isSelected ? '10px' : '8px',
-                                    background: '#ffffff',
-                                    borderRadius: '50%',
-                                    transform: 'rotate(45deg)'
-                                  }} />
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* BOTTOM OVERLAY STATUS BAR */}
-                  <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', zIndex: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(8px)', padding: '8px 14px', borderRadius: '8px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', fontSize: '0.75rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>
-                    <span>📍 Google Maps GPS Coordinates Engine • {selectedProperty ? `${selectedProperty.title} (${selectedProperty.latitude || '17.4474'}, ${selectedProperty.longitude || '78.3762'})` : (selectedLocality === 'ALL' ? 'Hyderabad Core' : selectedLocality)}</span>
-                    <span style={{ color: '#22c55e', fontWeight: '800' }}>● Live Map Sync Active ({filteredProperties.length} Properties Tracked)</span>
+                    {/* BOTTOM STATUS OVERLAY */}
+                    <div style={{ position: 'absolute', bottom: '12px', left: '12px', right: '12px', zIndex: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isLight ? 'rgba(255, 255, 255, 0.92)' : 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(8px)', padding: '8px 14px', borderRadius: '8px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', fontSize: '0.75rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '65%' }}>📍 GPS Engine • {selectedProperty ? `${selectedProperty.title} (${selectedProperty.latitude || '17.4474'}, ${selectedProperty.longitude || '78.3762'})` : (selectedLocality === 'ALL' ? 'Hyderabad Core' : selectedLocality)}</span>
+                      <span style={{ color: '#22c55e', fontWeight: '800', whiteSpace: 'nowrap' }}>● Live Interactive Map ({filteredProperties.length} Tracked)</span>
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* RIGHT PROPERTY SPECIFICATION PANEL */}
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflow: 'hidden' }}>
                   <div style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
                     <span style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800', background: 'rgba(56, 189, 248, 0.1)', padding: '2px 8px', borderRadius: '4px' }}>{selectedProperty.property_code}</span>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', marginTop: '6px' }}>{selectedProperty.title}</h3>
-                    <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>📍 {selectedProperty.locality}, Hyderabad</p>
+                    <h3 style={{ fontSize: '1.15rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', marginTop: '6px', wordBreak: 'break-word', overflowWrap: 'break-word', lineHeight: '1.3' }}>{selectedProperty.title}</h3>
+                    <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>📍 {selectedProperty.locality}, Hyderabad</p>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '8px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
@@ -10448,9 +10523,9 @@ export default function App() {
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px', fontSize: '0.8rem' }}>
-                    <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '10px', borderRadius: '8px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                    <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '10px', borderRadius: '8px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', overflow: 'hidden' }}>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', display: 'block', fontSize: '0.65rem' }}>Developer</span>
-                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{selectedProperty.developer}</strong>
+                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff', wordBreak: 'break-word' }}>{selectedProperty.developer}</strong>
                     </div>
                     <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '10px', borderRadius: '8px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', display: 'block', fontSize: '0.65rem' }}>Config</span>
@@ -10488,6 +10563,7 @@ export default function App() {
                     <button onClick={() => handleDeleteProperty(selectedProperty.id, selectedProperty.property_code)} style={{ flex: 1, background: '#ef4444', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}>Delete</button>
                   </div>
                 </div>
+
               </div>
             </div>
           )}
