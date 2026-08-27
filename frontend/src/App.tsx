@@ -2685,11 +2685,16 @@ export default function App() {
     configuration: '3BHK',
     carpet_area: '1,850 Sq.Ft.',
     super_builtup_area: '2,350 Sq.Ft.',
+    deduction_pct: '35%',
     facing: 'East Facing',
     floor_no: '14th Floor out of 32',
+    unit_floor: '1st Floor',
+    total_floors: '4 Floors',
     tower_block: 'Tower B - Sapphire',
     final_price: '₹1.50 Crore',
     price_sqft: '₹8,100/Sq.Ft.',
+    parking_availability: 'Covered Car Parking (1 Slot Included)',
+    parking_price: 'Included in Flat Price',
     commission_pct: '2.0% (₹3,00,000 Brokerage)',
     maintenance_monthly: '₹4,500/Month',
     possession_status: 'Ready to Move',
@@ -7625,15 +7630,73 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '14px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Super Built-up Area (Sq.Ft.)</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.super_builtup_area} 
+                              onChange={(e) => {
+                                const superVal = e.target.value;
+                                const superNum = parseFloat(superVal.replace(/[^0-9.]/g, ''));
+                                const pctNum = parseFloat((newPropertyForm.deduction_pct || '35%').replace(/[^0-9.]/g, '')) || 0;
+                                let computedCarpet = newPropertyForm.carpet_area;
+                                if (!isNaN(superNum) && superNum > 0) {
+                                  const carpetNum = superNum * (1 - pctNum / 100);
+                                  computedCarpet = `${Math.round(carpetNum * 100) / 100} Sq.Ft.`;
+                                }
+                                setNewPropertyForm({
+                                  ...newPropertyForm,
+                                  super_builtup_area: superVal,
+                                  carpet_area: computedCarpet
+                                });
+                              }} 
+                              placeholder="e.g. 827" 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }} 
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Deduction / Loading (%) *</label>
+                            <select 
+                              value={newPropertyForm.deduction_pct || '35%'} 
+                              onChange={(e) => {
+                                const pctVal = e.target.value;
+                                const pctNum = parseFloat(pctVal.replace(/[^0-9.]/g, '')) || 0;
+                                const superNum = parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, ''));
+                                let computedCarpet = newPropertyForm.carpet_area;
+                                if (!isNaN(superNum) && superNum > 0) {
+                                  const carpetNum = superNum * (1 - pctNum / 100);
+                                  computedCarpet = `${Math.round(carpetNum * 100) / 100} Sq.Ft.`;
+                                }
+                                setNewPropertyForm({
+                                  ...newPropertyForm,
+                                  deduction_pct: pctVal,
+                                  carpet_area: computedCarpet
+                                });
+                              }} 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #eab308', color: '#eab308', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
+                            >
+                              <option value="35%">35% Deduction (Standard Builder Loading)</option>
+                              <option value="30%">30% Deduction</option>
+                              <option value="25%">25% Deduction</option>
+                              <option value="20%">20% Deduction</option>
+                              <option value="40%">40% Deduction (High Common Area)</option>
+                              <option value="0%">0% Deduction (Direct Carpet = Super)</option>
+                            </select>
+                          </div>
+
                           <div>
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Carpet Area (Sq.Ft.) *</label>
-                            <input type="text" value={newPropertyForm.carpet_area} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, carpet_area: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} required />
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.carpet_area} 
+                              onChange={(e) => setNewPropertyForm({ ...newPropertyForm, carpet_area: e.target.value })} 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #38bdf8', color: '#38bdf8', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                              required 
+                            />
                           </div>
-                          <div>
-                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Super Built-up Area</label>
-                            <input type="text" value={newPropertyForm.super_builtup_area} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, super_builtup_area: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
-                          </div>
+
                           <div>
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Vastu Facing</label>
                             <select value={newPropertyForm.facing} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, facing: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}>
@@ -7646,11 +7709,67 @@ export default function App() {
                           </div>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
+                        {/* DEDUCTION AUTO-CALCULATION SUMMARY CARD */}
+                        {(() => {
+                          const superNum = parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, ''));
+                          const pctNum = parseFloat((newPropertyForm.deduction_pct || '35%').replace(/[^0-9.]/g, '')) || 0;
+                          if (!isNaN(superNum) && superNum > 0) {
+                            const deductionVal = superNum * (pctNum / 100);
+                            const carpetVal = superNum - deductionVal;
+                            return (
+                              <div style={{ background: 'rgba(234, 179, 8, 0.12)', border: '1px solid #eab308', borderRadius: '8px', padding: '10px 14px', fontSize: '0.8rem', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                                <div>
+                                  <span style={{ color: '#eab308', fontWeight: '900' }}>📐 LIVE DEDUCTION CALCULATION:</span>{' '}
+                                  <strong>{superNum} Sq.Ft.</strong> (Super Built-up) − <strong>{pctNum}%</strong> Deduction ({Math.round(deductionVal * 100) / 100} Sq.Ft.) = <strong style={{ color: '#38bdf8', fontSize: '0.9rem' }}>{Math.round(carpetVal * 100) / 100} Sq.Ft. (Carpet Area)</strong>
+                                </div>
+                                <span style={{ background: '#eab308', color: '#0f172a', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '900' }}>
+                                  AUTO-CALCULATED
+                                </span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Floor Number & Total Floors</label>
-                            <input type="text" value={newPropertyForm.floor_no} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, floor_no: e.target.value })} placeholder="14th Floor out of 32" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Floor Number (Unit Floor) *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.unit_floor || '1st Floor'} 
+                              onChange={(e) => {
+                                const uFloor = e.target.value;
+                                const tFloors = newPropertyForm.total_floors || '4 Floors';
+                                setNewPropertyForm({
+                                  ...newPropertyForm,
+                                  unit_floor: uFloor,
+                                  floor_no: `${uFloor} out of ${tFloors}`
+                                });
+                              }} 
+                              placeholder="e.g. 1st Floor / Ground Floor" 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }} 
+                            />
                           </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Total Floors in Building *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.total_floors || '4 Floors'} 
+                              onChange={(e) => {
+                                const tFloors = e.target.value;
+                                const uFloor = newPropertyForm.unit_floor || '1st Floor';
+                                setNewPropertyForm({
+                                  ...newPropertyForm,
+                                  total_floors: tFloors,
+                                  floor_no: `${uFloor} out of ${tFloors}`
+                                });
+                              }} 
+                              placeholder="e.g. 4 Floors / 32 Floors" 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }} 
+                            />
+                          </div>
+
                           <div>
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Tower / Block Name</label>
                             <input type="text" value={newPropertyForm.tower_block} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, tower_block: e.target.value })} placeholder="Tower B - Sapphire" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
@@ -7666,18 +7785,110 @@ export default function App() {
 
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Base Final Price (INR) *</label>
-                            <input type="text" value={newPropertyForm.final_price} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, final_price: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} required />
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Price per Sq.Ft. (INR) *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.price_sqft} 
+                              onChange={(e) => {
+                                const sqftVal = e.target.value;
+                                const priceNum = parseFloat(sqftVal.replace(/[^0-9.]/g, ''));
+                                const superNum = parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, ''));
+                                let computedFlatPrice = newPropertyForm.final_price;
+                                if (!isNaN(priceNum) && !isNaN(superNum) && superNum > 0) {
+                                  const flatVal = Math.round(priceNum * superNum);
+                                  computedFlatPrice = `₹${flatVal.toLocaleString('en-IN')}`;
+                                }
+                                setNewPropertyForm({
+                                  ...newPropertyForm,
+                                  price_sqft: sqftVal,
+                                  final_price: computedFlatPrice
+                                });
+                              }} 
+                              placeholder="e.g. 3250"
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #38bdf8', color: '#38bdf8', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                            />
                           </div>
+
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Price per Sq.Ft.</label>
-                            <input type="text" value={newPropertyForm.price_sqft} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, price_sqft: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Flat Price (INR) [Super Built-up × Rate] *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.final_price} 
+                              onChange={(e) => {
+                                const flatVal = e.target.value;
+                                const flatNum = parseFloat(flatVal.replace(/[^0-9.]/g, ''));
+                                const superNum = parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, ''));
+                                let computedPriceSqft = newPropertyForm.price_sqft;
+                                if (!isNaN(flatNum) && !isNaN(superNum) && superNum > 0) {
+                                  const sqftNum = Math.round(flatNum / superNum);
+                                  computedPriceSqft = `₹${sqftNum.toLocaleString('en-IN')}/Sq.Ft.`;
+                                }
+                                setNewPropertyForm({
+                                  ...newPropertyForm,
+                                  final_price: flatVal,
+                                  price_sqft: computedPriceSqft
+                                });
+                              }} 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                              required 
+                            />
                           </div>
+
                           <div>
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Agreed Brokerage Fee %</label>
                             <input type="text" value={newPropertyForm.commission_pct} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, commission_pct: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#d97706' : '#fbbf24', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
                           </div>
                         </div>
+
+                        {/* PARKING PRICE & AVAILABILITY ROW */}
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Car Parking Availability *</label>
+                            <select 
+                              value={newPropertyForm.parking_availability || 'Covered Car Parking (1 Slot Included)'} 
+                              onChange={(e) => setNewPropertyForm({ ...newPropertyForm, parking_availability: e.target.value })} 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
+                            >
+                              <option value="Covered Car Parking (1 Slot Included)">🚗 Covered Car Parking (1 Slot Included)</option>
+                              <option value="Covered Car Parking (2 Slots Included)">🚗🚗 Covered Car Parking (2 Slots Included)</option>
+                              <option value="Uncovered / Open Parking">🅿️ Uncovered / Open Parking Slot</option>
+                              <option value="Additional Parking Available">➕ Additional Parking Available for Purchase</option>
+                              <option value="No Parking Allotted">❌ No Parking Allotted</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Parking Price (INR) *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.parking_price || 'Included in Flat Price'} 
+                              onChange={(e) => setNewPropertyForm({ ...newPropertyForm, parking_price: e.target.value })} 
+                              placeholder="e.g. Included in Flat Price / ₹3,00,000"
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#eab308', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                            />
+                          </div>
+                        </div>
+
+                        {/* PRICING LIVE CALCULATION SUMMARY CARD */}
+                        {(() => {
+                          const priceNum = parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, ''));
+                          const superNum = parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, ''));
+                          if (!isNaN(priceNum) && !isNaN(superNum) && superNum > 0) {
+                            const flatVal = Math.round(priceNum * superNum);
+                            return (
+                              <div style={{ background: 'rgba(34, 197, 94, 0.12)', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px 14px', fontSize: '0.8rem', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                                <div>
+                                  <span style={{ color: '#22c55e', fontWeight: '900' }}>💰 LIVE FLAT PRICING CALCULATION:</span>{' '}
+                                  <strong>{superNum} Sq.Ft.</strong> (Super Built-up) × <strong>₹{priceNum.toLocaleString('en-IN')}/Sq.Ft.</strong> = <strong style={{ color: '#22c55e', fontSize: '0.95rem' }}>₹{flatVal.toLocaleString('en-IN')} (Flat Price)</strong>
+                                </div>
+                                <span style={{ background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '900' }}>
+                                  AUTO-MULTIPLIED
+                                </span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
 
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
                           <div>
