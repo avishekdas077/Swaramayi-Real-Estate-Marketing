@@ -1868,6 +1868,27 @@ export default function App() {
 
   // Modals Visibility State
   const [showUserModal, setShowUserModal] = useState(false);
+  const [showCustomRoleModal, setShowCustomRoleModal] = useState(false);
+  const [editingRoleKey, setEditingRoleKey] = useState<string | null>(null);
+  const [newRoleForm, setNewRoleForm] = useState({
+    role_name: '',
+    role_key: '',
+    level: 'Level 3 (Branch Level)',
+    scope: 'Company-Wide Operations',
+    desc: '',
+    color: '#0284c7',
+    iconName: 'ShieldCheck',
+    data_scope: 'ALL_DATA',
+    view: true,
+    create: true,
+    edit: true,
+    delete: false,
+    export: true,
+    approve: false,
+    price_change: false,
+    owner_change: false,
+    brokerage: false
+  });
   const [showHandoverModal, setShowHandoverModal] = useState(false);
   const [showPropertyModal, setShowPropertyModal] = useState(false);
   const [showAddPropertyModal, setShowAddPropertyModal] = useState(false);
@@ -2786,6 +2807,35 @@ export default function App() {
       console.error('Error saving rolePermissions to localStorage:', e);
     }
   }, [rolePermissions]);
+
+  // Active Enterprise Roles List (with LocalStorage Persistence)
+  const [customRoles, setCustomRoles] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_custom_roles_v4');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading customRoles from localStorage:', e);
+    }
+    return [
+      { key: 'SUPER_ADMIN', name: '1. OWNER / SUPER ADMIN', level: 'Level 5 (Highest)', scope: 'Universal All-Data Access', desc: 'Full administrative control, universal read/write/delete rights, emergency lockdown switch, and system configuration governance.', color: '#0284c7', iconName: 'ShieldCheck' },
+      { key: 'ADMIN', name: '2. ADMIN', level: 'Level 4 (High)', scope: 'Company-Wide Operations', desc: 'Executive management access to view/create/edit all properties, customer leads, and employee user accounts across branches.', color: '#38bdf8', iconName: 'Shield' },
+      { key: 'BRANCH_MANAGER', name: '3. BRANCH MANAGER', level: 'Level 3 (Branch Level)', scope: 'Assigned Branch Data', desc: 'Manages branch inventory, team leaders, site visits, cost sheets, and localized sales performance reporting.', color: '#10b981', iconName: 'Building2' },
+      { key: 'TELECALLER', name: '4. TELECALLER', level: 'Level 2 (Executive Desk)', scope: 'Assigned Calling Queue', desc: 'Inbound and outbound customer call logging, requirement profiling, follow-up scheduling, and lead status updates.', color: '#f59e0b', iconName: 'PhoneCall' },
+      { key: 'PROPERTY_MANAGEMENT', name: '5. PROPERTY MANAGEMENT', level: 'Level 3 (Inventory Unit)', scope: 'Tower Unit Board & Stock', desc: 'Live tower unit board management, pricing updates, inventory ingestion, floor plan attachments, and amenity tagging.', color: '#ec4899', iconName: 'Building' },
+      { key: 'SALES_MANAGEMENT', name: '6. SALES MANAGEMENT', level: 'Level 3 (Sales Unit)', scope: 'Sales Team & Pipeline', desc: 'Oversees 13-stage sales funnel, deal closures, site visit assignments, customer negotiation overrides, and booking sheets.', color: '#8b5cf6', iconName: 'Zap' }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_custom_roles_v4', JSON.stringify(customRoles));
+    } catch (e) {
+      console.error('Error saving customRoles to localStorage:', e);
+    }
+  }, [customRoles]);
 
   // 3. Approval Queue & Security Logs
   const [approvalRequests, setApprovalRequests] = useState([
@@ -6766,34 +6816,62 @@ export default function App() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <div>
                       <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>🔑 6 Active Enterprise Roles & Security Governance</span>
+                        <span>🔑 {customRoles.length} Active Enterprise Roles & Security Governance</span>
                       </h3>
                       <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', margin: '4px 0 0 0' }}>
                         Overview of active enterprise role hierarchy, security levels, and assigned user counts across Swaramayi CRM.
                       </p>
                     </div>
-                    <button onClick={() => setShowUserModal(true)} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
+                    <button onClick={() => {
+                      setEditingRoleKey(null);
+                      setNewRoleForm({
+                        role_name: '',
+                        role_key: '',
+                        level: 'Level 3 (Branch Level)',
+                        scope: 'Company-Wide Operations',
+                        desc: '',
+                        color: '#0284c7',
+                        iconName: 'ShieldCheck',
+                        data_scope: 'ALL_DATA',
+                        view: true,
+                        create: true,
+                        edit: true,
+                        delete: false,
+                        export: true,
+                        approve: false,
+                        price_change: false,
+                        owner_change: false,
+                        brokerage: false
+                      });
+                      setShowCustomRoleModal(true);
+                    }} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
                       <UserPlus size={15} /> + Create Custom Role
                     </button>
                   </div>
 
                   <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(2, 1fr)', gap: '14px' }}>
-                    {[
-                      { key: 'SUPER_ADMIN', name: '1. OWNER / SUPER ADMIN', level: 'Level 5 (Highest)', scope: 'Universal All-Data Access', desc: 'Full administrative control, universal read/write/delete rights, emergency lockdown switch, and system configuration governance.', color: '#0284c7', icon: ShieldCheck },
-                      { key: 'ADMIN', name: '2. ADMIN', level: 'Level 4 (High)', scope: 'Company-Wide Operations', desc: 'Executive management access to view/create/edit all properties, customer leads, and employee user accounts across branches.', color: '#38bdf8', icon: Shield },
-                      { key: 'BRANCH_MANAGER', name: '3. BRANCH MANAGER', level: 'Level 3 (Branch Level)', scope: 'Assigned Branch Data', desc: 'Manages branch inventory, team leaders, site visits, cost sheets, and localized sales performance reporting.', color: '#10b981', icon: Building2 },
-                      { key: 'TELECALLER', name: '4. TELECALLER', level: 'Level 2 (Executive Desk)', scope: 'Assigned Calling Queue', desc: 'Inbound and outbound customer call logging, requirement profiling, follow-up scheduling, and lead status updates.', color: '#f59e0b', icon: PhoneCall },
-                      { key: 'PROPERTY_MANAGEMENT', name: '5. PROPERTY MANAGEMENT', level: 'Level 3 (Inventory Unit)', scope: 'Tower Unit Board & Stock', desc: 'Live tower unit board management, pricing updates, inventory ingestion, floor plan attachments, and amenity tagging.', color: '#ec4899', icon: Building },
-                      { key: 'SALES_MANAGEMENT', name: '6. SALES MANAGEMENT', level: 'Level 3 (Sales Unit)', scope: 'Sales Team & Pipeline', desc: 'Oversees 13-stage sales funnel, deal closures, site visit assignments, customer negotiation overrides, and booking sheets.', color: '#8b5cf6', icon: Zap }
-                    ].map((role, idx) => {
+                    {customRoles.map((role, idx) => {
                       const assignedUsersCount = users.filter(u => u.role === role.key).length;
+                      let IconComp = ShieldCheck;
+                      if (role.iconName === 'Shield') IconComp = Shield;
+                      else if (role.iconName === 'Building2') IconComp = Building2;
+                      else if (role.iconName === 'PhoneCall') IconComp = PhoneCall;
+                      else if (role.iconName === 'Building') IconComp = Building;
+                      else if (role.iconName === 'Zap') IconComp = Zap;
+                      else if (role.key === 'SUPER_ADMIN') IconComp = ShieldCheck;
+                      else if (role.key === 'ADMIN') IconComp = Shield;
+                      else if (role.key === 'BRANCH_MANAGER') IconComp = Building2;
+                      else if (role.key === 'TELECALLER') IconComp = PhoneCall;
+                      else if (role.key === 'PROPERTY_MANAGEMENT') IconComp = Building;
+                      else if (role.key === 'SALES_MANAGEMENT') IconComp = Zap;
+
                       return (
                         <div key={idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
                           <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ background: `${role.color}20`, padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <role.icon size={18} color={role.color} />
+                                <div style={{ background: `${role.color || '#0284c7'}20`, padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <IconComp size={18} color={role.color || '#0284c7'} />
                                 </div>
                                 <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
                                   {role.name}
@@ -6809,13 +6887,68 @@ export default function App() {
                             </p>
                           </div>
 
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: isLight ? '1px solid #e2e8f0' : '1px solid #1e293b', fontSize: '0.75rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: isLight ? '1px solid #e2e8f0' : '1px solid #1e293b', fontSize: '0.75rem', flexWrap: 'wrap', gap: '8px' }}>
                             <span style={{ color: isLight ? '#475569' : '#94a3b8', fontWeight: '700' }}>
                               Scope: <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{role.scope}</strong>
                             </span>
-                            <span style={{ color: '#0284c7', fontWeight: '800', background: 'rgba(2, 132, 199, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
-                              👥 {assignedUsersCount} Active {assignedUsersCount === 1 ? 'Employee' : 'Employees'}
-                            </span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ color: '#0284c7', fontWeight: '800', background: 'rgba(2, 132, 199, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
+                                👥 {assignedUsersCount} {assignedUsersCount === 1 ? 'User' : 'Users'}
+                              </span>
+                              <button 
+                                onClick={() => {
+                                  const existingPerm = rolePermissions.find(p => p.role_key === role.key) || {};
+                                  const rawName = role.name.replace(/^\d+\.\s*/, '');
+                                  setEditingRoleKey(role.key);
+                                  setNewRoleForm({
+                                    role_name: rawName,
+                                    role_key: role.key,
+                                    level: role.level || 'Level 3 (Branch Level)',
+                                    scope: role.scope || 'Company-Wide Operations',
+                                    desc: role.desc || '',
+                                    color: role.color || '#0284c7',
+                                    iconName: role.iconName || 'ShieldCheck',
+                                    data_scope: existingPerm.data_scope || 'ALL_DATA',
+                                    view: existingPerm.view ?? true,
+                                    create: existingPerm.create ?? true,
+                                    edit: existingPerm.edit ?? true,
+                                    delete: existingPerm.delete ?? false,
+                                    export: existingPerm.export ?? true,
+                                    approve: existingPerm.approve ?? false,
+                                    price_change: existingPerm.price_change ?? false,
+                                    owner_change: existingPerm.owner_change ?? false,
+                                    brokerage: existingPerm.brokerage ?? false
+                                  });
+                                  setShowCustomRoleModal(true);
+                                }}
+                                style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                title="Edit Role Details & Security Scope"
+                              >
+                                <Edit3 size={12} /> Edit
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  if (role.key === 'SUPER_ADMIN') {
+                                    alert('⚠️ System Lockdown Protection: The root "OWNER / SUPER ADMIN" role cannot be deleted.');
+                                    return;
+                                  }
+                                  const assigned = users.filter(u => u.role === role.key);
+                                  if (assigned.length > 0) {
+                                    alert(`⚠️ Cannot delete role "${role.name}" because ${assigned.length} employee(s) are currently assigned to this role. Please reassign them first.`);
+                                    return;
+                                  }
+                                  if (window.confirm(`Are you sure you want to delete the Enterprise Role "${role.name}"?`)) {
+                                    setCustomRoles(prev => prev.filter(r => r.key !== role.key));
+                                    setRolePermissions(prev => prev.filter(p => p.role_key !== role.key));
+                                    alert(`🗑️ Role "${role.name}" has been successfully deleted.`);
+                                  }
+                                }}
+                                style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                title="Delete Enterprise Role"
+                              >
+                                <Trash2 size={12} /> Delete
+                              </button>
+                            </div>
                           </div>
                         </div>
                       );
@@ -13043,6 +13176,270 @@ export default function App() {
         </div>
       )}
 
+      {/* CREATE CUSTOM ROLE MODAL */}
+      {showCustomRoleModal && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', width: '94vw', maxWidth: '750px', maxHeight: '90vh', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '10px', margin: 0 }}>
+                  <span>{editingRoleKey ? '✏️ Edit Custom Enterprise Role & Security Scope' : '🔑 Create Custom Enterprise Role & Security Scope'}</span>
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', margin: '4px 0 0 0' }}>
+                  Define custom access boundaries, security hierarchy level, and default operational permissions.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowCustomRoleModal(false)}
+                style={{ background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer', padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* MODAL FORM */}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (!newRoleForm.role_name.trim()) {
+                alert('Please enter a Role Name.');
+                return;
+              }
+              const slug = (newRoleForm.role_key.trim() || newRoleForm.role_name.trim())
+                .toUpperCase()
+                .replace(/[^A-Z0-9_]/g, '_');
+              
+              const existingIdx = editingRoleKey ? customRoles.findIndex(r => r.key === editingRoleKey) : -1;
+              const roleNum = existingIdx >= 0 ? existingIdx + 1 : customRoles.length + 1;
+              const formattedName = `${roleNum}. ${newRoleForm.role_name.trim().toUpperCase()}`;
+
+              const roleObj = {
+                key: slug,
+                name: formattedName,
+                level: newRoleForm.level,
+                scope: newRoleForm.scope,
+                desc: newRoleForm.desc.trim() || `Custom governance role scope for ${newRoleForm.role_name}.`,
+                color: newRoleForm.color || '#0284c7',
+                iconName: newRoleForm.iconName || 'ShieldCheck'
+              };
+
+              const permissionObj = {
+                role_key: slug,
+                role_name: formattedName,
+                data_scope: newRoleForm.data_scope,
+                view: newRoleForm.view,
+                create: newRoleForm.create,
+                edit: newRoleForm.edit,
+                delete: newRoleForm.delete,
+                export: newRoleForm.export,
+                approve: newRoleForm.approve,
+                price_change: newRoleForm.price_change,
+                owner_change: newRoleForm.owner_change,
+                brokerage: newRoleForm.brokerage
+              };
+
+              if (editingRoleKey) {
+                setCustomRoles(prev => prev.map(r => r.key === editingRoleKey ? roleObj : r));
+                setRolePermissions(prev => prev.map(p => p.role_key === editingRoleKey ? permissionObj : p));
+                alert(`✅ Enterprise Role "${formattedName}" updated successfully!`);
+              } else {
+                setCustomRoles(prev => [...prev, roleObj]);
+                setRolePermissions(prev => [...prev, permissionObj]);
+                alert(`🎉 Custom Role "${formattedName}" created and added to Active Enterprise Governance Roles!`);
+              }
+
+              setShowCustomRoleModal(false);
+              setEditingRoleKey(null);
+              setNewRoleForm({
+                role_name: '',
+                role_key: '',
+                level: 'Level 3 (Branch Level)',
+                scope: 'Company-Wide Operations',
+                desc: '',
+                color: '#0284c7',
+                iconName: 'ShieldCheck',
+                data_scope: 'ALL_DATA',
+                view: true,
+                create: true,
+                edit: true,
+                delete: false,
+                export: true,
+                approve: false,
+                price_change: false,
+                owner_change: false,
+                brokerage: false
+              });
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              {/* SECTION 1: ROLE IDENTITY & SECURITY TIER */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
+                  1. Role Identity & Hierarchy Level
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Role Display Name *</label>
+                    <input 
+                      type="text" 
+                      value={newRoleForm.role_name} 
+                      onChange={(e) => {
+                        const nameVal = e.target.value;
+                        const slugVal = nameVal.toUpperCase().replace(/[^A-Z0-9_]/g, '_');
+                        setNewRoleForm({ ...newRoleForm, role_name: nameVal, role_key: slugVal });
+                      }} 
+                      placeholder="e.g. Senior Operations Manager, Legal Advisor" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                      required 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Security Identifier Code (Slug) *</label>
+                    <input 
+                      type="text" 
+                      value={newRoleForm.role_key} 
+                      onChange={(e) => setNewRoleForm({ ...newRoleForm, role_key: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_') })} 
+                      placeholder="e.g. SENIOR_OPS_MGR" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Security Level Tier *</label>
+                    <select 
+                      value={newRoleForm.level} 
+                      onChange={(e) => setNewRoleForm({ ...newRoleForm, level: e.target.value })}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
+                    >
+                      <option value="Level 5 (Highest)">Level 5 (Highest Tier)</option>
+                      <option value="Level 4 (High)">Level 4 (Executive High)</option>
+                      <option value="Level 3 (Branch Level)">Level 3 (Branch / Department Level)</option>
+                      <option value="Level 2 (Executive Desk)">Level 2 (Executive Desk)</option>
+                      <option value="Level 1 (Basic Desk)">Level 1 (Basic Support Desk)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Scope Access Boundary *</label>
+                    <input 
+                      type="text" 
+                      value={newRoleForm.scope} 
+                      onChange={(e) => setNewRoleForm({ ...newRoleForm, scope: e.target.value })} 
+                      placeholder="e.g. Company-Wide Operations, Legal Audit Scope" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                      required 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: DESCRIPTION & STYLING */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
+                  2. Role Description & Accent Color
+                </h4>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Role Responsibilities & Overview</label>
+                  <textarea 
+                    value={newRoleForm.desc} 
+                    onChange={(e) => setNewRoleForm({ ...newRoleForm, desc: e.target.value })} 
+                    placeholder="Briefly describe what this custom role manages and its access boundaries across branches..." 
+                    rows={2} 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700', resize: 'vertical' }} 
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Accent Color Badge</label>
+                    <select 
+                      value={newRoleForm.color} 
+                      onChange={(e) => setNewRoleForm({ ...newRoleForm, color: e.target.value })}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: newRoleForm.color, padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900' }}
+                    >
+                      <option value="#0284c7">🟦 Primary Blue (#0284c7)</option>
+                      <option value="#10b981">🟩 Emerald Green (#10b981)</option>
+                      <option value="#f59e0b">🟧 Amber Orange (#f59e0b)</option>
+                      <option value="#ec4899">🟪 Pink Violet (#ec4899)</option>
+                      <option value="#8b5cf6">🟪 Deep Purple (#8b5cf6)</option>
+                      <option value="#14b8a6">🟩 Teal Cyan (#14b8a6)</option>
+                      <option value="#ef4444">🟥 Crimson Red (#ef4444)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Role Badge Icon</label>
+                    <select 
+                      value={newRoleForm.iconName} 
+                      onChange={(e) => setNewRoleForm({ ...newRoleForm, iconName: e.target.value })}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
+                    >
+                      <option value="ShieldCheck">🛡️ Shield Check</option>
+                      <option value="Shield">🛡️ Shield Standard</option>
+                      <option value="Building2">🏢 Branch Building</option>
+                      <option value="PhoneCall">📞 Calling Desk</option>
+                      <option value="Building">🏘️ Inventory Unit</option>
+                      <option value="Zap">⚡ Sales Zap</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: PERMISSIONS CHECKLIST */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px', margin: 0 }}>
+                  3. Operational Permissions Checklist
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                  {[
+                    { key: 'view', label: 'View Records' },
+                    { key: 'create', label: 'Create Records' },
+                    { key: 'edit', label: 'Edit Records' },
+                    { key: 'delete', label: 'Delete Records' },
+                    { key: 'export', label: 'Export Reports' },
+                    { key: 'approve', label: 'Approve Transfers' },
+                    { key: 'price_change', label: 'Price Overrides' },
+                    { key: 'owner_change', label: 'Reassign Owner' },
+                    { key: 'brokerage', label: 'Brokerage Access' }
+                  ].map((perm) => (
+                    <label key={perm.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', fontWeight: '700', color: isLight ? '#334155' : '#cbd5e1', cursor: 'pointer' }}>
+                      <input 
+                        type="checkbox" 
+                        checked={(newRoleForm as any)[perm.key]} 
+                        onChange={(e) => setNewRoleForm({ ...newRoleForm, [perm.key]: e.target.checked })} 
+                        style={{ accentColor: '#0284c7', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                      {perm.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* MODAL FOOTER */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowCustomRoleModal(false)} 
+                  style={{ background: isLight ? '#f1f5f9' : '#334155', color: isLight ? '#475569' : '#cbd5e1', border: 'none', padding: '9px 18px', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '9px 22px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)' }}
+                >
+                  Save & Provision Custom Role
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* CREATE USER MODAL */}
       {showUserModal && (
         <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
@@ -13131,18 +13528,15 @@ export default function App() {
                 </h4>
 
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>System Access Role (6 Active Enterprise Roles) *</label>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>System Access Role ({customRoles.length} Active Enterprise Roles) *</label>
                   <select 
                     value={newUserForm.role} 
                     onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
                     style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: '#0284c7', padding: '10px 12px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '800', outline: 'none' }}
                   >
-                    <option value="SUPER_ADMIN">1. Owner / Super Admin (SUPER_ADMIN)</option>
-                    <option value="ADMIN">2. Admin (ADMIN)</option>
-                    <option value="BRANCH_MANAGER">3. Branch Manager (BRANCH_MANAGER)</option>
-                    <option value="TELECALLER">4. Telecaller (TELECALLER)</option>
-                    <option value="PROPERTY_MANAGEMENT">5. Property Management (PROPERTY_MANAGEMENT)</option>
-                    <option value="SALES_MANAGEMENT">6. Sales Management (SALES_MANAGEMENT)</option>
+                    {customRoles.map((r, i) => (
+                      <option key={i} value={r.key}>{r.name} ({r.key})</option>
+                    ))}
                   </select>
                 </div>
               </div>
