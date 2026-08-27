@@ -2748,24 +2748,34 @@ export default function App() {
     }
   }, [users]);
 
-  // 2. All 15 Roles Permission Matrix
-  const [rolePermissions, setRolePermissions] = useState([
-    { role_key: 'SUPER_ADMIN', role_name: '1. SUPER ADMIN / OWNER', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: true, export: true, approve: true, price_change: true, owner_change: true, brokerage: true },
-    { role_key: 'ADMIN', role_name: '2. ADMIN', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: true, brokerage: false },
-    { role_key: 'GENERAL_MANAGER', role_name: '3. GENERAL MANAGER', data_scope: 'ALL_BRANCHES', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: true, owner_change: false, brokerage: true },
-    { role_key: 'BRANCH_MANAGER', role_name: '4. BRANCH MANAGER', data_scope: 'OWN_BRANCH', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: false, brokerage: true },
-    { role_key: 'SALES_MANAGER', role_name: '5. SALES MANAGER', data_scope: 'OWN_TEAM', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: false },
-    { role_key: 'TEAM_LEAD', role_name: '6. TEAM LEADER', data_scope: 'OWN_TEAM', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
-    { role_key: 'SALES_EXEC', role_name: '7. SALES EXECUTIVE', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
-    { role_key: 'TELECALLER', role_name: '8. TELECALLER', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
-    { role_key: 'BACK_OFFICE', role_name: '9. BACK OFFICE / DESK', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: false },
-    { role_key: 'ACCOUNTS', role_name: '10. ACCOUNTS & FINANCE', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: false, brokerage: true },
-    { role_key: 'HR', role_name: '11. HUMAN RESOURCES (HR)', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: false, brokerage: false },
-    { role_key: 'MARKETING', role_name: '12. MARKETING SQUAD', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: false },
-    { role_key: 'PROPERTY_MANAGER', role_name: '13. PROPERTY MANAGER', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: true, owner_change: true, brokerage: false },
-    { role_key: 'FIELD_EXEC', role_name: '14. FIELD EXECUTIVE', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
-    { role_key: 'CUSTOMER_SUPPORT', role_name: '15. CUSTOMER SUPPORT', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false }
-  ]);
+  // 2. Active 6 Roles Permission Matrix (with LocalStorage Persistence)
+  const [rolePermissions, setRolePermissions] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_role_permissions_v4');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading rolePermissions from localStorage:', e);
+    }
+    return [
+      { role_key: 'SUPER_ADMIN', role_name: '1. OWNER / SUPER ADMIN', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: true, export: true, approve: true, price_change: true, owner_change: true, brokerage: true },
+      { role_key: 'ADMIN', role_name: '2. ADMIN', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: true, brokerage: false },
+      { role_key: 'BRANCH_MANAGER', role_name: '3. BRANCH MANAGER', data_scope: 'OWN_BRANCH', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: false, brokerage: true },
+      { role_key: 'TELECALLER', role_name: '4. TELECALLER', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
+      { role_key: 'PROPERTY_MANAGEMENT', role_name: '5. PROPERTY MANAGEMENT', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: true, owner_change: true, brokerage: false },
+      { role_key: 'SALES_MANAGEMENT', role_name: '6. SALES MANAGEMENT', data_scope: 'OWN_TEAM', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: true }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_role_permissions_v4', JSON.stringify(rolePermissions));
+    } catch (e) {
+      console.error('Error saving rolePermissions to localStorage:', e);
+    }
+  }, [rolePermissions]);
 
   // 3. Approval Queue & Security Logs
   const [approvalRequests, setApprovalRequests] = useState([
@@ -4688,7 +4698,8 @@ export default function App() {
       branch_name: u.branch_name,
       department: u.department,
       team_name: u.team_name,
-      manager_name: u.manager_name
+      manager_name: u.manager_name,
+      permissions: u.permissions || { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false }
     });
     setShowUserModalPassword(false);
     setShowUserModal(true);
@@ -4710,6 +4721,7 @@ export default function App() {
 
   const handleCreateUser = (e: React.FormEvent) => {
     e.preventDefault();
+    const userPermissions = newUserForm.permissions || { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false };
     if (editingUser) {
       setUsers(users.map(u => u.id === editingUser.id ? {
         ...u,
@@ -4722,9 +4734,10 @@ export default function App() {
         branch_name: newUserForm.branch_name,
         department: newUserForm.department,
         team_name: newUserForm.team_name,
-        manager_name: newUserForm.manager_name
+        manager_name: newUserForm.manager_name,
+        permissions: userPermissions
       } : u));
-      alert(`✏️ User ${newUserForm.full_name || newUserForm.username} (${editingUser.id}) updated successfully!`);
+      alert(`✏️ User ${newUserForm.full_name || newUserForm.username} (${editingUser.id}) updated successfully with custom permissions!`);
       setEditingUser(null);
     } else {
       const newU = { 
@@ -4739,14 +4752,15 @@ export default function App() {
         department: newUserForm.department, 
         team_name: newUserForm.team_name, 
         manager_name: newUserForm.manager_name, 
+        permissions: userPermissions,
         is_active: true, 
         user_status: 'ACTIVE' 
       };
       setUsers([newU, ...users]);
-      alert(`👤 User ${newU.username} created successfully!`);
+      alert(`👤 User ${newU.username} created successfully with assigned action permissions!`);
     }
     setShowUserModal(false);
-    setNewUserForm({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_EXEC', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Team Alpha', manager_name: 'Vikram Reddy (GM)' });
+    setNewUserForm({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_MANAGEMENT', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Team Alpha', manager_name: 'Vikram Reddy (GM)', permissions: { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false } });
   };
 
   const handleCreateCustomerSubmit = (e: React.FormEvent) => {
@@ -5252,16 +5266,12 @@ export default function App() {
                     onChange={(e) => setCurrentRole(e.target.value)}
                     style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#0284c7', padding: '12px 14px', borderRadius: '10px', fontSize: '0.88rem', fontWeight: '800', outline: 'none' }}
                   >
-                    <option value="SUPER_ADMIN">1. SUPER ADMIN / OWNER (ALL ACCESS)</option>
+                    <option value="SUPER_ADMIN">1. OWNER / SUPER ADMIN (ALL ACCESS)</option>
                     <option value="ADMIN">2. ADMIN</option>
-                    <option value="GENERAL_MANAGER">3. GENERAL MANAGER</option>
-                    <option value="BRANCH_MANAGER">4. BRANCH MANAGER</option>
-                    <option value="SALES_MANAGER">5. SALES MANAGER</option>
-                    <option value="TEAM_LEAD">6. TEAM LEADER</option>
-                    <option value="SALES_EXEC">7. SALES EXECUTIVE</option>
-                    <option value="TELECALLER">8. TELECALLER</option>
-                    <option value="ACCOUNTS">9. ACCOUNTS & FINANCE</option>
-                    <option value="FIELD_EXEC">10. FIELD EXECUTIVE</option>
+                    <option value="BRANCH_MANAGER">3. BRANCH MANAGER</option>
+                    <option value="TELECALLER">4. TELECALLER</option>
+                    <option value="PROPERTY_MANAGEMENT">5. PROPERTY MANAGEMENT</option>
+                    <option value="SALES_MANAGEMENT">6. SALES MANAGEMENT</option>
                   </select>
                 </div>
 
@@ -5362,19 +5372,10 @@ export default function App() {
           <select value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>
             <option value="SUPER_ADMIN">1. Owner / Super Admin</option>
             <option value="ADMIN">2. Admin</option>
-            <option value="GENERAL_MANAGER">3. General Manager</option>
-            <option value="BRANCH_MANAGER">4. Branch Manager</option>
-            <option value="SALES_MANAGER">5. Sales Manager</option>
-            <option value="TEAM_LEAD">6. Team Leader</option>
-            <option value="SALES_EXEC">7. Sales Executive</option>
-            <option value="TELECALLER">8. Telecaller</option>
-            <option value="BACK_OFFICE">9. Back Office / Desk</option>
-            <option value="ACCOUNTS">10. Accounts & Finance</option>
-            <option value="HR">11. Human Resources (HR)</option>
-            <option value="MARKETING">12. Marketing Squad</option>
-            <option value="PROPERTY_MANAGER">13. Property Manager</option>
-            <option value="FIELD_EXEC">14. Field Executive</option>
-            <option value="CUSTOMER_SUPPORT">15. Customer Support</option>
+            <option value="BRANCH_MANAGER">3. Branch Manager</option>
+            <option value="TELECALLER">4. Telecaller</option>
+            <option value="PROPERTY_MANAGEMENT">5. Property Management</option>
+            <option value="SALES_MANAGEMENT">6. Sales Management</option>
           </select>
         </div>
 
@@ -6418,7 +6419,7 @@ export default function App() {
                     <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>ENTERPRISE RBAC</span>
                   </div>
                   <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
-                    15 Configurable Default Roles • Company & Branch Hierarchy • Maker-Checker Universal Approvals • Employee Exit Handover Engine
+                    6 Active Enterprise Roles • Company & Branch Hierarchy • Maker-Checker Universal Approvals • Employee Exit Handover Engine
                   </p>
                 </div>
 
@@ -6465,7 +6466,7 @@ export default function App() {
                   👥 Employee Directory ({users.length})
                 </button>
                 <button onClick={() => setActiveRoleSubTab('permission_matrix')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'permission_matrix' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'permission_matrix' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  🔑 15 Roles & Permission Matrix ({rolePermissions.length})
+                  🔑 6 Active Roles & Security Matrix ({rolePermissions.length})
                 </button>
                 <button onClick={() => setActiveRoleSubTab('org_hierarchy')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'org_hierarchy' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'org_hierarchy' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                   🏢 Company & Branch Hierarchy
@@ -6551,61 +6552,67 @@ export default function App() {
                 </div>
               )}
 
-              {/* SUB-TAB 2: 15 ROLES PERMISSION MATRIX & CUSTOM ROLE ENGINE */}
+              {/* SUB-TAB 2: ACTIVE ROLES MATRIX */}
               {activeRoleSubTab === 'permission_matrix' && (
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                     <div>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>🔑 15 Default Roles & Granular Permission Matrix</h3>
-                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Configurable action-level permissions and data access scope for all enterprise roles.</p>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span>🔑 6 Active Enterprise Roles & Security Governance</span>
+                      </h3>
+                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', margin: '4px 0 0 0' }}>
+                        Overview of active enterprise role hierarchy, security levels, and assigned user counts across Swaramayi CRM.
+                      </p>
                     </div>
-                    <button onClick={() => setShowUserModal(true)} style={{ background: '#a855f7', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}>
-                      + Create Custom Role
+                    <button onClick={() => setShowUserModal(true)} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
+                      <UserPlus size={15} /> + Create Custom Role
                     </button>
                   </div>
 
-                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                    <thead>
-                      <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                        <th style={{ padding: '10px' }}>Role</th>
-                        <th style={{ padding: '10px' }}>Data Scope</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>View</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>Create</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>Edit</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>Delete</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>Export</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>Approve</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>Price Change</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>Brokerage</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rolePermissions.map(rp => (
-                        <tr key={rp.role_key} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <td style={{ padding: '10px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{rp.role_name}</td>
-                          <td style={{ padding: '10px' }}>
-                            <select value={rp.data_scope} onChange={(e) => alert(`Updated scope for ${rp.role_key} to ${e.target.value}`)} style={{ background: isLight ? '#f8fafc' : '#0f172a', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '4px', padding: '3px 6px', fontSize: '0.75rem', fontWeight: '700' }}>
-                              <option value="ALL_DATA">ALL_DATA</option>
-                              <option value="BRANCH_DATA">BRANCH_DATA</option>
-                              <option value="TEAM_DATA">TEAM_DATA</option>
-                              <option value="ASSIGNED_DATA">ASSIGNED_DATA</option>
-                              <option value="OWN_DATA">OWN_DATA</option>
-                            </select>
-                          </td>
-                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.view} onChange={() => handleTogglePermission(rp.role_key, 'view')} /></td>
-                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.create} onChange={() => handleTogglePermission(rp.role_key, 'create')} /></td>
-                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.edit} onChange={() => handleTogglePermission(rp.role_key, 'edit')} /></td>
-                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.delete} onChange={() => handleTogglePermission(rp.role_key, 'delete')} /></td>
-                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.export} onChange={() => handleTogglePermission(rp.role_key, 'export')} /></td>
-                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.approve} onChange={() => handleTogglePermission(rp.role_key, 'approve')} /></td>
-                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.price_change} onChange={() => handleTogglePermission(rp.role_key, 'price_change')} /></td>
-                          <td style={{ padding: '10px', textAlign: 'center' }}><input type="checkbox" checked={rp.brokerage} onChange={() => handleTogglePermission(rp.role_key, 'brokerage')} /></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(2, 1fr)', gap: '14px' }}>
+                    {[
+                      { key: 'SUPER_ADMIN', name: '1. OWNER / SUPER ADMIN', level: 'Level 5 (Highest)', scope: 'Universal All-Data Access', desc: 'Full administrative control, universal read/write/delete rights, emergency lockdown switch, and system configuration governance.', color: '#0284c7', icon: ShieldCheck },
+                      { key: 'ADMIN', name: '2. ADMIN', level: 'Level 4 (High)', scope: 'Company-Wide Operations', desc: 'Executive management access to view/create/edit all properties, customer leads, and employee user accounts across branches.', color: '#38bdf8', icon: Shield },
+                      { key: 'BRANCH_MANAGER', name: '3. BRANCH MANAGER', level: 'Level 3 (Branch Level)', scope: 'Assigned Branch Data', desc: 'Manages branch inventory, team leaders, site visits, cost sheets, and localized sales performance reporting.', color: '#10b981', icon: Building2 },
+                      { key: 'TELECALLER', name: '4. TELECALLER', level: 'Level 2 (Executive Desk)', scope: 'Assigned Calling Queue', desc: 'Inbound and outbound customer call logging, requirement profiling, follow-up scheduling, and lead status updates.', color: '#f59e0b', icon: PhoneCall },
+                      { key: 'PROPERTY_MANAGEMENT', name: '5. PROPERTY MANAGEMENT', level: 'Level 3 (Inventory Unit)', scope: 'Tower Unit Board & Stock', desc: 'Live tower unit board management, pricing updates, inventory ingestion, floor plan attachments, and amenity tagging.', color: '#ec4899', icon: Building },
+                      { key: 'SALES_MANAGEMENT', name: '6. SALES MANAGEMENT', level: 'Level 3 (Sales Unit)', scope: 'Sales Team & Pipeline', desc: 'Oversees 13-stage sales funnel, deal closures, site visit assignments, customer negotiation overrides, and booking sheets.', color: '#8b5cf6', icon: Zap }
+                    ].map((role, idx) => {
+                      const assignedUsersCount = users.filter(u => u.role === role.key).length;
+                      return (
+                        <div key={idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <div style={{ background: `${role.color}20`, padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <role.icon size={18} color={role.color} />
+                                </div>
+                                <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                                  {role.name}
+                                </h4>
+                              </div>
+                              <span style={{ fontSize: '0.7rem', fontWeight: '800', color: role.color, background: `${role.color}15`, padding: '3px 8px', borderRadius: '20px', border: `1px solid ${role.color}40` }}>
+                                {role.level}
+                              </span>
+                            </div>
+
+                            <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', margin: 0, lineHeight: '1.5' }}>
+                              {role.desc}
+                            </p>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: isLight ? '1px solid #e2e8f0' : '1px solid #1e293b', fontSize: '0.75rem' }}>
+                            <span style={{ color: isLight ? '#475569' : '#94a3b8', fontWeight: '700' }}>
+                              Scope: <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{role.scope}</strong>
+                            </span>
+                            <span style={{ color: '#0284c7', fontWeight: '800', background: 'rgba(2, 132, 199, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
+                              👥 {assignedUsersCount} Active {assignedUsersCount === 1 ? 'Employee' : 'Employees'}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
@@ -11818,7 +11825,7 @@ export default function App() {
                 </h4>
 
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>System Access Role (15 Enterprise Roles) *</label>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>System Access Role (6 Active Enterprise Roles) *</label>
                   <select 
                     value={newUserForm.role} 
                     onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
@@ -11826,19 +11833,10 @@ export default function App() {
                   >
                     <option value="SUPER_ADMIN">1. Owner / Super Admin (SUPER_ADMIN)</option>
                     <option value="ADMIN">2. Admin (ADMIN)</option>
-                    <option value="GENERAL_MANAGER">3. General Manager (GENERAL_MANAGER)</option>
-                    <option value="BRANCH_MANAGER">4. Branch Manager (BRANCH_MANAGER)</option>
-                    <option value="SALES_MANAGER">5. Sales Manager (SALES_MANAGER)</option>
-                    <option value="TEAM_LEAD">6. Team Leader (TEAM_LEAD)</option>
-                    <option value="SALES_EXEC">7. Sales Executive (SALES_EXEC)</option>
-                    <option value="TELECALLER">8. Telecaller (TELECALLER)</option>
-                    <option value="BACK_OFFICE">9. Back Office / Desk (BACK_OFFICE)</option>
-                    <option value="ACCOUNTS">10. Accounts & Finance (ACCOUNTS)</option>
-                    <option value="HR">11. Human Resources HR (HR)</option>
-                    <option value="MARKETING">12. Marketing Squad (MARKETING)</option>
-                    <option value="PROPERTY_MGR">13. Property Manager (PROPERTY_MGR)</option>
-                    <option value="FIELD_EXEC">14. Field Executive (FIELD_EXEC)</option>
-                    <option value="CUSTOMER_SUPPORT">15. Customer Support (CUSTOMER_SUPPORT)</option>
+                    <option value="BRANCH_MANAGER">3. Branch Manager (BRANCH_MANAGER)</option>
+                    <option value="TELECALLER">4. Telecaller (TELECALLER)</option>
+                    <option value="PROPERTY_MANAGEMENT">5. Property Management (PROPERTY_MANAGEMENT)</option>
+                    <option value="SALES_MANAGEMENT">6. Sales Management (SALES_MANAGEMENT)</option>
                   </select>
                 </div>
               </div>
@@ -11907,6 +11905,70 @@ export default function App() {
                       <option value="Self">Self (Independent)</option>
                     </select>
                   </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: GRANULAR ACTION PERMISSIONS & PRIVILEGES */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>4. Granular Action Permissions & Privileges</span>
+                  <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: '700', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>RBAC Security Matrix</span>
+                </h4>
+
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+                  {[
+                    { key: 'perm_view', label: 'View', desc: 'View Records & System Data', icon: Eye, color: '#0284c7', defaultVal: true },
+                    { key: 'perm_create', label: 'Create', desc: 'Create New Records', icon: Plus, color: '#10b981', defaultVal: true },
+                    { key: 'perm_edit', label: 'Edit', desc: 'Modify Existing Records', icon: Edit3, color: '#f59e0b', defaultVal: true },
+                    { key: 'perm_delete', label: 'Delete', desc: 'Remove / Purge Data', icon: Trash2, color: '#ef4444', defaultVal: false },
+                    { key: 'perm_export', label: 'Export', desc: 'Download CSV / PDF Reports', icon: FileDown, color: '#8b5cf6', defaultVal: true },
+                    { key: 'perm_approve', label: 'Approve', desc: 'Approve Workflows & Requests', icon: CheckCircle2, color: '#06b6d4', defaultVal: false },
+                    { key: 'perm_price_change', label: 'Price Change', desc: 'Override Prices / Rates', icon: Tag, color: '#ec4899', defaultVal: false },
+                    { key: 'perm_brokerage', label: 'Brokerage', desc: 'Brokerage & Commission Governance', icon: DollarSign, color: '#f97316', defaultVal: false }
+                  ].map((item, idx) => {
+                    const currentPerms = (newUserForm as any).permissions || { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false };
+                    const isChecked = currentPerms[item.key] !== undefined ? currentPerms[item.key] : item.defaultVal;
+
+                    return (
+                      <label 
+                        key={idx} 
+                        style={{ 
+                          display: 'flex', 
+                          flexDirection: 'column', 
+                          gap: '6px', 
+                          background: isLight ? '#ffffff' : '#1e293b', 
+                          border: isChecked ? `1.5px solid ${item.color}` : isLight ? '1px solid #cbd5e1' : '1px solid #334155', 
+                          borderRadius: '8px', 
+                          padding: '10px', 
+                          cursor: 'pointer',
+                          boxShadow: isChecked ? `0 2px 8px ${item.color}25` : 'none',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <item.icon size={15} color={item.color} /> {item.label}
+                          </span>
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked} 
+                            onChange={(e) => {
+                              const updatedPerms = {
+                                ...currentPerms,
+                                [item.key]: e.target.checked
+                              };
+                              setNewUserForm({
+                                ...newUserForm,
+                                permissions: updatedPerms
+                              } as any);
+                            }} 
+                            style={{ accentColor: item.color, cursor: 'pointer', width: '16px', height: '16px' }} 
+                          />
+                        </div>
+                        <span style={{ fontSize: '0.66rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '600', lineHeight: '1.2' }}>{item.desc}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
