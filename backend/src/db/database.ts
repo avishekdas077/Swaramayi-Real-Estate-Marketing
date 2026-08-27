@@ -398,17 +398,15 @@ export interface Schema {
 
 const initialData: Schema = {
   branches: [
-    { id: 'BR-HYD-HO', branch_code: 'SRM-BR-01', branch_name: 'Head Office (Hyderabad)', city: 'Hyderabad', address: 'Jubilee Hills, Hyderabad', branch_manager_id: 'USR-01', branch_manager_name: 'Rajesh Varma', created_at: '2026-01-01' },
-    { id: 'BR-HYD-KON', branch_code: 'SRM-BR-02', branch_name: 'Kondapur Branch', city: 'Hyderabad', address: 'Kondapur Main Rd, Hyderabad', branch_manager_id: 'USR-03', branch_manager_name: 'Suresh Kumar', created_at: '2026-01-15' },
-    { id: 'BR-HYD-GAC', branch_code: 'SRM-BR-03', branch_name: 'Gachibowli Branch', city: 'Hyderabad', address: 'Financial District, Hyderabad', branch_manager_id: 'USR-03', branch_manager_name: 'Suresh Kumar', created_at: '2026-02-01' },
-    { id: 'BR-KOL-HO', branch_code: 'SRM-BR-04', branch_name: 'Kolkata Branch', city: 'Kolkata', address: 'Salt Lake Sector V, Kolkata', branch_manager_id: 'USR-02', branch_manager_name: 'Vikram Reddy', created_at: '2026-03-01' }
+    { id: 'BR-KOL-HO', branch_code: 'SRM-BR-01', branch_name: 'Head Office (Kolkata)', city: 'Kolkata', address: 'Camac Street, Kolkata - 700017', branch_manager_id: 'USR-01', branch_manager_name: 'Rajesh Varma', created_at: '2026-01-01' },
+    { id: 'BR-KOL-02', branch_code: 'SRM-BR-02', branch_name: 'Kolkata Branch', city: 'Kolkata', address: 'Park Street, Kolkata - 700016', branch_manager_id: 'USR-01', branch_manager_name: 'Rajesh Varma', created_at: '2026-03-01' }
   ],
   teams: [
-    { id: 'TEAM-A', team_name: 'Sales Team Alpha', branch_id: 'BR-HYD-KON', branch_name: 'Kondapur Branch', team_lead_id: 'USR-04', team_lead_name: 'Rahul Sharma', members_count: 4 },
-    { id: 'TEAM-B', team_name: 'Sales Team Bravo', branch_id: 'BR-HYD-GAC', branch_name: 'Gachibowli Branch', team_lead_id: 'USR-04', team_lead_name: 'Rahul Sharma', members_count: 3 }
+    { id: 'TEAM-A', team_name: 'Corporate Leadership Squad', branch_id: 'BR-KOL-HO', branch_name: 'Head Office (Kolkata)', team_lead_id: 'USR-01', team_lead_name: 'Rajesh Varma', members_count: 1 },
+    { id: 'TEAM-B', team_name: 'Kolkata Expansion Team', branch_id: 'BR-KOL-02', branch_name: 'Kolkata Branch', team_lead_id: 'USR-01', team_lead_name: 'Rajesh Varma', members_count: 1 }
   ],
   users: [
-    { id: 'USR-01', username: 'Rajesh Varma (Super Admin)', full_name: 'Rajesh Varma', email: 'admin@swaramayi.com', mobile: '+91 98490 00001', role: 'SUPER_ADMIN', branch_name: 'Head Office', department: 'Executive Board', team_name: 'Core Management', manager_name: 'Self', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-01' }
+    { id: 'USR-01', username: 'Rajesh Varma (Super Admin)', full_name: 'Rajesh Varma', email: 'admin@swaramayi.com', mobile: '+91 98490 00001', role: 'SUPER_ADMIN', branch_name: 'Head Office (Kolkata)', department: 'Executive Board', team_name: 'Corporate Leadership Squad', manager_name: 'Self', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-01' }
   ],
   customers: [],
   properties: [],

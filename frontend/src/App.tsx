@@ -2837,6 +2837,32 @@ export default function App() {
     }
   }, [customRoles]);
 
+  // Enterprise Branches List (with LocalStorage Persistence)
+  const [editingBranchId, setEditingBranchId] = useState<string | null>(null);
+  const [branches, setBranches] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_enterprise_branches_v8');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading branches from localStorage:', e);
+    }
+    return [
+      { id: 'BR-01', branch_name: 'Head Office (Kolkata)', city: 'Kolkata', manager_name: 'Rajesh Varma (SUPER_ADMIN)', address: 'Camac Street, Kolkata - 700017', target_revenue: '₹15,00,00,000', teams: ['Corporate Leadership Squad'], created_at: '2026-01-15' },
+      { id: 'BR-02', branch_name: 'Kolkata Branch', city: 'Kolkata', manager_name: 'Rajesh Varma (SUPER_ADMIN)', address: 'Park Street, Kolkata - 700016', target_revenue: '₹5,00,00,000', teams: ['Kolkata Expansion Team'], created_at: '2026-03-10' }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_enterprise_branches_v8', JSON.stringify(branches));
+    } catch (e) {
+      console.error('Error saving branches to localStorage:', e);
+    }
+  }, [branches]);
+
   // 3. Approval Queue & Security Logs
   const [approvalRequests, setApprovalRequests] = useState([
     { id: 'REQ-01', request_code: 'SRM-REQ-2026-000101', request_type: 'LEAD_TRANSFER', record_id: 'SRM-CUS-2026-000184 (Rohan Deshmukh)', requested_by: 'Priya Nair (Sales Exec)', requested_at: '16 Aug 2026 12:00 PM', old_val: 'Priya Nair', new_val: 'Rahul Sharma', reason: 'Customer requested senior consultant for villa project.', status: 'PENDING', approved_by: '' }
@@ -4675,7 +4701,7 @@ export default function App() {
   const selectedInvoice = rawSelectedInvoice || invoices[0];
 
   // Forms
-  const [newUserForm, setNewUserForm] = useState({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_EXEC', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', manager_name: 'Rahul Sharma (TL)' });
+  const [newUserForm, setNewUserForm] = useState({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_EXEC', branch_name: 'Kolkata Branch', department: 'Sales Operations', team_name: 'Kolkata Expansion Team', manager_name: 'Rajesh Varma (Super Admin)' });
   const [showUserModalPassword, setShowUserModalPassword] = useState<boolean>(false);
   const [editingUser, setEditingUser] = useState<any | null>(null);
 
@@ -4684,17 +4710,17 @@ export default function App() {
 
   const [newBranchForm, setNewBranchForm] = useState({
     branch_name: '',
-    city: 'Hyderabad',
-    manager_name: 'Vikram Reddy (GM)',
+    city: 'Kolkata',
+    manager_name: 'Rajesh Varma (Super Admin)',
     address: '',
     target_revenue: '₹5,00,00,000'
   });
 
   const [newTeamForm, setNewTeamForm] = useState({
     team_name: '',
-    branch_name: 'Kondapur Branch',
+    branch_name: 'Head Office (Kolkata)',
     department: 'Sales',
-    leader_name: 'Rahul Sharma (TL)',
+    leader_name: 'Rajesh Varma (Super Admin)',
     monthly_target: '15 Property Units'
   });
   const [propForm, setPropForm] = useState({ title: '', base_price: '', developer: 'Aparna Constructions', configuration: '3BHK' });
@@ -4933,9 +4959,53 @@ export default function App() {
 
   const handleCreateBranchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newBranchForm.branch_name.trim()) {
+      alert('Please enter a Branch Office Name.');
+      return;
+    }
+
+    const branchNameTrim = newBranchForm.branch_name.trim();
+
+    if (editingBranchId) {
+      setBranches(prev => prev.map(b => b.id === editingBranchId ? {
+        ...b,
+        branch_name: branchNameTrim,
+        city: newBranchForm.city,
+        manager_name: newBranchForm.manager_name,
+        address: newBranchForm.address.trim() || b.address,
+        target_revenue: newBranchForm.target_revenue.trim() || b.target_revenue
+      } : b));
+      alert(`✅ Branch '${branchNameTrim}' updated successfully across Company Hierarchy!`);
+    } else {
+      const newB = {
+        id: `BR-0${branches.length + 1}`,
+        branch_name: branchNameTrim,
+        city: newBranchForm.city,
+        manager_name: newBranchForm.manager_name,
+        address: newBranchForm.address.trim() || `${newBranchForm.city} Main Operational Hub`,
+        target_revenue: newBranchForm.target_revenue.trim() || '₹5,00,00,000',
+        teams: ['General Operations Squad'],
+        created_at: new Date().toISOString().split('T')[0]
+      };
+      setBranches(prev => [...prev, newB]);
+      alert(`🏢 Enterprise Branch '${branchNameTrim}' (City: ${newBranchForm.city}) created & provisioned across Company Hierarchy!`);
+    }
+
     setShowBranchModal(false);
-    alert(`🏢 Branch '${newBranchForm.branch_name}' (City: ${newBranchForm.city}) created & added to Company Hierarchy!`);
+    setEditingBranchId(null);
     setNewBranchForm({ branch_name: '', city: 'Hyderabad', manager_name: 'Vikram Reddy (GM)', address: '', target_revenue: '₹5,00,00,000' });
+  };
+
+  const handleDeleteBranch = (branchId: string, branchName: string) => {
+    const assignedUsers = users.filter(u => u.branch_name === branchName);
+    if (assignedUsers.length > 0) {
+      alert(`⚠️ Cannot delete branch "${branchName}" because ${assignedUsers.length} employee(s) are assigned to it. Reassign them first.`);
+      return;
+    }
+    if (window.confirm(`Are you sure you want to delete Enterprise Branch "${branchName}"?`)) {
+      setBranches(prev => prev.filter(b => b.id !== branchId));
+      alert(`🗑️ Branch "${branchName}" removed from Company Hierarchy.`);
+    }
   };
 
   const handleCreateTeamSubmit = (e: React.FormEvent) => {
@@ -5918,9 +5988,9 @@ export default function App() {
                     <select value={branchFilter} onChange={(e) => setBranchFilter(e.target.value)} style={{ background: isLight ? '#f1f5f9' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '6px', padding: '5px 10px', fontSize: '0.8rem', fontWeight: '700' }}>
                       <option value="ALL">All Branches</option>
                       <option value="Head Office">Head Office (Hyderabad)</option>
-                      <option value="Kondapur Branch">Kondapur Branch</option>
-                      <option value="Gachibowli Branch">Gachibowli Branch</option>
-                      <option value="Kolkata Branch">Kolkata Branch</option>
+                      {branches.map((b, i) => (
+                        <option key={i} value={b.branch_name}>{b.branch_name}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -6685,7 +6755,11 @@ export default function App() {
                   <button onClick={() => setShowUserModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <UserPlus size={15} /> + Add User
                   </button>
-                  <button onClick={() => setShowBranchModal(true)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button onClick={() => {
+                    setEditingBranchId(null);
+                    setNewBranchForm({ branch_name: '', city: 'Hyderabad', manager_name: 'Vikram Reddy (GM)', address: '', target_revenue: '₹5,00,00,000' });
+                    setShowBranchModal(true);
+                  }} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Building2 size={15} /> + Add Branch
                   </button>
                   <button onClick={() => setShowTeamModal(true)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#4ade80', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -6966,28 +7040,63 @@ export default function App() {
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', borderRadius: '8px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '800', textTransform: 'uppercase' }}>COMPANY HEADQUARTERS</span>
-                        <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>Swaramayi Real Estate Marketing (Jubilee Hills, Hyderabad)</h4>
+                        <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>Swaramayi Real Estate Marketing (Head Office, Kolkata)</h4>
                       </div>
                       <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem' }}>Super Admin: Rajesh Varma</span>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', paddingLeft: '20px' }}>
-                      {[
-                        { name: 'Kondapur Branch', mgr: 'Suresh Kumar (BM)', teams: ['Sales Team Alpha (TL: Rahul Sharma)', 'Inside Telecalling Squad'], staff: 8 },
-                        { name: 'Gachibowli Branch', mgr: 'Suresh Kumar (BM)', teams: ['Sales Team Bravo (TL: Rahul Sharma)'], staff: 6 },
-                        { name: 'Kolkata Branch', mgr: 'Vikram Reddy (GM)', teams: ['Kolkata Expansion Team'], staff: 4 }
-                      ].map((b, i) => (
-                        <div key={i} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>BRANCH OFFICE #{i + 1}</span>
-                          <strong style={{ fontSize: '0.95rem', color: isLight ? '#0f172a' : '#ffffff' }}>{b.name}</strong>
-                          <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>Manager: <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{b.mgr}</strong></p>
-                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '8px', borderRadius: '6px', fontSize: '0.72rem', color: '#cbd5e1' }}>
-                            <strong>Assigned Teams:</strong>
-                            {b.teams.map((t, ti) => <div key={ti}>• {t}</div>)}
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '12px', paddingLeft: windowWidth <= 768 ? 0 : '20px' }}>
+                      {branches.map((b, i) => {
+                        const assignedStaffCount = users.filter(u => u.branch_name === b.branch_name).length;
+                        return (
+                          <div key={b.id || i} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>BRANCH OFFICE #{i + 1}</span>
+                                <span style={{ fontSize: '0.7rem', color: '#0284c7', background: 'rgba(2, 132, 199, 0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>{b.city || 'Hyderabad'}</span>
+                              </div>
+                              <strong style={{ fontSize: '0.95rem', color: isLight ? '#0f172a' : '#ffffff' }}>{b.branch_name}</strong>
+                              <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', margin: 0 }}>Manager: <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{b.manager_name}</strong></p>
+                              {b.address && <p style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', margin: 0 }}>📍 {b.address}</p>}
+                              
+                              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '8px', borderRadius: '6px', fontSize: '0.72rem', color: isLight ? '#475569' : '#cbd5e1' }}>
+                                <strong>Assigned Teams:</strong>
+                                {b.teams && b.teams.length > 0 ? b.teams.map((t: string, ti: number) => <div key={ti}>• {t}</div>) : <div>• General Operations Squad</div>}
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: isLight ? '1px solid #e2e8f0' : '1px solid #334155' }}>
+                              <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '700' }}>👥 {assignedStaffCount} Active {assignedStaffCount === 1 ? 'Employee' : 'Employees'}</span>
+                              <div style={{ display: 'flex', gap: '4px' }}>
+                                <button 
+                                  onClick={() => {
+                                    setEditingBranchId(b.id);
+                                    setNewBranchForm({
+                                      branch_name: b.branch_name,
+                                      city: b.city || 'Hyderabad',
+                                      manager_name: b.manager_name || 'Vikram Reddy (GM)',
+                                      address: b.address || '',
+                                      target_revenue: b.target_revenue || '₹5,00,00,000'
+                                    });
+                                    setShowBranchModal(true);
+                                  }}
+                                  style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '3px 6px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '2px' }}
+                                  title="Edit Branch Information"
+                                >
+                                  <Edit3 size={11} /> Edit
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteBranch(b.id, b.branch_name)}
+                                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '3px 6px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '2px' }}
+                                  title="Delete Enterprise Branch"
+                                >
+                                  <Trash2 size={11} /> Delete
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                          <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '700' }}>{b.staff} Active Employees</span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -11941,139 +12050,200 @@ export default function App() {
                 </div>
 
                 {/* 3-COLUMN DETAIL GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
-                  
-                  {/* COLUMN 1: CONTACT & PERSONAL INFORMATION */}
-                  <div style={{
-                    background: isLight ? '#ffffff' : '#1e293b',
-                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                    borderRadius: '14px',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                      <User size={20} color="#38bdf8" />
-                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                        Personal & Contact Details
-                      </h3>
-                    </div>
+                {(() => {
+                  const roleInfo = customRoles.find(r => 
+                    r.key === currentUser.role || 
+                    r.name.toLowerCase().includes((currentUser.role || '').toLowerCase())
+                  ) || {
+                    key: currentUser.role,
+                    name: currentUser.role,
+                    level: currentUser.role === 'SUPER_ADMIN' ? 'Level 5 (Highest)' : 'Level 3 (Branch Level)',
+                    scope: currentUser.role === 'SUPER_ADMIN' ? 'Universal All-Data Access' : `${currentUser.branch_name || 'Assigned Branch'} Data Access`,
+                    desc: 'Enterprise role with authorized read/write access.',
+                    color: '#0284c7'
+                  };
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Full Name</span>
-                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.full_name}</strong>
-                      </div>
+                  const designation = currentUser.designation || (
+                    currentUser.role === 'SUPER_ADMIN' ? 'Managing Director & Founder' :
+                    currentUser.role === 'ADMIN' ? 'System Administrator' :
+                    currentUser.role === 'GENERAL_MANAGER' ? 'General Manager' :
+                    currentUser.role === 'BRANCH_MANAGER' ? 'Branch Head & Manager' :
+                    currentUser.role === 'SALES_MANAGER' ? 'Senior Sales Manager' :
+                    currentUser.role === 'TEAM_LEAD' ? 'Sales Team Leader' :
+                    currentUser.role === 'TELECALLER' ? 'Telecalling Specialist' :
+                    `${currentUser.role} Specialist`
+                  );
 
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Username & Alias</span>
-                        <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.username}</strong>
-                      </div>
+                  const directReportsCount = users.filter(u => 
+                    u.id !== currentUser.id && 
+                    (
+                      (u.manager_name && (u.manager_name.includes(currentUser.full_name) || u.manager_name.includes(currentUser.username))) ||
+                      (currentUser.role === 'SUPER_ADMIN')
+                    )
+                  ).length;
 
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Email Address</span>
-                        <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.email}</strong>
-                      </div>
+                  const permissionsList = currentUser.role === 'SUPER_ADMIN' ? [
+                    'Full Read, Write & Delete Authority',
+                    'Maker-Checker Universal Approvals',
+                    'Executive Price Override Rights',
+                    'Brokerage & Commission Governance',
+                    'Emergency System Lockdown Switch'
+                  ] : currentUser.role === 'ADMIN' ? [
+                    'Company-Wide Read & Write Rights',
+                    'Employee User Ingestion & Management',
+                    'Property Inventory Governance',
+                    'Lead Queue Allocation & Transfers',
+                    'System Audit Log Inspection'
+                  ] : currentUser.role === 'BRANCH_MANAGER' ? [
+                    'Branch Lead & Customer Pipeline Access',
+                    'Tower Unit Board & Stock View',
+                    'Team Performance Reporting',
+                    'Site Visit Scheduling & Approvals',
+                    'Branch Expense & Target Tracking'
+                  ] : currentUser.role === 'SALES_MANAGER' ? [
+                    '13-Stage Sales Funnel Access',
+                    'Deal Closure & Discount Rights',
+                    'Site Visit Allocation & Logs',
+                    'Booking Sheet Registration',
+                    'Team Target Analytics'
+                  ] : [
+                    'Assigned Lead Management',
+                    'Customer Communication Logging',
+                    'Follow-Up & Site Visit Requests',
+                    'Property Inventory Lookup',
+                    'Personal Performance Metrics'
+                  ];
 
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Mobile Contact</span>
-                        <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', fontFamily: 'monospace', marginTop: '2px' }}>{currentUser.mobile}</strong>
-                      </div>
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
+                      
+                      {/* COLUMN 1: CONTACT & PERSONAL INFORMATION */}
+                      <div style={{
+                        background: isLight ? '#ffffff' : '#1e293b',
+                        border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                        borderRadius: '14px',
+                        padding: '20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                          <User size={20} color="#38bdf8" />
+                          <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                            Personal & Contact Details
+                          </h3>
+                        </div>
 
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Official Designation</span>
-                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>Managing Director & Founder</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* COLUMN 2: ORGANIZATION & HIERARCHY */}
-                  <div style={{
-                    background: isLight ? '#ffffff' : '#1e293b',
-                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                    borderRadius: '14px',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                      <Building2 size={20} color="#fbbf24" />
-                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                        Organizational Hierarchy
-                      </h3>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Assigned Branch</span>
-                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.branch_name} (Kondapur)</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Department</span>
-                        <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.department}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Team Assignment</span>
-                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.team_name}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Reporting Manager</span>
-                        <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.manager_name} (Enterprise Owner)</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Direct Reports Managed</span>
-                        <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>14 Active Department Heads & Admins</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* COLUMN 3: RBAC PERMISSIONS & ENTERPRISE SCOPE */}
-                  <div style={{
-                    background: isLight ? '#ffffff' : '#1e293b',
-                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                    borderRadius: '14px',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                      <Key size={20} color="#22c55e" />
-                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                        RBAC Scope & Privileges
-                      </h3>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Data Scope Level</span>
-                        <strong style={{ display: 'block', color: '#22c55e', fontSize: '0.9rem', marginTop: '2px' }}>ALL_DATA (Universal System Access)</strong>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                        {[
-                          'Full Read, Write & Delete Authority',
-                          'Maker-Checker Universal Approvals',
-                          'Executive Price Override Rights',
-                          'Brokerage & Commission Governance',
-                          'Emergency System Lockdown Switch'
-                        ].map((perm, pIdx) => (
-                          <div key={pIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: isLight ? '#334155' : '#cbd5e1' }}>
-                            <CheckCircle2 size={14} color="#22c55e" />
-                            <span>{perm}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Full Name</span>
+                            <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.full_name || currentUser.username}</strong>
                           </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
 
-                </div>
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Username & Alias</span>
+                            <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.username}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Email Address</span>
+                            <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.email || 'N/A'}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Mobile Contact</span>
+                            <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', fontFamily: 'monospace', marginTop: '2px' }}>{currentUser.mobile || 'N/A'}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Official Designation</span>
+                            <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{designation}</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* COLUMN 2: ORGANIZATION & HIERARCHY */}
+                      <div style={{
+                        background: isLight ? '#ffffff' : '#1e293b',
+                        border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                        borderRadius: '14px',
+                        padding: '20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                          <Building2 size={20} color="#fbbf24" />
+                          <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                            Organizational Hierarchy
+                          </h3>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Assigned Branch</span>
+                            <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.branch_name || 'Head Office (Kolkata)'}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Department</span>
+                            <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.department || 'Executive Board'}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Team Assignment</span>
+                            <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.team_name || 'Corporate Leadership Squad'}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Reporting Manager</span>
+                            <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.manager_name || 'Self'}</strong>
+                          </div>
+
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Direct Reports Managed</span>
+                            <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{directReportsCount} Active Staff Members</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* COLUMN 3: RBAC PERMISSIONS & ENTERPRISE SCOPE */}
+                      <div style={{
+                        background: isLight ? '#ffffff' : '#1e293b',
+                        border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                        borderRadius: '14px',
+                        padding: '20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px'
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                          <Key size={20} color="#22c55e" />
+                          <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                            RBAC Scope & Privileges
+                          </h3>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                          <div>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Data Scope Level</span>
+                            <strong style={{ display: 'block', color: roleInfo.color || '#22c55e', fontSize: '0.9rem', marginTop: '2px' }}>{roleInfo.scope} ({roleInfo.level})</strong>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                            {permissionsList.map((perm, pIdx) => (
+                              <div key={pIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: isLight ? '#334155' : '#cbd5e1' }}>
+                                <CheckCircle2 size={14} color={roleInfo.color || "#22c55e"} />
+                                <span>{perm}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  );
+                })()}
 
                 {/* BOTTOM ROW: ACTIVE SESSIONS & RECENT ACTIVITY */}
                 <div style={{
@@ -13070,16 +13240,23 @@ export default function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Assigned Branch</label>
-                    <select 
-                      value={editingProfile.branch_name || 'Head Office'} 
+                    <input 
+                      type="text"
+                      list="profile-branch-suggestions"
+                      value={editingProfile.branch_name || ''} 
                       onChange={(e) => setEditingProfile({ ...editingProfile, branch_name: e.target.value })} 
+                      placeholder="Type custom branch name or select from list..."
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}
-                    >
-                      <option value="Head Office">Head Office (Kondapur)</option>
-                      <option value="Gachibowli Branch">Gachibowli Branch</option>
-                      <option value="Jubilee Hills Office">Jubilee Hills Office</option>
-                      <option value="Banjara Hills Hub">Banjara Hills Hub</option>
-                    </select>
+                    />
+                    <datalist id="profile-branch-suggestions">
+                      {Array.from(new Set([
+                        'Head Office (Kolkata)',
+                        'Kolkata Branch',
+                        ...branches.map(b => b.branch_name)
+                      ])).filter(Boolean).map((bName, i) => (
+                        <option key={i} value={bName} />
+                      ))}
+                    </datalist>
                   </div>
 
                   <div>
@@ -13550,17 +13727,24 @@ export default function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Branch *</label>
-                    <select 
-                      value={newUserForm.branch_name} 
+                    <input 
+                      type="text"
+                      list="user-branch-suggestions"
+                      value={newUserForm.branch_name || ''} 
                       onChange={(e) => setNewUserForm({ ...newUserForm, branch_name: e.target.value })}
+                      placeholder="Type custom branch name or select from list..."
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
-                    >
-                      <option value="Head Office">Head Office (Hyderabad)</option>
-                      <option value="Kondapur Branch">Kondapur Branch</option>
-                      <option value="Gachibowli Branch">Gachibowli Branch</option>
-                      <option value="Madhapur Branch">Madhapur Branch</option>
-                      <option value="Jubilee Hills Branch">Jubilee Hills Branch</option>
-                    </select>
+                      required
+                    />
+                    <datalist id="user-branch-suggestions">
+                      {Array.from(new Set([
+                        'Head Office (Kolkata)',
+                        'Kolkata Branch',
+                        ...branches.map(b => b.branch_name)
+                      ])).filter(Boolean).map((bName, i) => (
+                        <option key={i} value={bName} />
+                      ))}
+                    </datalist>
                   </div>
 
                   <div>
@@ -13696,13 +13880,13 @@ export default function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px' }}>
               <div>
                 <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  🏢 Register New Enterprise Branch
+                  {editingBranchId ? '✏️ Edit Enterprise Branch' : '🏢 Register New Enterprise Branch'}
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
                   Expand company regional footprint & assign branch management leadership.
                 </p>
               </div>
-              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowBranchModal(false)} title="Close Modal" />
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => { setShowBranchModal(false); setEditingBranchId(null); }} title="Close Modal" />
             </div>
 
             <form onSubmit={handleCreateBranchSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -13720,17 +13904,29 @@ export default function App() {
                     <option value="Mumbai">Mumbai</option>
                     <option value="Kolkata">Kolkata</option>
                     <option value="Delhi-NCR">Delhi-NCR</option>
+                    <option value="Chennai">Chennai</option>
+                    <option value="Pune">Pune</option>
                   </select>
                 </div>
 
                 <div>
                   <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Branch Manager *</label>
-                  <select value={newBranchForm.manager_name} onChange={(e) => setNewBranchForm({ ...newBranchForm, manager_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}>
-                    <option value="Vikram Reddy (GM)">Vikram Reddy (GM)</option>
-                    <option value="Suresh Kumar (BM)">Suresh Kumar (BM)</option>
-                    <option value="Deepak Verma (SM)">Deepak Verma (SM)</option>
-                    <option value="Rajesh Varma (Owner)">Rajesh Varma (Owner)</option>
-                  </select>
+                  <input 
+                    type="text" 
+                    list="branch-manager-suggestions" 
+                    value={newBranchForm.manager_name} 
+                    onChange={(e) => setNewBranchForm({ ...newBranchForm, manager_name: e.target.value })} 
+                    placeholder="Type custom manager name or select from list..." 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    required 
+                  />
+                  <datalist id="branch-manager-suggestions">
+                    {Array.from(new Set([
+                      ...users.map(u => `${u.full_name || u.username} (${u.role})`)
+                    ])).filter(Boolean).map((mName, i) => (
+                      <option key={i} value={mName} />
+                    ))}
+                  </datalist>
                 </div>
               </div>
 
@@ -13745,8 +13941,10 @@ export default function App() {
               </div>
 
               <div style={{ display: 'flex', gap: '12px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '16px', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => setShowBranchModal(false)} style={{ background: isLight ? '#f1f5f9' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)' }}>🚀 Create & Provision Branch</button>
+                <button type="button" onClick={() => { setShowBranchModal(false); setEditingBranchId(null); }} style={{ background: isLight ? '#f1f5f9' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)' }}>
+                  {editingBranchId ? '💾 Save & Update Branch' : '🚀 Create & Provision Branch'}
+                </button>
               </div>
             </form>
           </div>
@@ -13781,11 +13979,10 @@ export default function App() {
                 <div>
                   <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Parent Branch *</label>
                   <select value={newTeamForm.branch_name} onChange={(e) => setNewTeamForm({ ...newTeamForm, branch_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}>
-                    <option value="Head Office">Head Office (Hyderabad)</option>
-                    <option value="Kondapur Branch">Kondapur Branch</option>
-                    <option value="Gachibowli Branch">Gachibowli Branch</option>
-                    <option value="Madhapur Branch">Madhapur Branch</option>
-                    <option value="Jubilee Hills Branch">Jubilee Hills Branch</option>
+                    <option value="Head Office (Kolkata)">Head Office (Kolkata)</option>
+                    {branches.map((b, i) => (
+                      <option key={i} value={b.branch_name}>{b.branch_name}</option>
+                    ))}
                   </select>
                 </div>
 

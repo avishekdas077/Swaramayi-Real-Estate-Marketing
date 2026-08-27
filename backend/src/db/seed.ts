@@ -10,31 +10,15 @@ export function seedDatabase() {
   const initialData = {
     companies: [{ id: 'COMP-01', name: 'Swaramayi Real Estate Marketing CRM' }],
     branches: [
-      { id: 'BR-HYD-HO', name: 'Head Office (Hyderabad)', city: 'Hyderabad' },
-      { id: 'BR-HYD-KON', name: 'Kondapur Branch', city: 'Hyderabad' },
-      { id: 'BR-HYD-GAC', name: 'Gachibowli Branch', city: 'Hyderabad' },
-      { id: 'BR-KOL-HO', name: 'Kolkata Branch', city: 'Kolkata' }
+      { id: 'BR-KOL-HO', name: 'Head Office (Kolkata)', city: 'Kolkata' },
+      { id: 'BR-KOL-02', name: 'Kolkata Branch', city: 'Kolkata' }
     ],
     teams: [
-      { id: 'TEAM-A', name: 'Sales Team Alpha', leader_id: 'USR-03', branch_id: 'BR-HYD-KON' },
-      { id: 'TEAM-B', name: 'Sales Team Bravo', leader_id: 'USR-03', branch_id: 'BR-HYD-GAC' }
+      { id: 'TEAM-A', name: 'Corporate Leadership Squad', leader_id: 'USR-01', branch_id: 'BR-KOL-HO' },
+      { id: 'TEAM-B', name: 'Kolkata Expansion Team', leader_id: 'USR-03', branch_id: 'BR-KOL-02' }
     ],
     users: [
-      { id: 'USR-01', username: 'admin', full_name: 'Rajesh Varma (Owner)', role: 'SUPER_ADMIN', email: 'rajesh.varma@swaramayi.com', mobile: '+91 98490 00001', branch_name: 'Head Office (Hyderabad)', department: 'Executive Board', team_name: 'Core Management', is_active: true },
-      { id: 'USR-02', username: 'anil.admin', full_name: 'Anil Kapoor (Admin)', role: 'ADMIN', email: 'anil.k@swaramayi.com', mobile: '+91 98490 00002', branch_name: 'Head Office (Hyderabad)', department: 'System Admin', team_name: 'IT Ops Desk', is_active: true },
-      { id: 'USR-03', username: 'manager.vikram', full_name: 'Vikram Reddy (GM)', role: 'GENERAL_MANAGER', email: 'vikram.reddy@swaramayi.com', mobile: '+91 98490 00003', branch_name: 'Head Office (Hyderabad)', department: 'General Management', team_name: 'Leadership', is_active: true },
-      { id: 'USR-04', username: 'bm.suresh', full_name: 'Suresh Kumar (BM)', role: 'BRANCH_MANAGER', email: 'suresh.k@swaramayi.com', mobile: '+91 98490 00004', branch_name: 'Kondapur Branch', department: 'Sales Management', team_name: 'Branch Leadership', is_active: true },
-      { id: 'USR-05', username: 'deepak.sm', full_name: 'Deepak Verma (SM)', role: 'SALES_MANAGER', email: 'deepak.v@swaramayi.com', mobile: '+91 98490 00005', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Management', is_active: true },
-      { id: 'USR-06', username: 'tl.rahul', full_name: 'Rahul Sharma (TL)', role: 'TEAM_LEAD', email: 'rahul.sharma@swaramayi.com', mobile: '+91 98490 00006', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', is_active: true },
-      { id: 'USR-07', username: 'priya.exec', full_name: 'Priya Nair (Sales Exec)', role: 'SALES_EXEC', email: 'priya.nair@swaramayi.com', mobile: '+91 98490 00007', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Sales Team Alpha', is_active: true },
-      { id: 'USR-08', username: 'ananya.tele', full_name: 'Ananya Roy (Telecaller)', role: 'TELECALLER', email: 'ananya.roy@swaramayi.com', mobile: '+91 98490 00008', branch_name: 'Kondapur Branch', department: 'Inside Sales', team_name: 'Telecalling Squad', is_active: true },
-      { id: 'USR-09', username: 'kavita.bo', full_name: 'Kavita Sharma (Back Office)', role: 'BACK_OFFICE', email: 'kavita.s@swaramayi.com', mobile: '+91 98490 00009', branch_name: 'Kondapur Branch', department: 'Operations', team_name: 'Back Office Desk', is_active: true },
-      { id: 'USR-10', username: 'meera.acc', full_name: 'Meera Deshmukh (Accounts)', role: 'ACCOUNTS', email: 'meera.d@swaramayi.com', mobile: '+91 98490 00010', branch_name: 'Head Office (Hyderabad)', department: 'Finance & Tax', team_name: 'Accounts Desk', is_active: true },
-      { id: 'USR-11', username: 'sanjay.hr', full_name: 'Sanjay Dutt (HR)', role: 'HR', email: 'sanjay.d@swaramayi.com', mobile: '+91 98490 00011', branch_name: 'Head Office (Hyderabad)', department: 'Human Resources', team_name: 'HR Desk', is_active: true },
-      { id: 'USR-12', username: 'rohit.mkt', full_name: 'Rohit Sen (Marketing)', role: 'MARKETING', email: 'rohit.sen@swaramayi.com', mobile: '+91 98490 00012', branch_name: 'Head Office (Hyderabad)', department: 'Growth & Ads', team_name: 'Marketing Squad', is_active: true },
-      { id: 'USR-13', username: 'kiran.prop', full_name: 'Kiran Kumar (Prop Mgr)', role: 'PROPERTY_MANAGER', email: 'kiran.k@swaramayi.com', mobile: '+91 98490 00013', branch_name: 'Head Office (Hyderabad)', department: 'Inventory Vault', team_name: 'Property Desk', is_active: true },
-      { id: 'USR-14', username: 'ramesh.fe', full_name: 'Ramesh Pawar (Field Exec)', role: 'FIELD_EXEC', email: 'ramesh.p@swaramayi.com', mobile: '+91 98490 00014', branch_name: 'Kondapur Branch', department: 'Site Operations', team_name: 'Field Squad', is_active: true },
-      { id: 'USR-15', username: 'sneha.cs', full_name: 'Sneha Roy (Customer Support)', role: 'CUSTOMER_SUPPORT', email: 'sneha.roy@swaramayi.com', mobile: '+91 98490 00015', branch_name: 'Head Office (Hyderabad)', department: 'Support', team_name: 'Support Desk', is_active: true }
+      { id: 'USR-01', username: 'admin', full_name: 'Rajesh Varma (Super Admin)', role: 'SUPER_ADMIN', email: 'admin@swaramayi.com', mobile: '+91 98490 00001', branch_name: 'Head Office (Kolkata)', department: 'Executive Board', team_name: 'Corporate Leadership Squad', is_active: true }
     ],
     customers: [
       {
