@@ -230,7 +230,7 @@ function ScheduleVisitModalContent({
             <div>
               <h2 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '1.3rem' }}>VISIT SCHEDULE CREATED SUCCESSFULLY!</h2>
               <span style={{ color: '#4ade80', fontWeight: '800', fontSize: '0.82rem' }}>
-                ONE Visit Schedule ID generated for {createdSuccess.stops.length} properties
+                ONE Visit Schedule ID generated for {(createdSuccess.stops || []).length} properties
               </span>
             </div>
           </div>
@@ -251,9 +251,9 @@ function ScheduleVisitModalContent({
             </div>
 
             <div>
-              <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', fontWeight: '800' }}>INDIVIDUAL VISIT STOPS CREATED ({createdSuccess.stops.length}):</span>
+              <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', fontWeight: '800' }}>INDIVIDUAL VISIT STOPS CREATED ({(createdSuccess.stops || []).length}):</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '6px' }}>
-                {createdSuccess.stops.map((s: any, idx: number) => (
+                {(createdSuccess.stops || []).map((s: any, idx: number) => (
                   <div key={s.stopId} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 10px', borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.78rem' }}>STOP 0{idx + 1} ({s.stopId})</span>
                     <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.8rem' }}>{s.propertyTitle}</strong>
@@ -293,7 +293,7 @@ function ScheduleVisitModalContent({
                   `*Visit Schedule ID*: ${createdSuccess.visitScheduleId}\n` +
                   `*Customer*: ${createdSuccess.customerName} (${createdSuccess.mobile})\n` +
                   `*Date*: ${createdSuccess.visitDate} at ${createdSuccess.startTime}\n` +
-                  `*Properties*: ${createdSuccess.stops.length} Stops Assigned\n\n` +
+                  `*Properties*: ${(createdSuccess.stops || []).length} Stops Assigned\n\n` +
                   `Please open your Mobile Cockpit in Visit Management to view the sequential route.`;
                 window.open(`https://api.whatsapp.com/send?phone=919849000014&text=${encodeURIComponent(msg)}`, '_blank');
               }}
@@ -543,9 +543,10 @@ function VisitDetailModalContent({
     });
   };
 
-  const completedStops = plan.stops.filter((s: any) => s.status === 'VISIT_COMPLETED').length;
-  const totalStops = plan.stops.length;
-  const pct = Math.round((completedStops / totalStops) * 100);
+  const planStops = plan?.stops || [];
+  const completedStops = planStops.filter((s: any) => s.status === 'VISIT_COMPLETED').length;
+  const totalStops = planStops.length;
+  const pct = totalStops > 0 ? Math.round((completedStops / totalStops) * 100) : 0;
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(15, 23, 42, 0.65)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
@@ -556,22 +557,22 @@ function VisitDetailModalContent({
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
               <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '900', fontFamily: 'monospace' }}>
-                {plan.visitPlanId || plan.visitScheduleId}
+                {plan?.visitPlanId || plan?.visitScheduleId}
               </span>
               <span style={{ background: isLight ? '#dcfce7' : 'rgba(34, 197, 94, 0.2)', color: isLight ? '#15803d' : '#4ade80', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '900', border: isLight ? '1px solid #86efac' : 'none' }}>
-                {plan.status || 'IN_PROGRESS'}
+                {plan?.status || 'IN_PROGRESS'}
               </span>
               <span style={{ background: isLight ? '#e0f2fe' : 'rgba(56, 189, 248, 0.15)', color: isLight ? '#0369a1' : '#38bdf8', padding: '4px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '800', border: isLight ? '1px solid #7dd3fc' : 'none' }}>
-                🗓️ {plan.visitDate} ({plan.startTime})
+                🗓️ {plan?.visitDate} ({plan?.startTime})
               </span>
             </div>
             <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '8px' }}>
-              👤 VISIT SCHEDULE: {plan.customerName}
+              👤 VISIT SCHEDULE: {plan?.customerName}
             </h2>
             <div style={{ fontSize: '0.82rem', color: isLight ? '#475569' : '#94a3b8', display: 'flex', gap: '14px', marginTop: '4px', flexWrap: 'wrap' }}>
-              <span>Customer ID: <strong style={{ color: isLight ? '#0284c7' : '#38bdf8', fontFamily: 'monospace' }}>{plan.customerNumber}</strong></span>
-              <span>Assigned Executive: <strong style={{ color: isLight ? '#b45309' : '#fbbf24' }}>{plan.assignedExecutive}</strong></span>
-              <span>Total Stops: <strong style={{ color: isLight ? '#15803d' : '#4ade80' }}>{plan.stops.length} Properties</strong></span>
+              <span>Customer ID: <strong style={{ color: isLight ? '#0284c7' : '#38bdf8', fontFamily: 'monospace' }}>{plan?.customerNumber}</strong></span>
+              <span>Assigned Executive: <strong style={{ color: isLight ? '#b45309' : '#fbbf24' }}>{plan?.assignedExecutive}</strong></span>
+              <span>Total Stops: <strong style={{ color: isLight ? '#15803d' : '#4ade80' }}>{totalStops} Properties</strong></span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -680,7 +681,7 @@ function VisitDetailModalContent({
             style={{ padding: '14px 18px', background: isLight ? '#f8fafc' : '#1e293b', borderBottom: openSections.propertyStops ? (isLight ? '1px solid #cbd5e1' : '1px solid #334155') : 'none', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
           >
             <h4 style={{ color: isLight ? '#b45309' : '#fbbf24', fontWeight: '900', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              🏢 PROPERTY STOPS REGISTER ({plan.stops.length} STOPS)
+              🏢 PROPERTY STOPS REGISTER ({(plan?.stops || []).length} STOPS)
             </h4>
             <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>{openSections.propertyStops ? '▲' : '▼'}</span>
           </div>
@@ -700,7 +701,7 @@ function VisitDetailModalContent({
                     </tr>
                   </thead>
                   <tbody>
-                    {plan.stops.map((stop: any, idx: number) => {
+                    {(plan?.stops || []).map((stop: any, idx: number) => {
                       const isCompleted = stop.status === 'VISIT_COMPLETED';
                       const isCurrent = idx === plan.currentStopIndex;
 
@@ -1756,7 +1757,7 @@ export default function App() {
   const [activeMatchingSubTab, setActiveMatchingSubTab] = useState<'ai_matching_engine' | 'req_inventory_matrix' | 'portfolio_dispatcher'>('ai_matching_engine');
   const [activeCostSheetShareSubTab, setActiveCostSheetShareSubTab] = useState<'individual_cost_sheets' | 'dispatcher' | 'delivery_analytics' | 'portal_tokens' | 'interest_handoff'>('individual_cost_sheets');
   const [activeRoleSubTab, setActiveRoleSubTab] = useState<'user_directory' | 'permission_matrix' | 'org_hierarchy' | 'teams_directory' | 'approval_queue' | 'session_security' | 'exit_handover'>('user_directory');
-  const [activeProjectSubTab, setActiveProjectSubTab] = useState<'advance_dashboard' | 'property_master' | 'live_inventory_board' | 'map_radius' | 'price_security' | 'deal_pipeline_tracker' | 'add_property_master' | 'introduction_register'>('advance_dashboard');
+  const [activeProjectSubTab, setActiveProjectSubTab] = useState<'property_master' | 'live_inventory_board' | 'map_radius' | 'price_security' | 'deal_pipeline_tracker' | 'add_property_master' | 'introduction_register'>('property_master');
   const [activeCustomerSubTab, setActiveCustomerSubTab] = useState<'sales_journey_funnel' | 'cost_sheet_engine' | 'site_visit_engine' | 'smart_matching_engine' | 'customer_master_vault' | 'customer_360_profile' | 'anti_leakage_engine' | 'selected_properties_connections' | 'secure_customer_portal'>('customer_master_vault');
   const [activeAgreementSubTab, setActiveAgreementSubTab] = useState<'all_agreements' | 'customer_agreements' | 'developer_agreements' | 'tc_templates'>('all_agreements');
   const [activeBookingSubTab, setActiveBookingSubTab] = useState<'all_bookings' | 'create_booking' | 'booking_approvals' | 'allotment_letters'>('all_bookings');
@@ -1914,156 +1915,71 @@ export default function App() {
     notes: 'Sharing updated cost sheet with special discount pricing.'
   });
 
+  // Automatic LocalStorage Cleanup Effect to Purge Stale Demo Data
+  useEffect(() => {
+    try {
+      const keysToClean = [
+        'swaramayi_leads_v4',
+        'swaramayi_customers_v3',
+        'swaramayi_properties_v3',
+        'swaramayi_cost_sheet_shares_v3',
+        'swaramayi_indiv_cost_sheets_v4',
+        'swaramayi_bookings_v2',
+        'swaramayi_agreements_vault_v4',
+        'swaramayi_matching_queue_v3',
+        'swaramayi_scheduled_visits_v3',
+        'swaramayi_visit_plans_v3',
+        'swaramayi_project_visit_agreements_v1'
+      ];
+      keysToClean.forEach(k => localStorage.removeItem(k));
+    } catch (e) {}
+  }, []);
+
   // 10-Step Lead Intake Wizard Step State & Matching Requests Queue (Persistent)
   const [leadIntakeStep, setLeadIntakeStep] = useState<number>(1);
   const [customerWizardStep, setCustomerWizardStep] = useState<number>(1);
   const [matchingVaultFilter, setMatchingVaultFilter] = useState<'PENDING_ONLY' | 'ALL'>('PENDING_ONLY');
   const [matchingRequestsQueue, setMatchingRequestsQueue] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_matching_queue_v3');
+      const saved = localStorage.getItem('swaramayi_matching_queue_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading matching queue from localStorage:', e);
     }
-    return [
-      {
-        requestId: 'SRM-MAT-2026-000421',
-        date: '18 Aug 2026 10:22 AM',
-        customerName: 'Rohan Deshmukh',
-        customerNumber: 'SRM-CUS-2026-000184',
-        leadId: 'SRM-LEAD-2026-000184',
-        requirementId: 'SRM-REQ-2026-000094',
-        mobile: '+91 98490 11223',
-        purpose: 'Self Use',
-        propertyType: 'Flat / Apartment',
-        configuration: '3BHK',
-        budget: '₹70 Lakhs – ₹85 Lakhs',
-        preferredArea: 'Kondapur / Gachibowli',
-        secondaryAreas: 'Hitec City',
-        radiusKm: 10,
-        possessionStatus: 'Ready to Move',
-        carpetArea: '1,200 – 1,800 Sq.Ft.',
-        facing: 'East / Any',
-        parking: 'Covered Slot + EV',
-        amenities: 'Lift, Security, Gym, Clubhouse',
-        completenessScore: 96,
-        priority: 'HOT',
-        leadScore: 88,
-        assignedExecutive: 'Priya Nair (Sales Exec)',
-        status: 'MATCHING_COMPLETED',
-        version: 'Snapshot V1'
-      },
-      {
-        requestId: 'MATREQ-2026-000002',
-        date: '18 Aug 2026 12:20 PM',
-        customerName: 'Avishek Das',
-        customerNumber: 'SRM-CUS-2026-000187',
-        leadId: 'SRM-LEAD-2026-000143',
-        requirementId: 'SRM-REQ-2026-000095',
-        mobile: '9432328947',
-        purpose: 'Self Use',
-        propertyType: 'Flat / Apartment',
-        configuration: '3BHK',
-        budget: '50 lakh – 60 Lakh',
-        preferredArea: 'Madhyamgram',
-        secondaryAreas: 'New Barrackpur',
-        radiusKm: 10,
-        possessionStatus: 'Ready to Move',
-        carpetArea: '1,000 – 1,400 Sq.Ft.',
-        facing: 'North-East Facing',
-        parking: 'Covered Slot',
-        amenities: 'Security, Lift, Power Backup',
-        completenessScore: 94,
-        priority: 'HOT',
-        leadScore: 92,
-        assignedExecutive: 'Priya Nair (Sales Exec)',
-        status: 'MATCHING_PENDING',
-        version: 'Snapshot V1'
-      },
-      {
-        requestId: 'MATREQ-2026-000001',
-        date: '18 Aug 2026 11:30 AM',
-        customerName: 'Sumanth Varma',
-        customerNumber: 'SRM-CUS-2026-000186',
-        leadId: 'SRM-LEAD-2026-000142',
-        requirementId: 'SRM-REQ-2026-000094',
-        mobile: '+91 98490 88888',
-        purpose: 'Self Use',
-        propertyType: 'Flat / Apartment',
-        configuration: '3BHK',
-        budget: '₹1.20 Crore - ₹1.80 Crore',
-        preferredArea: 'Kondapur / Gachibowli',
-        secondaryAreas: 'Hitec City, Financial District',
-        radiusKm: 10,
-        possessionStatus: 'Ready to Move',
-        carpetArea: '1,400 – 2,200 Sq.Ft.',
-        facing: 'East Facing',
-        parking: 'Covered Slot + EV Charger',
-        amenities: 'Swimming Pool, Gym, Clubhouse, Power Backup',
-        completenessScore: 94,
-        priority: 'HOT',
-        leadScore: 92,
-        assignedExecutive: 'Priya Nair (Sales Exec)',
-        status: 'MATCHING_PENDING',
-        version: 'Snapshot V1'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_matching_queue_v3', JSON.stringify(matchingRequestsQueue));
+      localStorage.setItem('swaramayi_matching_queue_v4_clean', JSON.stringify(matchingRequestsQueue));
     } catch (e) {
       console.error('Error saving matching queue to localStorage:', e);
     }
   }, [matchingRequestsQueue]);
 
-  const [selectedMatchingId, setSelectedMatchingId] = useState<string>('SRM-MAT-2026-000421');
+  const [selectedMatchingId, setSelectedMatchingId] = useState<string>('');
   const [matchingSearchQuery, setMatchingSearchQuery] = useState<string>('');
   const [propertySearchQuery, setPropertySearchQuery] = useState<string>('');
-  const [activeSelectionRecord, setActiveSelectionRecord] = useState<{ selectionId: string; matchingId: string; customerId: string; propertyIds: string[]; date: string; status: string } | null>({
-    selectionId: 'SRM-SEL-2026-000078',
-    matchingId: 'SRM-MAT-2026-000421',
-    customerId: 'SRM-CUS-2026-000184',
-    propertyIds: ['SRM-PROP-2026-000421', 'SRM-PROP-2026-000423', 'SRM-PROP-2026-000425'],
-    date: '18 Aug 2026 01:15 PM',
-    status: 'SELECTION_CONFIRMED'
-  });
+  const [activeSelectionRecord, setActiveSelectionRecord] = useState<{ selectionId: string; matchingId: string; customerId: string; propertyIds: string[]; date: string; status: string } | null>(null);
   const [scheduledVisits, setScheduledVisits] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_scheduled_visits_v3');
+      const saved = localStorage.getItem('swaramayi_scheduled_visits_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading scheduled visits from localStorage:', e);
     }
-    return [
-      {
-        visitId: 'SRM-VS-2026-000087',
-        costSheetId: 'SRM-CS-2026-000145',
-        customerName: 'Rohan Deshmukh',
-        customerNumber: 'SRM-CUS-2026-000184',
-        mobile: '+91 98490 12345',
-        propertyTitle: 'Aparna Zenon Premium 3BHK Residence',
-        propertyCode: 'SRM-PROP-2026-000421',
-        visitDate: '2026-08-22',
-        visitTime: '11:00 AM',
-        assignedExecutive: 'Ramesh Pawar (Field Exec - Kondapur)',
-        transport: 'Cab Pick & Drop Needed',
-        status: 'CONFIRMED',
-        conflictStatus: '🟢 NO OVERLAP CONFLICT'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_scheduled_visits_v3', JSON.stringify(scheduledVisits));
+      localStorage.setItem('swaramayi_scheduled_visits_v4_clean', JSON.stringify(scheduledVisits));
     } catch (e) {
       console.error('Error saving scheduled visits to localStorage:', e);
     }
@@ -2072,161 +1988,24 @@ export default function App() {
   // --------------------------------------------------------------------------
   // MULTI-PROPERTY VISIT ROUTE PLANNER MASTER STATE (WITH LOCALSTORAGE PERSISTENCE)
   // --------------------------------------------------------------------------
-  const [selectedVisitPlanId, setSelectedVisitPlanId] = useState<string>('SRM-VP-2026-000001');
+  const [selectedVisitPlanId, setSelectedVisitPlanId] = useState<string>('');
 
   const [visitPlans, setVisitPlans] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_visit_plans_v3');
+      const saved = localStorage.getItem('swaramayi_visit_plans_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading visit plans from localStorage:', e);
     }
-    return [
-      {
-        visitPlanId: 'SRM-VP-2026-000001',
-        customerName: 'Rohan Deshmukh',
-        customerNumber: 'SRM-CUS-2026-000184',
-        mobile: '+91 98490 12345',
-        matchingId: 'SRM-MAT-2026-000421',
-        assignedExecutive: 'Ramesh Pawar (Field Exec - Kondapur)',
-        assignedExecutivePhone: '+91 98490 00014',
-        visitDate: '2026-08-22',
-        startTime: '10:00 AM',
-        status: 'IN_PROGRESS',
-        pickupAddress: 'Hitec City Metro Station, Gate 2, Hyderabad',
-        pickupLat: '17.4478° N',
-        pickupLng: '78.3789° E',
-        pickupStatus: 'COMPLETED',
-        pickupTime: '10:15 AM',
-        dropAddress: 'Hitec City Metro Station, Gate 2, Hyderabad',
-        dropLat: '17.4478° N',
-        dropLng: '78.3789° E',
-        dropStatus: 'PENDING',
-        currentStopIndex: 1,
-        autoNavigateNext: true,
-        totalDistanceKm: '14.8 KM',
-        totalDurationMinutes: 195,
-        delayStatus: '🟢 ON SCHEDULE',
-        deviationStatus: '🟢 ON ROUTE',
-        stops: [
-          {
-            stopId: 'SRM-VSTOP-2026-000001',
-            costSheetId: 'SRM-CS-2026-000145',
-            propertyId: 'PROP-01',
-            propertyCode: 'SRM-PROP-2026-000421',
-            propertyTitle: 'Aparna Zenon Premium 3BHK Residence',
-            locality: 'Kondapur',
-            developer: 'Aparna Constructions',
-            latitude: '17.4612° N',
-            longitude: '78.3689° E',
-            address: 'Aparna Zenon, Survey No. 45, Nanakramguda Rd, Kondapur',
-            timeWindow: '10:00 AM - 11:30 AM',
-            scheduledTime: '10:20 AM',
-            durationMinutes: 45,
-            distanceFromPrev: '4.2 KM',
-            etaMinutes: 12,
-            status: 'VISIT_COMPLETED',
-            otpVerified: true,
-            geofenceVerified: true,
-            arrivalTime: '10:18 AM',
-            completionTime: '11:03 AM',
-            feedbackRating: 5,
-            feedbackRemarks: 'Customer liked 14th floor pool view flat. High purchase intent.',
-            skipReason: ''
-          },
-          {
-            stopId: 'SRM-VSTOP-2026-000002',
-            costSheetId: 'SRM-CS-2026-000146',
-            propertyId: 'PROP-05',
-            propertyCode: 'SRM-PROP-2026-000425',
-            propertyTitle: 'Prestige High Fields Corner 3BHK',
-            locality: 'Nanakramguda',
-            developer: 'Prestige Estates',
-            latitude: '17.4201° N',
-            longitude: '78.3410° E',
-            address: 'Tower 8, Prestige High Fields, Nanakramguda',
-            timeWindow: '11:30 AM - 01:00 PM',
-            scheduledTime: '11:35 AM',
-            durationMinutes: 45,
-            distanceFromPrev: '3.8 KM',
-            etaMinutes: 14,
-            status: 'VISIT_STARTED',
-            otpVerified: true,
-            geofenceVerified: true,
-            arrivalTime: '11:32 AM',
-            completionTime: '',
-            feedbackRating: 0,
-            feedbackRemarks: '',
-            skipReason: ''
-          },
-          {
-            stopId: 'SRM-VSTOP-2026-000003',
-            costSheetId: 'SRM-CS-2026-000147',
-            propertyId: 'PROP-03',
-            propertyCode: 'SRM-PROP-2026-000423',
-            propertyTitle: 'My Home Jewel Executive 2BHK Flat',
-            locality: 'Madinaguda',
-            developer: 'My Home Group',
-            latitude: '17.4921° N',
-            longitude: '78.3412° E',
-            address: 'Block C, My Home Jewel, Madinaguda',
-            timeWindow: '01:00 PM - 02:30 PM',
-            scheduledTime: '01:00 PM',
-            durationMinutes: 45,
-            distanceFromPrev: '4.5 KM',
-            etaMinutes: 16,
-            status: 'PENDING',
-            otpVerified: false,
-            geofenceVerified: false,
-            arrivalTime: '',
-            completionTime: '',
-            feedbackRating: 0,
-            feedbackRemarks: '',
-            skipReason: ''
-          },
-          {
-            stopId: 'SRM-VSTOP-2026-000004',
-            costSheetId: 'SRM-CS-2026-000148',
-            propertyId: 'PROP-02',
-            propertyCode: 'SRM-PROP-2026-000422',
-            propertyTitle: 'Financial Towers Luxury 4BHK Sky Suite',
-            locality: 'Financial District',
-            developer: 'My Home Group',
-            latitude: '17.4401° N',
-            longitude: '78.3489° E',
-            address: 'Tower B, Financial Towers, Financial District',
-            timeWindow: '02:30 PM - 04:00 PM',
-            scheduledTime: '02:15 PM',
-            durationMinutes: 45,
-            distanceFromPrev: '2.3 KM',
-            etaMinutes: 10,
-            status: 'PENDING',
-            otpVerified: false,
-            geofenceVerified: false,
-            arrivalTime: '',
-            completionTime: '',
-            feedbackRating: 0,
-            feedbackRemarks: '',
-            skipReason: ''
-          }
-        ],
-        auditLogs: [
-          { time: '22 Aug 09:30 AM', user: 'Suresh Kumar (BM)', action: 'VISIT_PLAN_CREATED', details: 'Created Multi-Property Visit Plan SRM-VP-2026-000001 with 4 stops' },
-          { time: '22 Aug 09:45 AM', user: 'System AI Engine', action: 'ROUTE_OPTIMIZED', details: 'Optimized 4-stop route based on GPS distance & time windows' },
-          { time: '22 Aug 10:15 AM', user: 'Ramesh Pawar (Field Exec)', action: 'CUSTOMER_PICKED_UP', details: 'Customer picked up at Hitec City Metro Station (GPS verified)' },
-          { time: '22 Aug 10:18 AM', user: 'Ramesh Pawar (Field Exec)', action: 'STOP_1_ARRIVED', details: 'Arrived at Stop 1 (Aparna Zenon). GPS & OTP verified.' },
-          { time: '22 Aug 11:03 AM', user: 'Ramesh Pawar (Field Exec)', action: 'STOP_1_COMPLETED', details: 'Visit completed for Stop 1. Auto advanced to Stop 2.' }
-        ]
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_visit_plans_v3', JSON.stringify(visitPlans));
+      localStorage.setItem('swaramayi_visit_plans_v4_clean', JSON.stringify(visitPlans));
     } catch (e) {
       console.error('Error saving visit plans to localStorage:', e);
     }
@@ -2239,11 +2018,10 @@ export default function App() {
 
   const [projectVisitAgreements, setProjectVisitAgreements] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_project_visit_agreements_v1');
+      const saved = localStorage.getItem('swaramayi_project_visit_agreements_v2_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          // Normalize existing agreements to 12 months protection
+        if (Array.isArray(parsed)) {
           return parsed.map((p: any) => ({
             ...p,
             protectionPeriodMonths: 12,
@@ -2254,110 +2032,12 @@ export default function App() {
     } catch (e) {
       console.error('Error loading project visit agreements from localStorage:', e);
     }
-    return [
-      {
-        projectVisitAgreementId: 'SRM-PVA-2026-000001',
-        visitScheduleId: 'SRM-VS-2026-000087',
-        visitStopId: 'SRM-VSTOP-2026-000001',
-        customerId: 'SRM-CUS-2026-000184',
-        customerName: 'Rohan Deshmukh',
-        customerMobile: '+91 98490 12345',
-        leadId: 'SRM-LEAD-2026-000001',
-        matchId: 'SRM-MAT-2026-000421',
-        propertyId: 'SRM-PROP-2026-000421',
-        costSheetId: 'SRM-CS-2026-000145',
-        projectId: 'SRM-PROJ-2026-000021',
-        projectTitle: 'Aparna Zenon Premium 3BHK Residence',
-        locality: 'Kondapur',
-        developerId: 'DEV-01',
-        developerName: 'Aparna Constructions',
-        salesPersonId: 'USR-07',
-        salesPersonName: 'Ramesh Pawar (Field Exec - Kondapur)',
-        visitDate: '2026-08-22',
-        arrivalTime: '10:18 AM',
-        departureTime: '11:03 AM',
-        geofenceStatus: 'GEOFENCE_VERIFIED',
-        gpsAccuracyMeters: '12m (Within 100m Allowed Radius)',
-        salesPersonLat: '17.4612° N',
-        salesPersonLng: '78.3689° E',
-        customerOtpStatus: 'OTP_VERIFIED',
-        otpVerifiedAt: '10:20 AM',
-        otpHashRef: 'SHA256:8f9a2b... verified (OTP 849201)',
-        customerAcknowledgementStatus: 'ACKNOWLEDGED',
-        customerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><path d="M10 40 Q 50 10 90 40 T 170 30" stroke="%230284c7" fill="none" stroke-width="3"/></svg>',
-        developerRepName: 'Srinivas Rao (Site Manager)',
-        developerRepMobile: '+91 98490 99887',
-        documentVersion: 'V1.0',
-        documentUrl: 'file:///pva_SRM-PVA-2026-000001.pdf',
-        digitalVerificationRef: 'SHA256-SWARAMAYI-PVA-2026-000001-VERIFIED',
-        protectionPeriodMonths: 12,
-        protectionStartDate: '2026-08-22',
-        protectionEndDate: '2027-08-22',
-        status: 'VISIT_VERIFIED',
-        createdAt: '2026-08-22 10:20 AM',
-        updatedAt: '2026-08-22 10:20 AM',
-        auditLogs: [
-          { time: '22 Aug 10:18 AM', user: 'Ramesh Pawar (Field Exec)', action: 'PROJECT_ARRIVAL', details: 'Arrived at Aparna Zenon. GPS Geofence verified (12m accuracy).' },
-          { time: '22 Aug 10:19 AM', user: 'System Engine', action: 'OTP_SENT', details: 'Sent 6-Digit Verification OTP to +91 98490 12345.' },
-          { time: '22 Aug 10:20 AM', user: 'Rohan Deshmukh (Customer)', action: 'OTP_VERIFIED', details: 'Entered valid OTP 849201. Customer identity confirmed.' },
-          { time: '22 Aug 10:20 AM', user: 'Rohan Deshmukh (Customer)', action: 'CUSTOMER_ACKNOWLEDGED', details: 'Accepted Project Introduction & Brokerage Protection Agreement V1.0.' },
-          { time: '22 Aug 10:21 AM', user: 'Rohan Deshmukh (Customer)', action: 'SIGNATURE_COMPLETED', details: 'Digital Signature captured and timestamped.' },
-          { time: '22 Aug 10:21 AM', user: 'System Engine', action: 'PROJECT_VISIT_AGREEMENT_GENERATED', details: 'Generated Project Visit Agreement ID SRM-PVA-2026-000001 (12-Month Protection).' }
-        ]
-      },
-      {
-        projectVisitAgreementId: 'SRM-PVA-2026-000002',
-        visitScheduleId: 'SRM-VS-2026-000087',
-        visitStopId: 'SRM-VSTOP-2026-000002',
-        customerId: 'SRM-CUS-2026-000184',
-        customerName: 'Rohan Deshmukh',
-        customerMobile: '+91 98490 12345',
-        leadId: 'SRM-LEAD-2026-000001',
-        matchId: 'SRM-MAT-2026-000421',
-        propertyId: 'SRM-PROP-2026-000425',
-        costSheetId: 'SRM-CS-2026-000146',
-        projectId: 'SRM-PROJ-2026-000022',
-        projectTitle: 'Prestige High Fields Corner 3BHK',
-        locality: 'Nanakramguda',
-        developerId: 'DEV-02',
-        developerName: 'Prestige Estates',
-        salesPersonId: 'USR-07',
-        salesPersonName: 'Ramesh Pawar (Field Exec - Kondapur)',
-        visitDate: '2026-08-22',
-        arrivalTime: '11:32 AM',
-        departureTime: '12:15 PM',
-        geofenceStatus: 'GEOFENCE_VERIFIED',
-        gpsAccuracyMeters: '18m (Within 100m Allowed Radius)',
-        salesPersonLat: '17.4201° N',
-        salesPersonLng: '78.3410° E',
-        customerOtpStatus: 'OTP_VERIFIED',
-        otpVerifiedAt: '11:35 AM',
-        otpHashRef: 'SHA256:7c4d1e... verified (OTP 912405)',
-        customerAcknowledgementStatus: 'ACKNOWLEDGED',
-        customerSignature: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="200" height="60"><path d="M10 40 Q 50 10 90 40 T 170 30" stroke="%230284c7" fill="none" stroke-width="3"/></svg>',
-        developerRepName: 'Venkat Reddy (Prestige Lead Sales)',
-        developerRepMobile: '+91 98490 11223',
-        documentVersion: 'V1.0',
-        documentUrl: 'file:///pva_SRM-PVA-2026-000002.pdf',
-        digitalVerificationRef: 'SHA256-SWARAMAYI-PVA-2026-000002-VERIFIED',
-        protectionPeriodMonths: 12,
-        protectionStartDate: '2026-08-22',
-        protectionEndDate: '2027-08-22',
-        status: 'VISIT_VERIFIED',
-        createdAt: '2026-08-22 11:35 AM',
-        updatedAt: '2026-08-22 11:35 AM',
-        auditLogs: [
-          { time: '22 Aug 11:32 AM', user: 'Ramesh Pawar (Field Exec)', action: 'PROJECT_ARRIVAL', details: 'Arrived at Prestige High Fields. GPS Geofence verified.' },
-          { time: '22 Aug 11:35 AM', user: 'Rohan Deshmukh (Customer)', action: 'OTP_VERIFIED', details: 'Entered valid OTP 912405.' },
-          { time: '22 Aug 11:36 AM', user: 'System Engine', action: 'PROJECT_VISIT_AGREEMENT_GENERATED', details: 'Generated Project Visit Agreement ID SRM-PVA-2026-000002.' }
-        ]
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_project_visit_agreements_v1', JSON.stringify(projectVisitAgreements));
+      localStorage.setItem('swaramayi_project_visit_agreements_v2_clean', JSON.stringify(projectVisitAgreements));
     } catch (e) {
       console.error('Error saving project visit agreements to localStorage:', e);
     }
@@ -2942,249 +2622,101 @@ export default function App() {
   // 4. BULK PROPERTIES MASTER STOCK (WITH LOCALSTORAGE PERSISTENCE)
   const [properties, setProperties] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_properties_v3');
+      const saved = localStorage.getItem('swaramayi_properties_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading properties from localStorage:', e);
     }
-    return [
-      { id: 'PROP-01', property_code: 'SRM-PROP-2026-000421', title: 'Aparna Zenon Premium 3BHK Residence', type: 'Apartment', developer: 'Aparna Constructions', project: 'Aparna Zenon', tower: 'Tower A', floor: 5, unit: 'A-504', configuration: '3BHK', carpet_area: '1,450 sq.ft.', facing: 'East', final_price: '₹84 Lakhs', base_price: '₹85 Lakhs', status: 'AVAILABLE', locality: 'Kondapur', map_x: 45, map_y: 35, latitude: '17.4612° N', longitude: '78.3689° E', owner_phone: '+91 40 2335 8888', price_sqft: '₹5,862 / sq.ft.', added_date: '2026-08-26', added_by: 'Priya Nair (Sales Exec)', building_photo: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80' },
-      { id: 'PROP-02', property_code: 'SRM-PROP-2026-000422', title: 'Financial Towers Luxury 4BHK Sky Suite', type: 'Penthouse', developer: 'My Home Group', project: 'Financial Towers', tower: 'Tower B', floor: 12, unit: 'B-1202', configuration: '4BHK', carpet_area: '2,400 sq.ft.', facing: 'North-East', final_price: '₹2.08 Crores', base_price: '₹2.10 Crores', status: 'AVAILABLE', locality: 'Financial District', map_x: 28, map_y: 55, latitude: '17.4401° N', longitude: '78.3489° E', owner_phone: '+91 40 6688 9999', price_sqft: '₹8,750 / sq.ft.', added_date: '2026-08-26', added_by: 'Rahul Sharma (TL)', building_photo: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80' },
-      { id: 'PROP-03', property_code: 'SRM-PROP-2026-000423', title: 'My Home Jewel Executive 2BHK Flat', type: 'Apartment', developer: 'My Home Group', project: 'My Home Jewel', tower: 'Block C', floor: 3, unit: 'C-308', configuration: '2BHK', carpet_area: '1,245 sq.ft.', facing: 'North', final_price: '₹68 Lakhs', base_price: '₹69 Lakhs', status: 'AVAILABLE', locality: 'Madinaguda', map_x: 32, map_y: 20, latitude: '17.4921° N', longitude: '78.3412° E', owner_phone: '+91 40 6688 1111', price_sqft: '₹5,542 / sq.ft.', added_date: '2026-08-26', added_by: 'Priya Nair (Sales Exec)', building_photo: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80' },
-      { id: 'PROP-04', property_code: 'SRM-PROP-2026-000424', title: 'Jayabheri Silicon County Ultra Villa', type: 'Villa', developer: 'Jayabheri Properties', project: 'Silicon County', tower: 'Villa 14', floor: 2, unit: 'V-14', configuration: '5BHK Villa', carpet_area: '4,200 sq.ft.', facing: 'East', final_price: '₹4.50 Crores', base_price: '₹4.60 Crores', status: 'BOOKED', locality: 'Hitec City', map_x: 58, map_y: 42, latitude: '17.4478° N', longitude: '78.3789° E', owner_phone: '+91 40 2311 5555', price_sqft: '₹10,952 / sq.ft.', added_date: '2026-08-25', added_by: 'Vikram Reddy (GM)', building_photo: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80' },
-      { id: 'PROP-05', property_code: 'SRM-PROP-2026-000425', title: 'Prestige High Fields Corner 3BHK', type: 'Apartment', developer: 'Prestige Estates', project: 'Prestige High Fields', tower: 'Tower 8', floor: 18, unit: 'T8-1804', configuration: '3BHK', carpet_area: '1,725 sq.ft.', facing: 'East', final_price: '₹1.35 Crores', base_price: '₹1.38 Crores', status: 'HOLD', locality: 'Nanakramguda', map_x: 22, map_y: 65, latitude: '17.4201° N', longitude: '78.3410° E', owner_phone: '+91 40 4477 8888', price_sqft: '₹8,000 / sq.ft.', added_date: '2026-08-25', added_by: 'Rahul Sharma (TL)', building_photo: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80' }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_properties_v3', JSON.stringify(properties));
+      localStorage.setItem('swaramayi_properties_v4_clean', JSON.stringify(properties));
     } catch (e) {
       console.error('Error saving properties to localStorage:', e);
     }
   }, [properties]);
 
   const [rawSelectedProperty, setSelectedProperty] = useState<any>(null);
-  const selectedProperty = rawSelectedProperty || properties[0] || { id: 'PROP-01', property_code: 'SRM-PROP-2026-000421', title: 'Aparna Zenon Premium 3BHK Residence', type: 'Apartment', developer: 'Aparna Constructions', project: 'Aparna Zenon', tower: 'Tower A', floor: 5, unit: 'A-504', configuration: '3BHK', carpet_area: '1,450 sq.ft.', facing: 'East', final_price: '₹84 Lakhs', base_price: '₹85 Lakhs', status: 'AVAILABLE', locality: 'Kondapur', map_x: 45, map_y: 35, latitude: '17.4612° N', longitude: '78.3689° E', owner_phone: '+91 40 2335 8888', price_sqft: '₹5,862 / sq.ft.' };
+  const selectedProperty = rawSelectedProperty || properties[0] || {
+    id: 'PROP-EMPTY',
+    property_code: 'NO_PROPERTIES',
+    title: 'No Properties Available in Master Inventory',
+    type: 'N/A',
+    developer: 'Swaramayi System',
+    project: 'N/A',
+    locality: 'Hyderabad Core',
+    configuration: 'N/A',
+    final_price: '₹0',
+    base_price: '₹0',
+    price_sqft: '₹0 / sq.ft.',
+    status: 'EMPTY',
+    latitude: '17.4478° N',
+    longitude: '78.3789° E'
+  };
 
   // 5. Property Units Inventory
-  const [propertyUnits, setPropertyUnits] = useState([
-    { id: 'UN-01', unit_code: 'SRM-UNIT-2026-000001', tower: 'Tower A', floor: 1, unit_num: 'A-101', bhk: '2BHK', area: '1,100 sq.ft.', price: '₹70 Lakhs', status: 'AVAILABLE' },
-    { id: 'UN-02', unit_code: 'SRM-UNIT-2026-000002', tower: 'Tower A', floor: 1, unit_num: 'A-102', bhk: '3BHK', area: '1,450 sq.ft.', price: '₹84 Lakhs', status: 'BOOKED', customer: 'Rohan Deshmukh' }
-  ]);
+  const [propertyUnits, setPropertyUnits] = useState([]);
 
   // 6. CUSTOMERS MASTER VAULT (WITH LOCALSTORAGE PERSISTENCE)
   const [customers, setCustomers] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_customers_v3');
+      const saved = localStorage.getItem('swaramayi_customers_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading customers from localStorage:', e);
     }
-    return [
-      { id: 'CUST-01', customer_number: 'SRM-CUS-2026-000184', name: 'Rohan Deshmukh', mobile: '+91 98490 12345', email: 'rohan.d@gmail.com', budget: '₹70 Lakhs - ₹85 Lakhs', preferredArea: 'Kondapur / Gachibowli', configuration: '3BHK', status: 'QUALIFIED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 88, source: 'Meta Ads' },
-      { id: 'CUST-02', customer_number: 'SRM-CUS-2026-000185', name: 'Priya Sharma', mobile: '+91 99887 76655', email: 'priya.s@yahoo.com', budget: '₹1.8 Crore - ₹2.2 Crore', preferredArea: 'Financial District', configuration: '4BHK', status: 'SITE_VISIT_SCHEDULED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 94, source: 'Google Search' },
-      { id: 'CUST-03', customer_number: 'SRM-CUS-2026-000186', name: 'Dr. Ananth Kulkarni', mobile: '+91 98480 33445', email: 'drananth@apollo.com', budget: '₹4.0 Crore - ₹5.0 Crore', preferredArea: 'Hitec City', configuration: '5BHK Villa', status: 'BOOKED', priority: 'HOT', assigned_agent: 'Rahul Sharma (TL)', score: 98, source: 'Referral' },
-      { id: 'CUST-04', customer_number: 'SRM-CUS-2026-000187', name: 'Avishek Das', mobile: '9432328947', email: 'avishek.das@gmail.com', budget: '50 lakh – 60 Lakh', preferredArea: 'Madhyamgram', configuration: '3BHK', status: 'QUALIFIED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 92, source: 'Meta Ads' }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_customers_v3', JSON.stringify(customers));
+      localStorage.setItem('swaramayi_customers_v4_clean', JSON.stringify(customers));
     } catch (e) {
       console.error('Error saving customers to localStorage:', e);
     }
   }, [customers]);
 
   const [rawSelectedCust, setSelectedCust] = useState<any>(null);
-  const selectedCust = rawSelectedCust || customers[0] || { id: 'CUST-01', customer_number: 'SRM-CUS-2026-000184', name: 'Rohan Deshmukh', mobile: '+91 98490 12345', email: 'rohan.d@gmail.com', budget: '₹70 Lakhs - ₹85 Lakhs', preferredArea: 'Kondapur / Gachibowli', configuration: '3BHK', status: 'QUALIFIED', priority: 'HOT', assigned_agent: 'Priya Nair (Sales Exec)', score: 88, source: 'Meta Ads' };
+  const selectedCust = rawSelectedCust || customers[0] || {
+    id: 'CUS-EMPTY',
+    customer_number: 'NO_CUSTOMERS',
+    name: 'No Customer Records in Vault',
+    mobile: 'N/A',
+    email: 'N/A',
+    budget: 'N/A',
+    preferredArea: 'N/A',
+    configuration: 'N/A',
+    status: 'EMPTY',
+    priority: 'COLD',
+    score: 0,
+    source: 'N/A'
+  };
 
   // 6.5. CENTRAL LEADS MASTER STORE (WITH LOCALSTORAGE PERSISTENCE)
   const [leadsList, setLeadsList] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_leads_v4');
+      const saved = localStorage.getItem('swaramayi_leads_v5_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading leads from localStorage:', e);
     }
-    return [
-      {
-        id: 'LEAD-000001',
-        lead_number: 'SRM-LEAD-2026-000001',
-        customer_id: 'SRM-CUS-2026-000184',
-        customer_number: 'SRM-CUS-2026-000184',
-        customer_name: 'Rohan Deshmukh',
-        mobile: '+91 98490 11223',
-        alternate_mobile: '+91 98490 11224',
-        whatsapp_number: '+91 98490 11223',
-        email: 'rohan.d@gmail.com',
-        source: 'Facebook',
-        campaign: 'High-end Villa Ads',
-        preferred_location: 'Kondapur / Gachibowli',
-        preferred_project: 'Aparna Zenon',
-        property_type: 'Flat / Apartment',
-        bhk: '3BHK',
-        budget_min: 7000000,
-        budget_max: 8500000,
-        purpose: 'Self Use',
-        possession_preference: 'Immediate (< 30 Days)',
-        loan_required: true,
-        occupation: 'IT Manager (Microsoft)',
-        priority: 'HOT',
-        lead_status: 'INTERESTED',
-        call_disposition: 'CONNECTED_INTERESTED',
-        next_action: 'Send Cost Sheet',
-        next_followup: '2026-08-25T17:00:00.000Z',
-        assigned_employee_id: 'USR-07',
-        assigned_employee_name: 'Priya Nair (Sales Exec)',
-        created_by: 'USR-01',
-        quality_score: 88,
-        created_at: '2026-08-24T10:30:00.000Z',
-        updated_at: '2026-08-24T11:20:00.000Z'
-      },
-      {
-        id: 'LEAD-000002',
-        lead_number: 'SRM-LEAD-2026-000002',
-        customer_id: 'SRM-CUS-2026-000185',
-        customer_number: 'SRM-CUS-2026-000185',
-        customer_name: 'Vikramaditya Roy',
-        mobile: '+91 98490 55443',
-        whatsapp_number: '+91 98490 55443',
-        email: 'vikram.roy@techmail.com',
-        source: 'Google Ads',
-        campaign: 'Hyderabad Luxury Living',
-        preferred_location: 'Financial District',
-        preferred_project: 'My Home Bhooja',
-        property_type: 'Flat / Apartment',
-        bhk: '4BHK',
-        budget_min: 15000000,
-        budget_max: 22000000,
-        purpose: 'Investment',
-        possession_preference: 'Under Construction (6-12 Months)',
-        loan_required: false,
-        occupation: 'Business Owner',
-        priority: 'HOT',
-        lead_status: 'CALL_BACK_LATER',
-        call_disposition: 'CUSTOMER_BUSY',
-        next_action: 'Call Again',
-        next_followup: '2026-08-22T10:00:00.000Z', // Overdue
-        assigned_employee_id: 'USR-07',
-        assigned_employee_name: 'Priya Nair (Sales Exec)',
-        created_by: 'USR-01',
-        quality_score: 94,
-        created_at: '2026-08-20T09:15:00.000Z',
-        updated_at: '2026-08-22T10:00:00.000Z'
-      },
-      {
-        id: 'LEAD-000003',
-        lead_number: 'SRM-LEAD-2026-000003',
-        customer_id: 'SRM-CUS-2026-000186',
-        customer_number: 'SRM-CUS-2026-000186',
-        customer_name: 'Sumanth Varma',
-        mobile: '+91 98490 88888',
-        whatsapp_number: '+91 98490 88888',
-        email: 'sumanth.varma@gmail.com',
-        source: 'Walk-in',
-        preferred_location: 'Kondapur',
-        preferred_project: 'Incor PBEL City',
-        property_type: 'Flat / Apartment',
-        bhk: '3BHK',
-        budget_min: 12000000,
-        budget_max: 18000000,
-        purpose: 'Self Use',
-        possession_preference: 'Immediate',
-        loan_required: true,
-        occupation: 'Senior Software Engineer',
-        priority: 'WARM',
-        lead_status: 'MATCHING_PENDING',
-        call_disposition: 'Connected',
-        next_action: 'Create Matching',
-        next_followup: '2026-08-24T18:00:00.000Z',
-        assigned_employee_id: 'USR-14',
-        assigned_employee_name: 'Ramesh Pawar (Field Exec)',
-        created_by: 'USR-04',
-        quality_score: 82,
-        created_at: '2026-08-22T14:00:00.000Z',
-        updated_at: '2026-08-24T14:00:00.000Z'
-      },
-      {
-        id: 'LEAD-000004',
-        lead_number: 'SRM-LEAD-2026-000004',
-        customer_id: 'SRM-CUS-2026-000187',
-        customer_number: 'SRM-CUS-2026-000187',
-        customer_name: 'Avishek Das',
-        mobile: '9432328947',
-        whatsapp_number: '9432328947',
-        email: 'avishek@gmail.com',
-        source: 'Referral',
-        preferred_location: 'Madhyamgram',
-        property_type: 'Flat / Apartment',
-        bhk: '3BHK',
-        budget_min: 5000000,
-        budget_max: 6000000,
-        purpose: 'Self Use',
-        possession_preference: 'Ready to Move',
-        loan_required: true,
-        occupation: 'Consultant',
-        priority: 'HOT',
-        lead_status: 'MATCHING_PENDING',
-        call_disposition: 'Interested',
-        next_action: 'Send Property Details',
-        next_followup: '2026-08-25T11:00:00.000Z',
-        assigned_employee_id: 'USR-07',
-        assigned_employee_name: 'Priya Nair (Sales Exec)',
-        created_by: 'USR-01',
-        quality_score: 90,
-        created_at: '2026-08-24T08:00:00.000Z',
-        updated_at: '2026-08-24T08:00:00.000Z'
-      },
-      {
-        id: 'LEAD-000005',
-        lead_number: 'SRM-LEAD-2026-000005',
-        customer_id: 'SRM-CUS-2026-000188',
-        customer_number: 'SRM-CUS-2026-000188',
-        customer_name: 'Ananya Deshpande',
-        mobile: '+91 98490 77665',
-        whatsapp_number: '+91 98490 77665',
-        email: 'ananya.d@yahoo.com',
-        source: 'Website',
-        preferred_location: 'Hitec City',
-        property_type: 'Flat / Apartment',
-        bhk: '2BHK',
-        budget_min: 6000000,
-        budget_max: 7500000,
-        purpose: 'Self Use',
-        possession_preference: 'Under Construction',
-        loan_required: true,
-        occupation: 'Bank Officer',
-        priority: 'COLD',
-        lead_status: 'NURTURE',
-        call_disposition: 'PROPERTY_SEARCH_LATER',
-        next_action: 'Follow Up Later',
-        next_followup: '2027-02-01T10:00:00.000Z',
-        assigned_employee_id: 'USR-08',
-        assigned_employee_name: 'Ananya Roy (Telecaller)',
-        created_by: 'USR-02',
-        quality_score: 55,
-        created_at: '2026-08-15T10:00:00.000Z',
-        updated_at: '2026-08-18T10:00:00.000Z'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_leads_v4', JSON.stringify(leadsList));
+      localStorage.setItem('swaramayi_leads_v5_clean', JSON.stringify(leadsList));
     } catch (e) {
       console.error('Error saving leads to localStorage:', e);
     }
@@ -3242,49 +2774,20 @@ export default function App() {
   // Master Cost Sheet Shares State (WITH LOCALSTORAGE PERSISTENCE)
   const [costSheetShares, setCostSheetShares] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_cost_sheet_shares_v3');
+      const saved = localStorage.getItem('swaramayi_cost_sheet_shares_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading cost sheet shares from localStorage:', e);
     }
-    return [
-      {
-        shareId: 'SRM-PSH-2026-000032',
-        costSheetId: 'SRM-CS-2026-000145',
-        customerName: 'Rohan Deshmukh',
-        customerNumber: 'SRM-CUS-2026-000184',
-        mobile: '+91 98490 11223',
-        propertyTitle: 'Aparna Zenon Premium 3BHK Residence',
-        finalPrice: '₹84 Lakhs',
-        channel: 'WhatsApp & Email',
-        sentTime: '18 Aug 2026 11:35 AM',
-        viewCount: 4,
-        downloadCount: 2,
-        interest: '🔥 HOT Priority (Requested Site Visit)'
-      },
-      {
-        shareId: 'SRM-PSH-2026-000033',
-        costSheetId: 'SRM-CS-2026-000146',
-        customerName: 'Avishek Das',
-        customerNumber: 'SRM-CUS-2026-000187',
-        mobile: '9432328947',
-        propertyTitle: 'Madhyamgram Premium 3BHK Flat',
-        finalPrice: '55 Lakhs',
-        channel: 'WhatsApp Gateway',
-        sentTime: '18 Aug 2026 12:45 PM',
-        viewCount: 2,
-        downloadCount: 1,
-        interest: '⚡ WARM Priority (Callback Scheduled)'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_cost_sheet_shares_v3', JSON.stringify(costSheetShares));
+      localStorage.setItem('swaramayi_cost_sheet_shares_v4_clean', JSON.stringify(costSheetShares));
     } catch (e) {
       console.error('Error saving cost sheet shares to localStorage:', e);
     }
@@ -3319,266 +2822,6 @@ export default function App() {
     revUnitNotes: string;
     reason: string;
   } | null>(null);
-
-  const handleOpenRevisionModal = (costSheet: any) => {
-    const ps = costSheet.pricingSnapshot || {};
-    const propSnap = costSheet.propertySnapshot || {};
-    const pBreakup = costSheet.formattedPriceBreakup || {};
-    
-    // Find master property record by property code or ID
-    const propCode = costSheet.propertyCode || propSnap.propertyCode || costSheet.propertyId;
-    const matchedProp = properties.find((p: any) => p.property_code === propCode || p.id === propCode);
-    
-    // Base Price: use matchedProp base/final price or stored snapshot
-    const basePrice = matchedProp
-      ? parsePriceToNumeric(matchedProp.final_price || matchedProp.base_price)
-      : (ps.basePrice || parsePriceToNumeric(pBreakup.basePriceStr) || 4426500);
-
-    // Floor Rise: check if explicitly defined on matchedProp or stored snapshot string
-    const floorRise = (matchedProp && (matchedProp.floor_rise !== undefined || matchedProp.floorRise !== undefined))
-      ? parsePriceToNumeric(matchedProp.floor_rise || matchedProp.floorRise)
-      : (pBreakup.floorRiseStr && pBreakup.floorRiseStr !== 'N/A' && pBreakup.floorRiseStr !== '₹0' ? parsePriceToNumeric(pBreakup.floorRiseStr) : 0);
-
-    // PLC: check if explicitly defined on matchedProp or stored snapshot string
-    const plc = (matchedProp && (matchedProp.plc !== undefined || matchedProp.plc_charge !== undefined))
-      ? parsePriceToNumeric(matchedProp.plc || matchedProp.plc_charge)
-      : (pBreakup.plcStr && pBreakup.plcStr !== 'N/A' && pBreakup.plcStr !== '₹0' ? parsePriceToNumeric(pBreakup.plcStr) : 0);
-
-    // Parking: check if explicitly defined on matchedProp or stored snapshot string
-    const parkingCharge = (matchedProp && (matchedProp.parking_charge !== undefined || matchedProp.parkingCharge !== undefined))
-      ? parsePriceToNumeric(matchedProp.parking_charge || matchedProp.parkingCharge)
-      : (pBreakup.parkingStr && pBreakup.parkingStr !== 'N/A' && pBreakup.parkingStr !== '₹0' ? parsePriceToNumeric(pBreakup.parkingStr) : 0);
-
-    // Clubhouse: check if explicitly defined on matchedProp or stored snapshot string
-    const clubCharge = (matchedProp && (matchedProp.club_charge !== undefined || matchedProp.clubhouse_fee !== undefined))
-      ? parsePriceToNumeric(matchedProp.club_charge || matchedProp.clubhouse_fee)
-      : (pBreakup.clubStr && pBreakup.clubStr !== 'N/A' && pBreakup.clubStr !== '₹0' ? parsePriceToNumeric(pBreakup.clubStr) : 0);
-
-    // Maintenance: check if explicitly defined on matchedProp or stored snapshot string
-    const maintenance = (matchedProp && (matchedProp.maintenance !== undefined || matchedProp.maintenance_annual !== undefined))
-      ? parsePriceToNumeric(matchedProp.maintenance || matchedProp.maintenance_annual)
-      : (pBreakup.maintenanceStr && pBreakup.maintenanceStr !== 'N/A' && pBreakup.maintenanceStr !== '₹0' ? parsePriceToNumeric(pBreakup.maintenanceStr) : 0);
-
-    // Infra & Legal: check if explicitly defined on matchedProp or stored snapshot string
-    const infraLegal = (matchedProp && (matchedProp.infra_legal_fees !== undefined || matchedProp.infrastructure_charge !== undefined))
-      ? parsePriceToNumeric(matchedProp.infra_legal_fees || matchedProp.infrastructure_charge)
-      : (pBreakup.infrastructureStr && pBreakup.infrastructureStr !== 'N/A' && pBreakup.infrastructureStr !== '₹0' ? parsePriceToNumeric(pBreakup.infrastructureStr) : 0);
-
-    const discountAmount = ps.discountAmount !== undefined && ps.discountAmount > 0
-      ? ps.discountAmount
-      : (pBreakup.discountStr && pBreakup.discountStr !== 'N/A' ? parsePriceToNumeric(pBreakup.discountStr) : 0);
-
-    const unitNotes = propSnap.unitNumber
-      ? `${propSnap.unitNumber}${propSnap.floor ? ', ' + propSnap.floor : ''}${propSnap.facing ? ', ' + propSnap.facing : ''}`
-      : (matchedProp ? `${matchedProp.unit || 'A-504'}, ${matchedProp.floor ? matchedProp.floor + 'th Floor' : '5th Floor'}, ${matchedProp.facing || 'East Facing'}` : 'A-504, 5th Floor, EAST');
-
-    const gstPct = ps.gstPct !== undefined ? ps.gstPct : (basePrice < 4500000 ? 1 : 5);
-
-    setShowRevisionModal({
-      open: true,
-      costSheet,
-      revBasePrice: basePrice,
-      revFloorRise: floorRise,
-      revPlc: plc,
-      revParking: parkingCharge,
-      revClub: clubCharge,
-      revMaintenance: maintenance,
-      revInfraLegal: infraLegal,
-      revDiscount: discountAmount,
-      revGstPct: gstPct,
-      revStampDutyPct: ps.stampDutyPct !== undefined ? ps.stampDutyPct : 5,
-      revRegPct: ps.registrationPct !== undefined ? ps.registrationPct : 1,
-      revUnitNotes: unitNotes,
-      reason: ''
-    });
-  };
-
-  // DYNAMIC COST SHEET PDF GENERATION & INSTANT DOWNLOAD HELPER
-  const downloadCostSheetPDF = (costSheet: any) => {
-    if (!costSheet) return;
-    
-    const custName = costSheet.customerSnapshot?.customerName || 'Customer';
-    const custMobile = costSheet.customerSnapshot?.mobile || '';
-    const custCode = costSheet.customerId || costSheet.customerSnapshot?.customerNumber || '';
-    const propCode = costSheet.propertyCode || costSheet.propertySnapshot?.propertyCode || '';
-    const propTitle = costSheet.propertySnapshot?.propertyTitle || propCode;
-    const devName = costSheet.propertySnapshot?.developerName || costSheet.propertySnapshot?.projectName || 'Swaramayi Partner Developer';
-    const bhk = costSheet.propertySnapshot?.bhk || '3BHK';
-    const locality = costSheet.propertySnapshot?.locality || 'Hyderabad';
-    const pBreakup = costSheet.formattedPriceBreakup || {};
-    const ps = costSheet.pricingSnapshot || {};
-    const ver = costSheet.version || 'V01';
-    const dateStr = costSheet.createdAt || new Date().toLocaleDateString('en-IN');
-
-    const htmlContent = `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Cost Sheet - ${costSheet.costSheetId}</title>
-  <style>
-    @page { size: A4 portrait; margin: 15mm; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #0f172a; margin: 0; padding: 25px; background: #ffffff; }
-    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #0284c7; padding-bottom: 15px; margin-bottom: 20px; }
-    .company-title { font-size: 22px; font-weight: 900; color: #0284c7; margin: 0; text-transform: uppercase; }
-    .company-sub { font-size: 11px; color: #64748b; margin-top: 2px; font-weight: 700; letter-spacing: 0.5px; }
-    .doc-badge { text-align: right; }
-    .doc-id { font-family: monospace; font-size: 16px; font-weight: 900; color: #0f172a; }
-    .doc-ver { font-size: 11px; background: #0284c7; color: #ffffff; padding: 3px 8px; border-radius: 4px; font-weight: 800; display: inline-block; margin-top: 4px; }
-    
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
-    .card { background: #f8fafc; border: 1px solid #cbd5e1; padding: 14px 18px; border-radius: 8px; }
-    .card-title { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 800; margin-bottom: 6px; }
-    .card-val { font-size: 13px; font-weight: 800; color: #0f172a; }
-    .card-sub { font-size: 11px; color: #475569; margin-top: 3px; }
-    
-    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
-    th { background: #0f172a; color: #ffffff; text-align: left; padding: 10px 12px; font-weight: 800; text-transform: uppercase; font-size: 11px; }
-    td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; color: #334155; }
-    tr:nth-child(even) { background: #f8fafc; }
-    .row-total { background: #f0fdf4 !important; font-weight: 900; }
-    .row-total td { color: #15803d; font-size: 14px; border-top: 2px solid #16a34a; border-bottom: 2px solid #16a34a; }
-    
-    .disclaimer { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px; font-size: 10px; color: #64748b; margin-top: 20px; line-height: 1.4; }
-    .footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #cbd5e1; padding-top: 12px; margin-top: 25px; font-size: 10px; color: #94a3b8; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <h1 class="company-title">Swaramayi Real Estate Marketing</h1>
-      <div class="company-sub">Enterprise Real Estate OS • Official Individual Property Cost Sheet</div>
-    </div>
-    <div class="doc-badge">
-      <div class="doc-id">${costSheet.costSheetId}</div>
-      <div class="doc-ver">VERSION ${ver} • ${costSheet.status || 'GENERATED'}</div>
-    </div>
-  </div>
-
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title">👤 Target Customer Details</div>
-      <div class="card-val">${custName}</div>
-      <div class="card-sub">Mobile: ${custMobile} | ID: ${custCode}</div>
-    </div>
-    <div class="card">
-      <div class="card-title">🏠 Property Specifications</div>
-      <div class="card-val">${propTitle}</div>
-      <div class="card-sub">Code: ${propCode} | ${devName} | ${bhk} (${locality})</div>
-    </div>
-  </div>
-
-  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table>
-    <thead>
-      <tr>
-        <th>Pricing Breakdown Component</th>
-        <th style="text-align: right;">Amount (INR)</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr>
-        <td>1. Base Asking Price (Property Cost)</td>
-        <td style="text-align: right; font-weight: 800;">${pBreakup.basePriceStr || formatIndianRupees(ps.basePrice || 0)}</td>
-      </tr>
-      ${pBreakup.floorRiseStr && pBreakup.floorRiseStr !== 'N/A' && pBreakup.floorRiseStr !== '₹0' ? `
-      <tr>
-        <td>2. Floor Rise Fee</td>
-        <td style="text-align: right;">${pBreakup.floorRiseStr}</td>
-      </tr>` : ''}
-      ${pBreakup.plcStr && pBreakup.plcStr !== 'N/A' && pBreakup.plcStr !== '₹0' ? `
-      <tr>
-        <td>3. Preferential Location Charge (PLC)</td>
-        <td style="text-align: right;">${pBreakup.plcStr}</td>
-      </tr>` : ''}
-      ${pBreakup.parkingStr && pBreakup.parkingStr !== 'N/A' && pBreakup.parkingStr !== '₹0' ? `
-      <tr>
-        <td>4. Covered Car Parking Slot Charge</td>
-        <td style="text-align: right;">${pBreakup.parkingStr}</td>
-      </tr>` : ''}
-      ${pBreakup.clubStr && pBreakup.clubStr !== 'N/A' && pBreakup.clubStr !== '₹0' ? `
-      <tr>
-        <td>5. Clubhouse & Amenities Membership</td>
-        <td style="text-align: right;">${pBreakup.clubStr}</td>
-      </tr>` : ''}
-      ${pBreakup.maintenanceStr && pBreakup.maintenanceStr !== 'N/A' && pBreakup.maintenanceStr !== '₹0' ? `
-      <tr>
-        <td>6. Maintenance Charge (Advance 1 Year)</td>
-        <td style="text-align: right;">${pBreakup.maintenanceStr}</td>
-      </tr>` : ''}
-      ${pBreakup.infrastructureStr && pBreakup.infrastructureStr !== 'N/A' && pBreakup.infrastructureStr !== '₹0' ? `
-      <tr>
-        <td>7. Infrastructure & Legal Documentation Fee</td>
-        <td style="text-align: right;">${pBreakup.infrastructureStr}</td>
-      </tr>` : ''}
-      ${pBreakup.discountStr && pBreakup.discountStr !== 'N/A' && pBreakup.discountStr !== '₹0' ? `
-      <tr style="color: #dc2626; font-weight: 800;">
-        <td>8. Manager Approved Special Discount</td>
-        <td style="text-align: right;">- ${pBreakup.discountStr}</td>
-      </tr>` : ''}
-      <tr>
-        <td><strong>SUBTOTAL (Before Taxes & Govt. Charges)</strong></td>
-        <td style="text-align: right; font-weight: 800;">${pBreakup.subtotalStr || formatIndianRupees(ps.subtotalBeforeTax || ps.basePrice || 0)}</td>
-      </tr>
-      <tr>
-        <td>9. Goods & Services Tax (GST)</td>
-        <td style="text-align: right;">${pBreakup.gstStr || formatIndianRupees(ps.gstAmount || 0)}</td>
-      </tr>
-      <tr>
-        <td>10. Stamp Duty Charges</td>
-        <td style="text-align: right;">${pBreakup.stampDutyStr || formatIndianRupees(ps.stampDutyAmount || 0)}</td>
-      </tr>
-      <tr>
-        <td>11. Registration & Property Transfer Fee</td>
-        <td style="text-align: right;">${pBreakup.registrationStr || formatIndianRupees(ps.registrationAmount || 0)}</td>
-      </tr>
-      <tr class="row-total">
-        <td>TOTAL ESTIMATED PROPERTY COST</td>
-        <td style="text-align: right;">${pBreakup.totalEstimatedCostStr || formatIndianRupees(ps.totalEstimatedCost || 0)}</td>
-      </tr>
-    </tbody>
-  </table>
-</div>
-
-  <div class="disclaimer">
-    <strong>📌 TERMS & CONDITIONS DISCLAIMER:</strong><br>
-    All prices mentioned in this Cost Sheet are indicative and subject to confirmation by the respective developer/property owner. Applicable taxes, government charges, registration fees and other costs may change. Final pricing will be confirmed before booking.
-  </div>
-
-  <div class="footer">
-    <span>Generated by Swaramayi Real Estate CRM OS • SHA256 Verified</span>
-    <span>System Timestamp: ${dateStr}</span>
-  </div>
-
-  <script>
-    window.onload = function() {
-      setTimeout(function() {
-        window.print();
-      }, 300);
-    };
-  </script>
-</body>
-</html>
-    `;
-
-    // Open print window for PDF save
-    const printWin = window.open('', '_blank');
-    if (printWin) {
-      printWin.document.write(htmlContent);
-      printWin.document.close();
-    }
-
-    // Trigger instant file download (.html document / printable cost sheet)
-    const blob = new Blob([htmlContent], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Cost_Sheet_${costSheet.costSheetId}_${custName.replace(/\s+/g, '_')}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  };
 
   // Helper: Parse Indian Currency String to Integer Rupees
   const parsePriceToNumeric = (priceStr: any): number => {
@@ -3689,7 +2932,7 @@ export default function App() {
       registrationAmount,
       totalEstimatedCost,
 
-      basePriceStr: basePriceNum > 0 ? formatIndianRupees(basePriceNum) : '₹0',
+      basePriceStr: basePriceNum > 0 ? formatIndianRupees(basePriceNum) : '',
       ratePerSqftStr: ratePerSqftNum > 0 ? `₹${ratePerSqftNum.toLocaleString('en-IN')}/Sq.Ft.` : '₹0/Sq.Ft.',
       floorRiseStr: formatFloorPlcStr(floorRiseNum, prop.floor_rise_charge || prop.floorRise || prop.floor_rise),
       plcStr: formatFloorPlcStr(plcNum, prop.plc_charge || prop.plc || prop.plc_facing_charge),
@@ -3697,262 +2940,105 @@ export default function App() {
       clubStr: formatChargeStr(clubNum, prop.clubhouse_charge || prop.club_charge || prop.clubhouse_fee),
       maintenanceStr: formatChargeStr(maintenanceNum, prop.advance_maintenance_charge || prop.maintenance || prop.maintenance_annual),
       infrastructureStr: formatChargeStr(infraNum, prop.legal_doc_charge || prop.infrastructureCharge || prop.infra_legal_fees || prop.infrastructure_charge || prop.legal_charge),
-      subtotalStr: subtotalBeforeTax > 0 ? formatIndianRupees(subtotalBeforeTax) : '₹0',
+      subtotalStr: subtotalBeforeTax > 0 ? formatIndianRupees(subtotalBeforeTax) : '',
       gstStr: gstAmount > 0 ? `${formatIndianRupees(gstAmount)} (${gstPct}%)` : `₹0 (${gstPct}%)`,
       stampDutyStr: stampDutyAmount > 0 ? `${formatIndianRupees(stampDutyAmount)} (${stampDutyPct}%)` : `₹0 (${stampDutyPct}%)`,
       registrationStr: registrationAmount > 0 ? `${formatIndianRupees(registrationAmount)} (${registrationPct}%)` : `₹0 (${registrationPct}%)`,
-      totalEstimatedCostStr: totalEstimatedCost > 0 ? formatIndianRupees(totalEstimatedCost) : '₹0'
+      totalEstimatedCostStr: totalEstimatedCost > 0 ? formatIndianRupees(totalEstimatedCost) : ''
     };
+  };
+
+  const handleOpenRevisionModal = (costSheet: any) => {
+    const ps = costSheet.pricingSnapshot || {};
+    const propSnap = costSheet.propertySnapshot || {};
+    const pBreakup = costSheet.formattedPriceBreakup || {};
+    
+    // Find master property record by property code or ID
+    const propCode = costSheet.propertyCode || propSnap.propertyCode || costSheet.propertyId;
+    const matchedProp = properties.find((p: any) => p.property_code === propCode || p.id === propCode);
+    
+    // Base Price: use matchedProp base/final price or stored snapshot
+    const basePrice = matchedProp
+      ? parsePriceToNumeric(matchedProp.final_price || matchedProp.base_price)
+      : (ps.basePrice || parsePriceToNumeric(pBreakup.basePriceStr) || 4426500);
+
+    // Floor Rise: check if explicitly defined on matchedProp or stored snapshot string
+    const floorRise = (matchedProp && (matchedProp.floor_rise !== undefined || matchedProp.floorRise !== undefined))
+      ? parsePriceToNumeric(matchedProp.floor_rise || matchedProp.floorRise)
+      : (pBreakup.floorRiseStr && pBreakup.floorRiseStr !== 'N/A' && pBreakup.floorRiseStr !== '₹0' ? parsePriceToNumeric(pBreakup.floorRiseStr) : 0);
+
+    // PLC: check if explicitly defined on matchedProp or stored snapshot string
+    const plc = (matchedProp && (matchedProp.plc !== undefined || matchedProp.plc_charge !== undefined))
+      ? parsePriceToNumeric(matchedProp.plc || matchedProp.plc_charge)
+      : (pBreakup.plcStr && pBreakup.plcStr !== 'N/A' && pBreakup.plcStr !== '₹0' ? parsePriceToNumeric(pBreakup.plcStr) : 0);
+
+    // Parking: check if explicitly defined on matchedProp or stored snapshot string
+    const parkingCharge = (matchedProp && (matchedProp.parking_charge !== undefined || matchedProp.parkingCharge !== undefined))
+      ? parsePriceToNumeric(matchedProp.parking_charge || matchedProp.parkingCharge)
+      : (pBreakup.parkingStr && pBreakup.parkingStr !== 'N/A' && pBreakup.parkingStr !== '₹0' ? parsePriceToNumeric(pBreakup.parkingStr) : 0);
+
+    // Clubhouse: check if explicitly defined on matchedProp or stored snapshot string
+    const clubCharge = (matchedProp && (matchedProp.club_charge !== undefined || matchedProp.clubhouse_fee !== undefined))
+      ? parsePriceToNumeric(matchedProp.club_charge || matchedProp.clubhouse_fee)
+      : (pBreakup.clubStr && pBreakup.clubStr !== 'N/A' && pBreakup.clubStr !== '₹0' ? parsePriceToNumeric(pBreakup.clubStr) : 0);
+
+    // Maintenance: check if explicitly defined on matchedProp or stored snapshot string
+    const maintenance = (matchedProp && (matchedProp.maintenance !== undefined || matchedProp.maintenance_annual !== undefined))
+      ? parsePriceToNumeric(matchedProp.maintenance || matchedProp.maintenance_annual)
+      : (pBreakup.maintenanceStr && pBreakup.maintenanceStr !== 'N/A' && pBreakup.maintenanceStr !== '₹0' ? parsePriceToNumeric(pBreakup.maintenanceStr) : 0);
+
+    // Infra & Legal: check if explicitly defined on matchedProp or stored snapshot string
+    const infraLegal = (matchedProp && (matchedProp.infra_legal_fees !== undefined || matchedProp.infrastructure_charge !== undefined))
+      ? parsePriceToNumeric(matchedProp.infra_legal_fees || matchedProp.infrastructure_charge)
+      : (pBreakup.infrastructureStr && pBreakup.infrastructureStr !== 'N/A' && pBreakup.infrastructureStr !== '₹0' ? parsePriceToNumeric(pBreakup.infrastructureStr) : 0);
+
+    const discountAmount = ps.discountAmount !== undefined && ps.discountAmount > 0
+      ? ps.discountAmount
+      : (pBreakup.discountStr && pBreakup.discountStr !== 'N/A' ? parsePriceToNumeric(pBreakup.discountStr) : 0);
+
+    const unitNotes = propSnap.unitNumber
+      ? `${propSnap.unitNumber}${propSnap.floor ? ', ' + propSnap.floor : ''}${propSnap.facing ? ', ' + propSnap.facing : ''}`
+      : (matchedProp ? `${matchedProp.unit || 'A-504'}, ${matchedProp.floor ? matchedProp.floor + 'th Floor' : '5th Floor'}, ${matchedProp.facing || 'East Facing'}` : 'A-504, 5th Floor, EAST');
+
+    const gstPct = ps.gstPct !== undefined ? ps.gstPct : (basePrice < 4500000 ? 1 : 5);
+
+    setShowRevisionModal({
+      open: true,
+      costSheet,
+      revBasePrice: basePrice,
+      revFloorRise: floorRise,
+      revPlc: plc,
+      revParking: parkingCharge,
+      revClub: clubCharge,
+      revMaintenance: maintenance,
+      revInfraLegal: infraLegal,
+      revDiscount: discountAmount,
+      revGstPct: gstPct,
+      revStampDutyPct: ps.stampDutyPct !== undefined ? ps.stampDutyPct : 5,
+      revRegPct: ps.registrationPct !== undefined ? ps.registrationPct : 1,
+      revUnitNotes: unitNotes,
+      reason: ''
+    });
   };
 
   // Master Individual Cost Sheets Array with LocalStorage Persistence
   const [individualCostSheets, setIndividualCostSheets] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_indiv_cost_sheets_v4');
+      const saved = localStorage.getItem('swaramayi_indiv_cost_sheets_v5_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading individual cost sheets from localStorage:', e);
     }
 
-    // Default Seed Cost Sheets
-    return [
-      {
-        costSheetId: 'COST-SHEET-2026-000001',
-        version: 'V01',
-        versionNumber: 1,
-        customerId: 'SRM-CUS-2026-000187',
-        matchId: 'MATCH-2026-000002',
-        propertyId: 'PROP-01',
-        propertyCode: 'SRM-PROP-2026-000421',
-        status: 'GENERATED',
-        propertySnapshot: {
-          propertyId: 'PROP-01',
-          propertyCode: 'SRM-PROP-2026-000421',
-          propertyTitle: 'Aparna Zenon Premium 3BHK Residence',
-          projectName: 'Aparna Zenon',
-          developerName: 'Aparna Constructions',
-          propertyType: 'Apartment',
-          propertyStatus: 'AVAILABLE',
-          locality: 'Kondapur',
-          address: 'Kondapur Main Road, Hitec City Sector, Hyderabad',
-          city: 'Hyderabad',
-          state: 'Telangana',
-          pincode: '500084',
-          googleMapLocation: 'https://maps.google.com/?q=17.4612,78.3689',
-          latitude: '17.4612° N',
-          longitude: '78.3689° E',
-          bhk: '3BHK',
-          unitType: 'Apartment',
-          floor: '5th Floor',
-          tower: 'Tower A',
-          block: 'Block 1',
-          unitNumber: 'A-504',
-          carpetArea: '1,450 sq.ft.',
-          builtupArea: '1,800 sq.ft.',
-          superBuiltupArea: '1,950 sq.ft.',
-          balconyArea: '140 sq.ft.',
-          parking: 'Covered Slot + EV Charger',
-          facing: 'East Facing',
-          propertyOrientation: 'East Facing',
-          possessionStatus: 'Ready to Move',
-          possessionDate: 'Immediate Possession'
-        },
-        customerSnapshot: {
-          customerId: 'SRM-CUS-2026-000187',
-          customerName: 'Avishek Das',
-          mobile: '9432328947',
-          alternateMobile: '+91 98490 88888',
-          email: 'avishek.das@gmail.com',
-          address: 'Madhyamgram Main Road, Sector 2, Kolkata / Hyderabad',
-          preferredLocation: 'Madhyamgram / Kondapur',
-          preferredBhk: '3BHK',
-          budget: '50 lakh – 60 Lakh',
-          purpose: 'Self Use',
-          assignedSalesperson: 'Priya Nair (Sales Exec)'
-        },
-        matchSnapshot: {
-          matchId: 'MATCH-2026-000002',
-          matchDate: '18 Aug 2026',
-          matchScore: 85,
-          matchRank: 'Top Recommended Match',
-          matchFactors: ['✓ Preferred Location', '✓ Within 10 KM Radius', '✓ Within Budget', '✓ 3 BHK Satisfied', '✓ Ready-to-Move']
-        },
-        pricingSnapshot: {
-          basePrice: 8400000,
-          ratePerSqft: 5793,
-          floorRise: 75000,
-          plc: 200000,
-          parkingCharge: 250000,
-          clubCharge: 250000,
-          maintenance: 54000,
-          infrastructureCharge: 50000,
-          legalCharge: 25000,
-          documentationCharge: 5000,
-          otherCharges: 0,
-          discountAmount: 0,
-          gstPct: 5,
-          gstAmount: 420000,
-          stampDutyPct: 5,
-          stampDutyAmount: 420000,
-          registrationPct: 1,
-          registrationAmount: 84000,
-          totalEstimatedCost: 10228000
-        },
-        formattedPriceBreakup: {
-          basePriceStr: '₹84,00,000',
-          ratePerSqftStr: '₹5,793/Sq.Ft.',
-          floorRiseStr: '₹75,000',
-          plcStr: '₹2,00,000',
-          parkingStr: '₹2,50,000',
-          clubStr: '₹2,50,000',
-          maintenanceStr: '₹54,000',
-          infrastructureStr: '₹50,000',
-          legalStr: '₹25,000',
-          otherStr: 'N/A',
-          discountStr: 'N/A',
-          gstStr: '₹4,20,000 (5%)',
-          stampDutyStr: '₹4,20,000 (5%)',
-          registrationStr: '₹84,000 (1%)',
-          totalEstimatedCostStr: '₹1,02,28,000'
-        },
-        createdBy: 'Priya Nair (Sales Exec)',
-        createdAt: '18 Aug 2026 10:30 AM',
-        updatedBy: 'Priya Nair (Sales Exec)',
-        updatedAt: '18 Aug 2026 10:30 AM',
-        auditLogs: [
-          {
-            timestamp: '2026-08-18T10:30:00Z',
-            user: 'Priya Nair (Sales Exec)',
-            action: 'COST_SHEET_CREATED',
-            details: 'Created Cost Sheet COST-SHEET-2026-000001 for SRM-PROP-2026-000421',
-            ip: '127.0.0.1',
-            device: 'Chrome / Windows 11'
-          }
-        ]
-      },
-      {
-        costSheetId: 'COST-SHEET-2026-000002',
-        version: 'V01',
-        versionNumber: 1,
-        customerId: 'SRM-CUS-2026-000187',
-        matchId: 'MATCH-2026-000002',
-        propertyId: 'PROP-05',
-        propertyCode: 'SRM-PROP-2026-000425',
-        status: 'GENERATED',
-        propertySnapshot: {
-          propertyId: 'PROP-05',
-          propertyCode: 'SRM-PROP-2026-000425',
-          propertyTitle: 'Prestige High Fields Corner 3BHK',
-          projectName: 'Prestige High Fields',
-          developerName: 'Prestige Estates',
-          propertyType: 'Apartment',
-          propertyStatus: 'HOLD',
-          locality: 'Nanakramguda',
-          address: 'Nanakramguda Financial District, Gachibowli, Hyderabad',
-          city: 'Hyderabad',
-          state: 'Telangana',
-          pincode: '500032',
-          googleMapLocation: 'https://maps.google.com/?q=17.4201,78.3410',
-          latitude: '17.4201° N',
-          longitude: '78.3410° E',
-          bhk: '3BHK',
-          unitType: 'Apartment',
-          floor: '18th Floor',
-          tower: 'Tower 8',
-          block: 'Block B',
-          unitNumber: 'T8-1804',
-          carpetArea: '1,725 sq.ft.',
-          builtupArea: '2,100 sq.ft.',
-          superBuiltupArea: '2,250 sq.ft.',
-          balconyArea: '160 sq.ft.',
-          parking: 'Covered Slot + EV Charger',
-          facing: 'East Facing',
-          propertyOrientation: 'East Facing',
-          possessionStatus: 'Ready to Move',
-          possessionDate: 'Immediate'
-        },
-        customerSnapshot: {
-          customerId: 'SRM-CUS-2026-000187',
-          customerName: 'Avishek Das',
-          mobile: '9432328947',
-          alternateMobile: '+91 98490 88888',
-          email: 'avishek.das@gmail.com',
-          address: 'Madhyamgram Main Road, Sector 2, Kolkata / Hyderabad',
-          preferredLocation: 'Madhyamgram / Nanakramguda',
-          preferredBhk: '3BHK',
-          budget: '50 lakh – 60 Lakh',
-          purpose: 'Self Use',
-          assignedSalesperson: 'Priya Nair (Sales Exec)'
-        },
-        matchSnapshot: {
-          matchId: 'MATCH-2026-000002',
-          matchDate: '18 Aug 2026',
-          matchScore: 82,
-          matchRank: 'High Priority Match',
-          matchFactors: ['✓ Preferred Location', '✓ 3 BHK Satisfied', '✓ Premium Developer']
-        },
-        pricingSnapshot: {
-          basePrice: 13500000,
-          ratePerSqft: 7826,
-          floorRise: 400000,
-          plc: 200000,
-          parkingCharge: 300000,
-          clubCharge: 250000,
-          maintenance: 54000,
-          infrastructureCharge: 50000,
-          legalCharge: 25000,
-          documentationCharge: 5000,
-          otherCharges: 0,
-          discountAmount: 0,
-          gstPct: 5,
-          gstAmount: 675000,
-          stampDutyPct: 5,
-          stampDutyAmount: 675000,
-          registrationPct: 1,
-          registrationAmount: 135000,
-          totalEstimatedCost: 16269000
-        },
-        formattedPriceBreakup: {
-          basePriceStr: '₹1,35,00,000',
-          ratePerSqftStr: '₹7,826/Sq.Ft.',
-          floorRiseStr: '₹4,00,000',
-          plcStr: '₹2,00,000',
-          parkingStr: '₹3,00,000',
-          clubStr: '₹2,50,000',
-          maintenanceStr: '₹54,000',
-          infrastructureStr: '₹50,000',
-          legalStr: '₹25,000',
-          otherStr: 'N/A',
-          discountStr: 'N/A',
-          gstStr: '₹6,75,000 (5%)',
-          stampDutyStr: '₹6,75,000 (5%)',
-          registrationStr: '₹1,35,000 (1%)',
-          totalEstimatedCostStr: '₹1,62,69,000'
-        },
-        createdBy: 'Priya Nair (Sales Exec)',
-        createdAt: '18 Aug 2026 11:15 AM',
-        updatedBy: 'Priya Nair (Sales Exec)',
-        updatedAt: '18 Aug 2026 11:15 AM',
-        auditLogs: [
-          {
-            timestamp: '2026-08-18T11:15:00Z',
-            user: 'Priya Nair (Sales Exec)',
-            action: 'COST_SHEET_CREATED',
-            details: 'Created Cost Sheet COST-SHEET-2026-000002 for SRM-PROP-2026-000425',
-            ip: '127.0.0.1',
-            device: 'Chrome / Windows 11'
-          }
-        ]
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_indiv_cost_sheets_v4', JSON.stringify(individualCostSheets));
+      localStorage.setItem('swaramayi_indiv_cost_sheets_v5_clean', JSON.stringify(individualCostSheets));
     } catch (e) {
       console.error('Error saving individual cost sheets to localStorage:', e);
     }
@@ -4423,69 +3509,24 @@ export default function App() {
   });
 
   // 7. SITE VISITS & BOOKINGS
-  const [siteVisits, setSiteVisits] = useState([
-    { id: 'SV-01', visit_code: 'SRM-SV-2026-000095', customer_name: 'Priya Sharma', property_code: 'SRM-PROP-2026-000422', project: 'Financial Towers', salesperson: 'Priya Nair', visit_date: '16 Aug 2026 04:00 PM', status: 'SCHEDULED' }
-  ]);
+  const [siteVisits, setSiteVisits] = useState([]);
 
   const [bookings, setBookings] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_bookings_v2');
+      const saved = localStorage.getItem('swaramayi_bookings_v3_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading bookings from localStorage:', e);
     }
-    return [
-      {
-        id: 'BKG-01',
-        booking_code: 'SRM-BKG-2026-000201',
-        customer_name: 'Rohan Deshmukh',
-        customer_number: 'SRM-CUS-2026-000184',
-        customer_mobile: '+91 98490 12345',
-        project_name: 'Aparna Zenon',
-        developer_name: 'Aparna Constructions',
-        property_title: 'Aparna Zenon Premium 3BHK Residence',
-        tower_unit: 'Tower A - Unit A-504 (3BHK)',
-        agreement_value: '₹84,00,000',
-        token_amount: 500000,
-        payment_mode: 'Bank Transfer / NEFT',
-        payment_ref: 'NEFT-AXIS-994821',
-        booking_date: '2026-08-25',
-        sales_executive: 'Priya Nair (Sales Exec)',
-        brokerage_rate: '2.0%',
-        brokerage_amount: 168000,
-        approval_status: 'APPROVED_LOCKED',
-        status: 'CONFIRMED'
-      },
-      {
-        id: 'BKG-02',
-        booking_code: 'SRM-BKG-2026-000202',
-        customer_name: 'Dr. Ananth Kulkarni',
-        customer_number: 'SRM-CUS-2026-000186',
-        customer_mobile: '+91 98480 33445',
-        project_name: 'My Home Bhooja',
-        developer_name: 'My Home Constructions',
-        property_title: 'My Home Bhooja Luxury 5BHK Villa',
-        tower_unit: 'Tower C - Unit C-1201 (5BHK)',
-        agreement_value: '₹4,50,00,000',
-        token_amount: 1000000,
-        payment_mode: 'Cheque / RTGS',
-        payment_ref: 'CHQ-HDFC-771209',
-        booking_date: '2026-08-26',
-        sales_executive: 'Rahul Sharma (TL)',
-        brokerage_rate: '2.0%',
-        brokerage_amount: 900000,
-        approval_status: 'APPROVED_LOCKED',
-        status: 'CONFIRMED'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_bookings_v2', JSON.stringify(bookings));
+      localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(bookings));
     } catch (e) {
       console.error('Error saving bookings to localStorage:', e);
     }
@@ -4506,102 +3547,20 @@ export default function App() {
 
   const [agreements, setAgreements] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_agreements_vault_v4');
+      const saved = localStorage.getItem('swaramayi_agreements_vault_v5_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading agreements from localStorage:', e);
     }
-    return [
-      {
-        id: 'AGR-CUS-01',
-        agreement_code: 'SRM-AGR-CUS-2026-000301',
-        agreement_type: 'CUSTOMER_SITE_VISIT',
-        category: 'CUSTOMER',
-        title: 'Customer Site Visit Agreement — Aparna Zenon',
-        party_name: 'Rohan Deshmukh',
-        party_contact: '+91 98490 12345',
-        property_details: 'Aparna Zenon (Kondapur Hub)',
-        signed_status: 'EXECUTED_SIGNED',
-        signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG',
-        signed_at: '16 Aug 2026 11:35 AM'
-      },
-      {
-        id: 'AGR-DEV-01',
-        agreement_code: 'SRM-AGR-DEV-2026-000101',
-        agreement_type: 'DEVELOPER_PROJECT_TIEUP',
-        category: 'DEVELOPER',
-        title: 'Channel Partner Agreement — Aparna Zenon',
-        party_name: 'Aparna Constructions',
-        project_name: 'Aparna Zenon',
-        locality_hub: 'Kondapur Hub',
-        party_contact: '+91 98490 99887 (Srinivas Rao)',
-        property_details: 'Aparna Zenon • Aparna Constructions • Kondapur Hub',
-        commission_rate: '2.0% Direct Channel Partner Brokerage',
-        protection_period: '12-Month Protection Active',
-        signed_status: 'EXECUTED_SIGNED',
-        signature_hash: 'CORPORATE-DEV-STAMP-#948120',
-        signed_at: '20 Aug 2026 02:00 PM'
-      },
-      {
-        id: 'AGR-DEV-02',
-        agreement_code: 'SRM-AGR-DEV-2026-000102',
-        agreement_type: 'DEVELOPER_PROJECT_TIEUP',
-        category: 'DEVELOPER',
-        title: 'Channel Partner Agreement — Prestige High Fields',
-        party_name: 'Prestige Estates',
-        project_name: 'Prestige High Fields',
-        locality_hub: 'Nanakramguda Sector',
-        party_contact: '+91 98490 11223 (Venkat Reddy)',
-        property_details: 'Prestige High Fields • Prestige Estates • Nanakramguda Sector',
-        commission_rate: '2.0% Direct Channel Partner Brokerage',
-        protection_period: '12-Month Protection Active',
-        signed_status: 'EXECUTED_SIGNED',
-        signature_hash: 'CORPORATE-DEV-STAMP-#882104',
-        signed_at: '21 Aug 2026 04:30 PM'
-      },
-      {
-        id: 'AGR-DEV-03',
-        agreement_code: 'SRM-AGR-DEV-2026-000103',
-        agreement_type: 'DEVELOPER_PROJECT_TIEUP',
-        category: 'DEVELOPER',
-        title: 'Channel Partner Agreement — My Home Bhooja',
-        party_name: 'My Home Constructions',
-        project_name: 'My Home Bhooja',
-        locality_hub: 'HITEC City Sector',
-        party_contact: '+91 98490 88776 (Kiran Varma)',
-        property_details: 'My Home Bhooja • My Home Constructions • HITEC City Sector',
-        commission_rate: '2.0% Direct Channel Partner Brokerage',
-        protection_period: '12-Month Protection Active',
-        signed_status: 'EXECUTED_SIGNED',
-        signature_hash: 'CORPORATE-DEV-STAMP-#771209',
-        signed_at: '22 Aug 2026 09:15 AM'
-      },
-      {
-        id: 'AGR-DEV-04',
-        agreement_code: 'SRM-AGR-DEV-2026-000104',
-        agreement_type: 'DEVELOPER_PROJECT_TIEUP',
-        category: 'DEVELOPER',
-        title: 'Channel Partner Agreement — Dhriti Apartments',
-        party_name: 'Dhriti Builders',
-        project_name: 'Dhriti Apartments',
-        locality_hub: 'Gachibowli Sector',
-        party_contact: '+91 98490 44556 (Rajesh Kumar)',
-        property_details: 'Dhriti Apartments • Dhriti Builders • Gachibowli Sector',
-        commission_rate: '2.0% Direct Channel Partner Brokerage',
-        protection_period: '12-Month Protection Active',
-        signed_status: 'EXECUTED_SIGNED',
-        signature_hash: 'CORPORATE-DEV-STAMP-#663210',
-        signed_at: '24 Aug 2026 03:45 PM'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_agreements_vault_v4', JSON.stringify(agreements));
+      localStorage.setItem('swaramayi_agreements_vault_v5_clean', JSON.stringify(agreements));
     } catch (e) {
       console.error('Error saving agreements to localStorage:', e);
     }
@@ -4776,7 +3735,26 @@ export default function App() {
     taxable_value: '200000'
   });
   const [rawSelectedInvoice, setSelectedInvoice] = useState<any>(null);
-  const selectedInvoice = rawSelectedInvoice || invoices[0];
+  const selectedInvoice = rawSelectedInvoice || invoices[0] || {
+    id: 'INV-EMPTY',
+    invoice_number: 'NO_INVOICES',
+    invoice_category: 'CUSTOMER',
+    customer_name: 'N/A',
+    customer_number: 'N/A',
+    customer_mobile: 'N/A',
+    developer_name: 'N/A',
+    property_title: 'N/A',
+    particulars: 'No Invoices Recorded',
+    agreement_value: '₹0',
+    taxable_value: 0,
+    cgst_rate: '9%',
+    cgst_amount: 0,
+    sgst_rate: '9%',
+    sgst_amount: 0,
+    total_invoice_amount: 0,
+    payment_status: 'N/A',
+    created_date: new Date().toISOString().split('T')[0]
+  };
 
   // Forms
   const [newUserForm, setNewUserForm] = useState({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_EXEC', branch_name: 'Kolkata Branch', department: 'Sales Operations', team_name: 'Kolkata Expansion Team', manager_name: 'Rajesh Varma (Super Admin)' });
@@ -6482,149 +5460,185 @@ export default function App() {
                 </h3>
 
                 {/* KPI EXECUTIVE SUMMARY METRICS GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(6, 1fr)', gap: '12px' }}>
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BUILDER PARTNERS</span>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>5 Projects</h3>
-                    <span style={{ fontSize: '0.7rem', color: '#4ade80', fontWeight: '700' }}>● Active MOUs</span>
-                  </div>
+                  {(() => {
+                    const uniqueDevs = Array.from(new Set(properties.map(p => p.developer || p.project_name || p.project || p.builder).filter(Boolean))).length;
 
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL STOCK VALUE</span>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80' }}>₹48.50 Cr</h3>
-                    <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Portfolio Valuation</span>
-                  </div>
+                    const totalStockVal = properties.reduce((sum, p) => sum + parsePriceToNumeric(p.final_price || p.base_price), 0);
+                    const displayTotalStockVal = totalStockVal >= 10000000
+                      ? `₹${(totalStockVal / 10000000).toFixed(2)} Cr`
+                      : `₹${(totalStockVal / 100000).toFixed(2)} L`;
 
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>AVAILABLE UNITS</span>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#22c55e' }}>18 Units</h3>
-                    <span style={{ fontSize: '0.7rem', color: '#22c55e', fontWeight: '800' }}>Ready for Booking</span>
-                  </div>
+                    const availableUnits = properties.filter(p => p.status === 'AVAILABLE' || p.status === 'READY_TO_MOVE' || p.status === 'ACTIVE' || !p.status).length;
+                    const underNegUnits = properties.filter(p => p.status === 'UNDER_NEGOTIATION' || p.status === 'TOKEN_LOCKED' || p.status === 'BLOCKED').length;
+                    const confirmedBookedUnits = properties.filter(p => p.status === 'BOOKED' || p.status === 'SOLD' || p.status === 'CONFIRMED').length || bookings.length;
 
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>UNDER NEGOTIATION</span>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24' }}>6 Units</h3>
-                    <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: '800' }}>Token Locked</span>
-                  </div>
+                    const pipelineVal = properties.reduce((sum, p) => {
+                      const pVal = parsePriceToNumeric(p.final_price || p.base_price);
+                      return sum + (pVal * 0.02);
+                    }, 0);
+                    const displayPipelineVal = pipelineVal >= 10000000
+                      ? `₹${(pipelineVal / 10000000).toFixed(2)} Cr`
+                      : `₹${(pipelineVal / 100000).toFixed(2)} L`;
 
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CONFIRMED BOOKED</span>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#a855f7' }}>12 Units</h3>
-                    <span style={{ fontSize: '0.7rem', color: '#a855f7', fontWeight: '800' }}>Sold & Executed</span>
-                  </div>
+                    return (
+                      <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(6, 1fr)', gap: '12px' }}>
+                        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BUILDER PARTNERS</span>
+                          <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>{uniqueDevs} Projects</h3>
+                          <span style={{ fontSize: '0.7rem', color: '#4ade80', fontWeight: '700' }}>● Active MOUs</span>
+                        </div>
 
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BROKERAGE PIPELINE</span>
-                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>₹97.00 L</h3>
-                    <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '800' }}>Avg 2.0% Commission</span>
-                  </div>
+                        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL STOCK VALUE</span>
+                          <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80' }}>{displayTotalStockVal}</h3>
+                          <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Portfolio Valuation</span>
+                        </div>
+
+                        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>AVAILABLE UNITS</span>
+                          <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#22c55e' }}>{availableUnits} Units</h3>
+                          <span style={{ fontSize: '0.7rem', color: '#22c55e', fontWeight: '800' }}>Ready for Booking</span>
+                        </div>
+
+                        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>UNDER NEGOTIATION</span>
+                          <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24' }}>{underNegUnits} Units</h3>
+                          <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: '800' }}>Token Locked</span>
+                        </div>
+
+                        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CONFIRMED BOOKED</span>
+                          <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#a855f7' }}>{confirmedBookedUnits} Units</h3>
+                          <span style={{ fontSize: '0.7rem', color: '#a855f7', fontWeight: '800' }}>Sold & Executed</span>
+                        </div>
+
+                        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BROKERAGE PIPELINE</span>
+                          <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>{displayPipelineVal}</h3>
+                          <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '800' }}>Avg 2.0% Commission</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* DAILY PROPERTY INGESTION TRACKER & AUDIT CARD */}
+                  {(() => {
+                    const todayStr = new Date().toISOString().split('T')[0];
+                    const now = new Date();
+                    const startOfWeek = new Date(now);
+                    startOfWeek.setDate(now.getDate() - now.getDay());
+                    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+                    const addedTodayList = properties.filter(p => p.added_date === todayStr || p.created_at?.includes(todayStr));
+                    const addedTodayCount = addedTodayList.length;
+                    const addedTodayVal = addedTodayList.reduce((sum, p) => sum + parsePriceToNumeric(p.final_price || p.base_price), 0);
+                    const displayTodayVal = addedTodayVal >= 10000000 ? `₹${(addedTodayVal / 10000000).toFixed(2)} Cr` : `₹${(addedTodayVal / 100000).toFixed(2)} L`;
+
+                    const addedThisWeekList = properties.filter(p => p.added_date ? new Date(p.added_date) >= startOfWeek : properties.length > 0);
+                    const addedThisWeekCount = addedThisWeekList.length;
+                    const avgThisWeekPerDay = (addedThisWeekCount / 7).toFixed(1);
+
+                    const addedThisMonthList = properties.filter(p => p.added_date ? new Date(p.added_date) >= startOfMonth : properties.length > 0);
+                    const addedThisMonthCount = addedThisMonthList.length;
+                    const addedThisMonthVal = addedThisMonthList.reduce((sum, p) => sum + parsePriceToNumeric(p.final_price || p.base_price), 0);
+                    const displayMonthVal = addedThisMonthVal >= 10000000 ? `₹${(addedThisMonthVal / 10000000).toFixed(2)} Cr` : `₹${(addedThisMonthVal / 100000).toFixed(2)} L`;
+
+                    const velocity = (addedThisMonthCount / 30).toFixed(1);
+
+                    return (
+                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
+                              📅 DAILY PROPERTY INTAKE TRACKER
+                            </span>
+                            <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              📈 Daily Property Addition Rate & Live Ingestion Audit Log
+                            </h3>
+                          </div>
+                          <div style={{ display: 'flex', gap: '10px' }}>
+                            <span style={{ background: '#22c55e', color: '#ffffff', padding: '6px 14px', borderRadius: '20px', fontWeight: '900', fontSize: '0.82rem' }}>
+                              🔥 +{addedTodayCount} PROPERTIES ADDED TODAY
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
+                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED TODAY ({todayStr})</span>
+                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#22c55e', marginTop: '2px' }}>+{addedTodayCount} Properties</h4>
+                            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Est Value: {displayTodayVal}</p>
+                          </div>
+
+                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS WEEK</span>
+                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>+{addedThisWeekCount} Properties</h4>
+                            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Avg {avgThisWeekPerDay} Props / Day</p>
+                          </div>
+
+                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS MONTH</span>
+                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>+{addedThisMonthCount} Properties</h4>
+                            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Total {displayMonthVal} Added</p>
+                          </div>
+
+                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>DAILY INGESTION VELOCITY</span>
+                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#a855f7', marginTop: '2px' }}>{velocity} / Day</h4>
+                            <p style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>🟢 Live Dynamic Rate</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
-
-                {/* DAILY PROPERTY INGESTION TRACKER & AUDIT CARD */}
-                {(() => {
-                  const todayStr = new Date().toISOString().split('T')[0];
-                  const addedTodayList = properties.filter(p => p.added_date === todayStr || (!p.added_date && (p.id === 'PROP-01' || p.id === 'PROP-02' || p.id === 'PROP-03')));
-                  const addedTodayCount = addedTodayList.length;
-
-                  return (
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                        <div>
-                          <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
-                            📅 DAILY PROPERTY INTAKE TRACKER
-                          </span>
-                          <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            📈 Daily Property Addition Rate & Live Ingestion Audit Log
-                          </h3>
-                        </div>
-                        <div style={{ display: 'flex', gap: '10px' }}>
-                          <span style={{ background: '#22c55e', color: '#ffffff', padding: '6px 14px', borderRadius: '20px', fontWeight: '900', fontSize: '0.82rem' }}>
-                            🔥 +{addedTodayCount} PROPERTIES ADDED TODAY
-                          </span>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
-                        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '10px', padding: '12px' }}>
-                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED TODAY ({todayStr})</span>
-                          <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#22c55e', marginTop: '2px' }}>+{addedTodayCount} Properties</h4>
-                          <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Est Value: ₹3.60 Crore</p>
-                        </div>
-
-                        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
-                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS WEEK</span>
-                          <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>+12 Properties</h4>
-                          <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Avg 2.4 Props / Day</p>
-                        </div>
-
-                        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
-                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS MONTH</span>
-                          <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>+28 Properties</h4>
-                          <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Total ₹24.8 Cr Added</p>
-                        </div>
-
-                        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
-                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>DAILY INGESTION VELOCITY</span>
-                          <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#a855f7', marginTop: '2px' }}>3.2 / Day</h4>
-                          <p style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>🟢 On Target Speed</p>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })()}
-              </div>
 
               {/* 2. VISUAL 11-STAGE SALES FUNNEL (DYNAMIC MASTER STATE COMPUTATION) */}
               {(() => {
                 // Master records from live CRM state
-                const totalLeads = leadsList && leadsList.length > 0 ? leadsList : customers;
-                const baseCount = Math.max(1000, totalLeads.length * 100);
-
-                // Stage 1: New Lead
-                const stage1Records = totalLeads;
-                const stage1Count = baseCount;
+                const allLeads = [...leadsList, ...customers.filter(c => !leadsList.some(l => l.customer_number === c.customer_number))];
+                const stage1Count = allLeads.length;
+                const stage1Records = allLeads;
 
                 // Stage 2: Contacted
-                const stage2Records = totalLeads.filter((l, idx) => (l.lead_status && l.lead_status !== 'NEW') || (l.call_disposition && l.call_disposition !== 'NO_ANSWER') || idx % 10 < 7);
-                const stage2Count = Math.round(stage1Count * 0.62);
+                const stage2Records = allLeads.filter(l => (l.lead_status && l.lead_status !== 'NEW') || l.call_disposition);
+                const stage2Count = stage2Records.length;
 
                 // Stage 3: Qualified
-                const stage3Records = totalLeads.filter((l, idx) => l.priority === 'HOT' || l.priority === 'HIGH' || l.status === 'QUALIFIED' || idx % 10 < 5);
-                const stage3Count = Math.round(stage2Count * 0.693);
+                const stage3Records = allLeads.filter(l => l.priority === 'HOT' || l.priority === 'HIGH' || l.status === 'QUALIFIED');
+                const stage3Count = stage3Records.length;
 
                 // Stage 4: Requirement Captured
-                const stage4Records = totalLeads.filter((l, idx) => l.preferred_location || l.preferredArea || l.bhk || l.configuration || idx % 10 < 4);
-                const stage4Count = Math.round(stage3Count * 0.883);
+                const stage4Records = allLeads.filter(l => l.preferred_location || l.preferredArea || l.bhk || l.configuration);
+                const stage4Count = stage4Records.length;
 
                 // Stage 5: Property Matched
-                const stage5Records = totalLeads.filter((l, idx) => l.preferred_project || l.property_type || idx % 10 < 3);
-                const stage5Count = Math.round(stage4Count * 0.921);
+                const stage5Records = matchingRequestsQueue;
+                const stage5Count = stage5Records.length;
 
                 // Stage 6: Property Sent
-                const stage6Records = totalLeads.filter((l, idx) => l.next_action?.includes('Cost Sheet') || l.status === 'QUALIFIED' || idx % 10 < 3);
-                const stage6Count = Math.round(stage5Count * 0.80);
+                const stage6Records = costSheetShares;
+                const stage6Count = stage6Records.length;
 
                 // Stage 7: Interested
-                const stage7Records = totalLeads.filter((l, idx) => l.lead_status === 'INTERESTED' || l.priority === 'HOT' || idx % 10 < 2);
-                const stage7Count = Math.round(stage6Count * 0.571);
+                const stage7Records = allLeads.filter(l => l.lead_status === 'INTERESTED' || l.priority === 'HOT');
+                const stage7Count = stage7Records.length;
 
                 // Stage 8: Site Visit
-                const stage8Records = totalLeads.filter((l, idx) => l.lead_status?.includes('VISIT') || l.status === 'SITE_VISIT_SCHEDULED' || idx % 10 === 0 || idx % 10 === 1);
-                const stage8Count = Math.round(stage7Count * 0.593);
+                const stage8Records = scheduledVisits;
+                const stage8Count = stage8Records.length;
 
                 // Stage 9: Negotiation
-                const stage9Records = totalLeads.filter((l, idx) => l.lead_status === 'NEGOTIATION' || l.priority === 'HOT' || idx % 10 === 0);
-                const stage9Count = Math.round(stage8Count * 0.442);
+                const stage9Records = allLeads.filter(l => l.lead_status === 'NEGOTIATION' || l.status === 'UNDER_NEGOTIATION');
+                const stage9Count = stage9Records.length;
 
                 // Stage 10: Booking
-                const stage10Records = customers.filter(c => c.status === 'BOOKED' || c.status === 'DEAL_CLOSED').length > 0
-                  ? customers.filter(c => c.status === 'BOOKED' || c.status === 'DEAL_CLOSED')
-                  : totalLeads.filter((_, idx) => idx % 10 === 0);
-                const stage10Count = Math.round(stage9Count * 0.428);
+                const stage10Records = bookings;
+                const stage10Count = stage10Records.length;
 
                 // Stage 11: Brokerage Generated
-                const stage11Records = invoices && invoices.length > 0 ? invoices : stage10Records;
-                const stage11Count = stage10Count;
+                const stage11Records = invoices;
+                const stage11Count = stage11Records.length;
 
                 const funnelData = [
                   { stage: '1. NEW LEAD', count: stage1Count, records: stage1Records, color: '#38bdf8' },
@@ -6640,7 +5654,8 @@ export default function App() {
                   { stage: '11. BROKERAGE GENERATED', count: stage11Count, records: stage11Records, color: '#16a34a' }
                 ];
 
-                const overallConversionPct = ((stage10Count / stage1Count) * 100).toFixed(1);
+                const overallConversionPct = stage1Count > 0 ? ((stage10Count / stage1Count) * 100).toFixed(1) : '0.0';
+                const maxFunnelCount = Math.max(1, stage1Count, stage2Count, stage3Count, stage4Count, stage5Count, stage6Count, stage7Count, stage8Count, stage9Count, stage10Count, stage11Count);
 
                 return (
                   <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -6658,9 +5673,10 @@ export default function App() {
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {funnelData.map((s, idx) => {
-                        const pct = ((s.count / stage1Count) * 100).toFixed(1);
+                        const pct = stage1Count > 0 ? ((s.count / stage1Count) * 100).toFixed(1) : '0.0';
+                        const barPct = Math.max(s.count > 0 ? 4 : 0, Math.round((s.count / maxFunnelCount) * 100));
                         const prevCount = idx === 0 ? s.count : funnelData[idx - 1].count;
-                        const convRate = idx === 0 ? '100%' : `${((s.count / prevCount) * 100).toFixed(1)}%`;
+                        const convRate = idx === 0 ? '100%' : (prevCount > 0 ? `${((s.count / prevCount) * 100).toFixed(1)}%` : '0.0%');
 
                         return (
                           <div 
@@ -6683,7 +5699,7 @@ export default function App() {
                           >
                             <span style={{ fontSize: '0.8rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{s.stage}</span>
                             <div style={{ background: isLight ? '#e2e8f0' : '#1e293b', height: '14px', borderRadius: '7px', overflow: 'hidden', width: '100%' }}>
-                              <div style={{ width: `${pct}%`, background: s.color, height: '100%', borderRadius: '7px', transition: 'width 0.4s ease' }} />
+                              <div style={{ width: `${barPct}%`, background: s.color, height: '100%', borderRadius: '7px', transition: 'width 0.4s ease' }} />
                             </div>
                             <span style={{ fontSize: '0.8rem', fontWeight: '800', color: s.color }}>{s.count.toLocaleString()} Leads ({pct}%)</span>
                             <span style={{ fontSize: '0.75rem', fontWeight: '700', color: isLight ? '#64748b' : '#94a3b8' }}>Conv: {convRate}</span>
@@ -6715,10 +5731,17 @@ export default function App() {
                 const deadStock = properties.filter((p, idx) => (p.days_on_market ? p.days_on_market > 180 : idx % 5 === 4)).length;
 
                 // Compute follow-ups dynamically from live customer records
-                const overdueList = customers.filter((c, idx) => c.priority === 'HOT' || idx % 4 === 0);
-                const todayList = customers.filter((c, idx) => c.priority === 'HIGH' || idx % 4 === 1);
-                const tomorrowList = customers.filter((c, idx) => idx % 4 === 2);
-                const upcomingList = customers.filter((c, idx) => idx % 4 === 3);
+                const todayStr = new Date().toISOString().split('T')[0];
+                const tomorrowDate = new Date();
+                tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+                const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
+
+                const activeCustomersList = customers.filter(c => c.status !== 'CLOSED' && c.status !== 'DEAL_CLOSED' && c.status !== 'REJECTED');
+
+                const overdueList = activeCustomersList.filter(c => c.next_followup && c.next_followup < todayStr);
+                const todayList = activeCustomersList.filter(c => c.next_followup === todayStr || (!c.next_followup && (c.priority === 'HOT' || c.priority === 'HIGH')));
+                const tomorrowList = activeCustomersList.filter(c => c.next_followup === tomorrowStr);
+                const upcomingList = activeCustomersList.filter(c => c.next_followup && c.next_followup > tomorrowStr);
 
                 const activeFollowupRows = 
                   followupSubTab === 'overdue' ? overdueList :
@@ -6867,27 +5890,35 @@ export default function App() {
                             </tr>
                           </thead>
                           <tbody>
-                            {activeFollowupRows.map((c, i) => (
-                              <tr key={c.id || i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                                <td style={{ padding: '10px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
-                                  {c.name} <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '400' }}>({c.phone})</span>
-                                </td>
-                                <td style={{ padding: '10px', color: '#38bdf8' }}>{c.assigned_salesperson || c.assigned_to || 'Priya Nair'}</td>
-                                <td style={{ padding: '10px' }}>{properties[i % properties.length]?.title || 'Aparna Zenon 3BHK'}</td>
-                                <td style={{ padding: '10px', color: '#fbbf24' }}>{c.notes || 'Scheduled site visit / awaiting decision'}</td>
-                                <td style={{ padding: '10px' }}>
-                                  <span style={{ background: followupSubTab === 'overdue' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(56, 189, 248, 0.2)', color: followupSubTab === 'overdue' ? '#ef4444' : '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>
-                                    {followupSubTab.toUpperCase()}
-                                  </span>
-                                </td>
-                                <td style={{ padding: '10px', textAlign: 'center' }}>
-                                  <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                                    <a href={`tel:${c.phone}`} style={{ background: '#22c55e', color: '#ffffff', textDecoration: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>Call</a>
-                                    <a href={`https://api.whatsapp.com/send?phone=${c.phone?.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ background: '#25d366', color: isLight ? '#0f172a' : '#ffffff', textDecoration: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>WhatsApp</a>
-                                  </div>
+                            {activeFollowupRows.length > 0 ? (
+                              activeFollowupRows.map((c, i) => (
+                                <tr key={c.id || c.customer_number || i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                                  <td style={{ padding: '10px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
+                                    {c.name} <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '400' }}>({c.phone || c.mobile || 'N/A'})</span>
+                                  </td>
+                                  <td style={{ padding: '10px', color: '#38bdf8' }}>{c.assigned_salesperson || c.assigned_to || 'Unassigned'}</td>
+                                  <td style={{ padding: '10px' }}>{c.preferred_project || c.matchedProperty || (properties.length > 0 ? properties[0]?.title : 'Master Stock')}</td>
+                                  <td style={{ padding: '10px', color: '#fbbf24' }}>{c.notes || c.customerResponse || 'Follow-up Scheduled'}</td>
+                                  <td style={{ padding: '10px' }}>
+                                    <span style={{ background: followupSubTab === 'overdue' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(56, 189, 248, 0.2)', color: followupSubTab === 'overdue' ? '#ef4444' : '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>
+                                      {c.next_followup || followupSubTab.toUpperCase()}
+                                    </span>
+                                  </td>
+                                  <td style={{ padding: '10px', textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
+                                      <a href={`tel:${c.phone || c.mobile || ''}`} style={{ background: '#22c55e', color: '#ffffff', textDecoration: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>Call</a>
+                                      <a href={`https://api.whatsapp.com/send?phone=${(c.phone || c.mobile || '').replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ background: '#25d366', color: isLight ? '#0f172a' : '#ffffff', textDecoration: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>WhatsApp</a>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={6} style={{ padding: '24px', textAlign: 'center', color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.85rem' }}>
+                                  🟢 <strong>No Follow-up Tasks in {followupSubTab.toUpperCase()} Category</strong>. Click "+ Add Customer" or schedule new follow-ups.
                                 </td>
                               </tr>
-                            ))}
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -6898,205 +5929,343 @@ export default function App() {
               })()}
 
               {/* 6. SALESPERSON PERFORMANCE & TEAM COMPARISON */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Award size={18} color="#4ade80" /> SALESPERSON PERFORMANCE MATRIX
-                  </h3>
-                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                    <thead>
-                      <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                        <th style={{ padding: '8px' }}>Salesperson</th>
-                        <th style={{ padding: '8px' }}>Leads</th>
-                        <th style={{ padding: '8px' }}>Qualified</th>
-                        <th style={{ padding: '8px' }}>Matches</th>
-                        <th style={{ padding: '8px' }}>Visits</th>
-                        <th style={{ padding: '8px' }}>Bookings</th>
-                        <th style={{ padding: '8px' }}>Brokerage</th>
-                        <th style={{ padding: '8px' }}>Conv %</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { name: 'Priya Nair', leads: 85, qual: 62, match: 54, visit: 48, bkg: 6, brk: '₹6.40L', conv: '7.0%' },
-                        { name: 'Amit Patel', leads: 65, qual: 48, match: 40, visit: 32, bkg: 4, brk: '₹3.80L', conv: '6.1%' },
-                        { name: 'Srinivas Rao', leads: 50, qual: 35, match: 28, visit: 20, bkg: 2, brk: '₹2.20L', conv: '4.0%' }
-                      ].map((sp, i) => (
-                        <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{sp.name}</td>
-                          <td style={{ padding: '8px' }}>{sp.leads}</td>
-                          <td style={{ padding: '8px' }}>{sp.qual}</td>
-                          <td style={{ padding: '8px' }}>{sp.match}</td>
-                          <td style={{ padding: '8px', color: '#38bdf8' }}>{sp.visit}</td>
-                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.bkg}</td>
-                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.brk}</td>
-                          <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>{sp.conv}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-</div>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 1024 ? '1fr' : '2fr 1fr', gap: '20px' }}>
+                {(() => {
+                  const uniqueSalespeople = Array.from(new Set([
+                    ...customers.map(c => c.assigned_salesperson || c.assigned_to).filter(Boolean),
+                    ...leadsList.map(l => l.assigned_salesperson || l.assignedTo).filter(Boolean),
+                    ...bookings.map(b => b.sales_executive).filter(Boolean)
+                  ]));
 
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Layers size={18} color="#38bdf8" /> TEAM COMPARISON
-                  </h3>
-                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '800' }}>TEAM ALPHA (KONDAPUR)</span>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: '4px' }}>
-                      <span>Leads: 350 | Visits: 82</span>
-                      <strong style={{ color: '#4ade80' }}>14 Bookings (₹14.2L)</strong>
-                    </div>
-                  </div>
+                  const displaySalespeople = uniqueSalespeople.length > 0 ? uniqueSalespeople : ['Priya Nair', 'Amit Patel', 'Srinivas Rao'];
 
-                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '8px' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800' }}>TEAM BRAVO (GACHIBOWLI)</span>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: '4px' }}>
-                      <span>Leads: 290 | Visits: 74</span>
-                      <strong style={{ color: '#4ade80' }}>18 Bookings (₹18.5L)</strong>
+                  const salesData = displaySalespeople.map(name => {
+                    const spLeads = customers.filter(c => c.assigned_salesperson === name || c.assigned_to === name).length;
+                    const spQual = customers.filter(c => (c.assigned_salesperson === name || c.assigned_to === name) && (c.priority === 'HOT' || c.status === 'QUALIFIED')).length;
+                    const spMatch = matchingRequestsQueue.filter(r => r.assignedExecutive === name).length;
+                    const spVisit = scheduledVisits.filter(v => v.assignedExecutive === name || v.salesPersonName === name).length;
+                    const spBkgList = bookings.filter(b => b.sales_executive === name);
+                    const spBkg = spBkgList.length;
+                    const spBrkVal = spBkgList.reduce((sum, b) => sum + parsePriceToNumeric(b.brokerage_amount || b.commission_amount || 0), 0);
+                    const spBrk = `₹${(spBrkVal / 100000).toFixed(2)}L`;
+                    const spConv = spLeads > 0 ? ((spBkg / spLeads) * 100).toFixed(1) + '%' : '0.0%';
+
+                    return { name, leads: spLeads, qual: spQual, match: spMatch, visit: spVisit, bkg: spBkg, brk: spBrk, conv: spConv };
+                  });
+
+                  return (
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Award size={18} color="#4ade80" /> SALESPERSON PERFORMANCE MATRIX
+                      </h3>
+                      <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                          <thead>
+                            <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                              <th style={{ padding: '8px' }}>Salesperson</th>
+                              <th style={{ padding: '8px' }}>Leads</th>
+                              <th style={{ padding: '8px' }}>Qualified</th>
+                              <th style={{ padding: '8px' }}>Matches</th>
+                              <th style={{ padding: '8px' }}>Visits</th>
+                              <th style={{ padding: '8px' }}>Bookings</th>
+                              <th style={{ padding: '8px' }}>Brokerage</th>
+                              <th style={{ padding: '8px' }}>Conv %</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {salesData.map((sp, i) => (
+                              <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                                <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{sp.name}</td>
+                                <td style={{ padding: '8px' }}>{sp.leads}</td>
+                                <td style={{ padding: '8px' }}>{sp.qual}</td>
+                                <td style={{ padding: '8px' }}>{sp.match}</td>
+                                <td style={{ padding: '8px', color: '#38bdf8' }}>{sp.visit}</td>
+                                <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.bkg}</td>
+                                <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.brk}</td>
+                                <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>{sp.conv}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })()}
+
+                {(() => {
+                  const teamAlphaCusts = customers.filter(c => !c.branch || c.branch?.includes('Head Office') || c.branch?.includes('Kondapur'));
+                  const teamAlphaLeads = teamAlphaCusts.length;
+                  const teamAlphaVisits = scheduledVisits.length;
+                  const teamAlphaBkgs = bookings.length;
+                  const teamAlphaBrkVal = bookings.reduce((sum, b) => sum + parsePriceToNumeric(b.brokerage_amount || b.commission_amount || 0), 0);
+                  const teamAlphaBrk = `₹${(teamAlphaBrkVal / 100000).toFixed(2)}L`;
+
+                  const teamBravoCusts = customers.filter(c => c.branch && (c.branch.includes('Gachibowli') || c.branch.includes('Bravo')));
+                  const teamBravoLeads = teamBravoCusts.length;
+                  const teamBravoVisits = siteVisits.length;
+                  const teamBravoBkgs = bookings.filter(b => b.branch?.includes('Gachibowli')).length;
+                  const teamBravoBrkVal = bookings.filter(b => b.branch?.includes('Gachibowli')).reduce((sum, b) => sum + parsePriceToNumeric(b.brokerage_amount || 0), 0);
+                  const teamBravoBrk = `₹${(teamBravoBrkVal / 100000).toFixed(2)}L`;
+
+                  return (
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Layers size={18} color="#38bdf8" /> TEAM COMPARISON
+                      </h3>
+                      <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '800' }}>TEAM ALPHA (KONDAPUR)</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: '4px' }}>
+                          <span>Leads: {teamAlphaLeads} | Visits: {teamAlphaVisits}</span>
+                          <strong style={{ color: '#4ade80' }}>{teamAlphaBkgs} Bookings ({teamAlphaBrk})</strong>
+                        </div>
+                      </div>
+
+                      <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '8px' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800' }}>TEAM BRAVO (GACHIBOWLI)</span>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginTop: '4px' }}>
+                          <span>Leads: {teamBravoLeads} | Visits: {teamBravoVisits}</span>
+                          <strong style={{ color: '#4ade80' }}>{teamBravoBkgs} Bookings ({teamBravoBrk})</strong>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 7. DEVELOPER PERFORMANCE & MARKETING ROI */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Building2 size={18} color="#38bdf8" /> DEVELOPER PERFORMANCE RANKING
-                  </h3>
-                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
-                    <thead>
-                      <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                        <th style={{ padding: '8px' }}>Developer</th>
-                        <th style={{ padding: '8px' }}>Stock</th>
-                        <th style={{ padding: '8px' }}>Visits</th>
-                        <th style={{ padding: '8px' }}>Bookings</th>
-                        <th style={{ padding: '8px' }}>Brokerage</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { dev: 'Aparna Constructions', stock: 420, visits: 82, bkg: 16, brk: '₹16.80L' },
-                        { dev: 'My Home Group', stock: 350, visits: 64, bkg: 12, brk: '₹12.40L' },
-                        { dev: 'Prestige Group', stock: 280, visits: 45, bkg: 8, brk: '₹8.60L' },
-                        { dev: 'Jayabheri Group', stock: 190, visits: 28, bkg: 4, brk: '₹4.20L' }
-                      ].map((d, i) => (
-                        <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{d.dev}</td>
-                          <td style={{ padding: '8px' }}>{d.stock}</td>
-                          <td style={{ padding: '8px' }}>{d.visits}</td>
-                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.bkg}</td>
-                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.brk}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-</div>
-                </div>
+              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 1024 ? '1fr' : '1fr 1fr', gap: '20px' }}>
+                {(() => {
+                  const uniqueDevs = Array.from(new Set(properties.map(p => p.developer || p.project_name || p.project || p.builder).filter(Boolean)));
+                  const displayDevs = uniqueDevs.length > 0 ? uniqueDevs : ['Aparna Constructions', 'My Home Group', 'Prestige Group', 'Jayabheri Group'];
 
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <DollarSign size={18} color="#4ade80" /> MARKETING CAMPAIGN ROI TRACKER
-                  </h3>
-                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
-                    <thead>
-                      <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                        <th style={{ padding: '8px' }}>Channel</th>
-                        <th style={{ padding: '8px' }}>Spend</th>
-                        <th style={{ padding: '8px' }}>Leads</th>
-                        <th style={{ padding: '8px' }}>Bookings</th>
-                        <th style={{ padding: '8px' }}>Brokerage</th>
-                        <th style={{ padding: '8px' }}>ROI</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { ch: 'Meta Ads', spend: '₹45,000', leads: 120, bkg: 4, brk: '₹4.80L', roi: '966%' },
-                        { ch: 'Google Search', spend: '₹60,000', leads: 95, bkg: 3, brk: '₹5.40L', roi: '800%' },
-                        { ch: 'WhatsApp Blast', spend: '₹12,000', leads: 210, bkg: 5, brk: '₹4.20L', roi: '3400%' },
-                        { ch: 'Property Portal', spend: '₹35,000', leads: 85, bkg: 2, brk: '₹2.40L', roi: '585%' }
-                      ].map((m, i) => (
-                        <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{m.ch}</td>
-                          <td style={{ padding: '8px' }}>{m.spend}</td>
-                          <td style={{ padding: '8px' }}>{m.leads}</td>
-                          <td style={{ padding: '8px', color: '#4ade80' }}>{m.bkg}</td>
-                          <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{m.brk}</td>
-                          <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>{m.roi}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-</div>
-                </div>
+                  const devData = displayDevs.map(dev => {
+                    const stock = properties.filter(p => p.developer === dev || p.project_name === dev || p.project === dev || p.builder === dev).length;
+                    const visits = scheduledVisits.filter(v => v.developer === dev || v.propertyTitle?.includes(dev)).length;
+                    const devBkgs = bookings.filter(b => b.developer === dev || b.project_name === dev);
+                    const bkgCount = devBkgs.length;
+                    const brkVal = devBkgs.reduce((sum, b) => sum + parsePriceToNumeric(b.brokerage_amount || b.commission_amount || 0), 0);
+                    const brk = `₹${(brkVal / 100000).toFixed(2)}L`;
+
+                    return { dev, stock, visits, bkg: bkgCount, brk };
+                  });
+
+                  return (
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Building2 size={18} color="#38bdf8" /> DEVELOPER PERFORMANCE RANKING
+                      </h3>
+                      <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                          <thead>
+                            <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                              <th style={{ padding: '8px' }}>Developer</th>
+                              <th style={{ padding: '8px' }}>Stock</th>
+                              <th style={{ padding: '8px' }}>Visits</th>
+                              <th style={{ padding: '8px' }}>Bookings</th>
+                              <th style={{ padding: '8px' }}>Brokerage</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {devData.map((d, i) => (
+                              <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                                <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{d.dev}</td>
+                                <td style={{ padding: '8px' }}>{d.stock}</td>
+                                <td style={{ padding: '8px' }}>{d.visits}</td>
+                                <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.bkg}</td>
+                                <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.brk}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {(() => {
+                  const channels = [
+                    { name: 'Meta Ads', key: 'meta' },
+                    { name: 'Google Search', key: 'google' },
+                    { name: 'WhatsApp Blast', key: 'whatsapp' },
+                    { name: 'Property Portal', key: 'portal' }
+                  ];
+
+                  const campaignData = channels.map(ch => {
+                    const chLeadsList = customers.filter(c => (c.source || c.lead_source || '').toLowerCase().includes(ch.key));
+                    const leadsCount = chLeadsList.length;
+                    const chBkgs = bookings.filter(b => (b.source || '').toLowerCase().includes(ch.key));
+                    const bkgCount = chBkgs.length;
+                    const brkVal = chBkgs.reduce((sum, b) => sum + parsePriceToNumeric(b.brokerage_amount || b.commission_amount || 0), 0);
+                    const brk = `₹${(brkVal / 100000).toFixed(2)}L`;
+                    const spendVal = leadsCount * 350;
+                    const spend = spendVal > 0 ? `₹${spendVal.toLocaleString()}` : '₹0';
+                    const roi = spendVal > 0 && brkVal > 0 ? `${Math.round(((brkVal - spendVal) / spendVal) * 100)}%` : '0%';
+
+                    return { ch: ch.name, spend, leads: leadsCount, bkg: bkgCount, brk, roi };
+                  });
+
+                  return (
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <DollarSign size={18} color="#4ade80" /> MARKETING CAMPAIGN ROI TRACKER
+                      </h3>
+                      <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
+                          <thead>
+                            <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                              <th style={{ padding: '8px' }}>Channel</th>
+                              <th style={{ padding: '8px' }}>Spend</th>
+                              <th style={{ padding: '8px' }}>Leads</th>
+                              <th style={{ padding: '8px' }}>Bookings</th>
+                              <th style={{ padding: '8px' }}>Brokerage</th>
+                              <th style={{ padding: '8px' }}>ROI</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {campaignData.map((m, i) => (
+                              <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                                <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{m.ch}</td>
+                                <td style={{ padding: '8px' }}>{m.spend}</td>
+                                <td style={{ padding: '8px' }}>{m.leads}</td>
+                                <td style={{ padding: '8px', color: '#4ade80' }}>{m.bkg}</td>
+                                <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{m.brk}</td>
+                                <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>{m.roi}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 8. "NEEDS YOUR ATTENTION" PRIORITY ACTION CENTER */}
-              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #ef4444', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <AlertTriangle size={20} color="#ef4444" /> "NEEDS YOUR ATTENTION" PRIORITY ACTION CENTER
-                  </h3>
-                  <span style={{ background: '#ef4444', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
-                    7 Priority Management Items
-                  </span>
-                </div>
+              {(() => {
+                const hotLeadsNoFollowup = customers.filter(c => (c.priority === 'HOT' || (c.lead_score && c.lead_score >= 80)) && !c.next_followup);
+                const overdueInvoices = invoices.filter(i => i.payment_status !== 'PAID_SETTLED');
+                const overdueBrkVal = overdueInvoices.reduce((sum, i) => sum + (i.total_invoice_amount || i.taxable_value || 0), 0);
+                const displayOverdueBrk = overdueBrkVal >= 10000000 ? `₹${(overdueBrkVal / 10000000).toFixed(2)} Cr` : `₹${(overdueBrkVal / 100000).toFixed(2)} Lakhs`;
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-                  {[
-                    { priority: 'CRITICAL', title: '7 Hot Leads have no follow-up scheduled', desc: 'Customers with lead score > 88 have zero upcoming activities.', action: 'Assign Follow-up' },
-                    { priority: 'CRITICAL', title: '₹4.40 Lakhs Brokerage Payment Overdue', desc: 'Prestige Group & Aparna invoices pending past 30 days.', action: 'Collect Payment' },
-                    { priority: 'HIGH', title: '12 Customers waiting for Property Recommendations', desc: '90%+ property matches found but not sent to customer.', action: 'Send Recommendations' },
-                    { priority: 'HIGH', title: '3 Bookings awaiting Management Approval', desc: 'Discount approvals pending on 3BHK Aparna Zenon units.', action: 'Review Approvals' },
-                    { priority: 'MEDIUM', title: '5 Properties aging past 180+ days requiring verification', desc: 'Dead inventory stock needs developer price re-negotiation.', action: 'Re-verify Stock' },
-                    { priority: 'LOW', title: '4 Customers requested callback for project brochure', desc: 'Inside sales squad assigned for follow-up call.', action: 'View Callbacks' }
-                  ].map((act, i) => (
-                    <div key={i} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '14px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ background: act.priority === 'CRITICAL' ? 'rgba(239,68,68,0.2)' : act.priority === 'HIGH' ? 'rgba(245,158,11,0.2)' : 'rgba(56,189,248,0.2)', color: act.priority === 'CRITICAL' ? '#ef4444' : act.priority === 'HIGH' ? '#fbbf24' : '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: '900', fontSize: '0.65rem' }}>{act.priority}</span>
-                        <h4 style={{ fontSize: '0.85rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>{act.title}</h4>
-                        <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{act.desc}</p>
+                const waitingCusts = customers.filter(c => c.status !== 'CLOSED' && c.status !== 'DEAL_CLOSED' && c.status !== 'REJECTED');
+                const pendingBookings = bookings.filter(b => b.status === 'PENDING' || b.status === 'UNDER_APPROVAL' || !b.status);
+                const agingInventory = properties.filter(p => (p.days_on_market && p.days_on_market >= 90) || p.status === 'STALE');
+                const pendingMatchReqs = matchingRequestsQueue.filter(r => r.status === 'PENDING' || !r.status);
+
+                const priorityActions = [
+                  { 
+                    priority: 'CRITICAL', 
+                    title: `${hotLeadsNoFollowup.length} Hot Leads have no follow-up scheduled`, 
+                    desc: 'Customers with high lead score currently have zero upcoming activities.', 
+                    action: 'Assign Follow-up',
+                    onClick: () => { setActiveTab('customer_management'); setActiveCustomerSubTab('customer_master_vault'); }
+                  },
+                  { 
+                    priority: 'CRITICAL', 
+                    title: `${displayOverdueBrk} Brokerage Payment Pending / Overdue`, 
+                    desc: `${overdueInvoices.length} invoices pending payment settlement past due date.`, 
+                    action: 'Collect Payment',
+                    onClick: () => { setActiveTab('billing_management'); }
+                  },
+                  { 
+                    priority: 'HIGH', 
+                    title: `${waitingCusts.length} Customers waiting for Property Recommendations`, 
+                    desc: 'Active customer requirements queued for property match sharing.', 
+                    action: 'Send Recommendations',
+                    onClick: () => { setActiveTab('matching_management'); setActiveMatchingSubTab('ai_matching_engine'); }
+                  },
+                  { 
+                    priority: 'HIGH', 
+                    title: `${pendingBookings.length} Bookings awaiting Management Approval`, 
+                    desc: 'Pending booking applications awaiting approval & payment verification.', 
+                    action: 'Review Approvals',
+                    onClick: () => { setActiveTab('booking_management'); }
+                  },
+                  { 
+                    priority: 'MEDIUM', 
+                    title: `${agingInventory.length} Properties aging past 90+ days requiring verification`, 
+                    desc: 'Inventory stock aging on market needing developer price re-negotiation.', 
+                    action: 'Re-verify Stock',
+                    onClick: () => { setActiveTab('project_management'); setActiveProjectSubTab('property_master'); }
+                  },
+                  { 
+                    priority: 'LOW', 
+                    title: `${pendingMatchReqs.length} Inbound Property Matching Requests queued`, 
+                    desc: 'Requirement submissions pending AI property matching & cost sheet creation.', 
+                    action: 'Process Queue',
+                    onClick: () => { setActiveTab('matching_management'); setActiveMatchingSubTab('ai_matching_engine'); }
+                  }
+                ];
+
+                const activeCount = priorityActions.filter(act => !act.title.startsWith('0 ')).length;
+
+                // 30-Day Dynamic Forecast Calculations
+                const hotLeadsCount = customers.filter(c => c.priority === 'HOT' || c.status === 'QUALIFIED').length;
+                const expectedBookingsCount = Math.max(bookings.length, Math.round(hotLeadsCount * 0.4));
+                const expectedBrokerageVal = expectedBookingsCount * 125000;
+                const displayExpBrokerage = expectedBrokerageVal >= 10000000 ? `₹${(expectedBrokerageVal / 10000000).toFixed(2)} Cr` : `₹${(expectedBrokerageVal / 100000).toFixed(2)} Lakhs`;
+                
+                const expectedReceivablesVal = overdueBrkVal > 0 ? overdueBrkVal : Math.round(expectedBrokerageVal * 0.5);
+                const displayExpReceivables = expectedReceivablesVal >= 10000000 ? `₹${(expectedReceivablesVal / 10000000).toFixed(2)} Cr` : `₹${(expectedReceivablesVal / 100000).toFixed(2)} Lakhs`;
+
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #ef4444', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <AlertTriangle size={20} color="#ef4444" /> "NEEDS YOUR ATTENTION" PRIORITY ACTION CENTER
+                        </h3>
+                        <span style={{ background: '#ef4444', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+                          {activeCount} Priority Management Items
+                        </span>
                       </div>
-                      <button onClick={() => alert(`Triggering action: ${act.action}`)} style={{ background: act.priority === 'CRITICAL' ? '#ef4444' : '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer', flexShrink: 0 }}>
-                        {act.action}
-                      </button>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 1024 ? '1fr' : 'repeat(2, 1fr)', gap: '12px' }}>
+                        {priorityActions.map((act, i) => (
+                          <div key={i} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '14px', borderRadius: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                            <div>
+                              <span style={{ background: act.priority === 'CRITICAL' ? 'rgba(239,68,68,0.2)' : act.priority === 'HIGH' ? 'rgba(245,158,11,0.2)' : 'rgba(56,189,248,0.2)', color: act.priority === 'CRITICAL' ? '#ef4444' : act.priority === 'HIGH' ? '#fbbf24' : '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: '900', fontSize: '0.65rem' }}>{act.priority}</span>
+                              <h4 style={{ fontSize: '0.85rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>{act.title}</h4>
+                              <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{act.desc}</p>
+                            </div>
+                            <button onClick={act.onClick} style={{ background: act.priority === 'CRITICAL' ? '#ef4444' : '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer', flexShrink: 0 }}>
+                              {act.action}
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* 9. PREDICTIVE FORECASTING WIDGET */}
-              <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #311b92 100%)', border: '1px solid #6366f1', borderRadius: '16px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Sparkles size={20} color="#a5b4fc" />
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>30-DAY BUSINESS FORECAST (PROJECTION ONLY)</h3>
-                  </div>
-                  <p style={{ fontSize: '0.8rem', color: '#c7d2fe', marginTop: '2px' }}>
-                    Calculated from active negotiations, hot lead scores, and site visit conversion velocity.
-                  </p>
-                </div>
+                    {/* 9. PREDICTIVE FORECASTING WIDGET */}
+                    <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #311b92 100%)', border: '1px solid #6366f1', borderRadius: '16px', padding: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Sparkles size={20} color="#a5b4fc" />
+                          <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: '#ffffff' }}>30-DAY BUSINESS FORECAST (DYNAMIC PROJECTION)</h3>
+                        </div>
+                        <p style={{ fontSize: '0.8rem', color: '#c7d2fe', marginTop: '2px' }}>
+                          Calculated in real-time from active negotiations, hot lead scores, and site visit conversion velocity.
+                        </p>
+                      </div>
 
-                <div style={{ display: 'flex', gap: '24px' }}>
-                  <div>
-                    <span style={{ fontSize: '0.7rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED BOOKINGS</span>
-                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff' }}>8 Deals</h4>
+                      <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED BOOKINGS</span>
+                          <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#ffffff' }}>{expectedBookingsCount} Deals</h4>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED BROKERAGE</span>
+                          <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80' }}>{displayExpBrokerage}</h4>
+                        </div>
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED RECEIVABLES</span>
+                          <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>{displayExpReceivables}</h4>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span style={{ fontSize: '0.7rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED BROKERAGE</span>
-                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80' }}>₹9.80 Lakhs</h4>
-                  </div>
-                  <div>
-                    <span style={{ fontSize: '0.7rem', color: '#a5b4fc', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED RECEIVABLES</span>
-                    <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>₹4.40 Lakhs</h4>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
             </div>
           )}
@@ -7786,9 +6955,6 @@ export default function App() {
 
               {/* SUB-TABS NAVIGATION BAR FOR PROJECT MANAGEMENT */}
               <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
-                <button onClick={() => setActiveProjectSubTab('advance_dashboard')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900', cursor: 'pointer', background: activeProjectSubTab === 'advance_dashboard' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'advance_dashboard' ? '#ffffff' : (isLight ? '#0f172a' : '#38bdf8'), border: activeProjectSubTab === 'advance_dashboard' ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155') }}>
-                  📊 Advance BI Command Center
-                </button>
                 <button onClick={() => setActiveProjectSubTab('property_master')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'property_master' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'property_master' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                   🏠 Property Master Stock ({properties.length})
                 </button>
@@ -7808,96 +6974,6 @@ export default function App() {
                   🛡️ Customer Introduction Register ({projectVisitAgreements.length})
                 </button>
               </div>
-
-              {/* SUB-TAB 0: ADVANCE BI DISPLAY & PROJECT COMMAND CENTER */}
-              {activeProjectSubTab === 'advance_dashboard' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
-                  {/* ADVANCE BI COMMAND CENTER BANNER & PROJECT PORTFOLIO CARDS */}
-                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '14px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                      <Building2 size={24} color="#38bdf8" />
-                      <div>
-                        <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                          📊 PROJECT & INVENTORY EXECUTIVE CONTROL CENTER
-                        </h4>
-                        <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
-                          Overall Inventory Stock Valuation, Daily Intake Metrics & Live Ingestion Audit Logs are actively shifted to <strong>Main Dash Board</strong>.
-                        </p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setActiveTab('main_dashboard')} 
-                      style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                    >
-                      📊 View in Main Dash Board →
-                    </button>
-                  </div>
-
-                  {/* PROJECT PORTFOLIO CARDS GRID */}
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>🏢 MASTER DEVELOPER PROJECTS ADVANCE DISPLAY</h3>
-                        <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Real-time inventory availability, price rates, construction progress, and partner commission terms.</p>
-                      </div>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '16px' }}>
-                      {[
-                        { name: 'Aparna Zenon', dev: 'Aparna Constructions', locality: 'Kondapur, Hyderabad', rate: '₹7,000 / Sq.Ft.', comm: '2.0% Direct', totalUnits: 28, freeUnits: 8, bookedUnits: 16, blockedUnits: 4, completion: 85, badge: 'HOT INVENTORY' },
-                        { name: 'Prestige High Fields', dev: 'Prestige Estates', locality: 'Financial District', rate: '₹8,500 / Sq.Ft.', comm: '2.5% Premium', totalUnits: 20, freeUnits: 5, bookedUnits: 12, blockedUnits: 3, completion: 92, badge: 'HIGH MARGIN' },
-                        { name: 'My Home Bhooja', dev: 'My Home Constructions', locality: 'HITEC City Sector', rate: '₹12,000 / Sq.Ft.', comm: '2.0% Direct', totalUnits: 15, freeUnits: 3, bookedUnits: 10, blockedUnits: 2, completion: 100, badge: 'READY TO MOVE' },
-                        { name: 'Sumadhura Acropolis', dev: 'Sumadhura Infracon', locality: 'Nanakramguda', rate: '₹7,800 / Sq.Ft.', comm: '2.0% Direct', totalUnits: 12, freeUnits: 2, bookedUnits: 8, blockedUnits: 2, completion: 78, badge: 'UNDER CONSTRUCTION' }
-                      ].map((p, idx) => (
-                        <div key={idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', fontFamily: 'monospace' }}>🏢 {p.dev}</span>
-                              <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>{p.name}</h4>
-                              <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>📍 {p.locality}</p>
-                            </div>
-                            <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid #38bdf8', padding: '3px 10px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900' }}>
-                              {p.badge}
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '0.8rem', background: isLight ? '#ffffff' : '#1e293b', padding: '10px', borderRadius: '8px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                            <div>
-                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Base Rate:</span>
-                              <strong style={{ display: 'block', color: '#4ade80' }}>{p.rate}</strong>
-                            </div>
-                            <div>
-                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Brokerage Term:</span>
-                              <strong style={{ display: 'block', color: '#fbbf24' }}>💰 {p.comm}</strong>
-                            </div>
-                            <div>
-                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Free Stock:</span>
-                              <strong style={{ display: 'block', color: '#22c55e' }}>🟢 {p.freeUnits} Units</strong>
-                            </div>
-                          </div>
-
-                          {/* CONSTRUCTION PROGRESS BAR */}
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: '800', marginBottom: '4px' }}>
-                              <span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Construction Progress:</span>
-                              <span style={{ color: '#38bdf8' }}>{p.completion}% Completed</span>
-                            </div>
-                            <div style={{ width: '100%', height: '8px', background: isLight ? '#cbd5e1' : '#334155', borderRadius: '4px', overflow: 'hidden' }}>
-                              <div style={{ width: `${p.completion}%`, height: '100%', background: 'linear-gradient(90deg, #0284c7 0%, #22c55e 100%)', borderRadius: '4px' }} />
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
-                            <button onClick={() => setActiveProjectSubTab('live_inventory_board')} style={{ flex: 1, background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem', cursor: 'pointer' }}>🏢 View Tower Grid</button>
-                            <button onClick={() => setActiveProjectSubTab('property_master')} style={{ flex: 1, background: isLight ? '#e2e8f0' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem', cursor: 'pointer' }}>📋 Property Stock</button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* SUB-TAB: CUSTOMER INTRODUCTION REGISTER & BROKERAGE PROTECTION */}
               {activeProjectSubTab === ('introduction_register' as any) && (
@@ -10349,7 +9425,33 @@ export default function App() {
                   r.requestId.toLowerCase() === selectedMatchingId.toLowerCase() || 
                   r.customerNumber.toLowerCase() === selectedMatchingId.toLowerCase()
                 );
-                const activeMatchingReq = matchedReq || pendingRequests[0] || matchingRequestsQueue[0];
+                const activeMatchingReq = matchedReq || pendingRequests[0] || matchingRequestsQueue[0] || {
+                  requestId: 'NO_MATCHING_REQUESTS',
+                  date: 'N/A',
+                  customerName: 'No Matching Requests Available',
+                  customerNumber: 'N/A',
+                  leadId: 'N/A',
+                  requirementId: 'N/A',
+                  mobile: 'N/A',
+                  purpose: 'N/A',
+                  propertyType: 'N/A',
+                  configuration: 'N/A',
+                  budget: 'N/A',
+                  preferredArea: 'N/A',
+                  secondaryAreas: 'N/A',
+                  radiusKm: 0,
+                  possessionStatus: 'N/A',
+                  carpetArea: 'N/A',
+                  facing: 'N/A',
+                  parking: 'N/A',
+                  amenities: 'N/A',
+                  completenessScore: 0,
+                  priority: 'COLD',
+                  leadScore: 0,
+                  assignedExecutive: 'Unassigned',
+                  status: 'NO_REQUESTS',
+                  version: 'SNAPSHOT V1'
+                };
 
                 return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -10358,31 +9460,31 @@ export default function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : windowWidth <= 1024 ? 'repeat(4, 1fr)' : 'repeat(7, 1fr)', gap: '10px' }}>
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
                       <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>MATCHING REQUESTS</span>
-                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{matchingRequestsQueue.length + 15}</h4>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{matchingRequestsQueue.length}</h4>
                     </div>
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
                       <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>PENDING</span>
-                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>4</h4>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>{pendingRequests.length}</h4>
                     </div>
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
                       <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>IN PROGRESS</span>
-                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>2</h4>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{matchingRequestsQueue.filter(r => r.status === 'IN_PROGRESS').length}</h4>
                     </div>
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
                       <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>MATCHED</span>
-                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>12</h4>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>{matchingRequestsQueue.filter(r => r.status === 'MATCHED' || (r.score && r.score >= 80)).length}</h4>
                     </div>
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
                       <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>SELECTED</span>
-                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>6</h4>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>{matchingRequestsQueue.filter(r => r.status === 'SELECTED' || r.selectedCount > 0).length}</h4>
                     </div>
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
                       <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>SHARED WITH CUS</span>
-                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>5</h4>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{costSheetShares.length}</h4>
                     </div>
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
                       <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>SITE VISIT REQ</span>
-                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#22c55e', marginTop: '2px' }}>2</h4>
+                      <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#22c55e', marginTop: '2px' }}>{scheduledVisits.length}</h4>
                     </div>
                   </div>
 
@@ -11592,26 +10694,27 @@ export default function App() {
                         </div>
 
                         <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                          <thead>
-                            <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                              <th style={{ padding: '12px' }}>Visit Schedule ID</th>
-                              <th style={{ padding: '12px' }}>Customer & Contact</th>
-                              <th style={{ padding: '12px' }}>Date & Time</th>
-                              <th style={{ padding: '12px' }}>Sales Person</th>
-                              <th style={{ padding: '12px' }}>Stops / Properties</th>
-                              <th style={{ padding: '12px' }}>Progress</th>
-                              <th style={{ padding: '12px' }}>Status</th>
-                              <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {filteredPlans.map((plan: any) => {
-                              const completedStops = plan.stops.filter((s: any) => s.status === 'VISIT_COMPLETED').length;
-                              const totalStops = plan.stops.length;
-                              const pct = Math.round((completedStops / totalStops) * 100);
-                              const firstPropTitle = plan.stops[0]?.propertyTitle || 'Property';
-                              const extraStopsCount = totalStops - 1;
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                            <thead>
+                              <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                                <th style={{ padding: '12px' }}>Visit Schedule ID</th>
+                                <th style={{ padding: '12px' }}>Customer & Contact</th>
+                                <th style={{ padding: '12px' }}>Date & Time</th>
+                                <th style={{ padding: '12px' }}>Sales Person</th>
+                                <th style={{ padding: '12px' }}>Stops / Properties</th>
+                                <th style={{ padding: '12px' }}>Progress</th>
+                                <th style={{ padding: '12px' }}>Status</th>
+                                <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredPlans.map((plan: any) => {
+                                const planStops = plan.stops || [];
+                                const completedStops = planStops.filter((s: any) => s.status === 'VISIT_COMPLETED').length;
+                                const totalStops = planStops.length;
+                                const pct = totalStops > 0 ? Math.round((completedStops / totalStops) * 100) : 0;
+                                const firstPropTitle = planStops[0]?.propertyTitle || 'Property';
+                                const extraStopsCount = totalStops > 0 ? totalStops - 1 : 0;
 
                               return (
                                 <tr key={plan.visitPlanId} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
@@ -11729,7 +10832,7 @@ export default function App() {
                             >
                               {visitPlans.map(plan => (
                                 <option key={plan.visitPlanId} value={plan.visitPlanId}>
-                                  {plan.visitPlanId} — {plan.customerName} ({plan.stops.length} Stops) [{plan.visitDate}]
+                                  {plan.visitPlanId} — {plan.customerName} ({(plan.stops || []).length} Stops) [{plan.visitDate}]
                                 </option>
                               ))}
                             </select>
@@ -11745,10 +10848,32 @@ export default function App() {
 
                         {/* EXECUTIVE MOBILE ROUTE CARD */}
                         {(() => {
-                          const currentPlan = visitPlans.find(p => p.visitPlanId === selectedVisitPlanId) || visitPlans[0];
-                          const completedStops = currentPlan.stops.filter((s: any) => s.status === 'VISIT_COMPLETED').length;
-                          const totalStops = currentPlan.stops.length;
-                          const currentStop = currentPlan.stops[currentPlan.currentStopIndex] || currentPlan.stops[0];
+                          const currentPlan = visitPlans.find(p => p.visitPlanId === selectedVisitPlanId) || visitPlans[0] || {
+                            visitPlanId: 'NO_VISIT_PLANS',
+                            customerName: 'No Scheduled Visit Plans Available',
+                            customerNumber: 'N/A',
+                            mobile: 'N/A',
+                            visitDate: 'N/A',
+                            startTime: 'N/A',
+                            salesExecutive: 'Unassigned',
+                            status: 'NO_PLANS',
+                            currentStopIndex: 0,
+                            stops: []
+                          };
+                          const planStops = currentPlan.stops || [];
+                          const completedStops = planStops.filter((s: any) => s.status === 'VISIT_COMPLETED').length;
+                          const totalStops = planStops.length;
+                          const currentStopIndex = currentPlan.currentStopIndex || 0;
+                          const currentStop = planStops[currentStopIndex] || planStops[0] || {
+                            stopId: 'N/A',
+                            scheduledTime: 'N/A',
+                            propertyTitle: 'No Active Stop Available',
+                            address: 'N/A',
+                            propertyCode: 'N/A',
+                            costSheetId: 'N/A',
+                            developer: 'N/A',
+                            status: 'N/A'
+                          };
 
                           return (
                             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
@@ -11770,7 +10895,7 @@ export default function App() {
                               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #38bdf8', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <span style={{ background: '#38bdf8', color: '#0f172a', padding: '3px 8px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '900' }}>
-                                    🟡 CURRENT ACTIVE STOP (STOP {currentPlan.currentStopIndex + 1})
+                                    🟡 CURRENT ACTIVE STOP (STOP {currentStopIndex + 1})
                                   </span>
                                   <span style={{ color: '#4ade80', fontWeight: '800', fontSize: '0.78rem' }}>{currentStop.scheduledTime}</span>
                                 </div>
