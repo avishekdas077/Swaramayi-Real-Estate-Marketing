@@ -2712,15 +2712,39 @@ export default function App() {
     unit_floor: '1st Floor',
     total_floors: '4 Floors',
     tower_block: 'Tower B - Sapphire',
-    final_price: '₹1.50 Crore',
-    price_sqft: '₹8,100/Sq.Ft.',
+    final_price: '',
+    total_all_inclusive_price: '',
+    price_sqft: '',
     parking_availability: 'Covered Car Parking (1 Slot Included)',
     parking_price: 'Included in Flat Price',
+    amenity_charges: 'Included in Flat Price',
+    floor_rise_charge: '₹0 (N/A)',
+    plc_charge: '₹0 (N/A)',
+    clubhouse_charge: 'Included in Flat Price',
+    advance_maintenance_charge: 'Included in Flat Price',
+    legal_doc_charge: 'Included in Flat Price',
+    gst_pct: '5.0%',
+    stamp_duty_pct: '5.0%',
+    registration_fee_pct: '1.0%',
+    selected_amenities: [
+      '24/7 Power Backup',
+      'Water Supply',
+      'Security',
+      'CCTV cameras',
+      'Elevators',
+      'Fire Safety',
+      'Gymnasium',
+      'Swimming Pool',
+      'Clubhouse',
+      'Children\'s Play Area'
+    ],
     commission_pct: '2.0% (₹3,00,000 Brokerage)',
     maintenance_monthly: '₹4,500/Month',
     possession_status: 'Ready to Move',
     status: 'AVAILABLE',
     key_custody: 'Builder Lounge / Company Office',
+    site_person_name: 'Rajesh Kumar (Site Incharge)',
+    site_person_contact: '+91 98490 77665',
     description: 'Vastu compliant, East facing corner flat with 3 balconies and pool view.'
   });
 
@@ -3547,54 +3571,48 @@ export default function App() {
 
   // DYNAMIC COST CALCULATION ENGINE
   const calculateIndividualCostSheet = (prop: any) => {
-    const basePriceNum = parsePriceToNumeric(prop.final_price || prop.base_price || 5000000);
-    const carpetAreaNum = parseSqftToNumeric(prop.carpet_area || 1250);
-    const ratePerSqftNum = carpetAreaNum > 0 ? Math.round(basePriceNum / carpetAreaNum) : 5000;
+    const rawPrice = prop.final_price || prop.base_price;
+    const basePriceNum = rawPrice ? parsePriceToNumeric(rawPrice) : 0;
+    const superAreaNum = parseSqftToNumeric(prop.super_builtup_area || prop.carpet_area || 1250);
+    const ratePerSqftNum = (superAreaNum > 0 && basePriceNum > 0) ? Math.round(basePriceNum / superAreaNum) : 0;
 
-    const floorRiseNum = (prop.floorRise !== undefined || prop.floor_rise !== undefined)
-      ? parsePriceToNumeric(prop.floorRise || prop.floor_rise)
-      : 0;
-    
-    const plcNum = (prop.plc !== undefined || prop.plc_facing_charge !== undefined)
-      ? parsePriceToNumeric(prop.plc || prop.plc_facing_charge)
-      : 0;
+    const parsePct = (val: any, fallback: number) => {
+      if (typeof val === 'number') return val;
+      if (!val) return fallback;
+      const parsed = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+      return isNaN(parsed) ? fallback : parsed;
+    };
 
-    const parkingNum = (prop.parkingCharge !== undefined || prop.parking_charge !== undefined)
-      ? parsePriceToNumeric(prop.parkingCharge || prop.parking_charge)
-      : 0;
+    const floorRiseNum = parsePriceToNumeric(prop.floor_rise_charge || prop.floorRise || prop.floor_rise || 0);
+    const plcNum = parsePriceToNumeric(prop.plc_charge || prop.plc || prop.plc_facing_charge || 0);
+    const parkingNum = parsePriceToNumeric(prop.parking_price || prop.parking_charge || prop.parkingCharge || 0);
+    const clubNum = parsePriceToNumeric(prop.clubhouse_charge || prop.club_charge || prop.clubhouse_fee || 0);
+    const maintenanceNum = parsePriceToNumeric(prop.advance_maintenance_charge || prop.maintenance || prop.maintenance_annual || 0);
+    const infraNum = parsePriceToNumeric(prop.legal_doc_charge || prop.infrastructureCharge || prop.infra_legal_fees || 0);
 
-    const clubNum = (prop.clubCharge !== undefined || prop.clubhouse_fee !== undefined)
-      ? parsePriceToNumeric(prop.clubCharge || prop.clubhouse_fee)
-      : 0;
+    const subtotalBeforeTax = basePriceNum + floorRiseNum + plcNum + parkingNum + clubNum + maintenanceNum + infraNum;
 
-    const maintenanceNum = (prop.maintenance !== undefined || prop.maintenance_annual !== undefined)
-      ? parsePriceToNumeric(prop.maintenance || prop.maintenance_annual)
-      : 0;
+    const gstPct = parsePct(prop.gst_pct, basePriceNum > 0 && basePriceNum < 4500000 ? 1 : 5);
+    const gstAmount = basePriceNum > 0 ? Math.round(basePriceNum * (gstPct / 100)) : 0;
 
-    const infraNum = (prop.infrastructureCharge !== undefined || prop.infra_legal_fees !== undefined)
-      ? parsePriceToNumeric(prop.infrastructureCharge || prop.infra_legal_fees)
-      : 0;
+    const stampDutyPct = parsePct(prop.stamp_duty_pct, 5);
+    const stampDutyAmount = basePriceNum > 0 ? Math.round(basePriceNum * (stampDutyPct / 100)) : 0;
 
-    const legalNum = (prop.legalCharge !== undefined)
-      ? parsePriceToNumeric(prop.legalCharge)
-      : 0;
-
-    const subtotalBeforeTax = basePriceNum + floorRiseNum + plcNum + parkingNum + clubNum + maintenanceNum + infraNum + legalNum;
-
-    const gstPct = basePriceNum < 4500000 ? 1 : 5;
-    const gstAmount = Math.round(basePriceNum * (gstPct / 100));
-
-    const stampDutyPct = 5;
-    const stampDutyAmount = Math.round(basePriceNum * 0.05);
-
-    const registrationPct = 1;
-    const registrationAmount = Math.round(basePriceNum * 0.01);
+    const registrationPct = parsePct(prop.registration_fee_pct, 1);
+    const registrationAmount = basePriceNum > 0 ? Math.round(basePriceNum * (registrationPct / 100)) : 0;
 
     const totalEstimatedCost = subtotalBeforeTax + gstAmount + stampDutyAmount + registrationAmount;
 
+    const formatChargeStr = (num: number, origStr: any) => {
+      if (origStr && String(origStr).toLowerCase().includes('included')) return 'Included in Flat Price';
+      if (origStr && String(origStr).toLowerCase().includes('n/a')) return '₹0 (N/A)';
+      if (num > 0) return formatIndianRupees(num);
+      return 'Included in Flat Price';
+    };
+
     return {
       basePriceNum,
-      carpetAreaNum,
+      superAreaNum,
       ratePerSqftNum,
       floorRiseNum,
       plcNum,
@@ -3602,7 +3620,6 @@ export default function App() {
       clubNum,
       maintenanceNum,
       infraNum,
-      legalNum,
       subtotalBeforeTax,
       gstPct,
       gstAmount,
@@ -3612,20 +3629,19 @@ export default function App() {
       registrationAmount,
       totalEstimatedCost,
 
-      basePriceStr: formatIndianRupees(basePriceNum),
-      ratePerSqftStr: `₹${ratePerSqftNum.toLocaleString('en-IN')}/Sq.Ft.`,
+      basePriceStr: basePriceNum > 0 ? formatIndianRupees(basePriceNum) : '₹0',
+      ratePerSqftStr: ratePerSqftNum > 0 ? `₹${ratePerSqftNum.toLocaleString('en-IN')}/Sq.Ft.` : '₹0/Sq.Ft.',
       floorRiseStr: floorRiseNum > 0 ? formatIndianRupees(floorRiseNum) : 'N/A',
       plcStr: plcNum > 0 ? formatIndianRupees(plcNum) : 'N/A',
-      parkingStr: formatIndianRupees(parkingNum),
-      clubStr: formatIndianRupees(clubNum),
-      maintenanceStr: formatIndianRupees(maintenanceNum),
-      infraStr: formatIndianRupees(infraNum),
-      legalStr: formatIndianRupees(legalNum),
-      subtotalStr: formatIndianRupees(subtotalBeforeTax),
-      gstStr: `${formatIndianRupees(gstAmount)} (${gstPct}%)`,
-      stampDutyStr: `${formatIndianRupees(stampDutyAmount)} (${stampDutyPct}%)`,
-      registrationStr: `${formatIndianRupees(registrationAmount)} (${registrationPct}%)`,
-      totalEstimatedCostStr: formatIndianRupees(totalEstimatedCost)
+      parkingStr: formatChargeStr(parkingNum, prop.parking_price || prop.parking_charge),
+      clubStr: formatChargeStr(clubNum, prop.clubhouse_charge || prop.club_charge),
+      maintenanceStr: formatChargeStr(maintenanceNum, prop.advance_maintenance_charge || prop.maintenance),
+      infrastructureStr: formatChargeStr(infraNum, prop.legal_doc_charge || prop.infrastructureCharge),
+      subtotalStr: subtotalBeforeTax > 0 ? formatIndianRupees(subtotalBeforeTax) : '₹0',
+      gstStr: gstAmount > 0 ? `${formatIndianRupees(gstAmount)} (${gstPct}%)` : `₹0 (${gstPct}%)`,
+      stampDutyStr: stampDutyAmount > 0 ? `${formatIndianRupees(stampDutyAmount)} (${stampDutyPct}%)` : `₹0 (${stampDutyPct}%)`,
+      registrationStr: registrationAmount > 0 ? `${formatIndianRupees(registrationAmount)} (${registrationPct}%)` : `₹0 (${registrationPct}%)`,
+      totalEstimatedCostStr: totalEstimatedCost > 0 ? formatIndianRupees(totalEstimatedCost) : '₹0'
     };
   };
 
@@ -8052,10 +8068,10 @@ export default function App() {
                           </div>
 
                           <div>
-                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Flat Price (INR) [Super Built-up × Rate] *</label>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Base Flat Price (INR) [Super Built-up × Rate] *</label>
                             <input 
                               type="text" 
-                              value={newPropertyForm.final_price} 
+                              value={newPropertyForm.final_price || (parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) && parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, '')) ? `₹${Math.round(parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) * parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, ''))).toLocaleString('en-IN')}` : '')} 
                               onChange={(e) => {
                                 const flatVal = e.target.value;
                                 const flatNum = parseFloat(flatVal.replace(/[^0-9.]/g, ''));
@@ -8071,10 +8087,38 @@ export default function App() {
                                   price_sqft: computedPriceSqft
                                 });
                               }} 
+                              placeholder="e.g. ₹57,50,000"
                               style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
-                              required 
                             />
                           </div>
+
+                          {/* TOTAL ALL-INCLUSIVE FINAL PRICE (INCLUDES ALL CHARGES & TAXES) */}
+                          {(() => {
+                            const rawBasePrice = newPropertyForm.final_price || (parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) && parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, '')) ? `₹${Math.round(parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) * parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, '')))}` : '');
+                            const computedCalc = calculateIndividualCostSheet({
+                              ...newPropertyForm,
+                              final_price: rawBasePrice
+                            });
+                            const computedAllInStr = rawBasePrice && computedCalc.totalEstimatedCost > 0 ? computedCalc.totalEstimatedCostStr : '';
+
+                            return (
+                              <div>
+                                <label style={{ fontSize: '0.78rem', color: '#22c55e', fontWeight: '900', display: 'block', marginBottom: '6px' }}>
+                                  🏆 Total All-Inclusive Final Price (INR) [Base + Charges + Taxes] *
+                                </label>
+                                <input 
+                                  type="text" 
+                                  value={newPropertyForm.total_all_inclusive_price || computedAllInStr} 
+                                  onChange={(e) => setNewPropertyForm({ ...newPropertyForm, total_all_inclusive_price: e.target.value })} 
+                                  placeholder="e.g. ₹70,32,500 (All-Inclusive Landed Price)"
+                                  style={{ width: '100%', background: 'rgba(34, 197, 94, 0.12)', border: '2px solid #22c55e', color: isLight ? '#15803d' : '#4ade80', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.92rem' }} 
+                                />
+                                <div style={{ fontSize: '0.68rem', color: '#22c55e', fontWeight: '800', marginTop: '4px' }}>
+                                  ✓ Auto-sums Base + Parking + Amenities + Statutory GST & Stamp Duty
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           <div>
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Agreed Brokerage Fee %</label>
@@ -8082,14 +8126,14 @@ export default function App() {
                           </div>
                         </div>
 
-                        {/* PARKING PRICE & AVAILABILITY ROW */}
-                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
+                        {/* PARKING & AMENITY CHARGES ROW WITH PRESETS */}
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
                           <div>
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Car Parking Availability *</label>
                             <select 
                               value={newPropertyForm.parking_availability || 'Covered Car Parking (1 Slot Included)'} 
                               onChange={(e) => setNewPropertyForm({ ...newPropertyForm, parking_availability: e.target.value })} 
-                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800' }}
                             >
                               <option value="Covered Car Parking (1 Slot Included)">🚗 Covered Car Parking (1 Slot Included)</option>
                               <option value="Covered Car Parking (2 Slots Included)">🚗🚗 Covered Car Parking (2 Slots Included)</option>
@@ -8103,34 +8147,302 @@ export default function App() {
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Parking Price (INR) *</label>
                             <input 
                               type="text" 
-                              value={newPropertyForm.parking_price || 'Included in Flat Price'} 
+                              value={newPropertyForm.parking_price !== undefined ? newPropertyForm.parking_price : 'Included in Flat Price'} 
                               onChange={(e) => setNewPropertyForm({ ...newPropertyForm, parking_price: e.target.value })} 
                               placeholder="e.g. Included in Flat Price / ₹3,00,000"
-                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#eab308', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#eab308', fontWeight: '800', padding: '9px 10px', borderRadius: '8px', fontSize: '0.82rem' }} 
                             />
+                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                              {[
+                                { label: 'Included', val: 'Included in Flat Price' },
+                                { label: '₹2.5 L', val: '₹2,50,000' },
+                                { label: '₹3.0 L', val: '₹3,00,000' },
+                                { label: '₹5.0 L', val: '₹5,00,000' }
+                              ].map(p => (
+                                <button
+                                  key={p.label}
+                                  type="button"
+                                  onClick={() => setNewPropertyForm({ ...newPropertyForm, parking_price: p.val })}
+                                  style={{ background: newPropertyForm.parking_price === p.val ? '#eab308' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.parking_price === p.val ? '#0f172a' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
+                                >
+                                  {p.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Amenity Charges (INR) *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.amenity_charges !== undefined ? newPropertyForm.amenity_charges : 'Included in Flat Price'} 
+                              onChange={(e) => setNewPropertyForm({ ...newPropertyForm, amenity_charges: e.target.value })} 
+                              placeholder="e.g. Included in Flat Price / ₹2,50,000"
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '800', padding: '9px 10px', borderRadius: '8px', fontSize: '0.82rem' }} 
+                            />
+                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                              {[
+                                { label: 'Included', val: 'Included in Flat Price' },
+                                { label: '₹1.5 L', val: '₹1,50,000' },
+                                { label: '₹2.5 L', val: '₹2,50,000' },
+                                { label: '₹3.5 L', val: '₹3,50,000' }
+                              ].map(a => (
+                                <button
+                                  key={a.label}
+                                  type="button"
+                                  onClick={() => setNewPropertyForm({ ...newPropertyForm, amenity_charges: a.val })}
+                                  style={{ background: newPropertyForm.amenity_charges === a.val ? '#38bdf8' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.amenity_charges === a.val ? '#0f172a' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
+                                >
+                                  {a.label}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         </div>
 
                         {/* PRICING LIVE CALCULATION SUMMARY CARD */}
                         {(() => {
-                          const priceNum = parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, ''));
-                          const superNum = parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, ''));
-                          if (!isNaN(priceNum) && !isNaN(superNum) && superNum > 0) {
-                            const flatVal = Math.round(priceNum * superNum);
-                            return (
-                              <div style={{ background: 'rgba(34, 197, 94, 0.12)', border: '1px solid #22c55e', borderRadius: '8px', padding: '10px 14px', fontSize: '0.8rem', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                                <div>
-                                  <span style={{ color: '#22c55e', fontWeight: '900' }}>💰 LIVE FLAT PRICING CALCULATION:</span>{' '}
-                                  <strong>{superNum} Sq.Ft.</strong> (Super Built-up) × <strong>₹{priceNum.toLocaleString('en-IN')}/Sq.Ft.</strong> = <strong style={{ color: '#22c55e', fontSize: '0.95rem' }}>₹{flatVal.toLocaleString('en-IN')} (Flat Price)</strong>
+                          const basePriceVal = newPropertyForm.final_price || (parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) && parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, '')) ? `₹${Math.round(parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) * parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, '')))}` : '');
+                          if (!basePriceVal) return null;
+                          const computedCalc = calculateIndividualCostSheet({
+                            ...newPropertyForm,
+                            final_price: basePriceVal
+                          });
+
+                          if (computedCalc.totalEstimatedCost === 0) return null;
+
+                          return (
+                            <div style={{ background: 'rgba(34, 197, 94, 0.12)', border: '1.5px solid #22c55e', borderRadius: '10px', padding: '12px 16px', fontSize: '0.82rem', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                              <div>
+                                <div style={{ color: '#22c55e', fontWeight: '900', fontSize: '0.9rem', marginBottom: '2px' }}>
+                                  🏆 TOTAL ALL-INCLUSIVE FINAL LANDED COST: <span style={{ color: isLight ? '#15803d' : '#4ade80', fontSize: '1.05rem', fontWeight: '900', textDecoration: 'underline' }}>{newPropertyForm.total_all_inclusive_price || computedCalc.totalEstimatedCostStr}</span>
                                 </div>
-                                <span style={{ background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '900' }}>
-                                  AUTO-MULTIPLIED
-                                </span>
+                                <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1' }}>
+                                  <strong>Base Flat:</strong> {computedCalc.basePriceStr} • <strong>Parking:</strong> {computedCalc.parkingStr} • <strong>Amenities:</strong> {computedCalc.clubStr !== 'Included in Flat Price' ? computedCalc.clubStr : computedCalc.amenityStr || 'Included'} • <strong>Subtotal:</strong> {computedCalc.subtotalStr} • <strong>GST ({computedCalc.gstPct}%):</strong> {formatIndianRupees(computedCalc.gstAmount)} • <strong>Stamp Duty ({computedCalc.stampDutyPct}%):</strong> {formatIndianRupees(computedCalc.stampDutyAmount)} • <strong>Reg Fee ({computedCalc.registrationPct}%):</strong> {formatIndianRupees(computedCalc.registrationAmount)}
+                                </div>
                               </div>
-                            );
-                          }
-                          return null;
+                              <span style={{ background: '#22c55e', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', whiteSpace: 'nowrap' }}>
+                                ALL-INCLUSIVE FINAL
+                              </span>
+                            </div>
+                          );
                         })()}
+
+                        {/* ITEMIZED PROPERTY PRICE & TAX BREAKUP SUB-CONTAINER FOR COST SHEET */}
+                        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                            <h5 style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0284c7', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              🧾 Itemized Property Price & Tax Breakup (Used for Cost Sheet Calculations)
+                            </h5>
+                            <span style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800' }}>
+                              ⚡ AUTO-SYNCED TO COST SHEET
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px' }}>
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Floor Rise Charge (INR)</label>
+                              <input 
+                                type="text" 
+                                value={newPropertyForm.floor_rise_charge || '₹0 (N/A)'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, floor_rise_charge: e.target.value })} 
+                                placeholder="e.g. ₹50,000 / ₹0 (N/A)"
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                              />
+                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {[
+                                  { label: 'N/A (₹0)', val: '₹0 (N/A)' },
+                                  { label: '₹50 K', val: '₹50,000' },
+                                  { label: '₹1.0 L', val: '₹1,00,000' }
+                                ].map(fr => (
+                                  <button
+                                    key={fr.label}
+                                    type="button"
+                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, floor_rise_charge: fr.val })}
+                                    style={{ background: newPropertyForm.floor_rise_charge === fr.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.floor_rise_charge === fr.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
+                                  >
+                                    {fr.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Preferential Location Charge (PLC)</label>
+                              <input 
+                                type="text" 
+                                value={newPropertyForm.plc_charge || '₹0 (N/A)'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, plc_charge: e.target.value })} 
+                                placeholder="e.g. ₹1,50,000 / ₹0 (N/A)"
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                              />
+                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {[
+                                  { label: 'N/A (₹0)', val: '₹0 (N/A)' },
+                                  { label: '₹1.0 L', val: '₹1,00,000' },
+                                  { label: '₹1.5 L', val: '₹1,50,000' },
+                                  { label: '₹2.5 L', val: '₹2,50,000' }
+                                ].map(plc => (
+                                  <button
+                                    key={plc.label}
+                                    type="button"
+                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, plc_charge: plc.val })}
+                                    style={{ background: newPropertyForm.plc_charge === plc.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.plc_charge === plc.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
+                                  >
+                                    {plc.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Clubhouse & Gated Amenities Membership</label>
+                              <input 
+                                type="text" 
+                                value={newPropertyForm.clubhouse_charge || 'Included in Flat Price'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, clubhouse_charge: e.target.value })} 
+                                placeholder="e.g. Included in Flat Price / ₹2,50,000"
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                              />
+                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {[
+                                  { label: 'Included', val: 'Included in Flat Price' },
+                                  { label: '₹1.5 L', val: '₹1,50,000' },
+                                  { label: '₹2.0 L', val: '₹2,00,000' },
+                                  { label: '₹2.5 L', val: '₹2,50,000' }
+                                ].map(cl => (
+                                  <button
+                                    key={cl.label}
+                                    type="button"
+                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, clubhouse_charge: cl.val })}
+                                    style={{ background: newPropertyForm.clubhouse_charge === cl.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.clubhouse_charge === cl.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
+                                  >
+                                    {cl.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Advance Maintenance Charge (1 Year)</label>
+                              <input 
+                                type="text" 
+                                value={newPropertyForm.advance_maintenance_charge || 'Included in Flat Price'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, advance_maintenance_charge: e.target.value })} 
+                                placeholder="e.g. Included in Flat Price / ₹54,000"
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                              />
+                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {[
+                                  { label: 'Included', val: 'Included in Flat Price' },
+                                  { label: '₹36 K', val: '₹36,000' },
+                                  { label: '₹54 K', val: '₹54,000' },
+                                  { label: '₹72 K', val: '₹72,000' }
+                                ].map(m => (
+                                  <button
+                                    key={m.label}
+                                    type="button"
+                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, advance_maintenance_charge: m.val })}
+                                    style={{ background: newPropertyForm.advance_maintenance_charge === m.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.advance_maintenance_charge === m.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
+                                  >
+                                    {m.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Infrastructure & Legal Documentation Fee</label>
+                              <input 
+                                type="text" 
+                                value={newPropertyForm.legal_doc_charge || 'Included in Flat Price'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, legal_doc_charge: e.target.value })} 
+                                placeholder="e.g. Included in Flat Price / ₹50,000"
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                              />
+                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
+                                {[
+                                  { label: 'Included', val: 'Included in Flat Price' },
+                                  { label: '₹25 K', val: '₹25,000' },
+                                  { label: '₹50 K', val: '₹50,000' },
+                                  { label: '₹1.0 L', val: '₹1,00,000' }
+                                ].map(l => (
+                                  <button
+                                    key={l.label}
+                                    type="button"
+                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, legal_doc_charge: l.val })}
+                                    style={{ background: newPropertyForm.legal_doc_charge === l.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.legal_doc_charge === l.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
+                                  >
+                                    {l.label}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Advance Maintenance Charge (1 Year)</label>
+                              <input 
+                                type="text" 
+                                value={newPropertyForm.advance_maintenance_charge || 'Included in Flat Price'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, advance_maintenance_charge: e.target.value })} 
+                                placeholder="e.g. Included in Flat Price / ₹54,000"
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Infrastructure & Legal Documentation Fee</label>
+                              <input 
+                                type="text" 
+                                value={newPropertyForm.legal_doc_charge || 'Included in Flat Price'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, legal_doc_charge: e.target.value })} 
+                                placeholder="e.g. Included in Flat Price / ₹50,000"
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                              />
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>GST Rate (%) *</label>
+                              <select 
+                                value={newPropertyForm.gst_pct || '5.0%'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, gst_pct: e.target.value })} 
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#0284c7', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
+                              >
+                                <option value="5.0%">5.0% GST (Under Construction Standard)</option>
+                                <option value="0.0%">0.0% GST (Ready to Move / Exempt)</option>
+                                <option value="1.0%">1.0% GST (Affordable Housing Rate)</option>
+                                <option value="12.0%">12.0% GST (Commercial Real Estate)</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Stamp Duty Rate (%) *</label>
+                              <select 
+                                value={newPropertyForm.stamp_duty_pct || '5.0%'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, stamp_duty_pct: e.target.value })} 
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#0284c7', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
+                              >
+                                <option value="5.0%">5.0% Stamp Duty (Standard Rate)</option>
+                                <option value="7.5%">7.5% Stamp Duty (High Value Rate)</option>
+                                <option value="4.0%">4.0% Stamp Duty (Women Concession)</option>
+                                <option value="6.0%">6.0% Stamp Duty (State Concession)</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Registration Fee (%) *</label>
+                              <select 
+                                value={newPropertyForm.registration_fee_pct || '1.0%'} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, registration_fee_pct: e.target.value })} 
+                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#0284c7', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
+                              >
+                                <option value="1.0%">1.0% Registration Fee (Standard Rate)</option>
+                                <option value="0.5%">0.5% Registration Fee (Flat Cap Rate)</option>
+                                <option value="2.0%">2.0% Registration Fee (Commercial Rate)</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
                           <div>
@@ -8156,10 +8468,102 @@ export default function App() {
                         </div>
                       </div>
 
-                      {/* SECTION 4: KEYS CUSTODY & PROPERTY DESCRIPTION */}
+                      {/* SECTION 4: AMENITIES AVAILABLE (MULTIPLE SELECTION) */}
+                      <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px', flexWrap: 'wrap', gap: '10px' }}>
+                          <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#0284c7' : '#38bdf8' }}>
+                            4. Amenities Available & Infrastructure Features (Multiple Selection)
+                          </h4>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button 
+                              type="button"
+                              onClick={() => {
+                                const allIds = [
+                                  '24/7 Power Backup', 'Water Supply', 'Security', 'CCTV cameras',
+                                  'Elevators', 'backup power', 'Fire Safety', 'Gymnasium',
+                                  'Swimming Pool', 'Clubhouse', 'Children\'s Play Area', 'Sports Courts',
+                                  'Track', 'Gardens', 'Waste Management', 'EV Charging Stations'
+                                ];
+                                setNewPropertyForm({ ...newPropertyForm, selected_amenities: allIds });
+                              }}
+                              style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
+                            >
+                              Select All (16 Amenities)
+                            </button>
+                            <button 
+                              type="button"
+                              onClick={() => setNewPropertyForm({ ...newPropertyForm, selected_amenities: [] })}
+                              style={{ background: isLight ? '#e2e8f0' : '#334155', color: isLight ? '#475569' : '#cbd5e1', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
+                            >
+                              Clear All
+                            </button>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : windowWidth <= 1024 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+                          {[
+                            { id: '24/7 Power Backup', label: '⚡ 24/7 Power Backup' },
+                            { id: 'Water Supply', label: '🚰 Water Supply (24 Hours)' },
+                            { id: 'Security', label: '🛡️ 24/7 Security Guard' },
+                            { id: 'CCTV cameras', label: '📹 CCTV Cameras' },
+                            { id: 'Elevators', label: '🛗 High-Speed Elevators' },
+                            { id: 'backup power', label: '⚡ Backup Power Generator' },
+                            { id: 'Fire Safety', label: '🧯 Fire Safety System' },
+                            { id: 'Gymnasium', label: '🏋️ Fitness Gymnasium' },
+                            { id: 'Swimming Pool', label: '🏊 Swimming Pool' },
+                            { id: 'Clubhouse', label: '🏛️ Luxury Clubhouse' },
+                            { id: 'Children\'s Play Area', label: '🛝 Children\'s Play Area' },
+                            { id: 'Sports Courts', label: '🏸 Multi-Sports Courts' },
+                            { id: 'Track', label: '🏃 Jogging / Walking Track' },
+                            { id: 'Gardens', label: '🌳 Landscaped Gardens' },
+                            { id: 'Waste Management', label: '♻️ Waste Management & STP' },
+                            { id: 'EV Charging Stations', label: '🔌 EV Charging Stations' }
+                          ].map((amenity) => {
+                            const selectedList = newPropertyForm.selected_amenities || [];
+                            const isChecked = selectedList.includes(amenity.id);
+                            return (
+                              <label 
+                                key={amenity.id}
+                                style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '8px', 
+                                  background: isChecked ? (isLight ? 'rgba(56, 189, 248, 0.12)' : 'rgba(56, 189, 248, 0.18)') : (isLight ? '#ffffff' : '#1e293b'),
+                                  border: isChecked ? '2px solid #38bdf8' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
+                                  padding: '8px 12px', 
+                                  borderRadius: '8px', 
+                                  cursor: 'pointer',
+                                  fontSize: '0.8rem',
+                                  fontWeight: isChecked ? '800' : '600',
+                                  color: isChecked ? (isLight ? '#0284c7' : '#38bdf8') : (isLight ? '#334155' : '#cbd5e1'),
+                                  transition: 'all 0.15s ease-in-out'
+                                }}
+                              >
+                                <input 
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={(e) => {
+                                    let updated = [...selectedList];
+                                    if (e.target.checked) {
+                                      if (!updated.includes(amenity.id)) updated.push(amenity.id);
+                                    } else {
+                                      updated = updated.filter(i => i !== amenity.id);
+                                    }
+                                    setNewPropertyForm({ ...newPropertyForm, selected_amenities: updated });
+                                  }}
+                                  style={{ accentColor: '#38bdf8', width: '15px', height: '15px' }}
+                                />
+                                <span>{amenity.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* SECTION 5: KEYS CUSTODY & PROPERTY DESCRIPTION */}
                       <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                         <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#7e22ce' : '#a855f7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
-                          4. Keys Custody & Architectural Description
+                          5. Keys Custody & Architectural Description
                         </h4>
 
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
@@ -8167,9 +8571,32 @@ export default function App() {
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Physical Keys / Custody Location</label>
                             <input type="text" value={newPropertyForm.key_custody} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, key_custody: e.target.value })} placeholder="Builder Lounge / Company Office" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
                           </div>
+
                           <div>
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Property Highlights & Notes</label>
                             <input type="text" value={newPropertyForm.description} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, description: e.target.value })} placeholder="Pool facing Vastu East, 3 balconies" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: isLight ? '#0284c7' : '#38bdf8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>👤 Site Person Contact Name *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.site_person_name || ''} 
+                              onChange={(e) => setNewPropertyForm({ ...newPropertyForm, site_person_name: e.target.value })} 
+                              placeholder="e.g. Rajesh Kumar (Site Manager / Security Incharge)" 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ fontSize: '0.78rem', color: '#22c55e', fontWeight: '800', display: 'block', marginBottom: '6px' }}>📞 Site Person Contact Phone Number *</label>
+                            <input 
+                              type="text" 
+                              value={newPropertyForm.site_person_contact || ''} 
+                              onChange={(e) => setNewPropertyForm({ ...newPropertyForm, site_person_contact: e.target.value })} 
+                              placeholder="e.g. +91 98490 77665" 
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                            />
                           </div>
                         </div>
                       </div>
@@ -14154,42 +14581,38 @@ export default function App() {
                       </label>
                       <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '10px', maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         {[
-                          "Flat / Apartment (New / Builder)",
-                          "Flat / Apartment (Resale)",
-                          "Flat / Apartment (For Rent)",
-                          "Residential Complex (New / Builder)",
-                          "Residential Complex (Resale)",
-                          "Residential Complex (For Rent)",
-                          "Gated Villa (New / Builder)",
-                          "Gated Villa (Resale)",
-                          "Gated Villa (For Rent)",
-                          "Commercial Complex (New / Builder)",
-                          "Commercial Complex (Resale)",
-                          "Commercial Complex (For Rent / Lease)",
-                          "Commercial Office (New / Builder)",
-                          "Commercial Office (Resale)",
-                          "Commercial Office (For Rent / Lease)",
-                          "Retail Shop (For Rent)",
-                          "PG / Co-Living Space (For Rent)",
-                          "Open Plot / Land (New / Builder)",
-                          "Open Plot / Land (Resale)"
+                          "🏢 Flat / Apartment (New / Builder)",
+                          "🔄 Flat / Apartment (Resale)",
+                          "🔑 Flat / Apartment (For Rent)",
+                          "🏰 Gated Villa (New / Builder)",
+                          "🔄 Gated Villa (Resale)",
+                          "🔑 Gated Villa (For Rent)",
+                          "🏡 Independent House (Resale)",
+                          "🔑 Independent House (For Rent)",
+                          "🏢 Commercial Space (New / Builder)",
+                          "🔄 Commercial Space (Resale)",
+                          "🔑 Commercial Space (For Lease / Rent)",
+                          "🛌 PG / Co-Living Space (For Rent)",
+                          "📐 Open Plot / Land (New / Builder)",
+                          "📐 Open Plot / Land (Resale)"
                         ].map(cat => {
                           const selectedList = (newCustomerForm.property_type || '').split(',').map(s => s.trim()).filter(Boolean);
-                          const isChecked = selectedList.includes(cat);
+                          const isChecked = selectedList.includes(cat) || selectedList.some(s => cat.includes(s) || s.includes(cat.replace(/^[^\s]+\s*/, '')));
                           return (
-                            <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: isChecked ? '#38bdf8' : isLight ? '#0f172a' : '#cbd5e1', fontWeight: isChecked ? '800' : '500', cursor: 'pointer', background: isChecked ? 'rgba(56, 189, 248, 0.12)' : 'transparent', padding: '4px 6px', borderRadius: '4px' }}>
+                            <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: isChecked ? '#38bdf8' : isLight ? '#0f172a' : '#cbd5e1', fontWeight: isChecked ? '800' : '500', cursor: 'pointer', background: isChecked ? 'rgba(56, 189, 248, 0.12)' : 'transparent', padding: '5px 8px', borderRadius: '4px' }}>
                               <input
                                 type="checkbox"
                                 checked={isChecked}
                                 onChange={(e) => {
                                   let updated: string[];
                                   if (e.target.checked) {
-                                    updated = [...selectedList, cat];
+                                    updated = [...selectedList.filter(item => item !== cat), cat];
                                   } else {
-                                    updated = selectedList.filter(item => item !== cat);
+                                    updated = selectedList.filter(item => item !== cat && !cat.includes(item));
                                   }
                                   setNewCustomerForm({ ...newCustomerForm, property_type: updated.join(', ') });
                                 }}
+                                style={{ accentColor: '#38bdf8', width: '15px', height: '15px' }}
                               />
                               <span>{cat}</span>
                             </label>
@@ -14684,42 +15107,38 @@ export default function App() {
                     </label>
                     <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '10px', maxHeight: '180px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {[
-                        "Flat / Apartment (New / Builder)",
-                        "Flat / Apartment (Resale)",
-                        "Flat / Apartment (For Rent)",
-                        "Residential Complex (New / Builder)",
-                        "Residential Complex (Resale)",
-                        "Residential Complex (For Rent)",
-                        "Gated Villa (New / Builder)",
-                        "Gated Villa (Resale)",
-                        "Gated Villa (For Rent)",
-                        "Commercial Complex (New / Builder)",
-                        "Commercial Complex (Resale)",
-                        "Commercial Complex (For Rent / Lease)",
-                        "Commercial Office (New / Builder)",
-                        "Commercial Office (Resale)",
-                        "Commercial Office (For Rent / Lease)",
-                        "Retail Shop (For Rent)",
-                        "PG / Co-Living Space (For Rent)",
-                        "Open Plot / Land (New / Builder)",
-                        "Open Plot / Land (Resale)"
+                        "🏢 Flat / Apartment (New / Builder)",
+                        "🔄 Flat / Apartment (Resale)",
+                        "🔑 Flat / Apartment (For Rent)",
+                        "🏰 Gated Villa (New / Builder)",
+                        "🔄 Gated Villa (Resale)",
+                        "🔑 Gated Villa (For Rent)",
+                        "🏡 Independent House (Resale)",
+                        "🔑 Independent House (For Rent)",
+                        "🏢 Commercial Space (New / Builder)",
+                        "🔄 Commercial Space (Resale)",
+                        "🔑 Commercial Space (For Lease / Rent)",
+                        "🛌 PG / Co-Living Space (For Rent)",
+                        "📐 Open Plot / Land (New / Builder)",
+                        "📐 Open Plot / Land (Resale)"
                       ].map(cat => {
                         const selectedList = (newCustomerForm.property_type || '').split(',').map(s => s.trim()).filter(Boolean);
-                        const isChecked = selectedList.includes(cat);
+                        const isChecked = selectedList.includes(cat) || selectedList.some(s => cat.includes(s) || s.includes(cat.replace(/^[^\s]+\s*/, '')));
                         return (
-                          <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem', color: isChecked ? '#38bdf8' : isLight ? '#0f172a' : '#cbd5e1', fontWeight: isChecked ? '800' : '500', cursor: 'pointer', background: isChecked ? 'rgba(56, 189, 248, 0.12)' : 'transparent', padding: '4px 8px', borderRadius: '4px' }}>
+                          <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: isChecked ? '#38bdf8' : isLight ? '#0f172a' : '#cbd5e1', fontWeight: isChecked ? '800' : '500', cursor: 'pointer', background: isChecked ? 'rgba(56, 189, 248, 0.14)' : 'transparent', padding: '5px 8px', borderRadius: '4px' }}>
                             <input
                               type="checkbox"
                               checked={isChecked}
                               onChange={(e) => {
                                 let updated: string[];
                                 if (e.target.checked) {
-                                  updated = [...selectedList, cat];
+                                  updated = [...selectedList.filter(item => item !== cat), cat];
                                 } else {
-                                  updated = selectedList.filter(item => item !== cat);
+                                  updated = selectedList.filter(item => item !== cat && !cat.includes(item));
                                 }
                                 setNewCustomerForm({ ...newCustomerForm, property_type: updated.join(', ') });
                               }}
+                              style={{ accentColor: '#38bdf8', width: '15px', height: '15px' }}
                             />
                             <span>{cat}</span>
                           </label>
