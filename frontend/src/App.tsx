@@ -5759,19 +5759,9 @@ export default function App() {
                 <Plus size={16} /> + Ingest Customer
               </button>
             )}
-            {activeTab === 'lead_management' && (
-              <button onClick={handleOpenLeadModal} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Plus size={16} /> + Ingest New Lead
-              </button>
-            )}
             {activeTab === 'visit_management' && (
               <button onClick={() => alert('🚘 Opening Schedule Site Visit Modal...')} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Plus size={16} /> + Schedule Site Visit
-              </button>
-            )}
-            {activeTab === 'matching_management' && (
-              <button onClick={() => alert(`⚡ Recalculated live AI property match ranker for ${selectedCust.name}!`)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Zap size={16} /> ⚡ Run Real-Time AI Matcher
               </button>
             )}
             <button onClick={() => exportToCSV(properties, 'CRM_Export')} style={{ background: isLight ? '#f1f5f9' : '#1e293b', color: isLight ? '#0284c7' : '#fbbf24', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
