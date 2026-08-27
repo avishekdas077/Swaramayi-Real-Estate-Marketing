@@ -12,7 +12,7 @@ import {
   Compass, QrCode, Share2, Layers3, Activity, CheckSquare1, Eye, EyeOff, ThumbsUp, ThumbsDown,
   Upload, FileUp, FileDown, Table, FileSignature, Scale, PenTool, ReceiptText, Calculator, Landmark,
   Grid, List, Columns, Edit3, Trash2, CheckStack, Layers2, Navigation, Map, PieChart, BarChart2,
-  GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck
+  GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck, Camera, Image as ImageIcon
 } from 'lucide-react';
 
 function ScheduleVisitModalContent({
@@ -2402,6 +2402,18 @@ export default function App() {
   const [visitFilterDate, setVisitFilterDate] = useState<string>('ALL');
   const [visitFilterExec, setVisitFilterExec] = useState<string>('ALL');
 
+  // Requirement Update Form State
+  const [updateReqForm, setUpdateReqForm] = useState({
+    budget_min: '₹70 Lakhs',
+    budget_max: '₹95 Lakhs',
+    preferredArea: 'Kondapur / Gachibowli',
+    configuration: '3BHK',
+    facing: 'East Facing',
+    floor_pref: '10th Floor or Higher',
+    dislike_reason: 'Over Budget by ₹15L & East Facing Preferred',
+    remarks: ''
+  });
+
   // Advanced Customer Master Form State
   const [newCustomerForm, setNewCustomerForm] = useState({
     customer_number: '',
@@ -2701,6 +2713,10 @@ export default function App() {
   const [newPropertyForm, setNewPropertyForm] = useState({
     title: '',
     developer: 'My Home Constructions',
+    developer_mobile: '+91 98490 88778',
+    building_photo: '',
+    latitude: '17.4612° N',
+    longitude: '78.3689° E',
     locality: 'Kondapur',
     property_type: 'Flat / Apartment',
     configuration: '3BHK',
@@ -2716,13 +2732,13 @@ export default function App() {
     total_all_inclusive_price: '',
     price_sqft: '',
     parking_availability: 'Covered Car Parking (1 Slot Included)',
-    parking_price: 'Included in Flat Price',
-    amenity_charges: 'Included in Flat Price',
-    floor_rise_charge: '₹0 (N/A)',
-    plc_charge: '₹0 (N/A)',
-    clubhouse_charge: 'Included in Flat Price',
-    advance_maintenance_charge: 'Included in Flat Price',
-    legal_doc_charge: 'Included in Flat Price',
+    parking_price: '',
+    amenity_charges: '',
+    floor_rise_charge: '',
+    plc_charge: '',
+    clubhouse_charge: '',
+    advance_maintenance_charge: '',
+    legal_doc_charge: '',
     gst_pct: '5.0%',
     stamp_duty_pct: '5.0%',
     registration_fee_pct: '1.0%',
@@ -2935,11 +2951,11 @@ export default function App() {
       console.error('Error reading properties from localStorage:', e);
     }
     return [
-      { id: 'PROP-01', property_code: 'SRM-PROP-2026-000421', title: 'Aparna Zenon Premium 3BHK Residence', type: 'Apartment', developer: 'Aparna Constructions', project: 'Aparna Zenon', tower: 'Tower A', floor: 5, unit: 'A-504', configuration: '3BHK', carpet_area: '1,450 sq.ft.', facing: 'East', final_price: '₹84 Lakhs', base_price: '₹85 Lakhs', status: 'AVAILABLE', locality: 'Kondapur', map_x: 45, map_y: 35, latitude: '17.4612° N', longitude: '78.3689° E', owner_phone: '+91 40 2335 8888', price_sqft: '₹5,862 / sq.ft.', added_date: '2026-08-26', added_by: 'Priya Nair (Sales Exec)' },
-      { id: 'PROP-02', property_code: 'SRM-PROP-2026-000422', title: 'Financial Towers Luxury 4BHK Sky Suite', type: 'Penthouse', developer: 'My Home Group', project: 'Financial Towers', tower: 'Tower B', floor: 12, unit: 'B-1202', configuration: '4BHK', carpet_area: '2,400 sq.ft.', facing: 'North-East', final_price: '₹2.08 Crores', base_price: '₹2.10 Crores', status: 'AVAILABLE', locality: 'Financial District', map_x: 28, map_y: 55, latitude: '17.4401° N', longitude: '78.3489° E', owner_phone: '+91 40 6688 9999', price_sqft: '₹8,750 / sq.ft.', added_date: '2026-08-26', added_by: 'Rahul Sharma (TL)' },
-      { id: 'PROP-03', property_code: 'SRM-PROP-2026-000423', title: 'My Home Jewel Executive 2BHK Flat', type: 'Apartment', developer: 'My Home Group', project: 'My Home Jewel', tower: 'Block C', floor: 3, unit: 'C-308', configuration: '2BHK', carpet_area: '1,245 sq.ft.', facing: 'North', final_price: '₹68 Lakhs', base_price: '₹69 Lakhs', status: 'AVAILABLE', locality: 'Madinaguda', map_x: 32, map_y: 20, latitude: '17.4921° N', longitude: '78.3412° E', owner_phone: '+91 40 6688 1111', price_sqft: '₹5,542 / sq.ft.', added_date: '2026-08-26', added_by: 'Priya Nair (Sales Exec)' },
-      { id: 'PROP-04', property_code: 'SRM-PROP-2026-000424', title: 'Jayabheri Silicon County Ultra Villa', type: 'Villa', developer: 'Jayabheri Properties', project: 'Silicon County', tower: 'Villa 14', floor: 2, unit: 'V-14', configuration: '5BHK Villa', carpet_area: '4,200 sq.ft.', facing: 'East', final_price: '₹4.50 Crores', base_price: '₹4.60 Crores', status: 'BOOKED', locality: 'Hitec City', map_x: 58, map_y: 42, latitude: '17.4478° N', longitude: '78.3789° E', owner_phone: '+91 40 2311 5555', price_sqft: '₹10,952 / sq.ft.', added_date: '2026-08-25', added_by: 'Vikram Reddy (GM)' },
-      { id: 'PROP-05', property_code: 'SRM-PROP-2026-000425', title: 'Prestige High Fields Corner 3BHK', type: 'Apartment', developer: 'Prestige Estates', project: 'Prestige High Fields', tower: 'Tower 8', floor: 18, unit: 'T8-1804', configuration: '3BHK', carpet_area: '1,725 sq.ft.', facing: 'East', final_price: '₹1.35 Crores', base_price: '₹1.38 Crores', status: 'HOLD', locality: 'Nanakramguda', map_x: 22, map_y: 65, latitude: '17.4201° N', longitude: '78.3410° E', owner_phone: '+91 40 4477 8888', price_sqft: '₹8,000 / sq.ft.', added_date: '2026-08-25', added_by: 'Rahul Sharma (TL)' }
+      { id: 'PROP-01', property_code: 'SRM-PROP-2026-000421', title: 'Aparna Zenon Premium 3BHK Residence', type: 'Apartment', developer: 'Aparna Constructions', project: 'Aparna Zenon', tower: 'Tower A', floor: 5, unit: 'A-504', configuration: '3BHK', carpet_area: '1,450 sq.ft.', facing: 'East', final_price: '₹84 Lakhs', base_price: '₹85 Lakhs', status: 'AVAILABLE', locality: 'Kondapur', map_x: 45, map_y: 35, latitude: '17.4612° N', longitude: '78.3689° E', owner_phone: '+91 40 2335 8888', price_sqft: '₹5,862 / sq.ft.', added_date: '2026-08-26', added_by: 'Priya Nair (Sales Exec)', building_photo: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80' },
+      { id: 'PROP-02', property_code: 'SRM-PROP-2026-000422', title: 'Financial Towers Luxury 4BHK Sky Suite', type: 'Penthouse', developer: 'My Home Group', project: 'Financial Towers', tower: 'Tower B', floor: 12, unit: 'B-1202', configuration: '4BHK', carpet_area: '2,400 sq.ft.', facing: 'North-East', final_price: '₹2.08 Crores', base_price: '₹2.10 Crores', status: 'AVAILABLE', locality: 'Financial District', map_x: 28, map_y: 55, latitude: '17.4401° N', longitude: '78.3489° E', owner_phone: '+91 40 6688 9999', price_sqft: '₹8,750 / sq.ft.', added_date: '2026-08-26', added_by: 'Rahul Sharma (TL)', building_photo: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80' },
+      { id: 'PROP-03', property_code: 'SRM-PROP-2026-000423', title: 'My Home Jewel Executive 2BHK Flat', type: 'Apartment', developer: 'My Home Group', project: 'My Home Jewel', tower: 'Block C', floor: 3, unit: 'C-308', configuration: '2BHK', carpet_area: '1,245 sq.ft.', facing: 'North', final_price: '₹68 Lakhs', base_price: '₹69 Lakhs', status: 'AVAILABLE', locality: 'Madinaguda', map_x: 32, map_y: 20, latitude: '17.4921° N', longitude: '78.3412° E', owner_phone: '+91 40 6688 1111', price_sqft: '₹5,542 / sq.ft.', added_date: '2026-08-26', added_by: 'Priya Nair (Sales Exec)', building_photo: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80' },
+      { id: 'PROP-04', property_code: 'SRM-PROP-2026-000424', title: 'Jayabheri Silicon County Ultra Villa', type: 'Villa', developer: 'Jayabheri Properties', project: 'Silicon County', tower: 'Villa 14', floor: 2, unit: 'V-14', configuration: '5BHK Villa', carpet_area: '4,200 sq.ft.', facing: 'East', final_price: '₹4.50 Crores', base_price: '₹4.60 Crores', status: 'BOOKED', locality: 'Hitec City', map_x: 58, map_y: 42, latitude: '17.4478° N', longitude: '78.3789° E', owner_phone: '+91 40 2311 5555', price_sqft: '₹10,952 / sq.ft.', added_date: '2026-08-25', added_by: 'Vikram Reddy (GM)', building_photo: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80' },
+      { id: 'PROP-05', property_code: 'SRM-PROP-2026-000425', title: 'Prestige High Fields Corner 3BHK', type: 'Apartment', developer: 'Prestige Estates', project: 'Prestige High Fields', tower: 'Tower 8', floor: 18, unit: 'T8-1804', configuration: '3BHK', carpet_area: '1,725 sq.ft.', facing: 'East', final_price: '₹1.35 Crores', base_price: '₹1.38 Crores', status: 'HOLD', locality: 'Nanakramguda', map_x: 22, map_y: 65, latitude: '17.4201° N', longitude: '78.3410° E', owner_phone: '+91 40 4477 8888', price_sqft: '₹8,000 / sq.ft.', added_date: '2026-08-25', added_by: 'Rahul Sharma (TL)', building_photo: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80' }
     ];
   });
 
@@ -3612,10 +3628,10 @@ export default function App() {
 
     const floorRiseNum = parsePriceToNumeric(prop.floor_rise_charge || prop.floorRise || prop.floor_rise || 0);
     const plcNum = parsePriceToNumeric(prop.plc_charge || prop.plc || prop.plc_facing_charge || 0);
-    const parkingNum = parsePriceToNumeric(prop.parking_price || prop.parking_charge || prop.parkingCharge || 0);
-    const clubNum = parsePriceToNumeric(prop.clubhouse_charge || prop.club_charge || prop.clubhouse_fee || 0);
-    const maintenanceNum = parsePriceToNumeric(prop.advance_maintenance_charge || prop.maintenance || prop.maintenance_annual || 0);
-    const infraNum = parsePriceToNumeric(prop.legal_doc_charge || prop.infrastructureCharge || prop.infra_legal_fees || 0);
+    const parkingNum = parsePriceToNumeric(prop.parking_price || prop.parking_charge || prop.parkingCharge || prop.parking || 0);
+    const clubNum = parsePriceToNumeric(prop.clubhouse_charge || prop.club_charge || prop.clubhouse_fee || prop.club_membership_fee || 0);
+    const maintenanceNum = parsePriceToNumeric(prop.advance_maintenance_charge || prop.maintenance || prop.maintenance_annual || prop.maintenance_monthly || 0);
+    const infraNum = parsePriceToNumeric(prop.legal_doc_charge || prop.infrastructureCharge || prop.infra_legal_fees || prop.infrastructure_charge || prop.legal_charge || prop.infra_legal || 0);
 
     const subtotalBeforeTax = basePriceNum + floorRiseNum + plcNum + parkingNum + clubNum + maintenanceNum + infraNum;
 
@@ -3631,10 +3647,27 @@ export default function App() {
     const totalEstimatedCost = subtotalBeforeTax + gstAmount + stampDutyAmount + registrationAmount;
 
     const formatChargeStr = (num: number, origStr: any) => {
-      if (origStr && String(origStr).toLowerCase().includes('included')) return 'Included in Flat Price';
-      if (origStr && String(origStr).toLowerCase().includes('n/a')) return '₹0 (N/A)';
+      if (origStr !== undefined && origStr !== null && origStr !== '') {
+        const s = String(origStr).trim();
+        if (s.toLowerCase().includes('included')) return 'Included in Flat Price';
+        if (s.toLowerCase().includes('n/a')) return '₹0 (N/A)';
+        const parsed = parsePriceToNumeric(s);
+        if (parsed > 0) return formatIndianRupees(parsed);
+      }
       if (num > 0) return formatIndianRupees(num);
       return 'Included in Flat Price';
+    };
+
+    const formatFloorPlcStr = (num: number, origStr: any) => {
+      if (origStr !== undefined && origStr !== null && origStr !== '') {
+        const s = String(origStr).trim();
+        if (s.toLowerCase().includes('included')) return 'Included in Flat Price';
+        if (s.toLowerCase().includes('n/a')) return '₹0 (N/A)';
+        const parsed = parsePriceToNumeric(s);
+        if (parsed > 0) return formatIndianRupees(parsed);
+      }
+      if (num > 0) return formatIndianRupees(num);
+      return 'N/A';
     };
 
     return {
@@ -3658,12 +3691,12 @@ export default function App() {
 
       basePriceStr: basePriceNum > 0 ? formatIndianRupees(basePriceNum) : '₹0',
       ratePerSqftStr: ratePerSqftNum > 0 ? `₹${ratePerSqftNum.toLocaleString('en-IN')}/Sq.Ft.` : '₹0/Sq.Ft.',
-      floorRiseStr: floorRiseNum > 0 ? formatIndianRupees(floorRiseNum) : 'N/A',
-      plcStr: plcNum > 0 ? formatIndianRupees(plcNum) : 'N/A',
-      parkingStr: formatChargeStr(parkingNum, prop.parking_price || prop.parking_charge),
-      clubStr: formatChargeStr(clubNum, prop.clubhouse_charge || prop.club_charge),
-      maintenanceStr: formatChargeStr(maintenanceNum, prop.advance_maintenance_charge || prop.maintenance),
-      infrastructureStr: formatChargeStr(infraNum, prop.legal_doc_charge || prop.infrastructureCharge),
+      floorRiseStr: formatFloorPlcStr(floorRiseNum, prop.floor_rise_charge || prop.floorRise || prop.floor_rise),
+      plcStr: formatFloorPlcStr(plcNum, prop.plc_charge || prop.plc || prop.plc_facing_charge),
+      parkingStr: formatChargeStr(parkingNum, prop.parking_price || prop.parking_charge || prop.parkingCharge || prop.parking),
+      clubStr: formatChargeStr(clubNum, prop.clubhouse_charge || prop.club_charge || prop.clubhouse_fee),
+      maintenanceStr: formatChargeStr(maintenanceNum, prop.advance_maintenance_charge || prop.maintenance || prop.maintenance_annual),
+      infrastructureStr: formatChargeStr(infraNum, prop.legal_doc_charge || prop.infrastructureCharge || prop.infra_legal_fees || prop.infrastructure_charge || prop.legal_charge),
       subtotalStr: subtotalBeforeTax > 0 ? formatIndianRupees(subtotalBeforeTax) : '₹0',
       gstStr: gstAmount > 0 ? `${formatIndianRupees(gstAmount)} (${gstPct}%)` : `₹0 (${gstPct}%)`,
       stampDutyStr: stampDutyAmount > 0 ? `${formatIndianRupees(stampDutyAmount)} (${stampDutyPct}%)` : `₹0 (${stampDutyPct}%)`,
@@ -4033,10 +4066,11 @@ export default function App() {
         clubCharge: calculated.clubNum,
         maintenance: calculated.maintenanceNum,
         infrastructureCharge: calculated.infraNum,
-        legalCharge: calculated.legalNum,
+        legalCharge: calculated.infraNum,
         documentationCharge: 5000,
         otherCharges: 0,
         discountAmount: 0,
+        subtotalBeforeTax: calculated.subtotalBeforeTax,
         gstPct: calculated.gstPct,
         gstAmount: calculated.gstAmount,
         stampDutyPct: calculated.stampDutyPct,
@@ -4054,8 +4088,9 @@ export default function App() {
         parkingStr: calculated.parkingStr,
         clubStr: calculated.clubStr,
         maintenanceStr: calculated.maintenanceStr,
-        infrastructureStr: calculated.infraStr,
-        legalStr: calculated.legalStr,
+        infrastructureStr: calculated.infrastructureStr,
+        subtotalStr: calculated.subtotalStr,
+        legalStr: calculated.infrastructureStr,
         otherStr: 'N/A',
         discountStr: 'N/A',
         gstStr: calculated.gstStr,
@@ -5222,6 +5257,7 @@ export default function App() {
         status: newPropertyForm.status,
         latitude: newPropertyForm.latitude,
         longitude: newPropertyForm.longitude,
+        building_photo: newPropertyForm.building_photo || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
         key_custody: newPropertyForm.key_custody,
         description: newPropertyForm.description
       } : p));
@@ -5229,7 +5265,7 @@ export default function App() {
       setShowPropertyModal(false);
       const code = editingProperty.property_code;
       setEditingProperty(null);
-      alert(`✏️ Property Master Record ${code} updated successfully with full details!`);
+      alert(`✏️ Property Master Record ${code} updated successfully with building photo & details!`);
       return;
     }
 
@@ -5252,6 +5288,7 @@ export default function App() {
       possession_status: newPropertyForm.possession_status || 'Ready to Move',
       latitude: newPropertyForm.latitude || '22.698021',
       longitude: newPropertyForm.longitude || '88.463723',
+      building_photo: newPropertyForm.building_photo || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
       map_x: 35 + Math.random() * 30,
       map_y: 35 + Math.random() * 30
     };
@@ -5335,6 +5372,89 @@ export default function App() {
     alert(`📋 New Lead (${newLeadObj.lead_number} - ${callDisp}) & Customer Master (${newCustNumber}) saved into Customer & Lead Management!`);
   };
 
+  const getSevenDigitCustomerNumber = (custNo?: string, altId?: string) => {
+    const raw = (custNo || altId || '').replace(/[^0-9]/g, '');
+    if (!raw) return '0000184';
+    if (raw.length >= 7) return raw.slice(-7);
+    return raw.padStart(7, '0');
+  };
+
+  const handleMarkVisitDoneAndNotifyDeveloper = (v: any) => {
+    const custName = v.customerName || v.name || v.customer_name || 'Sumanth Varma';
+    const fullCustNo = v.customerNumber || v.customer_number || v.customerId || 'SRM-CUS-2026-000186';
+    const sevenDigitCustNo = getSevenDigitCustomerNumber(fullCustNo, v.mobile);
+    const propTitle = v.propertyTitle || v.title || 'Aparna Zenon Premium 3BHK';
+    const devName = v.developer || v.developerName || v.developer_name || 'Aparna Constructions';
+    const execName = v.assignedExecutive || v.salesPersonName || v.sales_executive || 'Ramesh Pawar (Field Exec)';
+    const devPhone = v.developerMobile || v.developer_whatsapp || v.developer_phone || '+91 98490 55443';
+    const visitIdStr = v.visitId || v.id || v.visitPlanId || 'SRM-VS-2026-000087';
+    const nowStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ' at ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    // Formulate official Developer WhatsApp confirmation message
+    const msg = `🏢 *SWARAMAYI REAL ESTATE — OFFICIAL SITE VISIT COMPLETION CONFIRMATION*\n\n` +
+      `✅ *VISIT STATUS*: COMPLETED / DONE\n` +
+      `👤 *Customer Full Name*: ${custName}\n` +
+      `🆔 *7-Digit Customer Number*: ${sevenDigitCustNo} (${fullCustNo})\n` +
+      `🏠 *Visited Property*: ${propTitle}\n` +
+      `🏢 *Developer Partner*: ${devName}\n` +
+      `🗓️ *Completion Date & Time*: ${nowStr}\n` +
+      `👤 *Assigned Sales Exec*: ${execName}\n\n` +
+      `📌 *CRM Audit Note*: Site visit for ${custName} (7-Digit ID: ${sevenDigitCustNo}) is successfully completed & recorded in Swaramayi Real Estate CRM. Brokerage Protection (PVA) is active for this client.`;
+
+    const cleanDevPhone = devPhone.replace(/[^0-9]/g, '');
+    const waUrl = `https://api.whatsapp.com/send?phone=${cleanDevPhone}&text=${encodeURIComponent(msg)}`;
+
+    // 1. Update Scheduled Visits State
+    setScheduledVisits(prev => prev.map(sv => (sv.visitId === visitIdStr || sv.id === v.id || sv.customerNumber === fullCustNo) ? {
+      ...sv,
+      status: 'COMPLETED',
+      visitDone: true,
+      visitCompletedTime: nowStr
+    } : sv));
+
+    // 2. Update Visit Plans State
+    setVisitPlans(prev => prev.map(vp => {
+      if (vp.customerNumber === fullCustNo || vp.visitPlanId === visitIdStr) {
+        return {
+          ...vp,
+          status: 'COMPLETED',
+          stops: vp.stops.map((s: any) => ({ ...s, status: 'VISIT_COMPLETED' }))
+        };
+      }
+      return vp;
+    }));
+
+    // 3. Create or Update PVA Record in projectVisitAgreements
+    const pvaId = `SRM-PVA-2026-000${projectVisitAgreements.length + 12}`;
+    const newPva = {
+      projectVisitAgreementId: pvaId,
+      customerName: custName,
+      customerMobile: v.mobile || '+91 98490 88888',
+      customerId: fullCustNo,
+      sevenDigitCustomerId: sevenDigitCustNo,
+      projectTitle: propTitle,
+      developerName: devName,
+      salesPersonName: execName,
+      visitDate: v.visitDate || new Date().toISOString().split('T')[0],
+      protectionStartDate: new Date().toISOString().split('T')[0],
+      protectionEndDate: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
+      status: 'VISIT_COMPLETED',
+      whatsappConfirmed: true,
+      developerWhatsapp: devPhone
+    };
+    setProjectVisitAgreements(prev => [newPva, ...prev.filter(p => p.customerId !== fullCustNo || p.projectTitle !== propTitle)]);
+
+    // 4. Trigger WhatsApp Developer Confirmation
+    window.open(waUrl, '_blank');
+
+    alert(`✅ VISIT MARKED COMPLETED & CONFIRMED!\n\n` +
+      `📲 Dispatched WhatsApp Confirmation to Developer (${devPhone}):\n` +
+      `• Customer Full Name: ${custName}\n` +
+      `• 7-Digit Customer Number: ${sevenDigitCustNo}\n` +
+      `• Property: ${propTitle}\n` +
+      `• Developer: ${devName}`);
+  };
+
   const handleRespondApproval = (reqId: string, action: 'APPROVED' | 'REJECTED') => {
     setApprovalRequests(approvalRequests.map(r => r.id === reqId ? { ...r, status: action, approved_by: 'Rajesh Varma (Super Admin)' } : r));
     alert(`⚖️ Request ${reqId} set to ${action}!`);
@@ -5363,6 +5483,7 @@ export default function App() {
   });
 
   // Advanced 8-Criteria Real Estate Property Matching Algorithm (With Floor Preference)
+  // Advanced 8-Criteria Real Estate Property Matching Algorithm (With Floor Preference)
   const calculatePropertyMatchScore = (customer: any, property: any) => {
     let breakdown = {
       bud: 0,                  // 1. Min-Max Budget Range (25%)
@@ -5375,33 +5496,89 @@ export default function App() {
       condition: 3             // 8. Property Condition & Furnishing (5%)
     };
 
-    const parseAmountInLakhs = (str: string) => {
-      if (!str) return 100;
-      const clean = str.replace(/[^0-9.]/g, '');
-      const num = parseFloat(clean) || 0;
-      if (str.toLowerCase().includes('crore')) return num * 100;
-      return num;
+    const parseSingleValToLakhs = (valStr: any): number => {
+      if (valStr === undefined || valStr === null || valStr === '') return 0;
+      if (typeof valStr === 'number') {
+        if (valStr >= 100000) return valStr / 100000;
+        return valStr;
+      }
+      const s = String(valStr).trim().toLowerCase();
+      if (!s) return 0;
+      
+      const cleanNum = parseFloat(s.replace(/[^0-9.]/g, ''));
+      if (isNaN(cleanNum) || cleanNum <= 0) return 0;
+
+      if (s.includes('crore') || s.includes('cr')) {
+        return cleanNum * 100;
+      }
+      if (cleanNum >= 100000) {
+        return cleanNum / 100000;
+      }
+      return cleanNum;
     };
 
-    // 1. MINIMUM & MAXIMUM BUDGET RANGE MATCH (STRICT 25%)
-    const propPriceLakhs = parseAmountInLakhs(property?.final_price || property?.base_price || '');
-    if (customer?.budget) {
-      const budgetParts = customer.budget.split('-').map(parseAmountInLakhs);
-      const minBud = budgetParts[0] || 0;
-      const maxBud = budgetParts[1] || budgetParts[0] || 9999;
+    const parseBudgetRangeInLakhs = (customerObj: any): { min: number; max: number } => {
+      let minBud = parseSingleValToLakhs(customerObj?.budget_min);
+      let maxBud = parseSingleValToLakhs(customerObj?.budget_max);
 
-      if (propPriceLakhs >= minBud && propPriceLakhs <= maxBud) {
-        breakdown.bud = 25; // 100% fit strictly between min & max budget
+      if (minBud > 0 && maxBud > 0 && minBud <= maxBud) {
+        return { min: minBud, max: maxBud };
+      }
+
+      const bStr = customerObj?.budget ? String(customerObj.budget).trim() : '';
+      if (!bStr) return { min: 0, max: 99999 };
+
+      // Split by hyphen -, en-dash –, em-dash —, " to ", " - ", "/"
+      const parts = bStr.split(/[-–—]|(?:\s+to\s+)|(?:\s*\/\s*)/i).map(s => s.trim()).filter(Boolean);
+
+      if (parts.length >= 2) {
+        let p1 = parseSingleValToLakhs(parts[0]);
+        let p2 = parseSingleValToLakhs(parts[1]);
+
+        // If unit like "Crore" is only on part 2 (e.g. "1.20 - 1.80 Crore" or "70 - 85 Lakhs")
+        const part2Raw = parts[1].toLowerCase();
+        if ((part2Raw.includes('crore') || part2Raw.includes('cr')) && p1 > 0 && p1 < 10) {
+          p1 = p1 * 100;
+        }
+
+        minBud = Math.min(p1, p2);
+        maxBud = Math.max(p1, p2);
+      } else if (parts.length === 1) {
+        const p1 = parseSingleValToLakhs(parts[0]);
+        if (p1 > 0) {
+          minBud = p1 * 0.8;
+          maxBud = p1 * 1.2;
+        }
+      }
+
+      return { min: minBud || 0, max: maxBud || 99999 };
+    };
+
+    // 1. MINIMUM & MAXIMUM BUDGET RANGE MATCH (25%)
+    const propPriceLakhs = parseSingleValToLakhs(property?.final_price || property?.base_price || property?.AskingPrice || '');
+    const { min: minBud, max: maxBud } = parseBudgetRangeInLakhs(customer);
+
+    if (propPriceLakhs > 0) {
+      if (minBud > 0 || maxBud < 99999) {
+        if (propPriceLakhs >= minBud && propPriceLakhs <= maxBud) {
+          breakdown.bud = 25; // 100% fit inside target budget range
+        } else if (propPriceLakhs >= minBud * 0.85 && propPriceLakhs <= maxBud * 1.15) {
+          breakdown.bud = 18; // Flexible Match within 15% tolerance
+        } else if (propPriceLakhs >= minBud * 0.75 && propPriceLakhs <= maxBud * 1.25) {
+          breakdown.bud = 12; // Near Match within 25% tolerance
+        } else {
+          breakdown.bud = 0;  // Out of range
+        }
       } else {
-        breakdown.bud = 0;  // 0% match if less than min budget or more than max budget
+        breakdown.bud = 25; // Default match if customer has no budget restriction
       }
     } else {
-      breakdown.bud = 0;
+      breakdown.bud = 15;
     }
 
     // 2. LOCATION & LOCALITY HUB MATCH (20%)
     if (customer?.preferredArea && property?.locality) {
-      const prefLocs = customer.preferredArea.toLowerCase().split(/[\/,]/).map((s: string) => s.trim());
+      const prefLocs = customer.preferredArea.toLowerCase().split(/[\/,–—]|(?:\s+to\s+)/).map((s: string) => s.replace(/\(.*?\)/g, '').trim()).filter(Boolean);
       const propLoc = property.locality.toLowerCase().trim();
       if (prefLocs.some((loc: string) => propLoc.includes(loc) || loc.includes(propLoc))) {
         breakdown.loc = 20;
@@ -5414,9 +5591,9 @@ export default function App() {
 
     // 3. BHK CONFIGURATION MATCH (15%)
     if (customer?.configuration && property?.configuration) {
-      const custBhk = customer.configuration.toUpperCase();
-      const propBhk = property.configuration.toUpperCase();
-      if (custBhk === propBhk || (custBhk.includes('VILLA') && propBhk.includes('VILLA'))) {
+      const custBhk = customer.configuration.toUpperCase().replace(/\s+/g, '');
+      const propBhk = property.configuration.toUpperCase().replace(/\s+/g, '');
+      if (custBhk === propBhk || custBhk.includes(propBhk) || propBhk.includes(custBhk) || (custBhk.includes('VILLA') && propBhk.includes('VILLA'))) {
         breakdown.bhk = 15;
       } else if ((custBhk.includes('4BHK') && propBhk.includes('3BHK')) || (custBhk.includes('3BHK') && propBhk.includes('2BHK'))) {
         breakdown.bhk = 10;
@@ -5428,14 +5605,14 @@ export default function App() {
     }
 
     // 4. SQUARE FEET AREA MATCH (15%)
-    const parseSqft = (str: string) => {
-      if (!str) return 1500;
-      const num = parseFloat(str.replace(/[^0-9.]/g, '')) || 1500;
+    const parseSqft = (str: any) => {
+      if (!str) return 0;
+      const num = parseFloat(String(str).replace(/[^0-9.]/g, '')) || 0;
       return num;
     };
-    const propSqft = parseSqft(property?.carpet_area || property?.built_up_area_sqft || '');
-    if (customer?.carpet_area || customer?.configuration) {
-      if (propSqft >= 1200 && propSqft <= 3500) {
+    const propSqft = parseSqft(property?.carpet_area || property?.super_builtup_area || property?.built_up_area_sqft || '');
+    if (propSqft > 0) {
+      if (propSqft >= 1000 && propSqft <= 4500) {
         breakdown.sqft = 15;
       } else {
         breakdown.sqft = 10;
@@ -5455,7 +5632,7 @@ export default function App() {
 
     // 6. FLOOR PREFERENCE MATCH (5%)
     const propFloor = property?.floor !== undefined ? Number(property.floor) : 5;
-    const floorPrefStr = (customer?.floor_preference || customer?.preferred_floor || '').toLowerCase();
+    const floorPrefStr = (customer?.floor_preference || customer?.preferred_floor || customer?.floor_pref || '').toLowerCase();
     if (floorPrefStr.includes('low') || floorPrefStr.includes('1-5')) {
       breakdown.floor_pref = (propFloor >= 1 && propFloor <= 5) ? 5 : 2;
     } else if (floorPrefStr.includes('mid') || floorPrefStr.includes('6-12')) {
@@ -5463,7 +5640,7 @@ export default function App() {
     } else if (floorPrefStr.includes('high') || floorPrefStr.includes('sky') || floorPrefStr.includes('13+')) {
       breakdown.floor_pref = (propFloor >= 13) ? 5 : 2;
     } else {
-      breakdown.floor_pref = 5; // Default match if any floor acceptable
+      breakdown.floor_pref = 5;
     }
 
     // 7. PROPERTY CATEGORY TYPE MATCH (5%)
@@ -5477,22 +5654,12 @@ export default function App() {
         breakdown.type = 5;
       } else if (
         (cTypeRaw.includes('flat') && pType.includes('flat')) ||
-        (cTypeRaw.includes('complex') && (pType.includes('complex') || pType.includes('flat') || pType.includes('commercial'))) ||
-        (cTypeRaw.includes('villa') && pType.includes('villa')) ||
-        (cTypeRaw.includes('commercial') && pType.includes('commercial')) ||
-        (cTypeRaw.includes('plot') && pType.includes('plot'))
+        (cTypeRaw.includes('apartment') && (pType.includes('apartment') || pType.includes('flat'))) ||
+        (cTypeRaw.includes('villa') && pType.includes('villa'))
       ) {
-        const cResale = cTypeRaw.includes('resale');
-        const pResale = pType.includes('resale');
-        const cRent = cTypeRaw.includes('rent');
-        const pRent = pType.includes('rent');
-        if ((cResale === pResale) && (cRent === pRent)) {
-          breakdown.type = 5;
-        } else {
-          breakdown.type = 3;
-        }
+        breakdown.type = 5;
       } else {
-        breakdown.type = 1;
+        breakdown.type = 3;
       }
     } else {
       breakdown.type = 5;
@@ -6307,6 +6474,105 @@ export default function App() {
                   </div>
                 );
               })()}
+
+              {/* SHIFTED PROJECT & PROPERTY INVENTORY SUMMARY METRICS & INTAKE TRACKER */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Building2 size={18} color="#0284c7" /> PROPERTY INVENTORY & DAILY INGESTION TRACKER
+                </h3>
+
+                {/* KPI EXECUTIVE SUMMARY METRICS GRID */}
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(6, 1fr)', gap: '12px' }}>
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BUILDER PARTNERS</span>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>5 Projects</h3>
+                    <span style={{ fontSize: '0.7rem', color: '#4ade80', fontWeight: '700' }}>● Active MOUs</span>
+                  </div>
+
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL STOCK VALUE</span>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80' }}>₹48.50 Cr</h3>
+                    <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Portfolio Valuation</span>
+                  </div>
+
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>AVAILABLE UNITS</span>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#22c55e' }}>18 Units</h3>
+                    <span style={{ fontSize: '0.7rem', color: '#22c55e', fontWeight: '800' }}>Ready for Booking</span>
+                  </div>
+
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>UNDER NEGOTIATION</span>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24' }}>6 Units</h3>
+                    <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: '800' }}>Token Locked</span>
+                  </div>
+
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CONFIRMED BOOKED</span>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#a855f7' }}>12 Units</h3>
+                    <span style={{ fontSize: '0.7rem', color: '#a855f7', fontWeight: '800' }}>Sold & Executed</span>
+                  </div>
+
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BROKERAGE PIPELINE</span>
+                    <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>₹97.00 L</h3>
+                    <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '800' }}>Avg 2.0% Commission</span>
+                  </div>
+                </div>
+
+                {/* DAILY PROPERTY INGESTION TRACKER & AUDIT CARD */}
+                {(() => {
+                  const todayStr = new Date().toISOString().split('T')[0];
+                  const addedTodayList = properties.filter(p => p.added_date === todayStr || (!p.added_date && (p.id === 'PROP-01' || p.id === 'PROP-02' || p.id === 'PROP-03')));
+                  const addedTodayCount = addedTodayList.length;
+
+                  return (
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
+                            📅 DAILY PROPERTY INTAKE TRACKER
+                          </span>
+                          <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            📈 Daily Property Addition Rate & Live Ingestion Audit Log
+                          </h3>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                          <span style={{ background: '#22c55e', color: '#ffffff', padding: '6px 14px', borderRadius: '20px', fontWeight: '900', fontSize: '0.82rem' }}>
+                            🔥 +{addedTodayCount} PROPERTIES ADDED TODAY
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
+                        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '10px', padding: '12px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED TODAY ({todayStr})</span>
+                          <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#22c55e', marginTop: '2px' }}>+{addedTodayCount} Properties</h4>
+                          <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Est Value: ₹3.60 Crore</p>
+                        </div>
+
+                        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS WEEK</span>
+                          <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>+12 Properties</h4>
+                          <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Avg 2.4 Props / Day</p>
+                        </div>
+
+                        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS MONTH</span>
+                          <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>+28 Properties</h4>
+                          <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Total ₹24.8 Cr Added</p>
+                        </div>
+
+                        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
+                          <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>DAILY INGESTION VELOCITY</span>
+                          <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#a855f7', marginTop: '2px' }}>3.2 / Day</h4>
+                          <p style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>🟢 On Target Speed</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
 
               {/* 2. VISUAL 11-STAGE SALES FUNNEL (DYNAMIC MASTER STATE COMPUTATION) */}
               {(() => {
@@ -7547,144 +7813,26 @@ export default function App() {
               {activeProjectSubTab === 'advance_dashboard' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                   
-                  {/* KPI EXECUTIVE SUMMARY METRICS GRID */}
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(6, 1fr)', gap: '12px' }}>
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BUILDER PARTNERS</span>
-                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>5 Projects</h3>
-                      <span style={{ fontSize: '0.7rem', color: '#4ade80', fontWeight: '700' }}>● Active MOUs</span>
-                    </div>
-
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL STOCK VALUE</span>
-                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80' }}>₹48.50 Cr</h3>
-                      <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Portfolio Valuation</span>
-                    </div>
-
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>AVAILABLE UNITS</span>
-                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#22c55e' }}>18 Units</h3>
-                      <span style={{ fontSize: '0.7rem', color: '#22c55e', fontWeight: '800' }}>Ready for Booking</span>
-                    </div>
-
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>UNDER NEGOTIATION</span>
-                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24' }}>6 Units</h3>
-                      <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: '800' }}>Token Locked</span>
-                    </div>
-
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CONFIRMED BOOKED</span>
-                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#a855f7' }}>12 Units</h3>
-                      <span style={{ fontSize: '0.7rem', color: '#a855f7', fontWeight: '800' }}>Sold & Executed</span>
-                    </div>
-
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>BROKERAGE PIPELINE</span>
-                      <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8' }}>₹97.00 L</h3>
-                      <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '800' }}>Avg 2.0% Commission</span>
-                    </div>
-                  </div>
-
-                  {/* DAILY PROPERTY INGESTION TRACKER & AUDIT CARD */}
-                  {(() => {
-                    const todayStr = new Date().toISOString().split('T')[0];
-                    const addedTodayList = properties.filter(p => p.added_date === todayStr || (!p.added_date && (p.id === 'PROP-01' || p.id === 'PROP-02' || p.id === 'PROP-03')));
-                    const addedTodayCount = addedTodayList.length;
-
-                    return (
-                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                          <div>
-                            <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
-                              📅 DAILY PROPERTY INTAKE TRACKER
-                            </span>
-                            <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              📈 Daily Property Addition Rate & Live Ingestion Audit Log
-                            </h3>
-                          </div>
-                          <div style={{ display: 'flex', gap: '10px' }}>
-                            <span style={{ background: '#22c55e', color: '#ffffff', padding: '6px 14px', borderRadius: '20px', fontWeight: '900', fontSize: '0.82rem' }}>
-                              🔥 +{addedTodayCount} PROPERTIES ADDED TODAY
-                            </span>
-                          </div>
-                        </div>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
-                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '10px', padding: '12px' }}>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED TODAY ({todayStr})</span>
-                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#22c55e', marginTop: '2px' }}>+{addedTodayCount} Properties</h4>
-                            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Est Value: ₹3.60 Crore</p>
-                          </div>
-
-                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS WEEK</span>
-                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>+12 Properties</h4>
-                            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Avg 2.4 Props / Day</p>
-                          </div>
-
-                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>ADDED THIS MONTH</span>
-                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>+28 Properties</h4>
-                            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Total ₹24.8 Cr Added</p>
-                          </div>
-
-                          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px' }}>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>DAILY INGESTION VELOCITY</span>
-                            <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#a855f7', marginTop: '2px' }}>3.2 / Day</h4>
-                            <p style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>🟢 On Target Speed</p>
-                          </div>
-                        </div>
-
-                        {/* DAILY PROPERTY INGESTION TIMELINE LOG TABLE */}
-                        <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
-                          <h4 style={{ fontSize: '0.88rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginBottom: '8px' }}>
-                            📋 Live Ingestion Log — Properties Added Today & Recent Days
-                          </h4>
-                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
-                            <thead>
-                              <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                                <th style={{ padding: '8px' }}>Ingestion Date</th>
-                                <th style={{ padding: '8px' }}>Property Code & Title</th>
-                                <th style={{ padding: '8px' }}>Developer & Project</th>
-                                <th style={{ padding: '8px' }}>Price & Sq.Ft. Rate</th>
-                                <th style={{ padding: '8px' }}>Status</th>
-                                <th style={{ padding: '8px' }}>Added By Executive</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {properties.slice(0, 5).map((p, idx) => (
-                                <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                                  <td style={{ padding: '8px', color: '#38bdf8', fontWeight: '900', fontFamily: 'monospace' }}>
-                                    📅 {p.added_date || '2026-08-26'}
-                                  </td>
-                                  <td style={{ padding: '8px' }}>
-                                    <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{p.title}</strong>
-                                    <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>{p.property_code}</div>
-                                  </td>
-                                  <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>
-                                    🏢 {p.developer} ({p.project})
-                                  </td>
-                                  <td style={{ padding: '8px' }}>
-                                    <span style={{ color: '#4ade80', fontWeight: '900' }}>{p.final_price}</span>
-                                    <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{p.price_sqft}</div>
-                                  </td>
-                                  <td style={{ padding: '8px' }}>
-                                    <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800' }}>
-                                      {p.status || 'AVAILABLE'}
-                                    </span>
-                                  </td>
-                                  <td style={{ padding: '8px', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>
-                                    👤 {p.added_by || 'Priya Nair (Sales Exec)'}
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
+                  {/* ADVANCE BI COMMAND CENTER BANNER & PROJECT PORTFOLIO CARDS */}
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '14px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <Building2 size={24} color="#38bdf8" />
+                      <div>
+                        <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                          📊 PROJECT & INVENTORY EXECUTIVE CONTROL CENTER
+                        </h4>
+                        <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
+                          Overall Inventory Stock Valuation, Daily Intake Metrics & Live Ingestion Audit Logs are actively shifted to <strong>Main Dash Board</strong>.
+                        </p>
                       </div>
-                    );
-                  })()}
+                    </div>
+                    <button 
+                      onClick={() => setActiveTab('main_dashboard')} 
+                      style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      📊 View in Main Dash Board →
+                    </button>
+                  </div>
 
                   {/* PROJECT PORTFOLIO CARDS GRID */}
                   <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -8042,6 +8190,101 @@ export default function App() {
                             </div>
                           </div>
                         </div>
+
+                        {/* BUILDING & EXTERIOR ELEVATION PHOTO CAPTURE WIDGET */}
+                        <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #eab308', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                            <div>
+                              <span style={{ fontSize: '0.82rem', color: '#eab308', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Camera size={16} color="#eab308" /> 📷 Building & Exterior Elevation Photo Capture
+                              </span>
+                              <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
+                                Capture on-site building photo. Sales personnel will see this photo with all property & GPS details when site visits are scheduled.
+                              </p>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              {/* CAMERA / FILE CAPTURE BUTTON */}
+                              <label style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#0f172a', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(234, 179, 8, 0.3)' }}>
+                                <Camera size={15} color="#0f172a" />
+                                📸 CAPTURE / UPLOAD BUILDING PHOTO
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  capture="environment" 
+                                  style={{ display: 'none' }}
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      const reader = new FileReader();
+                                      reader.onload = (event) => {
+                                        if (event.target?.result) {
+                                          setNewPropertyForm(prev => ({
+                                            ...prev,
+                                            building_photo: event.target!.result as string
+                                          }));
+                                        }
+                                      };
+                                      reader.readAsDataURL(file);
+                                    }
+                                  }}
+                                />
+                              </label>
+
+                              {/* SAMPLE QUICK PHOTO PRESETS */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const samplePhotos = [
+                                    'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
+                                    'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
+                                    'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80',
+                                    'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'
+                                  ];
+                                  const pick = samplePhotos[Math.floor(Math.random() * samplePhotos.length)];
+                                  setNewPropertyForm(prev => ({ ...prev, building_photo: pick }));
+                                }}
+                                style={{ background: isLight ? '#e2e8f0' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}
+                              >
+                                🖼️ Preset Building Elevation
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* IMAGE URL INPUT & LIVE THUMBNAIL PREVIEW */}
+                          <div style={{ display: 'grid', gridTemplateColumns: newPropertyForm.building_photo ? '1fr 220px' : '1fr', gap: '14px', alignItems: 'center' }}>
+                            <div>
+                              <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Building Photo Image URL (Or Uploaded File Base64)</label>
+                              <input 
+                                type="text" 
+                                value={newPropertyForm.building_photo} 
+                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, building_photo: e.target.value })} 
+                                placeholder="e.g. https://images.unsplash.com/... or click capture button above" 
+                                style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                              />
+                            </div>
+
+                            {newPropertyForm.building_photo && (
+                              <div style={{ position: 'relative', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                <img 
+                                  src={newPropertyForm.building_photo} 
+                                  alt="Captured Building Photo" 
+                                  style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '6px' }} 
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '0.68rem', color: '#4ade80', fontWeight: '900' }}>✓ PHOTO LINKED</span>
+                                  <button 
+                                    type="button" 
+                                    onClick={() => setNewPropertyForm(prev => ({ ...prev, building_photo: '' }))}
+                                    style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
+                                  >
+                                    🗑️ Remove
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       {/* SECTION 2: PROPERTY SPECIFICATIONS & UNIT DETAILS */}
@@ -8341,56 +8584,22 @@ export default function App() {
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Parking Price (INR) *</label>
                             <input 
                               type="text" 
-                              value={newPropertyForm.parking_price !== undefined ? newPropertyForm.parking_price : 'Included in Flat Price'} 
+                              value={newPropertyForm.parking_price !== undefined ? newPropertyForm.parking_price : ''} 
                               onChange={(e) => setNewPropertyForm({ ...newPropertyForm, parking_price: e.target.value })} 
-                              placeholder="e.g. Included in Flat Price / ₹3,00,000"
-                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#eab308', fontWeight: '800', padding: '9px 10px', borderRadius: '8px', fontSize: '0.82rem' }} 
+                              placeholder="Enter Parking Price (e.g. Included in Flat Price / ₹3,00,000)"
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '9px 10px', borderRadius: '8px', fontSize: '0.82rem' }} 
                             />
-                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                              {[
-                                { label: 'Included', val: 'Included in Flat Price' },
-                                { label: '₹2.5 L', val: '₹2,50,000' },
-                                { label: '₹3.0 L', val: '₹3,00,000' },
-                                { label: '₹5.0 L', val: '₹5,00,000' }
-                              ].map(p => (
-                                <button
-                                  key={p.label}
-                                  type="button"
-                                  onClick={() => setNewPropertyForm({ ...newPropertyForm, parking_price: p.val })}
-                                  style={{ background: newPropertyForm.parking_price === p.val ? '#eab308' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.parking_price === p.val ? '#0f172a' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
-                                >
-                                  {p.label}
-                                </button>
-                              ))}
-                            </div>
                           </div>
 
                           <div>
                             <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Amenity Charges (INR) *</label>
                             <input 
                               type="text" 
-                              value={newPropertyForm.amenity_charges !== undefined ? newPropertyForm.amenity_charges : 'Included in Flat Price'} 
+                              value={newPropertyForm.amenity_charges !== undefined ? newPropertyForm.amenity_charges : ''} 
                               onChange={(e) => setNewPropertyForm({ ...newPropertyForm, amenity_charges: e.target.value })} 
-                              placeholder="e.g. Included in Flat Price / ₹2,50,000"
-                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '800', padding: '9px 10px', borderRadius: '8px', fontSize: '0.82rem' }} 
+                              placeholder="Enter Amenity Charges (e.g. Included in Flat Price / ₹2,50,000)"
+                              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '9px 10px', borderRadius: '8px', fontSize: '0.82rem' }} 
                             />
-                            <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                              {[
-                                { label: 'Included', val: 'Included in Flat Price' },
-                                { label: '₹1.5 L', val: '₹1,50,000' },
-                                { label: '₹2.5 L', val: '₹2,50,000' },
-                                { label: '₹3.5 L', val: '₹3,50,000' }
-                              ].map(a => (
-                                <button
-                                  key={a.label}
-                                  type="button"
-                                  onClick={() => setNewPropertyForm({ ...newPropertyForm, amenity_charges: a.val })}
-                                  style={{ background: newPropertyForm.amenity_charges === a.val ? '#38bdf8' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.amenity_charges === a.val ? '#0f172a' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
-                                >
-                                  {a.label}
-                                </button>
-                              ))}
-                            </div>
                           </div>
                         </div>
 
@@ -8438,148 +8647,42 @@ export default function App() {
                               <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Floor Rise Charge (INR)</label>
                               <input 
                                 type="text" 
-                                value={newPropertyForm.floor_rise_charge || '₹0 (N/A)'} 
+                                value={newPropertyForm.floor_rise_charge || ''} 
                                 onChange={(e) => setNewPropertyForm({ ...newPropertyForm, floor_rise_charge: e.target.value })} 
-                                placeholder="e.g. ₹50,000 / ₹0 (N/A)"
+                                placeholder="Enter Floor Rise Charge (e.g. ₹50,000)"
                                 style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
                               />
-                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                                {[
-                                  { label: 'N/A (₹0)', val: '₹0 (N/A)' },
-                                  { label: '₹50 K', val: '₹50,000' },
-                                  { label: '₹1.0 L', val: '₹1,00,000' }
-                                ].map(fr => (
-                                  <button
-                                    key={fr.label}
-                                    type="button"
-                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, floor_rise_charge: fr.val })}
-                                    style={{ background: newPropertyForm.floor_rise_charge === fr.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.floor_rise_charge === fr.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
-                                  >
-                                    {fr.label}
-                                  </button>
-                                ))}
-                              </div>
                             </div>
 
                             <div>
                               <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Preferential Location Charge (PLC)</label>
                               <input 
                                 type="text" 
-                                value={newPropertyForm.plc_charge || '₹0 (N/A)'} 
+                                value={newPropertyForm.plc_charge || ''} 
                                 onChange={(e) => setNewPropertyForm({ ...newPropertyForm, plc_charge: e.target.value })} 
-                                placeholder="e.g. ₹1,50,000 / ₹0 (N/A)"
+                                placeholder="Enter Preferential Location Charge (PLC)"
                                 style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
                               />
-                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                                {[
-                                  { label: 'N/A (₹0)', val: '₹0 (N/A)' },
-                                  { label: '₹1.0 L', val: '₹1,00,000' },
-                                  { label: '₹1.5 L', val: '₹1,50,000' },
-                                  { label: '₹2.5 L', val: '₹2,50,000' }
-                                ].map(plc => (
-                                  <button
-                                    key={plc.label}
-                                    type="button"
-                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, plc_charge: plc.val })}
-                                    style={{ background: newPropertyForm.plc_charge === plc.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.plc_charge === plc.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
-                                  >
-                                    {plc.label}
-                                  </button>
-                                ))}
-                              </div>
                             </div>
 
                             <div>
                               <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Clubhouse & Gated Amenities Membership</label>
                               <input 
                                 type="text" 
-                                value={newPropertyForm.clubhouse_charge || 'Included in Flat Price'} 
+                                value={newPropertyForm.clubhouse_charge || ''} 
                                 onChange={(e) => setNewPropertyForm({ ...newPropertyForm, clubhouse_charge: e.target.value })} 
-                                placeholder="e.g. Included in Flat Price / ₹2,50,000"
+                                placeholder="Enter Clubhouse Membership Charge"
                                 style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
                               />
-                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                                {[
-                                  { label: 'Included', val: 'Included in Flat Price' },
-                                  { label: '₹1.5 L', val: '₹1,50,000' },
-                                  { label: '₹2.0 L', val: '₹2,00,000' },
-                                  { label: '₹2.5 L', val: '₹2,50,000' }
-                                ].map(cl => (
-                                  <button
-                                    key={cl.label}
-                                    type="button"
-                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, clubhouse_charge: cl.val })}
-                                    style={{ background: newPropertyForm.clubhouse_charge === cl.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.clubhouse_charge === cl.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
-                                  >
-                                    {cl.label}
-                                  </button>
-                                ))}
-                              </div>
                             </div>
 
                             <div>
                               <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Advance Maintenance Charge (1 Year)</label>
                               <input 
                                 type="text" 
-                                value={newPropertyForm.advance_maintenance_charge || 'Included in Flat Price'} 
+                                value={newPropertyForm.advance_maintenance_charge || ''} 
                                 onChange={(e) => setNewPropertyForm({ ...newPropertyForm, advance_maintenance_charge: e.target.value })} 
-                                placeholder="e.g. Included in Flat Price / ₹54,000"
-                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
-                              />
-                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                                {[
-                                  { label: 'Included', val: 'Included in Flat Price' },
-                                  { label: '₹36 K', val: '₹36,000' },
-                                  { label: '₹54 K', val: '₹54,000' },
-                                  { label: '₹72 K', val: '₹72,000' }
-                                ].map(m => (
-                                  <button
-                                    key={m.label}
-                                    type="button"
-                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, advance_maintenance_charge: m.val })}
-                                    style={{ background: newPropertyForm.advance_maintenance_charge === m.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.advance_maintenance_charge === m.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
-                                  >
-                                    {m.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div>
-                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Infrastructure & Legal Documentation Fee</label>
-                              <input 
-                                type="text" 
-                                value={newPropertyForm.legal_doc_charge || 'Included in Flat Price'} 
-                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, legal_doc_charge: e.target.value })} 
-                                placeholder="e.g. Included in Flat Price / ₹50,000"
-                                style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
-                              />
-                              <div style={{ display: 'flex', gap: '4px', marginTop: '4px', flexWrap: 'wrap' }}>
-                                {[
-                                  { label: 'Included', val: 'Included in Flat Price' },
-                                  { label: '₹25 K', val: '₹25,000' },
-                                  { label: '₹50 K', val: '₹50,000' },
-                                  { label: '₹1.0 L', val: '₹1,00,000' }
-                                ].map(l => (
-                                  <button
-                                    key={l.label}
-                                    type="button"
-                                    onClick={() => setNewPropertyForm({ ...newPropertyForm, legal_doc_charge: l.val })}
-                                    style={{ background: newPropertyForm.legal_doc_charge === l.val ? '#0284c7' : (isLight ? '#f1f5f9' : '#1e293b'), color: newPropertyForm.legal_doc_charge === l.val ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'), border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer' }}
-                                  >
-                                    {l.label}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-
-                            <div>
-                              <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Advance Maintenance Charge (1 Year)</label>
-                              <input 
-                                type="text" 
-                                value={newPropertyForm.advance_maintenance_charge || 'Included in Flat Price'} 
-                                onChange={(e) => setNewPropertyForm({ ...newPropertyForm, advance_maintenance_charge: e.target.value })} 
-                                placeholder="e.g. Included in Flat Price / ₹54,000"
+                                placeholder="Enter Advance Maintenance Charge"
                                 style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
                               />
                             </div>
@@ -8588,9 +8691,9 @@ export default function App() {
                               <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Infrastructure & Legal Documentation Fee</label>
                               <input 
                                 type="text" 
-                                value={newPropertyForm.legal_doc_charge || 'Included in Flat Price'} 
+                                value={newPropertyForm.legal_doc_charge || ''} 
                                 onChange={(e) => setNewPropertyForm({ ...newPropertyForm, legal_doc_charge: e.target.value })} 
-                                placeholder="e.g. Included in Flat Price / ₹50,000"
+                                placeholder="Enter Infrastructure & Legal Documentation Fee"
                                 style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
                               />
                             </div>
@@ -10246,9 +10349,7 @@ export default function App() {
                   r.requestId.toLowerCase() === selectedMatchingId.toLowerCase() || 
                   r.customerNumber.toLowerCase() === selectedMatchingId.toLowerCase()
                 );
-                const activeMatchingReq = (matchedReq && !matchedReq.costSheetId && matchedReq.status !== 'COST_SHEET_CREATED')
-                  ? matchedReq
-                  : (pendingRequests[0] || matchedReq || matchingRequestsQueue[0]);
+                const activeMatchingReq = matchedReq || pendingRequests[0] || matchingRequestsQueue[0];
 
                 return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -11728,7 +11829,7 @@ export default function App() {
                     </div>
                   ) : (
                     <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                       <thead>
                         <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
                           <th style={{ padding: '10px' }}>Visit ID & Cost Sheet ID</th>
@@ -11753,6 +11854,7 @@ export default function App() {
                             );
                             const lat = matchedProp?.latitude || '17.4612° N';
                             const lng = matchedProp?.longitude || '78.3689° E';
+                            const buildingPhoto = matchedProp?.building_photo || v.building_photo || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80';
 
                             const matchingPva = projectVisitAgreements.find((p: any) => 
                               p.customerMobile === v.mobile || 
@@ -11832,6 +11934,14 @@ export default function App() {
                                 </td>
                                 <td style={{ padding: '10px', textAlign: 'center' }}>
                                   <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                    <button
+                                      onClick={() => handleMarkVisitDoneAndNotifyDeveloper(v)}
+                                      style={{ background: v.status === 'COMPLETED' || v.visitDone ? '#22c55e' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 6px rgba(22, 197, 94, 0.3)' }}
+                                      title="Mark Visit Completed & automatically send WhatsApp confirmation to Developer with Customer Name and 7-digit Customer ID"
+                                    >
+                                      {v.status === 'COMPLETED' || v.visitDone ? '✅ VISIT DONE (Resend WA)' : '✅ MARK VISIT DONE & WA DEV'}
+                                    </button>
+
                                     {isOtpVerified ? (
                                       <button 
                                         onClick={() => setShowPvaDocumentModal({ open: true, pva: matchingPva || projectVisitAgreements[0] })}
@@ -11860,31 +11970,27 @@ export default function App() {
                                         🔐 Verify OTP Now
                                       </button>
                                     )}
+                                    <button onClick={() => { setActiveVisitSubTab('visit_feedback'); alert(`⭐ Opening feedback form for Visit ${v.visitId}`); }} style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}>⭐ Feedback</button>
                                     <button 
                                       onClick={() => {
-                                        const cleanLat = lat.replace(/[^0-9.]/g, '') || '17.4612';
-                                        const cleanLng = lng.replace(/[^0-9.]/g, '') || '78.3689';
-                                        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${cleanLat},${cleanLng}`;
-                                        const execPhone = '+91 98490 00014';
-                                        const msg = `📱 *SWARAMAYI CRM — SITE VISIT ASSIGNMENT & GPS NAVIGATION*\n\n` +
-                                          `👤 *Customer*: ${v.customerName} (${v.mobile})\n` +
-                                          `🗓️ *Scheduled Date*: ${v.visitDate} at ${v.visitTime}\n` +
-                                          `🏠 *Target Property*: ${v.propertyTitle} (${v.propertyCode})\n` +
-                                          `🚘 *Transport*: ${v.transport || 'Direct Arrival'}\n` +
-                                          `📍 *GPS Coordinates*: ${lat}, ${lng}\n` +
-                                          `🗺️ *Google Maps Live Navigation Link*: ${mapsUrl}\n\n` +
-                                          `📌 *Instructions*: Please reach site 15 minutes prior to appointment for OTP Check-In.`;
-                                        
-                                        const waUrl = `https://api.whatsapp.com/send?phone=${execPhone.replace(/[^0-9]/g, '')}&text=${encodeURIComponent(msg)}`;
-                                        window.open(waUrl, '_blank');
-                                        alert(`📲 DISPATCHED SITE VISIT & GOOGLE MAPS NAVIGATION LINK TO EXECUTIVE VIA WHATSAPP!\n\nTo Executive: ${v.assignedExecutive} (${execPhone})\nCustomer: ${v.customerName}\nProperty: ${v.propertyTitle}\nGPS Navigation URL: ${mapsUrl}`);
-                                      }} 
-                                      style={{ background: '#25D366', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}
-                                      title="Send Google Maps Live Location Navigation link to Sales/Field Executive on WhatsApp"
+                                        const matchedLead = leadsList.find(l => 
+                                          l.customer_number === v.customerNumber || 
+                                          l.mobile === v.mobile || 
+                                          l.customer_name.toLowerCase() === (v.customerName || '').toLowerCase()
+                                        );
+                                        setActiveTab('lead_management');
+                                        if (matchedLead) {
+                                          setShowLead360Drawer({ open: true, lead: matchedLead, tab: 'OVERVIEW' });
+                                          alert(`📋 Transferred Customer ${v.customerName} (${v.customerNumber || v.mobile}) to Lead Management workspace! Opened 360° Lead Drawer.`);
+                                        } else {
+                                          alert(`📋 Transferred Customer ${v.customerName} (${v.customerNumber || v.mobile}) to Lead Management workspace.`);
+                                        }
+                                      }}
+                                      style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px' }}
+                                      title="Transfer Customer record and switch to Lead Management workspace"
                                     >
-                                      📲 WhatsApp Exec Location
+                                      📋 Transfer to Lead Mgmt
                                     </button>
-                                    <button onClick={() => { setActiveVisitSubTab('visit_feedback'); alert(`⭐ Opening feedback form for Visit ${v.visitId}`); }} style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}>⭐ Feedback</button>
                                     <button 
                                       onClick={() => {
                                         const matchReq = matchingRequestsQueue.find(r => 
@@ -16813,9 +16919,15 @@ export default function App() {
                     </tr>
                     <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                       <td style={{ padding: '10px 14px', color: '#475569' }}>7. Infrastructure & Legal Documentation Charges</td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', color: '#0f172a' }}>{showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.infrastructureStr}</td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', color: '#0f172a' }}>
+                        {showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.infrastructureStr || 
+                         showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.legalStr || 
+                         (showViewIndividualCostSheetModal.costSheet.pricingSnapshot?.infrastructureCharge ? formatIndianRupees(showViewIndividualCostSheetModal.costSheet.pricingSnapshot.infrastructureCharge) : 'Included in Flat Price')}
+                      </td>
                     </tr>
-                    {showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.discountStr !== 'N/A' && (
+                    {showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.discountStr && 
+                     showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.discountStr !== 'N/A' && 
+                     showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.discountStr !== '₹0' && (
                       <tr style={{ borderBottom: '1px solid #e2e8f0', background: '#fef2f2' }}>
                         <td style={{ padding: '10px 14px', fontWeight: '800', color: '#dc2626' }}>8. Manager Approved Special Discount</td>
                         <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '800', color: '#dc2626' }}>- {showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.discountStr}</td>
@@ -16823,7 +16935,10 @@ export default function App() {
                     )}
                     <tr style={{ borderBottom: '1px solid #cbd5e1', background: '#f8fafc' }}>
                       <td style={{ padding: '10px 14px', fontWeight: '800', color: '#0f172a' }}>SUBTOTAL (BEFORE TAXES & GOVERNMENT CHARGES)</td>
-                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '800', color: '#0f172a' }}>{showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.subtotalStr}</td>
+                      <td style={{ padding: '10px 14px', textAlign: 'right', fontWeight: '800', color: '#0f172a' }}>
+                        {showViewIndividualCostSheetModal.costSheet.formattedPriceBreakup?.subtotalStr || 
+                         formatIndianRupees(showViewIndividualCostSheetModal.costSheet.pricingSnapshot?.subtotalBeforeTax || showViewIndividualCostSheetModal.costSheet.pricingSnapshot?.basePrice || 0)}
+                      </td>
                     </tr>
                     <tr style={{ borderBottom: '1px solid #e2e8f0' }}>
                       <td style={{ padding: '10px 14px', color: '#475569' }}>9. Goods & Services Tax (GST)</td>
@@ -17865,6 +17980,243 @@ export default function App() {
       )}
 
       {/* MODAL: REGISTER NEW UNIT BOOKING */}
+      {/* MODAL: UPDATE CUSTOMER REQUIREMENT ON-THE-SPOT */}
+      {showUpdateRequirementModal && showUpdateRequirementModal.open && showUpdateRequirementModal.customer && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2400, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', width: '100%', maxWidth: '650px', maxHeight: '92vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  ✏️ UPDATE CUSTOMER REQUIREMENT & RE-RUN AI MATCHING
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                  Customer: <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{showUpdateRequirementModal.customer.custName}</strong> ({showUpdateRequirementModal.customer.custCode || 'SRM-CUS-2026-000184'})
+                </p>
+              </div>
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowUpdateRequirementModal(null)} />
+            </div>
+
+            <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #ef4444', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ color: '#ef4444', fontWeight: '900', fontSize: '0.75rem' }}>📌 REASON FOR DISLIKE / OBJECTION FROM VISIT:</span>
+              <p style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', margin: 0 }}>"{showUpdateRequirementModal.customer.reason}"</p>
+              <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Visited Property: {showUpdateRequirementModal.customer.propTitle} ({showUpdateRequirementModal.customer.locality})</span>
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              const cust = showUpdateRequirementModal.customer;
+              const newBudgetStr = `${updateReqForm.budget_min} - ${updateReqForm.budget_max}`;
+              
+              // 1. Update matching requests queue
+              setMatchingRequestsQueue(prev => prev.map(r => {
+                if (r.customerNumber === cust.custCode || r.customerName === cust.custName || r.mobile === cust.custMobile) {
+                  return {
+                    ...r,
+                    budget: newBudgetStr,
+                    budget_min: updateReqForm.budget_min,
+                    budget_max: updateReqForm.budget_max,
+                    preferredArea: updateReqForm.preferredArea,
+                    configuration: updateReqForm.configuration,
+                    facing: updateReqForm.facing,
+                    status: 'REQUIREMENT_UPDATED'
+                  };
+                }
+                return r;
+              }));
+
+              // 2. Update customer master state
+              setCustomers(prev => prev.map(c => {
+                if (c.customer_number === cust.custCode || c.name === cust.custName || c.mobile === cust.custMobile) {
+                  return {
+                    ...c,
+                    budget: newBudgetStr,
+                    budget_min: updateReqForm.budget_min,
+                    budget_max: updateReqForm.budget_max,
+                    preferredArea: updateReqForm.preferredArea,
+                    configuration: updateReqForm.configuration,
+                    facing: updateReqForm.facing,
+                    floor_pref: updateReqForm.floor_pref,
+                    notes: `Updated requirement post visit objection: ${updateReqForm.dislike_reason}. Notes: ${updateReqForm.remarks}`
+                  };
+                }
+                return c;
+              }));
+
+              const matchedReq = matchingRequestsQueue.find(r => r.customerNumber === cust.custCode || r.customerName === cust.custName);
+              if (matchedReq) {
+                setSelectedMatchingId(matchedReq.requestId);
+              }
+              const foundCust = customers.find(c => c.customer_number === cust.custCode || c.name === cust.custName);
+              if (foundCust) {
+                setSelectedCust(foundCust);
+              }
+
+              setShowUpdateRequirementModal(null);
+              setActiveTab('matching_management');
+              setActiveMatchingSubTab('ai_matching_engine');
+              alert(`✅ REQUIREMENT UPDATED & RE-RAN AI MATCHING FOR ${cust.custName.toUpperCase()}!\n\nNew Budget Range: ${newBudgetStr}\nPreferred Area: ${updateReqForm.preferredArea}\nBHK: ${updateReqForm.configuration}\nFacing: ${updateReqForm.facing}\n\nSwitched to AI Matching Engine to show new matched properties.`);
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Updated Minimum Budget *</label>
+                  <input type="text" value={updateReqForm.budget_min} onChange={(e) => setUpdateReqForm({ ...updateReqForm, budget_min: e.target.value })} placeholder="e.g. ₹75 Lakhs" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', color: '#4ade80', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Updated Maximum Budget *</label>
+                  <input type="text" value={updateReqForm.budget_max} onChange={(e) => setUpdateReqForm({ ...updateReqForm, budget_max: e.target.value })} placeholder="e.g. ₹95 Lakhs" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', color: '#4ade80', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Preferred Area / Locality Hub *</label>
+                  <input type="text" value={updateReqForm.preferredArea} onChange={(e) => setUpdateReqForm({ ...updateReqForm, preferredArea: e.target.value })} placeholder="e.g. Kondapur, Gachibowli" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Configuration (BHK) *</label>
+                  <select value={updateReqForm.configuration} onChange={(e) => setUpdateReqForm({ ...updateReqForm, configuration: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    <option value="2BHK">2BHK</option>
+                    <option value="3BHK">3BHK</option>
+                    <option value="4BHK">4BHK</option>
+                    <option value="5BHK Villa">5BHK Villa</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Vastu / Facing Preference</label>
+                  <select value={updateReqForm.facing} onChange={(e) => setUpdateReqForm({ ...updateReqForm, facing: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    <option value="East Facing">East Facing</option>
+                    <option value="West Facing">West Facing</option>
+                    <option value="North Facing">North Facing</option>
+                    <option value="South Facing">South Facing</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Floor Preference</label>
+                  <select value={updateReqForm.floor_pref} onChange={(e) => setUpdateReqForm({ ...updateReqForm, floor_pref: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    <option value="10th Floor or Higher">10th Floor or Higher</option>
+                    <option value="5th - 10th Floor">5th - 10th Floor</option>
+                    <option value="Ground / Low Floor">Ground / Low Floor</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Executive Remarks & Action Plan</label>
+                <textarea
+                  rows={2}
+                  value={updateReqForm.remarks}
+                  onChange={(e) => setUpdateReqForm({ ...updateReqForm, remarks: e.target.value })}
+                  placeholder="Enter notes on customer preferences, special requests, timeline..."
+                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
+                <button type="button" onClick={() => setShowUpdateRequirementModal(null)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', color: '#0f172a', border: 'none', padding: '8px 18px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>💾 Save Requirement & Re-Run AI Matching</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: RECOMMEND BEST ALTERNATIVE PROPERTY */}
+      {showAlternativePropertyModal && showAlternativePropertyModal.open && showAlternativePropertyModal.customer && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2400, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', width: '100%', maxWidth: '750px', maxHeight: '92vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🔄 RECOMMEND BEST ALTERNATIVE PROPERTIES
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                  Customer: <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{showAlternativePropertyModal.customer.custName}</strong> • Disliked: <span style={{ color: '#ef4444' }}>{showAlternativePropertyModal.currentProperty}</span>
+                </p>
+              </div>
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowAlternativePropertyModal(null)} />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <h4 style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: '900' }}>💡 TOP RECOMMENDED ALTERNATIVES IN INVENTORY:</h4>
+              {properties.slice(0, 3).map((prop, idx) => (
+                <div key={idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.92rem' }}>{prop.title}</strong>
+                    <div style={{ fontSize: '0.75rem', color: '#fbbf24', marginTop: '2px' }}>📍 {prop.locality} • {prop.configuration} • {prop.final_price || '₹85 Lakhs'}</div>
+                    <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>🔥 92% AI Match Score</span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowAlternativePropertyModal(null);
+                      setActiveTab('matching_management');
+                      setActiveMatchingSubTab('ai_matching_engine');
+                      alert(`🚀 Selected Alternative Property ${prop.title} for ${showAlternativePropertyModal.customer.custName}! Transferred to AI Matching Engine.`);
+                    }}
+                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer' }}
+                  >
+                    ⚡ Recommend This Property
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
+              <button onClick={() => setShowAlternativePropertyModal(null)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: LOG EXECUTIVE VISIT FEEDBACK */}
+      {showLogSalesFeedbackModal && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2400, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', width: '100%', maxWidth: '600px', maxHeight: '92vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>
+                  ➕ LOG EXECUTIVE VISIT FEEDBACK
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>Record customer post-visit rating, objections, and buyer intent status.</p>
+              </div>
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowLogSalesFeedbackModal(false)} />
+            </div>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setShowLogSalesFeedbackModal(false);
+              alert('⭐ Post-visit executive feedback logged successfully!');
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
+                <input type="text" defaultValue="Rohan Deshmukh" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Satisfaction Rating *</label>
+                <select style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                  <option value="5">⭐⭐⭐⭐⭐ 5/5 Stars (Ready for Booking)</option>
+                  <option value="4">⭐⭐⭐⭐ 4/5 Stars (Interested)</option>
+                  <option value="3">⭐⭐⭐ 3/5 Stars (Needs Follow-up)</option>
+                  <option value="2">⭐⭐ 2/5 Stars (Not Satisfied)</option>
+                  <option value="1">⭐ 1/5 Stars (Rejected Property)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Objection / Feedback Details *</label>
+                <textarea rows={3} placeholder="Describe customer feedback, budget gap, location dislike..." style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem' }} required />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
+                <button type="button" onClick={() => setShowLogSalesFeedbackModal(false)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>Log Feedback</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showNewBookingModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
           <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
