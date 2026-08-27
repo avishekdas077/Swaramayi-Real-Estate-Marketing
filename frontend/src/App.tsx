@@ -1755,7 +1755,7 @@ export default function App() {
   const [activeVisitSubTab, setActiveVisitSubTab] = useState<'visit_scheduler' | 'visit_route_planner' | 'visit_otp_checkin' | 'visit_feedback' | 'visit_analytics' | 'visit_owner_tracking'>('visit_route_planner');
   const [activeMatchingSubTab, setActiveMatchingSubTab] = useState<'ai_matching_engine' | 'req_inventory_matrix' | 'portfolio_dispatcher'>('ai_matching_engine');
   const [activeCostSheetShareSubTab, setActiveCostSheetShareSubTab] = useState<'individual_cost_sheets' | 'dispatcher' | 'delivery_analytics' | 'portal_tokens' | 'interest_handoff'>('individual_cost_sheets');
-  const [activeRoleSubTab, setActiveRoleSubTab] = useState<'user_directory' | 'permission_matrix' | 'org_hierarchy' | 'approval_queue' | 'session_security' | 'exit_handover'>('user_directory');
+  const [activeRoleSubTab, setActiveRoleSubTab] = useState<'user_directory' | 'permission_matrix' | 'org_hierarchy' | 'teams_directory' | 'approval_queue' | 'session_security' | 'exit_handover'>('user_directory');
   const [activeProjectSubTab, setActiveProjectSubTab] = useState<'advance_dashboard' | 'property_master' | 'live_inventory_board' | 'map_radius' | 'price_security' | 'deal_pipeline_tracker' | 'add_property_master' | 'introduction_register'>('advance_dashboard');
   const [activeCustomerSubTab, setActiveCustomerSubTab] = useState<'sales_journey_funnel' | 'cost_sheet_engine' | 'site_visit_engine' | 'smart_matching_engine' | 'customer_master_vault' | 'customer_360_profile' | 'anti_leakage_engine' | 'selected_properties_connections' | 'secure_customer_portal'>('customer_master_vault');
   const [activeAgreementSubTab, setActiveAgreementSubTab] = useState<'all_agreements' | 'customer_agreements' | 'developer_agreements' | 'tc_templates'>('all_agreements');
@@ -2886,6 +2886,33 @@ export default function App() {
       console.error('Error saving branches to localStorage:', e);
     }
   }, [branches]);
+
+  // Enterprise Teams & Squads List (with LocalStorage Persistence)
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [teams, setTeams] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_enterprise_teams_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading teams from localStorage:', e);
+    }
+    return [
+      { id: 'TEAM-01', team_name: 'Corporate Leadership Squad', branch_name: 'Head Office (Kolkata)', department: 'Executive Board', leader_name: 'Rajesh Varma (SUPER_ADMIN)', monthly_target: '50 Property Units', created_at: '2026-01-15' },
+      { id: 'TEAM-02', team_name: 'Kolkata Expansion Team', branch_name: 'Kolkata Branch', department: 'Sales Operations', leader_name: 'Rajesh Varma (SUPER_ADMIN)', monthly_target: '25 Property Units', created_at: '2026-03-10' },
+      { id: 'TEAM-03', team_name: 'General Operations Squad', branch_name: 'Head Office (Kolkata)', department: 'System Admin', leader_name: 'Rajesh Varma (SUPER_ADMIN)', monthly_target: '15 Property Units', created_at: '2026-04-01' }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_enterprise_teams_v1', JSON.stringify(teams));
+    } catch (e) {
+      console.error('Error saving teams to localStorage:', e);
+    }
+  }, [teams]);
 
   // 3. Approval Queue & Security Logs
   const [approvalRequests, setApprovalRequests] = useState([
@@ -4729,7 +4756,8 @@ export default function App() {
     city: 'Kolkata',
     manager_name: 'Rajesh Varma (Super Admin)',
     address: '',
-    target_revenue: '₹5,00,00,000'
+    target_revenue: '₹5,00,00,000',
+    assigned_teams: 'Corporate Leadership Squad'
   });
 
   const [newTeamForm, setNewTeamForm] = useState({
@@ -4954,6 +4982,25 @@ export default function App() {
     }
   };
 
+  const handleOpenAddUserModal = () => {
+    setEditingUser(null);
+    setNewUserForm({
+      username: '',
+      full_name: '',
+      email: '',
+      password: '',
+      mobile: '',
+      role: 'SALES_EXEC',
+      branch_name: 'Kolkata Branch',
+      department: 'Sales Operations',
+      team_name: 'Kolkata Expansion Team',
+      manager_name: 'Rajesh Varma (Super Admin)',
+      permissions: { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false }
+    });
+    setShowUserModalPassword(false);
+    setShowUserModal(true);
+  };
+
   const handleOpenEditUserModal = (u: any) => {
     setEditingUser(u);
     setNewUserForm({
@@ -4989,7 +5036,10 @@ export default function App() {
         city: newBranchForm.city,
         manager_name: newBranchForm.manager_name,
         address: newBranchForm.address.trim() || b.address,
-        target_revenue: newBranchForm.target_revenue.trim() || b.target_revenue
+        target_revenue: newBranchForm.target_revenue.trim() || b.target_revenue,
+        teams: newBranchForm.assigned_teams.trim() 
+          ? newBranchForm.assigned_teams.split(',').map(t => t.trim()).filter(Boolean)
+          : (b.teams || ['General Operations Squad'])
       } : b));
       alert(`✅ Branch '${branchNameTrim}' updated successfully across Company Hierarchy!`);
     } else {
@@ -5000,7 +5050,9 @@ export default function App() {
         manager_name: newBranchForm.manager_name,
         address: newBranchForm.address.trim() || `${newBranchForm.city} Main Operational Hub`,
         target_revenue: newBranchForm.target_revenue.trim() || '₹5,00,00,000',
-        teams: ['General Operations Squad'],
+        teams: newBranchForm.assigned_teams.trim()
+          ? newBranchForm.assigned_teams.split(',').map(t => t.trim()).filter(Boolean)
+          : ['General Operations Squad'],
         created_at: new Date().toISOString().split('T')[0]
       };
       setBranches(prev => [...prev, newB]);
@@ -5009,7 +5061,7 @@ export default function App() {
 
     setShowBranchModal(false);
     setEditingBranchId(null);
-    setNewBranchForm({ branch_name: '', city: 'Hyderabad', manager_name: 'Vikram Reddy (GM)', address: '', target_revenue: '₹5,00,00,000' });
+    setNewBranchForm({ branch_name: '', city: 'Kolkata', manager_name: 'Rajesh Varma (Super Admin)', address: '', target_revenue: '₹5,00,00,000', assigned_teams: 'Corporate Leadership Squad' });
   };
 
   const handleDeleteBranch = (branchId: string, branchName: string) => {
@@ -5026,9 +5078,58 @@ export default function App() {
 
   const handleCreateTeamSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!newTeamForm.team_name.trim()) {
+      alert('Please enter a Sales Team Name.');
+      return;
+    }
+    const teamNameTrim = newTeamForm.team_name.trim();
+
+    if (editingTeamId) {
+      setTeams(prev => prev.map(t => t.id === editingTeamId ? {
+        ...t,
+        team_name: teamNameTrim,
+        branch_name: newTeamForm.branch_name,
+        department: newTeamForm.department,
+        leader_name: newTeamForm.leader_name,
+        monthly_target: newTeamForm.monthly_target.trim() || '15 Property Units'
+      } : t));
+      alert(`✅ Team Squad '${teamNameTrim}' updated successfully!`);
+    } else {
+      const newT = {
+        id: `TEAM-0${teams.length + 1}`,
+        team_name: teamNameTrim,
+        branch_name: newTeamForm.branch_name,
+        department: newTeamForm.department,
+        leader_name: newTeamForm.leader_name,
+        monthly_target: newTeamForm.monthly_target.trim() || '15 Property Units',
+        created_at: new Date().toISOString().split('T')[0]
+      };
+      setTeams(prev => [...prev, newT]);
+
+      // Also add team to parent branch teams array if not present
+      setBranches(prev => prev.map(b => {
+        if (b.branch_name === newTeamForm.branch_name) {
+          const currentTeams = Array.isArray(b.teams) ? b.teams : [];
+          if (!currentTeams.includes(teamNameTrim)) {
+            return { ...b, teams: [...currentTeams, teamNameTrim] };
+          }
+        }
+        return b;
+      }));
+
+      alert(`👥 Sales Team '${teamNameTrim}' (Branch: ${newTeamForm.branch_name}) created & provisioned successfully!`);
+    }
+
     setShowTeamModal(false);
-    alert(`👥 Sales Team '${newTeamForm.team_name}' (Branch: ${newTeamForm.branch_name}) created & provisioned successfully!`);
-    setNewTeamForm({ team_name: '', branch_name: 'Kondapur Branch', department: 'Sales', leader_name: 'Rahul Sharma (TL)', monthly_target: '15 Property Units' });
+    setEditingTeamId(null);
+    setNewTeamForm({ team_name: '', branch_name: 'Head Office (Kolkata)', department: 'Sales Operations', leader_name: 'Rajesh Varma (Super Admin)', monthly_target: '15 Property Units' });
+  };
+
+  const handleDeleteTeam = (teamId: string, teamName: string) => {
+    if (window.confirm(`Are you sure you want to delete Team Squad "${teamName}"?`)) {
+      setTeams(prev => prev.filter(t => t.id !== teamId));
+      alert(`🗑️ Team "${teamName}" removed successfully.`);
+    }
   };
 
   const handleCreateUser = (e: React.FormEvent) => {
@@ -5072,7 +5173,8 @@ export default function App() {
       alert(`👤 User ${newU.username} created successfully with assigned action permissions!`);
     }
     setShowUserModal(false);
-    setNewUserForm({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_MANAGEMENT', branch_name: 'Kondapur Branch', department: 'Sales', team_name: 'Team Alpha', manager_name: 'Vikram Reddy (GM)', permissions: { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false } });
+    setEditingUser(null);
+    setNewUserForm({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_EXEC', branch_name: 'Kolkata Branch', department: 'Sales Operations', team_name: 'Kolkata Expansion Team', manager_name: 'Rajesh Varma (Super Admin)', permissions: { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false } });
   };
 
   const handleCreateCustomerSubmit = (e: React.FormEvent) => {
@@ -6763,17 +6865,17 @@ export default function App() {
                     <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>ENTERPRISE RBAC</span>
                   </div>
                   <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
-                    6 Active Enterprise Roles • Company & Branch Hierarchy • Maker-Checker Universal Approvals • Employee Exit Handover Engine
+                    Active Enterprise Roles • Company & Branch Hierarchy • Maker-Checker Universal Approvals • Employee Exit Handover Engine
                   </p>
                 </div>
 
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button onClick={() => setShowUserModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button onClick={() => handleOpenAddUserModal()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <UserPlus size={15} /> + Add User
                   </button>
                   <button onClick={() => {
                     setEditingBranchId(null);
-                    setNewBranchForm({ branch_name: '', city: 'Hyderabad', manager_name: 'Vikram Reddy (GM)', address: '', target_revenue: '₹5,00,00,000' });
+                    setNewBranchForm({ branch_name: '', city: 'Kolkata', manager_name: 'Rajesh Varma (Super Admin)', address: '', target_revenue: '₹5,00,00,000', assigned_teams: 'Corporate Leadership Squad' });
                     setShowBranchModal(true);
                   }} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <Building2 size={15} /> + Add Branch
@@ -6808,16 +6910,19 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 6 SUB-TABS NAVIGATION */}
+              {/* 7 SUB-TABS NAVIGATION */}
               <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
                 <button onClick={() => setActiveRoleSubTab('user_directory')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'user_directory' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'user_directory' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                   👥 Employee Directory ({users.length})
                 </button>
                 <button onClick={() => setActiveRoleSubTab('permission_matrix')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'permission_matrix' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'permission_matrix' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  🔑 6 Active Roles & Security Matrix ({rolePermissions.length})
+                  🔑 Active Roles & Security Matrix ({rolePermissions.length})
                 </button>
                 <button onClick={() => setActiveRoleSubTab('org_hierarchy')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'org_hierarchy' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'org_hierarchy' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                   🏢 Company & Branch Hierarchy
+                </button>
+                <button onClick={() => setActiveRoleSubTab('teams_directory')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'teams_directory' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'teams_directory' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                  🛡️ Teams & Squads ({teams.length})
                 </button>
                 <button onClick={() => setActiveRoleSubTab('approval_queue')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'approval_queue' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'approval_queue' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                   ⚖️ Universal Approval Queue ({approvalRequests.length})
@@ -7089,10 +7194,11 @@ export default function App() {
                                     setEditingBranchId(b.id);
                                     setNewBranchForm({
                                       branch_name: b.branch_name,
-                                      city: b.city || 'Hyderabad',
-                                      manager_name: b.manager_name || 'Vikram Reddy (GM)',
+                                      city: b.city || 'Kolkata',
+                                      manager_name: b.manager_name || 'Rajesh Varma (Super Admin)',
                                       address: b.address || '',
-                                      target_revenue: b.target_revenue || '₹5,00,00,000'
+                                      target_revenue: b.target_revenue || '₹5,00,00,000',
+                                      assigned_teams: Array.isArray(b.teams) ? b.teams.join(', ') : (b.teams || 'General Operations Squad')
                                     });
                                     setShowBranchModal(true);
                                   }}
@@ -7114,6 +7220,94 @@ export default function App() {
                         );
                       })}
                     </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB: TEAMS & SQUADS DIRECTORY */}
+              {activeRoleSubTab === 'teams_directory' && (
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                  
+                  {/* HEADER BAR */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div>
+                      <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🛡️ Enterprise Sales Teams & Squads Directory
+                      </h3>
+                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                        Manage operational squads, branch assignments, team leaders, and monthly targets across your organization.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* TEAMS GRID */}
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '16px' }}>
+                    {teams.map((t, idx) => {
+                      const assignedMembers = users.filter(u => u.team_name === t.team_name || u.department === t.department);
+                      return (
+                        <div key={t.id || idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px', position: 'relative' }}>
+                          
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div>
+                              <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: '800', textTransform: 'uppercase' }}>TEAM SQUAD #{idx + 1}</span>
+                              <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>{t.team_name}</h4>
+                            </div>
+                            <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800' }}>
+                              {t.department || 'Sales Unit'}
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
+                            <div>
+                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Parent Branch: </span>
+                              <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>🏢 {t.branch_name}</strong>
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Assigned Team Lead: </span>
+                              <strong style={{ color: '#4ade80' }}>👤 {t.leader_name}</strong>
+                            </div>
+
+                            <div>
+                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Monthly Sales Target: </span>
+                              <strong style={{ color: '#fbbf24' }}>🎯 {t.monthly_target || '15 Property Units'}</strong>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', marginTop: 'auto' }}>
+                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>
+                              👥 {assignedMembers.length} Active {assignedMembers.length === 1 ? 'Member' : 'Members'}
+                            </span>
+
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button
+                                onClick={() => {
+                                  setEditingTeamId(t.id);
+                                  setNewTeamForm({
+                                    team_name: t.team_name,
+                                    branch_name: t.branch_name,
+                                    department: t.department || 'Sales Operations',
+                                    leader_name: t.leader_name,
+                                    monthly_target: t.monthly_target || '15 Property Units'
+                                  });
+                                  setShowTeamModal(true);
+                                }}
+                                style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteTeam(t.id, t.team_name)}
+                                style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
+                              >
+                                🗑️ Delete
+                              </button>
+                            </div>
+                          </div>
+
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -14059,7 +14253,7 @@ export default function App() {
                   Provision user credentials, login security, role assignment, and organizational hierarchy.
                 </p>
               </div>
-              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => { setShowUserModal(false); setEditingUser(null); }} title="Close Modal" />
+              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => { setShowUserModal(false); setEditingUser(null); setNewUserForm({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_EXEC', branch_name: 'Kolkata Branch', department: 'Sales Operations', team_name: 'Kolkata Expansion Team', manager_name: 'Rajesh Varma (Super Admin)', permissions: { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false } }); }} title="Close Modal" />
             </div>
 
             {/* AUTO-GENERATED TRACKING ID CARD */}
@@ -14072,102 +14266,98 @@ export default function App() {
                   {editingUser ? editingUser.id : `USR-0${users.length + 1}`}
                 </h3>
               </div>
-              <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid #22c55e', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+              <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>
                 ✓ AUTO-GENERATED & UNIQUE
               </span>
             </div>
 
-            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
-              {/* SECTION 1: IDENTITY & LOGIN CREDENTIALS */}
+              {/* SECTION 1: IDENTITY & CREDENTIALS */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
-                  1. Identity & Login Credentials
-                </h4>
-
+                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>1. Identity & Login Credentials</h4>
+                
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Full Name *</label>
-                    <input type="text" value={newUserForm.username} onChange={(e) => setNewUserForm({ ...newUserForm, username: e.target.value, full_name: e.target.value })} placeholder="e.g. Ananya Roy" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
+                    <input type="text" value={newUserForm.full_name} onChange={(e) => setNewUserForm({ ...newUserForm, full_name: e.target.value, username: e.target.value })} placeholder="e.g. Vikram Sharma" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
                   </div>
+
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Corporate Email *</label>
-                    <input type="email" value={newUserForm.email} onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })} placeholder="ananya.roy@swaramayi.com" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
+                    <input type="email" value={newUserForm.email} onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })} placeholder="e.g. vikram@swaramayi.com" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Account Password *</label>
-                    <div style={{ position: 'relative' }}>
+                    <div style={{ position: 'relative', width: '100%' }}>
                       <input 
-                        type={showUserModalPassword ? 'text' : 'password'} 
-                        value={newUserForm.password || ''} 
+                        type={showUserModalPassword ? "text" : "password"} 
+                        value={newUserForm.password} 
                         onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })} 
-                        placeholder="••••••••••••" 
-                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', paddingRight: '40px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
-                        required 
+                        placeholder={editingUser ? "Leave blank to keep existing password" : "Minimum 8 chars with mixed case & numbers"} 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 36px 9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                        required={!editingUser} 
                       />
-                      <button
+                      <button 
                         type="button"
                         onClick={() => setShowUserModalPassword(!showUserModalPassword)}
-                        title={showUserModalPassword ? 'Hide password' : 'Show password'}
-                        style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px' }}
+                        title={showUserModalPassword ? "Hide Password" : "Show Password"}
                       >
-                        {showUserModalPassword ? <EyeOff size={16} color="#0284c7" /> : <Eye size={16} color={isLight ? '#64748b' : '#94a3b8'} />}
+                        {showUserModalPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </div>
+
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Mobile Contact Phone *</label>
-                    <input type="text" value={newUserForm.mobile} onChange={(e) => setNewUserForm({ ...newUserForm, mobile: e.target.value })} placeholder="+91 98490 00009" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
+                    <input type="text" value={newUserForm.mobile} onChange={(e) => setNewUserForm({ ...newUserForm, mobile: e.target.value })} placeholder="+91 98490 00000" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 2: ROLE SCOPE ASSIGNMENT */}
+              {/* SECTION 2: ROLE ACCESS LEVEL */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
-                  2. Role Scope & Permission Access Level
-                </h4>
-
+                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>2. Role Scope & Permission Access Level</h4>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>System Access Role ({customRoles.length} Active Enterprise Roles) *</label>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>System Access Role ({rolePermissions.length} Active Enterprise Roles) *</label>
                   <select 
                     value={newUserForm.role} 
-                    onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })}
-                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: '#0284c7', padding: '10px 12px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '800', outline: 'none' }}
+                    onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
                   >
-                    {customRoles.map((r, i) => (
-                      <option key={i} value={r.key}>{r.name} ({r.key})</option>
+                    {rolePermissions.map((rp, i) => (
+                      <option key={i} value={rp.role_code}>{i + 1}. {rp.role_name} ({rp.role_code})</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* SECTION 3: ORGANIZATION & BRANCH PROFILE DETAILS */}
+              {/* SECTION 3: ORGANIZATION & BRANCH PROFILE */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
-                  3. Organization & Branch Profile Details
-                </h4>
-
+                <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>3. Organization & Branch Profile Details</h4>
+                
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Branch *</label>
                     <input 
-                      type="text"
-                      list="user-branch-suggestions"
-                      value={newUserForm.branch_name || ''} 
-                      onChange={(e) => setNewUserForm({ ...newUserForm, branch_name: e.target.value })}
-                      placeholder="Type custom branch name or select from list..."
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
-                      required
+                      type="text" 
+                      list="user-branch-suggestions" 
+                      value={newUserForm.branch_name} 
+                      onChange={(e) => setNewUserForm({ ...newUserForm, branch_name: e.target.value })} 
+                      placeholder="Select branch or type office..." 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                      required 
                     />
                     <datalist id="user-branch-suggestions">
                       {Array.from(new Set([
+                        ...branches.map(b => b.branch_name),
                         'Head Office (Kolkata)',
                         'Kolkata Branch',
-                        ...branches.map(b => b.branch_name)
+                        'Rajarhat office'
                       ])).filter(Boolean).map((bName, i) => (
                         <option key={i} value={bName} />
                       ))}
@@ -14176,78 +14366,80 @@ export default function App() {
 
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Department / Unit *</label>
-                    <select 
-                      value={newUserForm.department} 
-                      onChange={(e) => setNewUserForm({ ...newUserForm, department: e.target.value })}
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
-                    >
+                    <select value={newUserForm.department} onChange={(e) => setNewUserForm({ ...newUserForm, department: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}>
                       <option value="Executive Board">Executive Board</option>
                       <option value="IT Ops Desk">IT Ops Desk</option>
-                      <option value="General Management">General Management</option>
-                      <option value="Sales Management">Sales Management</option>
-                      <option value="Sales">Sales</option>
-                      <option value="Telecalling Squad">Telecalling Squad</option>
-                      <option value="Accounts & Finance">Accounts & Finance</option>
-                      <option value="HR & Admin">HR & Admin</option>
-                      <option value="Field Operations">Field Operations</option>
+                      <option value="Sales Operations">Sales Operations</option>
+                      <option value="Inside Sales">Inside Sales</option>
+                      <option value="Field Ops">Field Ops</option>
+                      <option value="Finance">Finance</option>
                     </select>
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Team Name *</label>
-                    <input type="text" value={newUserForm.team_name} onChange={(e) => setNewUserForm({ ...newUserForm, team_name: e.target.value })} placeholder="e.g. Sales Team Alpha" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Team *</label>
+                    <input 
+                      type="text" 
+                      list="user-team-suggestions" 
+                      value={newUserForm.team_name} 
+                      onChange={(e) => setNewUserForm({ ...newUserForm, team_name: e.target.value })} 
+                      placeholder="Select team or type custom..." 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                      required 
+                    />
+                    <datalist id="user-team-suggestions">
+                      {Array.from(new Set([
+                        ...teams.map(t => t.team_name),
+                        'Kolkata Expansion Team',
+                        'Corporate Leadership'
+                      ])).filter(Boolean).map((tName, i) => (
+                        <option key={i} value={tName} />
+                      ))}
+                    </datalist>
                   </div>
-
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Reporting Line Manager *</label>
-                    <select 
-                      value={newUserForm.manager_name} 
-                      onChange={(e) => setNewUserForm({ ...newUserForm, manager_name: e.target.value })}
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
-                    >
-                      <option value="Rajesh Varma (Owner / Super Admin)">Rajesh Varma (Owner / Super Admin)</option>
-                      <option value="Anil Kapoor (Admin)">Anil Kapoor (Admin)</option>
-                      <option value="Vikram Reddy (GM)">Vikram Reddy (GM)</option>
-                      <option value="Suresh Kumar (BM)">Suresh Kumar (BM)</option>
-                      <option value="Deepak Verma (SM)">Deepak Verma (SM)</option>
-                      <option value="Rahul Sharma (TL)">Rahul Sharma (TL)</option>
-                      <option value="Self">Self (Independent)</option>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Reporting Manager *</label>
+                    <select value={newUserForm.manager_name} onChange={(e) => setNewUserForm({ ...newUserForm, manager_name: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}>
+                      <option value="Rajesh Varma (Super Admin)">Rajesh Varma (Super Admin)</option>
+                      {users.filter(u => u.id !== 'USR-01').map((u, i) => (
+                        <option key={i} value={u.full_name}>{u.full_name}</option>
+                      ))}
                     </select>
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 4: GRANULAR ACTION PERMISSIONS & PRIVILEGES */}
+              {/* SECTION 4: GRANULAR ACTION PERMISSIONS */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span>4. Granular Action Permissions & Privileges</span>
                   <span style={{ fontSize: '0.72rem', color: '#10b981', fontWeight: '700', background: 'rgba(16, 185, 129, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>RBAC Security Matrix</span>
                 </h4>
 
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr 1fr' : 'repeat(4, 1fr)', gap: '10px' }}>
                   {[
-                    { key: 'perm_view', label: 'View', desc: 'View Records & System Data', icon: Eye, color: '#0284c7', defaultVal: true },
-                    { key: 'perm_create', label: 'Create', desc: 'Create New Records', icon: Plus, color: '#10b981', defaultVal: true },
-                    { key: 'perm_edit', label: 'Edit', desc: 'Modify Existing Records', icon: Edit3, color: '#f59e0b', defaultVal: true },
-                    { key: 'perm_delete', label: 'Delete', desc: 'Remove / Purge Data', icon: Trash2, color: '#ef4444', defaultVal: false },
-                    { key: 'perm_export', label: 'Export', desc: 'Download CSV / PDF Reports', icon: FileDown, color: '#8b5cf6', defaultVal: true },
-                    { key: 'perm_approve', label: 'Approve', desc: 'Approve Workflows & Requests', icon: CheckCircle2, color: '#06b6d4', defaultVal: false },
-                    { key: 'perm_price_change', label: 'Price Change', desc: 'Override Prices / Rates', icon: Tag, color: '#ec4899', defaultVal: false },
-                    { key: 'perm_brokerage', label: 'Brokerage', desc: 'Brokerage & Commission Governance', icon: DollarSign, color: '#f97316', defaultVal: false }
+                    { key: 'perm_view', label: 'View', desc: 'View Records & System Data', icon: Eye, color: '#0284c7' },
+                    { key: 'perm_create', label: 'Create', desc: 'Create New Records', icon: Plus, color: '#10b981' },
+                    { key: 'perm_edit', label: 'Edit', desc: 'Modify Existing Records', icon: Edit3, color: '#f59e0b' },
+                    { key: 'perm_delete', label: 'Delete', desc: 'Remove / Purge Data', icon: Trash2, color: '#ef4444' },
+                    { key: 'perm_export', label: 'Export', desc: 'Download CSV / PDF Reports', icon: FileDown, color: '#8b5cf6' },
+                    { key: 'perm_approve', label: 'Approve', desc: 'Approve Workflows & Requests', icon: CheckCircle2, color: '#06b6d4' },
+                    { key: 'perm_price_change', label: 'Price Change', desc: 'Override Prices / Rates', icon: Tag, color: '#ec4899' },
+                    { key: 'perm_brokerage', label: 'Brokerage', desc: 'Brokerage & Commission Governance', icon: DollarSign, color: '#f97316' }
                   ].map((item, idx) => {
-                    const currentPerms = (newUserForm as any).permissions || { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false };
-                    const isChecked = currentPerms[item.key] !== undefined ? currentPerms[item.key] : item.defaultVal;
-
+                    const currentPerms = newUserForm.permissions || { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false };
+                    const isChecked = (currentPerms as any)[item.key] ?? false;
+                    const IconComp = item.icon;
                     return (
                       <label 
                         key={idx} 
                         style={{ 
-                          display: 'flex', 
-                          flexDirection: 'column', 
+                          display: 'flex',
+                          flexDirection: 'column',
                           gap: '6px', 
-                          background: isLight ? '#ffffff' : '#1e293b', 
+                          background: isChecked ? (isLight ? '#e0f2fe' : 'rgba(2, 132, 199, 0.2)') : (isLight ? '#ffffff' : '#1e293b'), 
                           border: isChecked ? `1.5px solid ${item.color}` : isLight ? '1px solid #cbd5e1' : '1px solid #334155', 
                           borderRadius: '8px', 
                           padding: '10px', 
@@ -14258,7 +14450,7 @@ export default function App() {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: '0.82rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <item.icon size={15} color={item.color} /> {item.label}
+                            <IconComp size={15} color={item.color} /> {item.label}
                           </span>
                           <input 
                             type="checkbox" 
@@ -14359,7 +14551,18 @@ export default function App() {
 
               <div>
                 <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Physical Office Address</label>
-                <input type="text" value={newBranchForm.address} onChange={(e) => setNewBranchForm({ ...newBranchForm, address: e.target.value })} placeholder="Road No. 12, Banjara Hills, Hyderabad - 500034" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} />
+                <input type="text" value={newBranchForm.address} onChange={(e) => setNewBranchForm({ ...newBranchForm, address: e.target.value })} placeholder="Camac Street, Park Street, Kolkata - 700017" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Teams (Comma Separated)</label>
+                <input 
+                  type="text" 
+                  value={newBranchForm.assigned_teams || ''} 
+                  onChange={(e) => setNewBranchForm({ ...newBranchForm, assigned_teams: e.target.value })} 
+                  placeholder="e.g. Corporate Leadership Squad, Kolkata Expansion Team" 
+                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                />
               </div>
 
               <div>
@@ -14428,12 +14631,22 @@ export default function App() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Team Lead *</label>
-                  <select value={newTeamForm.leader_name} onChange={(e) => setNewTeamForm({ ...newTeamForm, leader_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}>
-                    <option value="Rahul Sharma (TL)">Rahul Sharma (TL)</option>
-                    <option value="Deepak Verma (SM)">Deepak Verma (SM)</option>
-                    <option value="Suresh Kumar (BM)">Suresh Kumar (BM)</option>
-                    <option value="Anil Kapoor (Admin)">Anil Kapoor (Admin)</option>
-                  </select>
+                  <input 
+                    type="text" 
+                    list="team-lead-suggestions" 
+                    value={newTeamForm.leader_name} 
+                    onChange={(e) => setNewTeamForm({ ...newTeamForm, leader_name: e.target.value })} 
+                    placeholder="Type custom lead name or select from list..." 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    required 
+                  />
+                  <datalist id="team-lead-suggestions">
+                    {Array.from(new Set([
+                      ...users.map(u => `${u.full_name || u.username} (${u.role})`)
+                    ])).filter(Boolean).map((mName, i) => (
+                      <option key={i} value={mName} />
+                    ))}
+                  </datalist>
                 </div>
 
                 <div>
