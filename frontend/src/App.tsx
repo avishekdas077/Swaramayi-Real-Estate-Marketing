@@ -1799,8 +1799,28 @@ export default function App() {
   const [showAllOnMap, setShowAllOnMap] = useState<boolean>(true);
   const [activeRadius, setActiveRadius] = useState<'1KM' | '2KM' | '5KM' | '10KM' | '25KM'>('5KM');
 
-  // Role Context Switcher State
-  const [currentRole, setCurrentRole] = useState<string>('SUPER_ADMIN');
+  // Role Context Switcher State (Persisted in Session Storage)
+  const [currentRole, setCurrentRole] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = sessionStorage.getItem('swaramayi_current_role');
+        if (saved) return saved;
+      } catch (e) {
+        console.error('Error loading currentRole from sessionStorage:', e);
+      }
+    }
+    return 'SUPER_ADMIN';
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.setItem('swaramayi_current_role', currentRole);
+      } catch (e) {
+        console.error('Error saving currentRole to sessionStorage:', e);
+      }
+    }
+  }, [currentRole]);
   const [currentPath, setCurrentPath] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       return window.location.pathname;
@@ -1813,7 +1833,7 @@ export default function App() {
         return false;
       }
       try {
-        const saved = localStorage.getItem('swaramayi_is_logged_in');
+        const saved = sessionStorage.getItem('swaramayi_is_logged_in');
         if (saved !== null) {
           return JSON.parse(saved);
         }
@@ -1844,9 +1864,21 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_is_logged_in', JSON.stringify(isLoggedIn));
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('swaramayi_is_logged_in');
+        sessionStorage.setItem('swaramayi_is_logged_in', JSON.stringify(isLoggedIn));
+      }
     } catch (e) {
       console.error('Error saving login state:', e);
+    }
+  }, [isLoggedIn]);
+
+  useEffect(() => {
+    if (!isLoggedIn && typeof window !== 'undefined') {
+      if (window.location.pathname !== '/login') {
+        window.history.replaceState({}, '', '/login');
+        setCurrentPath('/login');
+      }
     }
   }, [isLoggedIn]);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
@@ -2487,7 +2519,8 @@ export default function App() {
       console.error('Error reading users from localStorage:', e);
     }
     return [
-      { id: 'USR-01', username: 'Rajesh Varma (Super Admin)', full_name: 'Rajesh Varma', email: 'admin@swaramayi.com', password: 'Swaramayi@2026', mobile: '+91 98490 00001', role: 'SUPER_ADMIN', branch_name: 'Head Office', department: 'Executive Board', team_name: 'Core Management', manager_name: 'Self', is_active: true, user_status: 'ACTIVE' }
+      { id: 'USR-01', username: 'Rajesh Varma (Super Admin)', full_name: 'Rajesh Varma', email: 'admin@swaramayi.com', password: 'Swaramayi@2026', mobile: '+91 98490 00001', role: 'SUPER_ADMIN', designation: 'Managing Director & Founder', branch_name: 'Head Office', department: 'Executive Board', team_name: 'Core Management', manager_name: 'Self', is_active: true, user_status: 'ACTIVE' },
+      { id: 'USR-02', username: 'Abinash Roy', full_name: 'Abinash Roy', email: 'abinsh@gmail.com', password: 'Swaramayi@2026', mobile: '+91 76970 98078', role: 'ADMIN', designation: 'System Administrator', branch_name: 'Kolkata Branch', department: 'General Management', team_name: 'Kolkata Expansion Team', manager_name: 'Rajesh Varma (Super Admin)', is_active: true, user_status: 'ACTIVE' }
     ];
   });
 
@@ -2516,7 +2549,8 @@ export default function App() {
       { role_key: 'BRANCH_MANAGER', role_name: '3. BRANCH MANAGER', data_scope: 'OWN_BRANCH', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: false, brokerage: true },
       { role_key: 'TELECALLER', role_name: '4. TELECALLER', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
       { role_key: 'PROPERTY_MANAGEMENT', role_name: '5. PROPERTY MANAGEMENT', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: true, owner_change: true, brokerage: false },
-      { role_key: 'SALES_MANAGEMENT', role_name: '6. SALES MANAGEMENT', data_scope: 'OWN_TEAM', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: true }
+      { role_key: 'SALES_MANAGEMENT', role_name: '6. SALES MANAGEMENT', data_scope: 'OWN_TEAM', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: true },
+      { role_key: 'SALES_EMPLOYEE', role_name: '7. SALES EMPLOYEE', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false }
     ];
   });
 
@@ -2545,7 +2579,8 @@ export default function App() {
       { key: 'BRANCH_MANAGER', name: '3. BRANCH MANAGER', level: 'Level 3 (Branch Level)', scope: 'Assigned Branch Data', desc: 'Manages branch inventory, team leaders, site visits, cost sheets, and localized sales performance reporting.', color: '#10b981', iconName: 'Building2' },
       { key: 'TELECALLER', name: '4. TELECALLER', level: 'Level 2 (Executive Desk)', scope: 'Assigned Calling Queue', desc: 'Inbound and outbound customer call logging, requirement profiling, follow-up scheduling, and lead status updates.', color: '#f59e0b', iconName: 'PhoneCall' },
       { key: 'PROPERTY_MANAGEMENT', name: '5. PROPERTY MANAGEMENT', level: 'Level 3 (Inventory Unit)', scope: 'Tower Unit Board & Stock', desc: 'Live tower unit board management, pricing updates, inventory ingestion, floor plan attachments, and amenity tagging.', color: '#ec4899', iconName: 'Building' },
-      { key: 'SALES_MANAGEMENT', name: '6. SALES MANAGEMENT', level: 'Level 3 (Sales Unit)', scope: 'Sales Team & Pipeline', desc: 'Oversees 13-stage sales funnel, deal closures, site visit assignments, customer negotiation overrides, and booking sheets.', color: '#8b5cf6', iconName: 'Zap' }
+      { key: 'SALES_MANAGEMENT', name: '6. SALES MANAGEMENT', level: 'Level 3 (Sales Unit)', scope: 'Sales Team & Pipeline', desc: 'Oversees 13-stage sales funnel, deal closures, site visit assignments, customer negotiation overrides, and booking sheets.', color: '#8b5cf6', iconName: 'Zap' },
+      { key: 'SALES_EMPLOYEE', name: '7. SALES EMPLOYEE', level: 'Level 2 (Executive Desk)', scope: 'Sales team member', desc: 'Property sales execution, customer site visits, lead follow-ups, and negotiation updates.', color: '#06b6d4', iconName: 'Users' }
     ];
   });
 
@@ -2616,7 +2651,8 @@ export default function App() {
   ]);
 
   const [activeSessions, setActiveSessions] = useState([
-    { id: 'SES-01', user: 'Rajesh Varma (Super Admin)', role: 'SUPER_ADMIN', ip: '127.0.0.1 (Localhost)', device: 'Chrome / Windows 11', login_time: '16 Aug 09:00 AM', status: 'ACTIVE' }
+    { id: 'SES-01', user: 'Rajesh Varma (Super Admin)', role: 'SUPER_ADMIN', ip: '127.0.0.1 (Localhost)', device: 'Chrome / Windows 11', login_time: '27 Aug 09:00 AM', status: 'ACTIVE' },
+    { id: 'SES-02', user: 'Abinash Roy (Admin)', role: 'ADMIN', ip: '127.0.0.1 (Localhost)', device: 'Chrome / Windows 11', login_time: '27 Aug 09:30 AM', status: 'ACTIVE' }
   ]);
 
   // 4. BULK PROPERTIES MASTER STOCK (WITH LOCALSTORAGE PERSISTENCE)
@@ -4004,6 +4040,7 @@ export default function App() {
       password: '',
       mobile: '',
       role: 'SALES_EXEC',
+      designation: '',
       branch_name: 'Kolkata Branch',
       department: 'Sales Operations',
       team_name: 'Kolkata Expansion Team',
@@ -4023,6 +4060,7 @@ export default function App() {
       password: u.password || 'Swaramayi@2026',
       mobile: u.mobile,
       role: u.role,
+      designation: u.designation || '',
       branch_name: u.branch_name,
       department: u.department,
       team_name: u.team_name,
@@ -4157,6 +4195,7 @@ export default function App() {
         password: newUserForm.password || u.password || 'Swaramayi@2026',
         mobile: newUserForm.mobile,
         role: newUserForm.role,
+        designation: newUserForm.designation,
         branch_name: newUserForm.branch_name,
         department: newUserForm.department,
         team_name: newUserForm.team_name,
@@ -4174,6 +4213,7 @@ export default function App() {
         password: newUserForm.password || 'Swaramayi@2026',
         mobile: newUserForm.mobile || '+91 98490 00000', 
         role: newUserForm.role, 
+        designation: newUserForm.designation || '',
         branch_name: newUserForm.branch_name, 
         department: newUserForm.department, 
         team_name: newUserForm.team_name, 
@@ -4705,7 +4745,8 @@ export default function App() {
       setIsLoggedIn(true);
       setCurrentPath('/');
       if (typeof window !== 'undefined') {
-        localStorage.setItem('swaramayi_is_logged_in', 'true');
+        sessionStorage.setItem('swaramayi_is_logged_in', 'true');
+        localStorage.removeItem('swaramayi_is_logged_in');
         window.history.pushState({}, '', '/');
       }
     };
@@ -4879,12 +4920,11 @@ export default function App() {
                     onChange={(e) => setCurrentRole(e.target.value)}
                     style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#0284c7', padding: '12px 14px', borderRadius: '10px', fontSize: '0.88rem', fontWeight: '800', outline: 'none' }}
                   >
-                    <option value="SUPER_ADMIN">1. OWNER / SUPER ADMIN (ALL ACCESS)</option>
-                    <option value="ADMIN">2. ADMIN</option>
-                    <option value="BRANCH_MANAGER">3. BRANCH MANAGER</option>
-                    <option value="TELECALLER">4. TELECALLER</option>
-                    <option value="PROPERTY_MANAGEMENT">5. PROPERTY MANAGEMENT</option>
-                    <option value="SALES_MANAGEMENT">6. SALES MANAGEMENT</option>
+                    {customRoles.map((role, idx) => (
+                      <option key={role.key || idx} value={role.key}>
+                        {role.name || `${idx + 1}. ${role.key}`}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -4983,12 +5023,11 @@ export default function App() {
         <div style={{ padding: '14px 20px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', background: isLight ? '#f1f5f9' : '#1e293b' }}>
           <label style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Active Role Scope</label>
           <select value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>
-            <option value="SUPER_ADMIN">1. Owner / Super Admin</option>
-            <option value="ADMIN">2. Admin</option>
-            <option value="BRANCH_MANAGER">3. Branch Manager</option>
-            <option value="TELECALLER">4. Telecaller</option>
-            <option value="PROPERTY_MANAGEMENT">5. Property Management</option>
-            <option value="SALES_MANAGEMENT">6. Sales Management</option>
+            {customRoles.map((role, idx) => (
+              <option key={role.key || idx} value={role.key}>
+                {role.name || `${idx + 1}. ${role.key}`}
+              </option>
+            ))}
           </select>
         </div>
 
@@ -5037,7 +5076,12 @@ export default function App() {
     if (isMobile) setIsMobileSidebarOpen(false);
     setIsLoggedIn(false);
     setCurrentPath('/login');
-    if (typeof window !== 'undefined') window.history.pushState({}, '', '/login');
+    if (typeof window !== 'undefined') {
+                  sessionStorage.removeItem('swaramayi_is_logged_in');
+                  sessionStorage.removeItem('swaramayi_current_role');
+      localStorage.removeItem('swaramayi_is_logged_in');
+      window.history.pushState({}, '', '/login');
+    }
   }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.35)', fontSize: '0.875rem', fontWeight: '800', cursor: 'pointer', textAlign: 'left', marginTop: '12px' }}>
             <LogOut size={18} /> <span>🔒 Logout & Sign In</span>
           </button>
@@ -5163,10 +5207,15 @@ export default function App() {
             </button>
             <button 
               onClick={() => {
-    setIsLoggedIn(false);
-    setCurrentPath('/login');
-    if (typeof window !== 'undefined') window.history.pushState({}, '', '/login');
-  }} 
+                setIsLoggedIn(false);
+                setCurrentPath('/login');
+                if (typeof window !== 'undefined') {
+                              sessionStorage.removeItem('swaramayi_is_logged_in');
+                  sessionStorage.removeItem('swaramayi_current_role');
+                  localStorage.removeItem('swaramayi_is_logged_in');
+                  window.history.pushState({}, '', '/login');
+                }
+              }} 
               title="Logout / Switch Account" 
               style={{ 
                 background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
@@ -6396,6 +6445,7 @@ export default function App() {
                     </thead>
                     <tbody>
                       {users
+                        .filter(u => currentRole === 'SUPER_ADMIN' || (u.role !== 'SUPER_ADMIN' && u.role !== 'OWNER' && u.id !== 'USR-01'))
                         .filter(u => matchesSearchQuery(u, searchQuery))
                         .map(u => (
                         <tr key={u.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
@@ -6527,6 +6577,10 @@ export default function App() {
                               </span>
                               <button 
                                 onClick={() => {
+                                  if (role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN') {
+                                    alert('❌ Access Denied: Admin cannot edit or modify the Owner / Super Admin role details.');
+                                    return;
+                                  }
                                   const existingPerm = rolePermissions.find(p => p.role_key === role.key) || {};
                                   const rawName = role.name.replace(/^\d+\.\s*/, '');
                                   setEditingRoleKey(role.key);
@@ -6551,15 +6605,37 @@ export default function App() {
                                   });
                                   setShowCustomRoleModal(true);
                                 }}
-                                style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                title="Edit Role Details & Security Scope"
+                                disabled={role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN'}
+                                style={{ 
+                                  background: isLight ? '#ffffff' : '#1e293b', 
+                                  color: (role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN') ? '#94a3b8' : '#0284c7', 
+                                  border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', 
+                                  padding: '3px 8px', 
+                                  borderRadius: '4px', 
+                                  cursor: (role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN') ? 'not-allowed' : 'pointer', 
+                                  fontSize: '0.72rem', 
+                                  fontWeight: '800', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '4px',
+                                  opacity: (role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN') ? 0.4 : 1
+                                }}
+                                title={role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN' ? "Access Denied: Only Super Admin can edit Super Admin role" : "Edit Role Details & Security Scope"}
                               >
                                 <Edit3 size={12} /> Edit
                               </button>
                               <button 
                                 onClick={() => {
                                   if (role.key === 'SUPER_ADMIN') {
-                                    alert('⚠️ System Lockdown Protection: The root "OWNER / SUPER ADMIN" role cannot be deleted.');
+                                    if (currentRole !== 'SUPER_ADMIN') {
+                                      alert('❌ Access Denied: Admin cannot delete the Owner / Super Admin role.');
+                                    } else {
+                                      alert('⚠️ System Lockdown Protection: The root "OWNER / SUPER ADMIN" role cannot be deleted.');
+                                    }
+                                    return;
+                                  }
+                                  if (role.key === 'ADMIN' && currentRole !== 'SUPER_ADMIN') {
+                                    alert('⚠️ System Protection: Root ADMIN role cannot be deleted by Admin.');
                                     return;
                                   }
                                   const assigned = users.filter(u => u.role === role.key);
@@ -6573,8 +6649,22 @@ export default function App() {
                                     alert(`🗑️ Role "${role.name}" has been successfully deleted.`);
                                   }
                                 }}
-                                style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '3px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.72rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                title="Delete Enterprise Role"
+                                disabled={(role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN'}
+                                style={{ 
+                                  background: ((role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN') ? '#64748b' : '#ef4444', 
+                                  color: '#ffffff', 
+                                  border: 'none', 
+                                  padding: '3px 8px', 
+                                  borderRadius: '4px', 
+                                  cursor: ((role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN') ? 'not-allowed' : 'pointer', 
+                                  fontSize: '0.72rem', 
+                                  fontWeight: '800', 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: '4px',
+                                  opacity: ((role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN') ? 0.4 : 1
+                                }}
+                                title={(role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN' ? "Access Denied: Only Super Admin can delete this role" : "Delete Enterprise Role"}
                               >
                                 <Trash2 size={12} /> Delete
                               </button>
@@ -11740,7 +11830,7 @@ export default function App() {
 
           {/* CATEGORY 6: PROFILE */}
           {activeTab === 'profile' && (() => {
-            const currentUser = users.find(u => u.id === 'USR-01' || u.role === currentRole) || users[0] || {
+            const currentUser = users.find(u => u.role === currentRole || (currentRole === 'SUPER_ADMIN' && (u.id === 'USR-01' || u.role === 'SUPER_ADMIN'))) || users.find(u => u.role === currentRole) || users[0] || {
               id: 'USR-01',
               username: 'Rajesh Varma (Owner)',
               full_name: 'Rajesh Varma',
@@ -11754,6 +11844,87 @@ export default function App() {
               is_active: true,
               user_status: 'ACTIVE'
             };
+
+            const roleInfo = customRoles.find(r => {
+              const uRole = (currentUser.role || '').toUpperCase();
+              const rKey = (r.key || '').toUpperCase();
+              const rNameClean = (r.name || '').replace(/^\d+\.\s*/, '').toUpperCase();
+              return rKey === uRole || rNameClean === uRole;
+            }) || {
+              key: currentUser.role,
+              name: currentUser.role === 'SUPER_ADMIN' ? '1. OWNER / SUPER ADMIN' : currentUser.role === 'ADMIN' ? '2. ADMIN' : currentUser.role,
+              level: (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'OWNER') 
+                ? 'Level 5 (Highest)' 
+                : (currentUser.role === 'ADMIN') 
+                ? 'Level 4 (High)' 
+                : 'Level 3 (Branch Level)',
+              scope: (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'OWNER') 
+                ? 'Universal All-Data Access' 
+                : (currentUser.role === 'ADMIN') 
+                ? 'Company-Wide Operations' 
+                : `${currentUser.branch_name || 'Assigned Branch'} Data Access`,
+              desc: 'Enterprise role with authorized read/write access.',
+              color: '#0284c7'
+            };
+
+            const designation = currentUser.designation || (
+              currentUser.role === 'SUPER_ADMIN' ? 'Managing Director & Founder' :
+              currentUser.role === 'ADMIN' ? 'System Administrator' :
+              currentUser.role === 'GENERAL_MANAGER' ? 'General Manager' :
+              currentUser.role === 'BRANCH_MANAGER' ? 'Branch Head & Manager' :
+              currentUser.role === 'SALES_MANAGER' ? 'Senior Sales Manager' :
+              currentUser.role === 'TEAM_LEAD' ? 'Sales Team Leader' :
+              currentUser.role === 'TELECALLER' ? 'Telecalling Specialist' :
+              currentUser.role === 'PROPERTY_MANAGEMENT' ? 'Property & Stock Controller' :
+              currentUser.role === 'SALES_EMPLOYEE' ? 'Sales Executive' :
+              `${roleInfo.name || currentUser.role} Officer`
+            );
+
+            const directReportsCount = users.filter(u => 
+              u.id !== currentUser.id && 
+              (
+                (u.manager_name && (u.manager_name.includes(currentUser.full_name) || u.manager_name.includes(currentUser.username))) ||
+                (currentUser.role === 'SUPER_ADMIN')
+              )
+            ).length;
+
+            const permissionsList = currentUser.role === 'SUPER_ADMIN' ? [
+              'Full Read, Write & Delete Authority',
+              'Maker-Checker Universal Approvals',
+              'Executive Price Override Rights',
+              'Brokerage & Commission Governance',
+              'Emergency System Lockdown Switch'
+            ] : currentUser.role === 'ADMIN' ? [
+              'Company-Wide Read & Write Rights',
+              'Employee User Ingestion & Management',
+              'Property Inventory Governance',
+              'Lead Queue Allocation & Transfers',
+              'System Audit Log Inspection'
+            ] : currentUser.role === 'BRANCH_MANAGER' ? [
+              'Branch Lead & Customer Pipeline Access',
+              'Tower Unit Board & Stock View',
+              'Team Performance Reporting',
+              'Site Visit Scheduling & Approvals',
+              'Branch Expense & Target Tracking'
+            ] : currentUser.role === 'TELECALLER' ? [
+              'Inbound & Outbound Calling Queue Access',
+              'Customer Requirement Profiling',
+              'Follow-Up Scheduling & Lead Ingestion',
+              'Call Status & Activity Logging',
+              'Telecalling Conversion Performance'
+            ] : currentUser.role === 'PROPERTY_MANAGEMENT' ? [
+              'Live Tower Unit Board & Stock Ingestion',
+              'Property Pricing Updates & Unit Matrix',
+              'Floor Plan & Brochure Attachments',
+              'Amenity & Spec Tagging Governance',
+              'Developer Inventory Sync'
+            ] : [
+              'Assigned Lead Management',
+              'Customer Communication Logging',
+              'Follow-Up & Site Visit Requests',
+              'Property Inventory Lookup',
+              'Personal Performance Metrics'
+            ];
 
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -11827,7 +11998,7 @@ export default function App() {
                           fontWeight: '900',
                           letterSpacing: '0.5px'
                         }}>
-                          👑 {currentUser.role === 'SUPER_ADMIN' ? 'SUPER ADMIN / OWNER' : currentUser.role}
+                          👑 {currentUser.role === 'SUPER_ADMIN' ? 'SUPER ADMIN / OWNER' : (roleInfo.name || currentUser.role)}
                         </span>
                         <span style={{
                           background: 'rgba(34, 197, 94, 0.15)',
@@ -11848,13 +12019,13 @@ export default function App() {
 
                       <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '0.82rem', color: isLight ? '#475569' : '#cbd5e1' }}>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <Building size={15} color="#38bdf8" /> {currentUser.branch_name}
+                          <Building size={15} color="#38bdf8" /> {currentUser.branch_name || 'Head Office'}
                         </span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <Briefcase size={15} color="#fbbf24" /> {currentUser.department}
+                          <Briefcase size={15} color="#fbbf24" /> {currentUser.department || 'Operations'}
                         </span>
                         <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <ShieldCheck size={15} color="#4ade80" /> Security Level 5 (Highest)
+                          <ShieldCheck size={15} color="#4ade80" /> Security {roleInfo.level}
                         </span>
                       </div>
                     </div>
@@ -11881,7 +12052,7 @@ export default function App() {
                       <Edit3 size={16} /> Edit Details
                     </button>
                     <button 
-                      onClick={() => alert('Security Audit Logs generated for Super Admin Rajesh Varma.')}
+                      onClick={() => alert(`Security Audit Logs generated for ${currentUser.full_name || currentUser.username}.`)}
                       style={{
                         background: isLight ? '#e2e8f0' : '#334155',
                         color: isLight ? '#0f172a' : '#ffffff',
@@ -11902,200 +12073,133 @@ export default function App() {
                 </div>
 
                 {/* 3-COLUMN DETAIL GRID */}
-                {(() => {
-                  const roleInfo = customRoles.find(r => 
-                    r.key === currentUser.role || 
-                    r.name.toLowerCase().includes((currentUser.role || '').toLowerCase())
-                  ) || {
-                    key: currentUser.role,
-                    name: currentUser.role,
-                    level: currentUser.role === 'SUPER_ADMIN' ? 'Level 5 (Highest)' : 'Level 3 (Branch Level)',
-                    scope: currentUser.role === 'SUPER_ADMIN' ? 'Universal All-Data Access' : `${currentUser.branch_name || 'Assigned Branch'} Data Access`,
-                    desc: 'Enterprise role with authorized read/write access.',
-                    color: '#0284c7'
-                  };
-
-                  const designation = currentUser.designation || (
-                    currentUser.role === 'SUPER_ADMIN' ? 'Managing Director & Founder' :
-                    currentUser.role === 'ADMIN' ? 'System Administrator' :
-                    currentUser.role === 'GENERAL_MANAGER' ? 'General Manager' :
-                    currentUser.role === 'BRANCH_MANAGER' ? 'Branch Head & Manager' :
-                    currentUser.role === 'SALES_MANAGER' ? 'Senior Sales Manager' :
-                    currentUser.role === 'TEAM_LEAD' ? 'Sales Team Leader' :
-                    currentUser.role === 'TELECALLER' ? 'Telecalling Specialist' :
-                    `${currentUser.role} Specialist`
-                  );
-
-                  const directReportsCount = users.filter(u => 
-                    u.id !== currentUser.id && 
-                    (
-                      (u.manager_name && (u.manager_name.includes(currentUser.full_name) || u.manager_name.includes(currentUser.username))) ||
-                      (currentUser.role === 'SUPER_ADMIN')
-                    )
-                  ).length;
-
-                  const permissionsList = currentUser.role === 'SUPER_ADMIN' ? [
-                    'Full Read, Write & Delete Authority',
-                    'Maker-Checker Universal Approvals',
-                    'Executive Price Override Rights',
-                    'Brokerage & Commission Governance',
-                    'Emergency System Lockdown Switch'
-                  ] : currentUser.role === 'ADMIN' ? [
-                    'Company-Wide Read & Write Rights',
-                    'Employee User Ingestion & Management',
-                    'Property Inventory Governance',
-                    'Lead Queue Allocation & Transfers',
-                    'System Audit Log Inspection'
-                  ] : currentUser.role === 'BRANCH_MANAGER' ? [
-                    'Branch Lead & Customer Pipeline Access',
-                    'Tower Unit Board & Stock View',
-                    'Team Performance Reporting',
-                    'Site Visit Scheduling & Approvals',
-                    'Branch Expense & Target Tracking'
-                  ] : currentUser.role === 'SALES_MANAGER' ? [
-                    '13-Stage Sales Funnel Access',
-                    'Deal Closure & Discount Rights',
-                    'Site Visit Allocation & Logs',
-                    'Booking Sheet Registration',
-                    'Team Target Analytics'
-                  ] : [
-                    'Assigned Lead Management',
-                    'Customer Communication Logging',
-                    'Follow-Up & Site Visit Requests',
-                    'Property Inventory Lookup',
-                    'Personal Performance Metrics'
-                  ];
-
-                  return (
-                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
-                      
-                      {/* COLUMN 1: CONTACT & PERSONAL INFORMATION */}
-                      <div style={{
-                        background: isLight ? '#ffffff' : '#1e293b',
-                        border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                        borderRadius: '14px',
-                        padding: '20px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '16px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                          <User size={20} color="#38bdf8" />
-                          <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                            Personal & Contact Details
-                          </h3>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Full Name</span>
-                            <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.full_name || currentUser.username}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Username & Alias</span>
-                            <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.username}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Email Address</span>
-                            <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.email || 'N/A'}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Mobile Contact</span>
-                            <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', fontFamily: 'monospace', marginTop: '2px' }}>{currentUser.mobile || 'N/A'}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Official Designation</span>
-                            <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{designation}</strong>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* COLUMN 2: ORGANIZATION & HIERARCHY */}
-                      <div style={{
-                        background: isLight ? '#ffffff' : '#1e293b',
-                        border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                        borderRadius: '14px',
-                        padding: '20px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '16px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                          <Building2 size={20} color="#fbbf24" />
-                          <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                            Organizational Hierarchy
-                          </h3>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Assigned Branch</span>
-                            <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.branch_name || 'Head Office (Kolkata)'}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Department</span>
-                            <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.department || 'Executive Board'}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Team Assignment</span>
-                            <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.team_name || 'Corporate Leadership Squad'}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Reporting Manager</span>
-                            <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.manager_name || 'Self'}</strong>
-                          </div>
-
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Direct Reports Managed</span>
-                            <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{directReportsCount} Active Staff Members</strong>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* COLUMN 3: RBAC PERMISSIONS & ENTERPRISE SCOPE */}
-                      <div style={{
-                        background: isLight ? '#ffffff' : '#1e293b',
-                        border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                        borderRadius: '14px',
-                        padding: '20px',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '16px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                          <Key size={20} color="#22c55e" />
-                          <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                            RBAC Scope & Privileges
-                          </h3>
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                          <div>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Data Scope Level</span>
-                            <strong style={{ display: 'block', color: roleInfo.color || '#22c55e', fontSize: '0.9rem', marginTop: '2px' }}>{roleInfo.scope} ({roleInfo.level})</strong>
-                          </div>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                            {permissionsList.map((perm, pIdx) => (
-                              <div key={pIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: isLight ? '#334155' : '#cbd5e1' }}>
-                                <CheckCircle2 size={14} color={roleInfo.color || "#22c55e"} />
-                                <span>{perm}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
+                  
+                  {/* COLUMN 1: CONTACT & PERSONAL INFORMATION */}
+                  <div style={{
+                    background: isLight ? '#ffffff' : '#1e293b',
+                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                    borderRadius: '14px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                      <User size={20} color="#38bdf8" />
+                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                        Personal & Contact Details
+                      </h3>
                     </div>
-                  );
-                })()}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Full Name</span>
+                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.full_name || currentUser.username}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Username & Alias</span>
+                        <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.username}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Email Address</span>
+                        <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.email || 'N/A'}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Mobile Contact</span>
+                        <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', fontFamily: 'monospace', marginTop: '2px' }}>{currentUser.mobile || 'N/A'}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Official Designation</span>
+                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{designation}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* COLUMN 2: ORGANIZATION & HIERARCHY */}
+                  <div style={{
+                    background: isLight ? '#ffffff' : '#1e293b',
+                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                    borderRadius: '14px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                      <Building2 size={20} color="#fbbf24" />
+                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                        Organizational Hierarchy
+                      </h3>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Assigned Branch</span>
+                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.branch_name || 'Head Office (Kolkata)'}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Department</span>
+                        <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.department || 'Executive Board'}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Team Assignment</span>
+                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.team_name || 'Corporate Leadership Squad'}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Reporting Manager</span>
+                        <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.manager_name || 'Self'}</strong>
+                      </div>
+
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Direct Reports Managed</span>
+                        <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{directReportsCount} Active Staff Members</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* COLUMN 3: RBAC PERMISSIONS & ENTERPRISE SCOPE */}
+                  <div style={{
+                    background: isLight ? '#ffffff' : '#1e293b',
+                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                    borderRadius: '14px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+                      <Key size={20} color="#22c55e" />
+                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                        RBAC Scope & Privileges
+                      </h3>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Data Scope Level</span>
+                        <strong style={{ display: 'block', color: roleInfo.color || '#22c55e', fontSize: '0.9rem', marginTop: '2px' }}>{roleInfo.scope} ({roleInfo.level})</strong>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
+                        {permissionsList.map((perm, pIdx) => (
+                          <div key={pIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: isLight ? '#334155' : '#cbd5e1' }}>
+                            <CheckCircle2 size={14} color={roleInfo.color || "#22c55e"} />
+                            <span>{perm}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
 
                 {/* BOTTOM ROW: ACTIVE SESSIONS & RECENT ACTIVITY */}
                 <div style={{
@@ -12132,20 +12236,38 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {activeSessions.map((s, idx) => (
-                          <tr key={s.id || idx} style={{ borderBottom: isLight ? '1px solid #f1f5f9' : '1px solid #334155' }}>
-                            <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{s.id}</td>
-                            <td style={{ padding: '10px 12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{s.user}</td>
-                            <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: isLight ? '#475569' : '#cbd5e1' }}>{s.ip}</td>
-                            <td style={{ padding: '10px 12px', color: isLight ? '#475569' : '#cbd5e1' }}>{s.device}</td>
-                            <td style={{ padding: '10px 12px', color: '#fbbf24' }}>{s.login_time}</td>
-                            <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                              <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '800' }}>
-                                ● {s.status}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {(() => {
+                          const currentRoleLabel = currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : currentUser.role === 'ADMIN' ? 'Admin' : currentUser.role;
+                          const matchedInState = activeSessions.find(s => 
+                            s.user.toLowerCase().includes((currentUser.full_name || '').toLowerCase()) ||
+                            s.user.toLowerCase().includes((currentUser.username || '').toLowerCase())
+                          );
+                          const sessionsToDisplay = matchedInState ? [matchedInState] : [
+                            {
+                              id: `SES-${currentUser.id ? currentUser.id.replace(/[^0-9]/g, '') : '01'}`,
+                              user: `${currentUser.full_name || currentUser.username} (${currentRoleLabel})`,
+                              ip: '127.0.0.1 (Localhost)',
+                              device: 'Chrome / Windows 11',
+                              login_time: '27 Aug 09:00 AM',
+                              status: 'ACTIVE'
+                            }
+                          ];
+
+                          return sessionsToDisplay.map((s, idx) => (
+                            <tr key={s.id || idx} style={{ borderBottom: isLight ? '1px solid #f1f5f9' : '1px solid #334155' }}>
+                              <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{s.id}</td>
+                              <td style={{ padding: '10px 12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{s.user}</td>
+                              <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: isLight ? '#475569' : '#cbd5e1' }}>{s.ip}</td>
+                              <td style={{ padding: '10px 12px', color: isLight ? '#475569' : '#cbd5e1' }}>{s.device}</td>
+                              <td style={{ padding: '10px 12px', color: '#fbbf24' }}>{s.login_time}</td>
+                              <td style={{ padding: '10px 12px', textAlign: 'center' }}>
+                                <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '800' }}>
+                                  ● {s.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ));
+                        })()}
                       </tbody>
                     </table>
                   </div>
@@ -13080,6 +13202,17 @@ export default function App() {
                       required 
                     />
                   </div>
+
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Official Designation</label>
+                    <input 
+                      type="text" 
+                      value={editingProfile.designation || ''} 
+                      onChange={(e) => setEditingProfile({ ...editingProfile, designation: e.target.value })} 
+                      placeholder="e.g. Managing Director & Founder, System Administrator, Senior Sales Manager" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -13502,7 +13635,7 @@ export default function App() {
               </span>
             </div>
 
-            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <form onSubmit={handleCreateUser} autoComplete="off" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
               {/* SECTION 1: IDENTITY & CREDENTIALS */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -13511,12 +13644,12 @@ export default function App() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Full Name *</label>
-                    <input type="text" value={newUserForm.full_name} onChange={(e) => setNewUserForm({ ...newUserForm, full_name: e.target.value, username: e.target.value })} placeholder="e.g. Vikram Sharma" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
+                    <input type="text" name="user_full_name_field" autoComplete="off" value={newUserForm.full_name} onChange={(e) => setNewUserForm({ ...newUserForm, full_name: e.target.value, username: e.target.value })} placeholder="e.g. Vikram Sharma" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
                   </div>
 
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Corporate Email *</label>
-                    <input type="email" value={newUserForm.email} onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })} placeholder="e.g. vikram@swaramayi.com" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
+                    <input type="email" name="user_corporate_email_field" autoComplete="off" value={newUserForm.email} onChange={(e) => setNewUserForm({ ...newUserForm, email: e.target.value })} placeholder="employee@swaramayi.com" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
                   </div>
                 </div>
 
@@ -13526,9 +13659,11 @@ export default function App() {
                     <div style={{ position: 'relative', width: '100%' }}>
                       <input 
                         type={showUserModalPassword ? "text" : "password"} 
+                        name="user_account_password_field"
+                        autoComplete="new-password"
                         value={newUserForm.password} 
                         onChange={(e) => setNewUserForm({ ...newUserForm, password: e.target.value })} 
-                        placeholder={editingUser ? "Leave blank to keep existing password" : "Minimum 8 chars with mixed case & numbers"} 
+                        placeholder={editingUser ? "Leave blank to keep existing password" : "Pass@2026 (Min 8 chars)"} 
                         style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 36px 9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
                         required={!editingUser} 
                       />
@@ -13545,7 +13680,20 @@ export default function App() {
 
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Mobile Contact Phone *</label>
-                    <input type="text" value={newUserForm.mobile} onChange={(e) => setNewUserForm({ ...newUserForm, mobile: e.target.value })} placeholder="+91 98490 00000" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
+                    <input type="text" name="user_mobile_phone_field" autoComplete="off" value={newUserForm.mobile} onChange={(e) => setNewUserForm({ ...newUserForm, mobile: e.target.value })} placeholder="+91 98490 00000" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} required />
+                  </div>
+
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Official Designation</label>
+                    <input 
+                      type="text" 
+                      name="user_official_designation_field" 
+                      autoComplete="off" 
+                      value={newUserForm.designation || ''} 
+                      onChange={(e) => setNewUserForm({ ...newUserForm, designation: e.target.value })} 
+                      placeholder="e.g. Managing Director & Founder, System Administrator, Senior Sales Manager" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    />
                   </div>
                 </div>
               </div>
@@ -13560,8 +13708,10 @@ export default function App() {
                     onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })} 
                     style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
                   >
-                    {rolePermissions.map((rp, i) => (
-                      <option key={i} value={rp.role_code}>{i + 1}. {rp.role_name} ({rp.role_code})</option>
+                    {rolePermissions
+                      .filter(rp => currentRole === 'SUPER_ADMIN' || (rp.role_code !== 'SUPER_ADMIN' && rp.role_key !== 'SUPER_ADMIN'))
+                      .map((rp, i) => (
+                        <option key={i} value={rp.role_code}>{i + 1}. {rp.role_name} ({rp.role_code})</option>
                     ))}
                   </select>
                 </div>
@@ -13633,10 +13783,12 @@ export default function App() {
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Reporting Manager *</label>
                     <select value={newUserForm.manager_name} onChange={(e) => setNewUserForm({ ...newUserForm, manager_name: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}>
-                      <option value="Rajesh Varma (Super Admin)">Rajesh Varma (Super Admin)</option>
-                      {users.filter(u => u.id !== 'USR-01').map((u, i) => (
-                        <option key={i} value={u.full_name}>{u.full_name}</option>
-                      ))}
+                      {currentRole === 'SUPER_ADMIN' && <option value="Rajesh Varma (Super Admin)">Rajesh Varma (Super Admin)</option>}
+                      {users
+                        .filter(u => u.id !== 'USR-01' && (currentRole === 'SUPER_ADMIN' || (u.role !== 'SUPER_ADMIN' && u.role !== 'OWNER')))
+                        .map((u, i) => (
+                          <option key={i} value={u.full_name}>{u.full_name}</option>
+                        ))}
                     </select>
                   </div>
                 </div>
