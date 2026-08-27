@@ -5687,7 +5687,7 @@ export default function App() {
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         
         {/* TOP CONTROL HEADER */}
-        <header style={{ background: isLight ? '#ffffff' : '#0f172a', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: isMobile ? '10px 14px' : '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <header style={{ position: 'sticky', top: 0, zIndex: 900, background: isLight ? '#ffffff' : '#0f172a', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: isMobile ? '10px 14px' : '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
           {isMobile && (
             <button 
               onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
@@ -5749,21 +5749,6 @@ export default function App() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
 
-            {activeTab === 'project_management' && (
-              <button onClick={handleOpenAddPropertyModal} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Plus size={16} /> + Add Property Master
-              </button>
-            )}
-            {activeTab === 'customer_management' && (
-              <button onClick={handleOpenLeadModal} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Plus size={16} /> + Ingest Customer
-              </button>
-            )}
-            {activeTab === 'visit_management' && (
-              <button onClick={() => alert('🚘 Opening Schedule Site Visit Modal...')} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Plus size={16} /> + Schedule Site Visit
-              </button>
-            )}
             <button onClick={() => exportToCSV(properties, 'CRM_Export')} style={{ background: isLight ? '#f1f5f9' : '#1e293b', color: isLight ? '#0284c7' : '#fbbf24', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <FileDown size={14} /> Export CSV Report
             </button>
