@@ -3827,15 +3827,29 @@ export default function App() {
 
   const [createInvoiceForm, setCreateInvoiceForm] = useState({
     invoice_category: 'CUSTOMER',
-    customer_name: 'Rohan Deshmukh',
-    customer_number: 'SRM-CUS-2026-000184',
-    customer_mobile: '+91 98490 12345',
+    property_code: 'SRM-PROP-2026-000421',
+    property_title: 'Aparna Zenon Premium 3BHK Residence',
     developer_name: 'Aparna Constructions',
     developer_gstin: '36AAACA1234F1Z5',
-    property_title: 'Aparna Zenon Premium 3BHK Residence',
-    particulars: 'Property Consulting / Channel Partner Success Commission',
+    property_locality: 'Kondapur, Hyderabad',
+    property_configuration: '3 BHK Luxury Apartment',
+    customer_name: 'Rohan Deshmukh',
+    customer_number: 'SRM-CUS-2026-000184',
+    customer_mobile: '+91 90490 12345',
+    customer_email: 'rohan.deshmukh@gmail.com',
+    customer_address: 'Flat 402, Royal Heights, Jubilee Hills, Hyderabad - 500033',
+    place_of_supply: '36 - Telangana',
+    customer_gstin_pan: '36ABCDE1234F1Z5',
+    particulars: 'Property Consultation & Processing Charges',
+    flat_price: '8000000',
+    parking_price: '400000',
     agreement_value: '8400000',
-    taxable_value: '200000'
+    brokerage_percent: '2.0',
+    taxable_value: '200000',
+    apply_gst: true,
+    gst_rate: '18',
+    cgst_rate: '9',
+    sgst_rate: '9'
   });
   const [rawSelectedInvoice, setSelectedInvoice] = useState<any>(null);
   const selectedInvoice = rawSelectedInvoice || invoices[0] || {
@@ -11905,13 +11919,13 @@ export default function App() {
       {/* MODAL: CREATE CUSTOMER OR DEVELOPER TAX INVOICE */}
       {showCreateInvoiceModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
-          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
               <div>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  🧾 Create GST 18% Tax Invoice ({createInvoiceForm.invoice_category === 'DEVELOPER' ? 'B2B Developer Brokerage' : 'B2C Customer Billing'})
+                  🧾 Create Invoice ({createInvoiceForm.invoice_category === 'DEVELOPER' ? 'B2B Developer Brokerage' : 'B2C Customer Billing'})
                 </h3>
-                <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Generate GST 18% compliant tax invoice for Customer services or Developer 2.0% brokerage.</p>
+                <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Generate Tax Invoice based on Flat + Parking Price Agreement Value with editable GST tax rates.</p>
               </div>
               <button onClick={() => setShowCreateInvoiceModal(false)} style={{ background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', fontSize: '1.2rem', cursor: 'pointer', fontWeight: '900' }}>✕</button>
             </div>
@@ -11921,26 +11935,40 @@ export default function App() {
               const isDev = createInvoiceForm.invoice_category === 'DEVELOPER';
               const invNum = isDev ? `SRM-INV-DEV-2026-000${invoices.length + 501}` : `SRM-INV-CUS-2026-000${invoices.length + 401}`;
               const taxVal = Number(createInvoiceForm.taxable_value || 200000);
-              const cgst = taxVal * 0.09;
-              const sgst = taxVal * 0.09;
+              const applyGst = createInvoiceForm.apply_gst !== false;
+              const cgstRate = Number(createInvoiceForm.cgst_rate !== undefined ? createInvoiceForm.cgst_rate : 9);
+              const sgstRate = Number(createInvoiceForm.sgst_rate !== undefined ? createInvoiceForm.sgst_rate : 9);
+              const cgst = applyGst ? Math.round(taxVal * (cgstRate / 100)) : 0;
+              const sgst = applyGst ? Math.round(taxVal * (sgstRate / 100)) : 0;
               const totalInv = taxVal + cgst + sgst;
 
               const newInvObj = {
                 id: `INV-${Date.now()}`,
                 invoice_number: invNum,
                 invoice_category: createInvoiceForm.invoice_category,
+                property_code: createInvoiceForm.property_code || 'SRM-PROP-2026-000421',
+                property_locality: createInvoiceForm.property_locality,
+                property_configuration: createInvoiceForm.property_configuration,
                 customer_name: createInvoiceForm.customer_name,
                 customer_number: createInvoiceForm.customer_number || 'SRM-CUS-2026-000184',
                 customer_mobile: createInvoiceForm.customer_mobile,
+                customer_email: createInvoiceForm.customer_email,
+                customer_address: createInvoiceForm.customer_address,
+                place_of_supply: createInvoiceForm.place_of_supply,
+                customer_gstin_pan: createInvoiceForm.customer_gstin_pan,
                 developer_name: createInvoiceForm.developer_name,
                 developer_gstin: createInvoiceForm.developer_gstin || '36AAACA1234F1Z5',
                 property_title: createInvoiceForm.property_title,
                 particulars: createInvoiceForm.particulars,
+                flat_price: '₹' + Number(createInvoiceForm.flat_price || 8000000).toLocaleString('en-IN'),
+                parking_price: '₹' + Number(createInvoiceForm.parking_price || 400000).toLocaleString('en-IN'),
                 agreement_value: '₹' + Number(createInvoiceForm.agreement_value || 8400000).toLocaleString('en-IN'),
                 taxable_value: taxVal,
-                cgst_rate: '9%',
+                apply_gst: applyGst,
+                gst_rate: applyGst ? `${cgstRate + sgstRate}%` : '0%',
+                cgst_rate: `${cgstRate}%`,
                 cgst_amount: cgst,
-                sgst_rate: '9%',
+                sgst_rate: `${sgstRate}%`,
                 sgst_amount: sgst,
                 total_invoice_amount: totalInv,
                 payment_status: 'UNPAID_PENDING',
@@ -11949,8 +11977,8 @@ export default function App() {
 
               setInvoices([newInvObj, ...invoices]);
               setShowCreateInvoiceModal(false);
-              alert(`🎉 GST Tax Invoice ${invNum} created successfully for ${isDev ? createInvoiceForm.developer_name : createInvoiceForm.customer_name}!`);
-            }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              alert(`🎉 Invoice ${invNum} created successfully for ${isDev ? createInvoiceForm.developer_name : createInvoiceForm.customer_name}!`);
+            }} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               
               <div>
                 <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Invoice Category *</label>
@@ -11969,69 +11997,484 @@ export default function App() {
                 </select>
               </div>
 
-              {createInvoiceForm.invoice_category === 'DEVELOPER' ? (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {/* CARD 1: PROPERTY MASTER & STOCK INVENTORY DETAILS */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🏠 PROPERTY MASTER & STOCK INVENTORY DETAILS
+                  </span>
+                  <span style={{ fontSize: '0.7rem', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                    Auto-Fetch Enabled by Property Code
+                  </span>
+                </div>
+
+                {/* QUICK SELECT STOCK INVENTORY DROPDOWN */}
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    ⚡ Auto-Fetch from Stock Inventory Vault (Select Property Code / Title):
+                  </label>
+                  <select
+                    value={createInvoiceForm.property_code || ''}
+                    onChange={(e) => {
+                      const pCode = e.target.value;
+                      const prop = properties.find(p => p.property_code === pCode || p.id === pCode);
+                      if (prop) {
+                        const numPrice = typeof prop.final_price === 'number' ? prop.final_price : (parseInt(String(prop.final_price).replace(/[^0-9]/g, '')) || 8400000);
+                        const computedFlatPrice = Math.round(numPrice * 0.95);
+                        const computedParkPrice = Math.round(numPrice * 0.05);
+                        const computedAgreementVal = computedFlatPrice + computedParkPrice;
+                        const isDev = createInvoiceForm.invoice_category === 'DEVELOPER';
+                        const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
+                        const computedTaxableVal = isDev ? Math.round(computedAgreementVal * (brokPct / 100)) : (createInvoiceForm.taxable_value || 200000);
+
+                        setCreateInvoiceForm({
+                          ...createInvoiceForm,
+                          property_code: prop.property_code,
+                          property_title: prop.title || `${prop.property_code} Residence`,
+                          developer_name: prop.developer || prop.builder || 'Aparna Constructions',
+                          developer_gstin: prop.developer_gstin || '36AAACA1234F1Z5',
+                          property_locality: prop.locality || 'Kondapur, Hyderabad',
+                          property_configuration: prop.configuration || '3 BHK Luxury Apartment',
+                          flat_price: String(computedFlatPrice),
+                          parking_price: String(computedParkPrice),
+                          agreement_value: String(computedAgreementVal),
+                          taxable_value: String(computedTaxableVal),
+                          particulars: isDev 
+                            ? `2.0% Channel Partner Success Fee / Brokerage for ${prop.title} [Code: ${prop.property_code}]` 
+                            : `Property Consultation & Processing Charges for ${prop.title} [Code: ${prop.property_code}]`
+                        });
+                      }
+                    }}
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', color: '#4ade80', padding: '7px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }}
+                  >
+                    <option value="">-- Choose Stock Inventory Tracking Code --</option>
+                    {properties.map((p, idx) => (
+                      <option key={idx} value={p.property_code}>
+                        🏢 {p.property_code} — {p.title} ({p.locality}) | Price: {p.final_price}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* GRID ROW 1: PROPERTY CODE (LIVE MATCH), TITLE, DEVELOPER */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer / Builder Name *</label>
-                    <input type="text" value={createInvoiceForm.developer_name} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      🏷️ Property Code / Inventory ID *
+                    </label>
+                    <input 
+                      type="text" 
+                      value={createInvoiceForm.property_code || ''} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const matched = properties.find(p => 
+                          p.property_code?.toLowerCase() === val.toLowerCase() || 
+                          p.id?.toLowerCase() === val.toLowerCase()
+                        );
+                        if (matched) {
+                          const numPrice = typeof matched.final_price === 'number' ? matched.final_price : (parseInt(String(matched.final_price).replace(/[^0-9]/g, '')) || 8400000);
+                          const fPrice = Math.round(numPrice * 0.95);
+                          const pPrice = Math.round(numPrice * 0.05);
+                          setCreateInvoiceForm({
+                            ...createInvoiceForm,
+                            property_code: val,
+                            property_title: matched.title || `${val} Residence`,
+                            developer_name: matched.developer || matched.builder || 'Aparna Constructions',
+                            developer_gstin: matched.developer_gstin || '36AAACA1234F1Z5',
+                            property_locality: matched.locality || 'Kondapur, Hyderabad',
+                            property_configuration: matched.configuration || '3 BHK Luxury Apartment',
+                            flat_price: String(fPrice),
+                            parking_price: String(pPrice),
+                            agreement_value: String(fPrice + pPrice)
+                          });
+                        } else {
+                          setCreateInvoiceForm({ ...createInvoiceForm, property_code: val });
+                        }
+                      }} 
+                      placeholder="SRM-PROP-2026-000421" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', color: '#4ade80', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: '800' }} 
+                      required 
+                    />
                   </div>
+
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer GSTIN *</label>
-                    <input type="text" value={createInvoiceForm.developer_gstin} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_gstin: e.target.value })} placeholder="36AAACA1234F1Z5" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Property Title & Unit Details *</label>
+                    <input type="text" value={createInvoiceForm.property_title || ''} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, property_title: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} required />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer / Builder Name *</label>
+                    <input type="text" value={createInvoiceForm.developer_name || ''} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} required />
                   </div>
                 </div>
-              ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+
+                {/* GRID ROW 2: LOCALITY, CONFIGURATION, DEVELOPER GSTIN */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
-                    <input type="text" value={createInvoiceForm.customer_name} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Locality / Sector</label>
+                    <input type="text" value={createInvoiceForm.property_locality || 'Kondapur, Hyderabad'} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, property_locality: e.target.value })} placeholder="Kondapur, Hyderabad" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
                   </div>
+
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Mobile *</label>
-                    <input type="text" value={createInvoiceForm.customer_mobile} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_mobile: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>BHK & Unit Configuration</label>
+                    <input type="text" value={createInvoiceForm.property_configuration || '3 BHK Luxury Apartment'} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, property_configuration: e.target.value })} placeholder="3 BHK Luxury Apartment" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer GSTIN</label>
+                    <input type="text" value={createInvoiceForm.developer_gstin || ''} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_gstin: e.target.value })} placeholder="36AAACA1234F1Z5" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 2: CUSTOMER MASTER DETAILS */}
+              {createInvoiceForm.invoice_category !== 'DEVELOPER' && (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      👤 B2C CUSTOMER MASTER DETAILS & BILLING INFO
+                    </span>
+                    <span style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                      Auto-fill Enabled by Customer ID
+                    </span>
+                  </div>
+
+                  {/* QUICK SELECT EXISTING CUSTOMER DROPDOWN */}
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>⚡ Auto-Fill from Customer Master Vault (Select Customer ID / Name):</label>
+                    <select
+                      value={createInvoiceForm.customer_number || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) return;
+                        const selected = customers.find(c => c.customer_number === val || c.name === val || c.id === val);
+                        if (selected) {
+                          setCreateInvoiceForm({
+                            ...createInvoiceForm,
+                            customer_name: selected.name || selected.customer_name || createInvoiceForm.customer_name,
+                            customer_number: selected.customer_number || selected.id || 'SRM-CUS-2026-000184',
+                            customer_mobile: selected.mobile || selected.phone || createInvoiceForm.customer_mobile,
+                            customer_email: selected.email || `${(selected.name || 'customer').toLowerCase().replace(/[^a-z0-9]/g, '.')}@gmail.com`,
+                            customer_address: selected.address || (selected.preferred_location ? `Plot 42, ${selected.preferred_location}, Hyderabad - 500033` : 'Flat 402, Jubilee Hills, Hyderabad - 500033'),
+                            place_of_supply: selected.state || '36 - Telangana',
+                            customer_gstin_pan: selected.gstin || selected.pan || '36ABCDE1234F1Z5'
+                          });
+                        }
+                      }}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: '#38bdf8', padding: '7px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }}
+                    >
+                      <option value="">-- Choose Customer to Auto-Populate Details --</option>
+                      {customers.map((c, idx) => (
+                        <option key={idx} value={c.customer_number || c.name}>
+                          🆔 {c.customer_number || 'SRM-CUS-2026-000184'} — {c.name || c.customer_name} ({c.mobile || c.phone})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* GRID ROW 1: ID (LIVE MATCH), NAME, MOBILE */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🆔 Customer ID / Number *</label>
+                      <input 
+                        type="text" 
+                        value={createInvoiceForm.customer_number || ''} 
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const matched = customers.find(c => 
+                            c.customer_number?.toLowerCase() === val.toLowerCase() || 
+                            c.id?.toLowerCase() === val.toLowerCase()
+                          );
+                          if (matched) {
+                            setCreateInvoiceForm({
+                              ...createInvoiceForm,
+                              customer_number: val,
+                              customer_name: matched.name || matched.customer_name || createInvoiceForm.customer_name,
+                              customer_mobile: matched.mobile || matched.phone || createInvoiceForm.customer_mobile,
+                              customer_email: matched.email || `${(matched.name || 'customer').toLowerCase().replace(/[^a-z0-9]/g, '.')}@gmail.com`,
+                              customer_address: matched.address || (matched.preferred_location ? `Plot 42, ${matched.preferred_location}, Hyderabad - 500033` : 'Flat 402, Jubilee Hills, Hyderabad - 500033'),
+                              place_of_supply: matched.state || '36 - Telangana',
+                              customer_gstin_pan: matched.gstin || matched.pan || '36ABCDE1234F1Z5'
+                            });
+                          } else {
+                            setCreateInvoiceForm({ ...createInvoiceForm, customer_number: val });
+                          }
+                        }} 
+                        placeholder="SRM-CUS-2026-000184" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', color: '#38bdf8', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: '800' }} 
+                        required 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
+                      <input type="text" value={createInvoiceForm.customer_name} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} required />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Mobile *</label>
+                      <input type="text" value={createInvoiceForm.customer_mobile} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_mobile: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} required />
+                    </div>
+                  </div>
+
+                  {/* GRID ROW 2: EMAIL, STATE/POS, GSTIN/PAN */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Email *</label>
+                      <input type="email" value={createInvoiceForm.customer_email || ''} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_email: e.target.value })} placeholder="customer@gmail.com" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Place of Supply (State) *</label>
+                      <input type="text" value={createInvoiceForm.place_of_supply || ''} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, place_of_supply: e.target.value })} placeholder="36 - Telangana" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>GSTIN / PAN (Optional)</label>
+                      <input type="text" value={createInvoiceForm.customer_gstin_pan || ''} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_gstin_pan: e.target.value })} placeholder="36ABCDE1234F1Z5 or PAN" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                    </div>
+                  </div>
+
+                  {/* GRID ROW 3: BILLING ADDRESS */}
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Billing Address & Pincode *</label>
+                    <input type="text" value={createInvoiceForm.customer_address || ''} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_address: e.target.value })} placeholder="Flat No., Building Name, Street / Locality, City - Pincode" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
                   </div>
                 </div>
               )}
-
-              <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Property Title & Unit Details *</label>
-                <input type="text" value={createInvoiceForm.property_title} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, property_title: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
-              </div>
 
               <div>
                 <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Billed Particulars / Service Description *</label>
                 <input type="text" value={createInvoiceForm.particulars} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, particulars: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Total Agreement Value (₹)</label>
-                  <input type="number" value={createInvoiceForm.agreement_value} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, agreement_value: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+              {/* CARD 3: AGREEMENT VALUE & BROKERAGE CALCULATION */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #fbbf24', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    💰 AGREEMENT VALUE & BROKERAGE CHARGEABLE AMOUNT
+                  </span>
+                  <span style={{ fontSize: '0.7rem', background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                    Flat + Parking Price Based
+                  </span>
                 </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Taxable Service Amount (₹) *</label>
-                  <input type="number" value={createInvoiceForm.taxable_value} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, taxable_value: e.target.value })} placeholder="200000" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+
+                {/* GRID 1: FLAT PRICE, PARKING PRICE, TOTAL AGREEMENT VALUE */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      🏢 Flat Price (Base Cost) (₹) *
+                    </label>
+                    <input 
+                      type="number" 
+                      value={createInvoiceForm.flat_price || ''} 
+                      onChange={(e) => {
+                        const flatVal = Number(e.target.value || 0);
+                        const parkVal = Number(createInvoiceForm.parking_price || 0);
+                        const totalAgree = flatVal + parkVal;
+                        const isDev = createInvoiceForm.invoice_category === 'DEVELOPER';
+                        const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
+                        const computedTaxable = isDev ? Math.round(totalAgree * (brokPct / 100)) : (createInvoiceForm.taxable_value || 200000);
+
+                        setCreateInvoiceForm({
+                          ...createInvoiceForm,
+                          flat_price: e.target.value,
+                          agreement_value: String(totalAgree),
+                          taxable_value: String(computedTaxable)
+                        });
+                      }} 
+                      placeholder="8000000" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }} 
+                      required 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      🚗 Car Parking Charges (₹)
+                    </label>
+                    <input 
+                      type="number" 
+                      value={createInvoiceForm.parking_price || ''} 
+                      onChange={(e) => {
+                        const flatVal = Number(createInvoiceForm.flat_price || 0);
+                        const parkVal = Number(e.target.value || 0);
+                        const totalAgree = flatVal + parkVal;
+                        const isDev = createInvoiceForm.invoice_category === 'DEVELOPER';
+                        const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
+                        const computedTaxable = isDev ? Math.round(totalAgree * (brokPct / 100)) : (createInvoiceForm.taxable_value || 200000);
+
+                        setCreateInvoiceForm({
+                          ...createInvoiceForm,
+                          parking_price: e.target.value,
+                          agreement_value: String(totalAgree),
+                          taxable_value: String(computedTaxable)
+                        });
+                      }} 
+                      placeholder="400000" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }} 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      📑 Total Agreement Value (₹) *
+                    </label>
+                    <input 
+                      type="number" 
+                      value={createInvoiceForm.agreement_value || ''} 
+                      onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, agreement_value: e.target.value })} 
+                      placeholder="8400000" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', color: '#fbbf24', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '900' }} 
+                      required 
+                    />
+                  </div>
                 </div>
+
+                {/* GRID 2: BROKERAGE PERCENT % & CHARGEABLE / TAXABLE SERVICE AMOUNT */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      % Brokerage Rate (%)
+                    </label>
+                    <input 
+                      type="number" 
+                      step="0.1" 
+                      value={createInvoiceForm.brokerage_percent || '2.0'} 
+                      onChange={(e) => {
+                        const brokPct = Number(e.target.value || 0);
+                        const totalAgree = Number(createInvoiceForm.agreement_value || 8400000);
+                        const computedTaxable = Math.round(totalAgree * (brokPct / 100));
+
+                        setCreateInvoiceForm({
+                          ...createInvoiceForm,
+                          brokerage_percent: e.target.value,
+                          taxable_value: String(computedTaxable)
+                        });
+                      }} 
+                      placeholder="2.0" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }} 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      💼 Brokerage Chargeable / Taxable Amount (₹) *
+                    </label>
+                    <input 
+                      type="number" 
+                      value={createInvoiceForm.taxable_value || ''} 
+                      onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, taxable_value: e.target.value })} 
+                      placeholder="200000" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #38bdf8', color: '#38bdf8', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '900' }} 
+                      required 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 4: EDITABLE GST TAX OPTIONS & RATES */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #a855f7', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: '900', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={createInvoiceForm.apply_gst !== false}
+                      onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, apply_gst: e.target.checked })}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#a855f7' }}
+                    />
+                    <span>Apply GST Tax (Fully Editable Rates & Amounts)</span>
+                  </label>
+                  <span style={{ fontSize: '0.72rem', fontWeight: '900', color: createInvoiceForm.apply_gst !== false ? '#4ade80' : '#fbbf24', background: createInvoiceForm.apply_gst !== false ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
+                    {createInvoiceForm.apply_gst !== false ? `🟢 ${Number(createInvoiceForm.cgst_rate || 9) + Number(createInvoiceForm.sgst_rate || 9)}% GST Tax Active` : '🟡 0% Tax Exempt'}
+                  </span>
+                </div>
+
+                {createInvoiceForm.apply_gst !== false && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                        ✏️ Total GST Rate (%) *
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        value={createInvoiceForm.gst_rate !== undefined ? createInvoiceForm.gst_rate : '18'} 
+                        onChange={(e) => {
+                          const totalRate = Number(e.target.value || 0);
+                          const halfRate = totalRate / 2;
+                          setCreateInvoiceForm({
+                            ...createInvoiceForm,
+                            gst_rate: e.target.value,
+                            cgst_rate: String(halfRate),
+                            sgst_rate: String(halfRate)
+                          });
+                        }} 
+                        placeholder="18" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #a855f7', color: '#c084fc', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                        CGST Rate (%) *
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.1" 
+                        value={createInvoiceForm.cgst_rate !== undefined ? createInvoiceForm.cgst_rate : '9'} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, cgst_rate: e.target.value })} 
+                        placeholder="9" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                        SGST Rate (%) *
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.1" 
+                        value={createInvoiceForm.sgst_rate !== undefined ? createInvoiceForm.sgst_rate : '9'} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, sgst_rate: e.target.value })} 
+                        placeholder="9" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* AUTO GST SUMMARY PREVIEW */}
               {(() => {
                 const taxVal = Number(createInvoiceForm.taxable_value || 0);
-                const cgst = taxVal * 0.09;
-                const sgst = taxVal * 0.09;
+                const applyGst = createInvoiceForm.apply_gst !== false;
+                const cgstRate = Number(createInvoiceForm.cgst_rate !== undefined ? createInvoiceForm.cgst_rate : 9);
+                const sgstRate = Number(createInvoiceForm.sgst_rate !== undefined ? createInvoiceForm.sgst_rate : 9);
+                const cgst = applyGst ? Math.round(taxVal * (cgstRate / 100)) : 0;
+                const sgst = applyGst ? Math.round(taxVal * (sgstRate / 100)) : 0;
                 const total = taxVal + cgst + sgst;
+
                 return (
-                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: applyGst ? '1px solid #22c55e' : '1px solid #38bdf8', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Taxable Value:</span>
+                      <span>Brokerage Chargeable Amount:</span>
                       <strong>₹{taxVal.toLocaleString('en-IN')}</strong>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8' }}>
-                      <span>CGST (9%) + SGST (9%):</span>
-                      <strong>₹{(cgst + sgst).toLocaleString('en-IN')}</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #cbd5e1', paddingTop: '4px', color: '#22c55e', fontWeight: '900', fontSize: '0.9rem' }}>
-                      <span>TOTAL TAX INVOICE AMOUNT (18% GST):</span>
+                    {applyGst ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8' }}>
+                        <span>CGST ({cgstRate}%) + SGST ({sgstRate}%):</span>
+                        <strong>₹{(cgst + sgst).toLocaleString('en-IN')} (CGST: ₹{cgst.toLocaleString('en-IN')}, SGST: ₹{sgst.toLocaleString('en-IN')})</strong>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fbbf24' }}>
+                        <span>GST Tax Rate:</span>
+                        <strong>0% (Exempt / Non-GST Invoice)</strong>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #cbd5e1', paddingTop: '4px', color: applyGst ? '#22c55e' : '#38bdf8', fontWeight: '900', fontSize: '0.9rem' }}>
+                      <span>{applyGst ? `TOTAL TAX INVOICE AMOUNT (${cgstRate + sgstRate}% GST):` : 'TOTAL INVOICE AMOUNT (NON-GST / EXEMPT):'}</span>
                       <span>₹{total.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
@@ -12040,14 +12483,16 @@ export default function App() {
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
                 <button type="button" onClick={() => setShowCreateInvoiceModal(false)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ background: createInvoiceForm.invoice_category === 'DEVELOPER' ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>✓ Generate GST Tax Invoice</button>
+                <button type="submit" style={{ background: createInvoiceForm.invoice_category === 'DEVELOPER' ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>
+                  ✓ Generate {createInvoiceForm.apply_gst !== false ? 'GST Tax Invoice' : 'Non-GST Invoice'}
+                </button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* MODAL: PRINT GST TAX INVOICE PDF MODAL */}
+{/* MODAL: PRINT GST TAX INVOICE PDF MODAL */}
       {showPrintInvoiceModal && showPrintInvoiceModal.open && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
           <div style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px', border: '2px solid #0284c7' }}>
