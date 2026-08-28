@@ -400,6 +400,8 @@ export async function syncMongoDB(req: AuthRequest, res: Response) {
     if (Array.isArray(payload.customers)) dbStore.data.customers = payload.customers;
     if (Array.isArray(payload.agreements)) dbStore.data.agreements = payload.agreements;
     if (Array.isArray(payload.users)) dbStore.data.users = payload.users;
+    if (Array.isArray(payload.teams)) dbStore.data.teams = payload.teams;
+    if (Array.isArray(payload.branches)) dbStore.data.branches = payload.branches;
     saveData();
     await syncToMongoDB(payload);
   }

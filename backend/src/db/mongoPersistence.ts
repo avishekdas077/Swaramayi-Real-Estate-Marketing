@@ -14,6 +14,8 @@ export const AgreementSchema = new mongoose.Schema({ id: { type: String, unique:
 export const SiteVisitSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
 export const BrokerageSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
 export const FollowupSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
+export const TeamSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
+export const BranchSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
 
 export const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
 export const PropertyModel = mongoose.models.Property || mongoose.model('Property', PropertySchema);
@@ -25,12 +27,14 @@ export const AgreementModel = mongoose.models.Agreement || mongoose.model('Agree
 export const SiteVisitModel = mongoose.models.SiteVisit || mongoose.model('SiteVisit', SiteVisitSchema);
 export const BrokerageModel = mongoose.models.Brokerage || mongoose.model('Brokerage', BrokerageSchema);
 export const FollowupModel = mongoose.models.Followup || mongoose.model('Followup', FollowupSchema);
+export const TeamModel = mongoose.models.Team || mongoose.model('Team', TeamSchema);
+export const BranchModel = mongoose.models.Branch || mongoose.model('Branch', BranchSchema);
 
 // Helper function to upsert array of records into a model
 async function upsertCollection(model: mongoose.Model<any>, records: any[]) {
   if (!records || !Array.isArray(records) || records.length === 0) return;
   const ops = records.map(rec => {
-    const filter = rec.id ? { id: rec.id } : (rec.agreement_code ? { agreement_code: rec.agreement_code } : (rec.property_code ? { property_code: rec.property_code } : rec));
+    const filter = rec.id ? { id: rec.id } : (rec.agreement_code ? { agreement_code: rec.agreement_code } : (rec.property_code ? { property_code: rec.property_code } : (rec.team_name ? { team_name: rec.team_name } : (rec.branch_name ? { branch_name: rec.branch_name } : rec))));
     return {
       updateOne: {
         filter,
@@ -63,8 +67,10 @@ export async function syncToMongoDB(data: any) {
     if (data.site_visits && data.site_visits.length > 0) await upsertCollection(SiteVisitModel, data.site_visits);
     if (data.brokerage_records && data.brokerage_records.length > 0) await upsertCollection(BrokerageModel, data.brokerage_records);
     if (data.followups && data.followups.length > 0) await upsertCollection(FollowupModel, data.followups);
+    if (data.teams && data.teams.length > 0) await upsertCollection(TeamModel, data.teams);
+    if (data.branches && data.branches.length > 0) await upsertCollection(BranchModel, data.branches);
 
-    console.log(`⚡ MongoDB Atlas Live Sync Complete (Users, Properties, Customers, Leads, Agreements, Bookings, Invoices)`);
+    console.log(`⚡ MongoDB Atlas Live Sync Complete (Users, Teams, Branches, Properties, Customers, Leads, Agreements)`);
   } catch (e: any) {
     console.error('MongoDB Live Sync Error:', e.message);
   }
@@ -87,20 +93,24 @@ export async function loadDataFromMongoDB() {
     const mongoSiteVisits = await SiteVisitModel.find({}).lean();
     const mongoBrokerage = await BrokerageModel.find({}).lean();
     const mongoFollowups = await FollowupModel.find({}).lean();
+    const mongoTeams = await TeamModel.find({}).lean();
+    const mongoBranches = await BranchModel.find({}).lean();
 
-    console.log(`📥 Loaded existing data from MongoDB Atlas: ${mongoUsers.length} users, ${mongoProperties.length} properties, ${mongoCustomers.length} customers, ${mongoLeads.length} leads, ${mongoAgreements.length} agreements`);
+    console.log(`📥 Loaded existing data from MongoDB Atlas: ${mongoUsers.length} users, ${mongoTeams.length} teams, ${mongoBranches.length} branches, ${mongoProperties.length} properties, ${mongoCustomers.length} customers`);
 
     return {
       users: mongoUsers.length > 0 ? mongoUsers : null,
-      properties: mongoProperties.length > 0 ? mongoProperties : null,
-      customers: mongoCustomers.length > 0 ? mongoCustomers : null,
-      leads: mongoLeads.length > 0 ? mongoLeads : null,
-      bookings: mongoBookings.length > 0 ? mongoBookings : null,
-      invoices: mongoInvoices.length > 0 ? mongoInvoices : null,
-      agreements: mongoAgreements.length > 0 ? mongoAgreements : null,
-      site_visits: mongoSiteVisits.length > 0 ? mongoSiteVisits : null,
-      brokerage_records: mongoBrokerage.length > 0 ? mongoBrokerage : null,
-      followups: mongoFollowups.length > 0 ? mongoFollowups : null
+      properties: mongoProperties,
+      customers: mongoCustomers,
+      leads: mongoLeads,
+      bookings: mongoBookings,
+      invoices: mongoInvoices,
+      agreements: mongoAgreements,
+      site_visits: mongoSiteVisits,
+      brokerage_records: mongoBrokerage,
+      followups: mongoFollowups,
+      teams: mongoTeams.length > 0 ? mongoTeams : null,
+      branches: mongoBranches.length > 0 ? mongoBranches : null
     };
   } catch (e: any) {
     console.warn('MongoDB Data Loading Warning:', e.message);

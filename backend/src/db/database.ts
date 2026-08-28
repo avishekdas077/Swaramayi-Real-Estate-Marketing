@@ -272,11 +272,15 @@ export interface BranchRecord {
 export interface TeamRecord {
   id: string;
   team_name: string;
-  branch_id: string;
+  branch_id?: string;
   branch_name: string;
   team_lead_id?: string;
   team_lead_name?: string;
-  members_count: number;
+  department?: string;
+  leader_name?: string;
+  monthly_target?: string;
+  created_at?: string;
+  members_count?: number;
 }
 
 export interface ModulePermission {
@@ -398,12 +402,14 @@ export interface Schema {
 
 const initialData: Schema = {
   branches: [
-    { id: 'BR-KOL-HO', branch_code: 'SRM-BR-01', branch_name: 'Head Office (Kolkata)', city: 'Kolkata', address: 'Camac Street, Kolkata - 700017', branch_manager_id: 'USR-01', branch_manager_name: 'Rajesh Varma', created_at: '2026-01-01' },
-    { id: 'BR-KOL-02', branch_code: 'SRM-BR-02', branch_name: 'Kolkata Branch', city: 'Kolkata', address: 'Park Street, Kolkata - 700016', branch_manager_id: 'USR-01', branch_manager_name: 'Rajesh Varma', created_at: '2026-03-01' }
+    { id: 'BR-01', branch_code: 'SRM-BR-01', branch_name: 'Head Office (Kolkata)', city: 'Kolkata', address: 'Camac Street, Kolkata - 700017', branch_manager_id: 'USR-01', branch_manager_name: 'Rajesh Varma (Super Admin)', created_at: '2026-01-01' },
+    { id: 'BR-02', branch_code: 'SRM-BR-02', branch_name: 'Kolkata Branch', city: 'Kolkata', address: 'Park Street, Kolkata - 700016', branch_manager_id: 'USR-02', branch_manager_name: 'Abinash Roy (Admin)', created_at: '2026-03-01' }
   ],
   teams: [
-    { id: 'TEAM-A', team_name: 'Corporate Leadership Squad', branch_id: 'BR-KOL-HO', branch_name: 'Head Office (Kolkata)', team_lead_id: 'USR-01', team_lead_name: 'Rajesh Varma', members_count: 1 },
-    { id: 'TEAM-B', team_name: 'Kolkata Expansion Team', branch_id: 'BR-KOL-02', branch_name: 'Kolkata Branch', team_lead_id: 'USR-01', team_lead_name: 'Rajesh Varma', members_count: 1 }
+    { id: 'TEAM-01', team_name: 'Corporate Leadership Squad', branch_id: 'BR-01', branch_name: 'Head Office (Kolkata)', department: 'Executive Board', leader_name: 'Rajesh Varma (SUPER_ADMIN)', monthly_target: '50 Property Units', created_at: '2026-01-15', members_count: 1 },
+    { id: 'TEAM-02', team_name: 'Kolkata Expansion Team', branch_id: 'BR-02', branch_name: 'Kolkata Branch', department: 'Sales Operations', leader_name: 'Abinash Roy (Admin)', monthly_target: '25 Property Units', created_at: '2026-03-10', members_count: 1 },
+    { id: 'TEAM-03', team_name: 'General Operations Squad', branch_id: 'BR-01', branch_name: 'Head Office (Kolkata)', department: 'System Admin', leader_name: 'Rajesh Varma (SUPER_ADMIN)', monthly_target: '15 Property Units', created_at: '2026-04-01', members_count: 1 },
+    { id: 'TEAM-04', team_name: 'Kolkata Admin & Technical Squad', branch_id: 'BR-02', branch_name: 'Kolkata Branch', department: 'System Admin', leader_name: 'Abinash Roy (Admin)', monthly_target: '20 Property Units', created_at: '2026-08-27', members_count: 1 }
   ],
   users: [
     { id: 'USR-01', username: 'Rajesh Varma (Super Admin)', full_name: 'Rajesh Varma', email: 'admin@swaramayi.com', mobile: '+91 98490 00001', role: 'SUPER_ADMIN', branch_name: 'Head Office (Kolkata)', department: 'Executive Board', team_name: 'Corporate Leadership Squad', manager_name: 'Self', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-01' }
@@ -518,6 +524,8 @@ export function loadData() {
   loadDataFromMongoDB().then(mongoData => {
     if (mongoData) {
       if (mongoData.users) dbStore.data.users = mongoData.users as any;
+      if (mongoData.teams) dbStore.data.teams = mongoData.teams as any;
+      if (mongoData.branches) dbStore.data.branches = mongoData.branches as any;
       if (mongoData.properties) dbStore.data.properties = mongoData.properties as any;
       if (mongoData.customers) dbStore.data.customers = mongoData.customers as any;
       if (mongoData.leads) dbStore.data.leads = mongoData.leads as any;
