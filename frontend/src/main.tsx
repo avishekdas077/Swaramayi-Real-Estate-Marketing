@@ -42,6 +42,7 @@ class ErrorBoundary extends Component<Props, State> {
               <button
                 onClick={() => {
                   localStorage.clear();
+                  this.setState({ hasError: false, error: null });
                   window.location.reload();
                 }}
                 style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}
@@ -49,10 +50,13 @@ class ErrorBoundary extends Component<Props, State> {
                 🗑️ Reset Clean Local Storage & Reload
               </button>
               <button
-                onClick={() => window.location.reload()}
+                onClick={() => {
+                  this.setState({ hasError: false, error: null });
+                  window.location.reload();
+                }}
                 style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}
               >
-                🔄 Refresh Page
+                🔄 Refresh Page & Recover
               </button>
             </div>
           </div>

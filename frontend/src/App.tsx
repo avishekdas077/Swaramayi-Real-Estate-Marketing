@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   LayoutDashboard, UserCog, Building, Users, CreditCard, User, FileCheck,
   Building2, ShieldAlert, Sparkles, MapPin, Search, Plus, ShieldCheck, 
@@ -11,7 +11,7 @@ import {
   CheckSquare2, Receipt, Target, Hash, LifeBuoy, FileCode, ArrowRightLeft, ArrowRight, UserCheck2, X,
   Compass, QrCode, Share2, Layers3, Activity, Eye, EyeOff, ThumbsUp, ThumbsDown,
   Upload, FileUp, FileDown, Table, FileSignature, Scale, PenTool, ReceiptText, Calculator, Landmark,
-  Grid, List, Columns, Edit3, Trash2, Layers2, Navigation, Map, PieChart, BarChart2,
+  Grid, List, Columns, Edit3, Trash2, Layers2, Navigation, Map as MapIcon, PieChart, BarChart2,
   GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck, Camera, Image as ImageIcon
 } from 'lucide-react';
 import { ProfileView } from './components/ProfileView';
@@ -470,10 +470,12 @@ function ScheduleVisitModalContent({
 
           <div>
             <label style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: '900', display: 'block', marginBottom: '4px' }}>3. Assigned Sales Executive</label>
-            <select value={assignedExec} onChange={(e) => setAssignedExec(e.target.value)} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '800', padding: '8px 10px', borderRadius: '6px', fontSize: '0.82rem' }}>
-              <option value="Ramesh Pawar (Field Exec - Kondapur)">Ramesh Pawar — Senior Field Exec</option>
-              <option value="Priya Nair (Sales Exec)">Priya Nair — Sales Executive</option>
-              <option value="Rahul Sharma (Team Lead)">Rahul Sharma — Team Lead</option>
+            <select value={assignedExec || (dynamicSalesExecutives[0]?.value || 'Priya Nair')} onChange={(e) => setAssignedExec(e.target.value)} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '800', padding: '8px 10px', borderRadius: '6px', fontSize: '0.82rem' }}>
+              {dynamicSalesExecutives.map((exec: any) => (
+                <option key={exec.id || exec.name} value={exec.value}>
+                  👤 {exec.label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -2828,6 +2830,48 @@ export default function App() {
   });
   const [duplicateAlert, setDuplicateAlert] = useState<any>(null);
 
+  // System Call Alerts & Follow-Up Notifications Store
+  const [showNotificationDrawer, setShowNotificationDrawer] = useState<boolean>(false);
+  const [followupDate, setFollowupDate] = useState<string>(() => new Date(Date.now() + 24 * 3600000).toISOString().split('T')[0]);
+  const [followupTime, setFollowupTime] = useState<string>('11:00');
+  const [followupRemarks, setFollowupRemarks] = useState<string>('');
+
+  const [systemNotifications, setSystemNotifications] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_notifications_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading notifications from localStorage:', e);
+    }
+    return [
+      {
+        id: 'NOTIF-SEED-1',
+        type: 'CALL_ALERT',
+        title: '⏳ Call Alert: Scheduled Callback Due',
+        customer_name: 'Bishwajit Pandey',
+        mobile: '9330401757',
+        lead_number: 'SRM-LD-2026-000101',
+        scheduled_date: new Date().toISOString().split('T')[0],
+        scheduled_time: '11:00',
+        message: 'Customer was busy on initial call; requested callback at 11:00 AM',
+        priority: 'HIGH',
+        is_read: false,
+        created_at: new Date().toLocaleString()
+      }
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_notifications_v1', JSON.stringify(systemNotifications));
+    } catch (e) {
+      console.error('Error saving notifications to localStorage:', e);
+    }
+  }, [systemNotifications]);
+
   // Master Cost Sheet Shares State (WITH LOCALSTORAGE PERSISTENCE)
   const [costSheetShares, setCostSheetShares] = useState<any[]>(() => {
     try {
@@ -3595,6 +3639,241 @@ export default function App() {
     }
   }, [bookings]);
 
+  // --------------------------------------------------------------------------
+  // DYNAMIC SALES EXECUTIVES & CLIENT RELATIONSHIP MANAGERS STORE
+  // --------------------------------------------------------------------------
+  const dynamicSalesExecutives = useMemo(() => {
+    const execMap = new window.Map<string, any>();
+
+    // 1. From live system users store (users)
+    if (Array.isArray(users)) {
+      users.forEach((u: any) => {
+        const name = u.full_name || u.username || u.name;
+        if (name) {
+          const designation = u.designation || (u.role ? String(u.role).replace(/_/g, ' ') : 'Executive');
+          const branch = u.branch_name ? ` (${u.branch_name})` : '';
+          const label = `${name} — ${designation}${branch}`;
+          execMap.set(name, { id: u.id || name, value: name, name, label, designation });
+        }
+      });
+    }
+
+    // 2. From active CRM records (customers, leadsList, bookings, scheduledVisits)
+    const allRecordsExecs = [
+      ...(Array.isArray(customers) ? customers.map(c => c.assigned_salesperson || c.assigned_to || c.assigned_employee_name) : []),
+      ...(Array.isArray(leadsList) ? leadsList.map(l => l.assigned_salesperson || l.assignedTo || l.assigned_employee_name) : []),
+      ...(Array.isArray(bookings) ? bookings.map(b => b.sales_executive) : []),
+      ...(Array.isArray(scheduledVisits) ? scheduledVisits.map(v => v.assignedExecutive || v.salesPersonName) : [])
+    ];
+
+    allRecordsExecs.forEach(execName => {
+      if (typeof execName === 'string' && execName.trim()) {
+        const cleanName = execName.replace(/\(.*\)/, '').trim();
+        if (cleanName && !execMap.has(cleanName)) {
+          execMap.set(cleanName, {
+            id: cleanName,
+            value: cleanName,
+            name: cleanName,
+            label: `${cleanName} — Executive`,
+            designation: 'Executive'
+          });
+        }
+      }
+    });
+
+    // 3. Fallback standard list if users store is limited
+    const defaultList = [
+      { name: 'Priya Nair', designation: 'Senior Executive (Kondapur/Gachibowli)' },
+      { name: 'Amit Patel', designation: 'Lead Manager (West Zone)' },
+      { name: 'Rahul Sharma', designation: 'Property Specialist (Luxury Residential)' },
+      { name: 'Sneha Reddy', designation: 'Customer Relationship Manager' },
+      { name: 'Vikram Varma', designation: 'Branch Director' },
+      { name: 'Ramesh Pawar', designation: 'Senior Field Executive' }
+    ];
+
+    defaultList.forEach(def => {
+      if (!execMap.has(def.name)) {
+        execMap.set(def.name, {
+          id: def.name,
+          value: def.name,
+          name: def.name,
+          label: `${def.name} — ${def.designation}`,
+          designation: def.designation
+        });
+      }
+    });
+
+    return Array.from(execMap.values());
+  }, [users, customers, leadsList, bookings, scheduledVisits]);
+
+  // --------------------------------------------------------------------------
+  // INGEST LEAD WITH NON-INTERESTED / NO-RESPONSE / CALLBACK DISPOSITION (BYPASS STEPS 3-9)
+  // --------------------------------------------------------------------------
+  const handleSaveLeadWithDisposition = () => {
+    const disp = (newLeadForm as any).call_disposition || 'CONNECTED_INTERESTED';
+    const leadNum = `SRM-LD-2026-000${leadsList.length + 101}`;
+    const finalCustomerCode = newCustomerForm.customer_number || `SRM-CUS-2026-000${customers.length + 188}`;
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    let leadStatus = 'NEW';
+    let priority = 'WARM';
+    let status = 'ACTIVE';
+    let notes = 'Initial call disposition logged during lead intake wizard';
+
+    if (disp === 'NOT_INTERESTED') {
+      leadStatus = 'NOT_INTERESTED';
+      priority = 'COLD';
+      status = 'ARCHIVED';
+      notes = 'Customer expressed Not Interested during initial intake; steps 3–9 bypassed';
+    } else if (disp === 'NO_RESPONSE') {
+      leadStatus = 'NO_RESPONSE';
+      priority = 'WARM';
+      status = 'UNANSWERED';
+      notes = 'No response / unanswered on initial intake call; queued for retry callbacks (steps 3–9 bypassed)';
+    } else if (disp === 'CALL_BACK_LATER') {
+      leadStatus = 'CALL_BACK_LATER';
+      priority = 'HIGH';
+      status = 'SCHEDULED_CALLBACK';
+      notes = 'Customer requested call back later / busy; scheduled for follow-up retry (steps 3–9 bypassed)';
+    }
+
+    const newCustObj = {
+      id: `CUS-${Date.now()}`,
+      customer_number: finalCustomerCode,
+      name: newCustomerForm.name || newLeadForm.customer_name || 'Inbound Prospect',
+      phone: newCustomerForm.phone || newLeadForm.mobile || 'N/A',
+      mobile: newCustomerForm.phone || newLeadForm.mobile || 'N/A',
+      whatsapp: newCustomerForm.whatsapp || newCustomerForm.phone || 'N/A',
+      email: newCustomerForm.email || newLeadForm.email || 'N/A',
+      city: newCustomerForm.city || 'Hyderabad',
+      locality: newCustomerForm.locality || 'Kondapur',
+      source: newCustomerForm.lead_source || newLeadForm.source || 'Digital Intake',
+      assigned_employee_id: newCustomerForm.assigned_employee_id || (dynamicSalesExecutives[0]?.value || 'Priya Nair (Sales Exec)'),
+      assigned_salesperson: newCustomerForm.assigned_employee_id || (dynamicSalesExecutives[0]?.value || 'Priya Nair (Sales Exec)'),
+      lead_status: leadStatus,
+      call_disposition: disp,
+      priority: priority,
+      status: status,
+      notes: notes,
+      next_followup: scheduledDateVal,
+      next_followup_time: scheduledTimeVal,
+      next_action: disp === 'NO_RESPONSE' ? 'Retry Unanswered Call' : disp === 'CALL_BACK_LATER' ? 'Call Back Customer' : 'N/A',
+      last_completed_step: 2,
+      created_at: new Date().toLocaleString()
+    };
+
+    const newLeadObj = {
+      id: `LD-${Date.now()}`,
+      lead_number: leadNum,
+      customer_name: newCustObj.name,
+      customer_number: finalCustomerCode,
+      mobile: newCustObj.phone,
+      email: newCustObj.email,
+      source: newCustObj.source,
+      lead_status: leadStatus,
+      call_disposition: disp,
+      priority: priority,
+      status: status,
+      assigned_employee_name: newCustObj.assigned_salesperson,
+      assigned_employee_id: newCustObj.assigned_employee_id,
+      notes: notes,
+      next_followup: scheduledDateVal,
+      next_followup_time: scheduledTimeVal,
+      next_action: newCustObj.next_action,
+      last_completed_step: 2,
+      created_at: new Date().toLocaleString()
+    };
+
+    setCustomers(prev => [newCustObj, ...prev]);
+    setLeadsList(prev => [newLeadObj, ...prev]);
+
+    // Create System Call Notification Alert for NO_RESPONSE and CALL_BACK_LATER
+    if (disp === 'NO_RESPONSE' || disp === 'CALL_BACK_LATER') {
+      const notifTitle = disp === 'NO_RESPONSE' ? '📵 Call Alert: No Response Retry Needed' : '⏳ Call Alert: Scheduled Callback Due';
+      const newNotifObj = {
+        id: `NOTIF-${Date.now()}`,
+        type: 'CALL_ALERT',
+        title: notifTitle,
+        customer_name: newCustObj.name,
+        mobile: newCustObj.phone,
+        lead_number: leadNum,
+        customer_number: finalCustomerCode,
+        scheduled_date: scheduledDateVal,
+        scheduled_time: scheduledTimeVal,
+        message: `Call ${newCustObj.name} (${newCustObj.phone}) scheduled for ${scheduledDateVal} at ${scheduledTimeVal}. Note: ${notes}`,
+        priority: disp === 'CALL_BACK_LATER' ? 'HIGH' : 'MEDIUM',
+        is_read: false,
+        assigned_executive: newCustObj.assigned_salesperson,
+        created_at: new Date().toLocaleString()
+      };
+
+      setSystemNotifications(prev => [newNotifObj, ...prev]);
+    }
+
+    setShowLeadModal(false);
+    setShowAddCustomerModal(false);
+    setLeadIntakeStep(1);
+
+    setActiveTab('lead_management');
+    setLeadViewMode('inbox');
+
+    if (disp === 'NOT_INTERESTED') {
+      setLeadInboxTab('not_interested');
+    } else if (disp === 'NO_RESPONSE') {
+      setLeadInboxTab('no_response');
+    } else if (disp === 'CALL_BACK_LATER') {
+      setLeadInboxTab('call_back_later');
+    } else {
+      setLeadInboxTab('all');
+    }
+
+    const dispLabel = disp === 'NOT_INTERESTED' ? '❌ NOT INTERESTED' : disp === 'NO_RESPONSE' ? '成分 NO RESPONSE' : '⏳ CALL BACK LATER';
+    const notifMsg = (disp === 'NO_RESPONSE' || disp === 'CALL_BACK_LATER') 
+      ? `\n\n🔔 AUTOMATED CALL ALERT & NOTIFICATION CREATED!\n• Scheduled Date: ${scheduledDateVal}\n• Scheduled Time: ${scheduledTimeVal}\n• Follow-up Alert queued for executive call!` 
+      : '';
+
+    alert(`✅ LEAD SAVED TO FOLLOW-UP VAULT SUCCESSFULLY!\n\n• Lead ID: ${leadNum}\n• Customer ID: ${finalCustomerCode}\n• Status: ${dispLabel}\n• Assigned Executive: ${newCustObj.assigned_salesperson}${notifMsg}\n\nRecord stored in Lead & Customer Management for future follow-up!`);
+  };
+
+  // RE-OPEN & RESUME STEP-BY-STEP QUALIFICATION WIZARD FROM LAST STEP
+  const handleOpenResumeQualification = (lead: any) => {
+    if (!lead) return;
+
+    const phoneVal = lead.mobile || lead.phone || '';
+    const whatsappVal = (lead.whatsapp && lead.whatsapp !== 'N/A') ? lead.whatsapp : phoneVal;
+
+    setNewCustomerForm({
+      customer_number: lead.customer_number || lead.customer_id || `SRM-CUS-2026-000${customers.length + 188}`,
+      name: lead.customer_name || lead.name || '',
+      phone: phoneVal,
+      mobile: phoneVal,
+      whatsapp: whatsappVal,
+      email: lead.email || '',
+      city: lead.city || 'Hyderabad',
+      locality: lead.locality || lead.preferred_location || 'Kondapur',
+      lead_source: lead.source || 'Facebook',
+      assigned_employee_id: lead.assigned_employee_id || lead.assigned_employee_name || 'Priya Nair (Sales Exec)',
+      assigned_employee_name: lead.assigned_employee_name || 'Priya Nair (Sales Exec)'
+    });
+
+    setNewLeadForm({
+      ...newLeadForm,
+      customer_name: lead.customer_name || lead.name || '',
+      mobile: lead.mobile || lead.phone || '',
+      email: lead.email || '',
+      source: lead.source || 'Facebook',
+      call_disposition: lead.call_disposition || lead.lead_status || 'CONNECTED_INTERESTED',
+      preferred_location: lead.preferred_location || 'Kondapur',
+      property_type: lead.property_type || 'Flat / Apartment',
+      bhk: lead.bhk || '',
+      budget_max: lead.budget_max || 0
+    });
+
+    const stepToOpen = lead.last_completed_step || 2;
+    setLeadIntakeStep(stepToOpen);
+    setShowLeadModal(true);
+  };
+
   // 8. AGREEMENTS VAULT & CATEGORY STATES
   const [agreementCategory, setAgreementCategory] = useState<'customer' | 'developer'>('customer');
   const [showCreateDevAgreementModal, setShowCreateDevAgreementModal] = useState<boolean>(false);
@@ -3995,7 +4274,8 @@ export default function App() {
   const [custForm, setCustForm] = useState({ name: '', mobile: '', budget_min: '7000000', budget_max: '8500000' });
 
   const maskPhone = (phone: string) => {
-    if (currentRole === 'SALES_EXEC' || currentRole === 'TELECALLER') return phone.substring(0, 8) + ' *****';
+    if (!phone || phone === 'N/A') return 'N/A';
+    if (currentRole === 'SALES_EXEC' || currentRole === 'TELECALLER') return phone.length > 8 ? phone.substring(0, 8) + ' *****' : phone;
     return phone;
   };
 
@@ -5264,7 +5544,7 @@ export default function App() {
             <CreditCard size={18} /> <span>Billing Management</span>
           </button>
           <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('map_management'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'map_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'map_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'map_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
-            <Map size={18} /> <span>Location Map</span>
+            <MapIcon size={18} /> <span>Location Map</span>
           </button>
           <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('role_management'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'role_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'role_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'role_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <UserCog size={18} /> <span>Role and Management</span>
@@ -5380,6 +5660,120 @@ export default function App() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+
+            {/* 🔔 FOLLOW-UP CALL ALERTS NOTIFICATION BELL */}
+            <div style={{ position: 'relative' }}>
+              <button
+                type="button"
+                onClick={() => setShowNotificationDrawer(!showNotificationDrawer)}
+                style={{
+                  background: systemNotifications.filter(n => !n.is_read).length > 0 ? 'rgba(239, 68, 68, 0.2)' : (isLight ? '#f1f5f9' : '#1e293b'),
+                  color: systemNotifications.filter(n => !n.is_read).length > 0 ? '#ef4444' : (isLight ? '#0284c7' : '#38bdf8'),
+                  border: systemNotifications.filter(n => !n.is_read).length > 0 ? '1px solid #ef4444' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  fontWeight: '800',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  position: 'relative'
+                }}
+                title="View Scheduled Follow-Up Call Alerts"
+              >
+                <PhoneCall size={15} color={systemNotifications.filter(n => !n.is_read).length > 0 ? '#ef4444' : '#38bdf8'} />
+                <span>Call Alerts</span>
+                {systemNotifications.filter(n => !n.is_read).length > 0 && (
+                  <span style={{ background: '#ef4444', color: '#ffffff', fontSize: '0.68rem', fontWeight: '900', padding: '1px 6px', borderRadius: '10px', marginLeft: '2px' }}>
+                    {systemNotifications.filter(n => !n.is_read).length}
+                  </span>
+                )}
+              </button>
+
+              {/* DROPDOWN MENU */}
+              {showNotificationDrawer && (
+                <div style={{ position: 'absolute', right: 0, top: '42px', width: '380px', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', zIndex: 1000, padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <PhoneCall size={16} color="#38bdf8" />
+                      <h4 style={{ fontSize: '0.9rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                        🔔 CALL ALERTS & FOLLOW-UPS
+                      </h4>
+                    </div>
+                    <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: '800' }}>
+                      {systemNotifications.length} Active Alerts
+                    </span>
+                  </div>
+
+                  <div style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {systemNotifications.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '20px', color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.8rem' }}>
+                        🎉 No active call alerts. All follow-ups completed!
+                      </div>
+                    ) : (
+                      systemNotifications.map(notif => (
+                        <div key={notif.id} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: notif.priority === 'HIGH' ? '1px solid #ef4444' : '1px solid #0284c7', borderRadius: '8px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <strong style={{ fontSize: '0.8rem', color: notif.title.includes('No Response') ? '#eab308' : '#38bdf8' }}>
+                              {notif.title}
+                            </strong>
+                            <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>
+                              📅 {notif.scheduled_date} {notif.scheduled_time}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.78rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>
+                            👤 {notif.customer_name} — <a href={`tel:${notif.mobile}`} style={{ color: '#38bdf8', textDecoration: 'none' }}>📞 {notif.mobile}</a>
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontStyle: 'italic' }}>
+                            "{notif.message}"
+                          </div>
+                          <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setShowNotificationDrawer(false);
+                                setActiveTab('lead_management');
+                                setLeadInboxTab(notif.title.includes('No Response') ? 'no_response' : 'call_back_later');
+                              }}
+                              style={{ flex: 1, background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}
+                            >
+                              📞 Call Customer & View Record
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSystemNotifications(prev => prev.filter(n => n.id !== notif.id));
+                              }}
+                              style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid #ef4444', padding: '4px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}
+                            >
+                              ✓ Done
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setSystemNotifications([])}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
+                    >
+                      Clear All Alerts
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowNotificationDrawer(false)}
+                      style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             <button onClick={() => exportToCSV(properties, 'CRM_Export')} style={{ background: isLight ? '#f1f5f9' : '#1e293b', color: isLight ? '#0284c7' : '#fbbf24', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <FileDown size={14} /> Export CSV Report
@@ -5521,9 +5915,11 @@ export default function App() {
                     <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Salesperson:</span>
                     <select value={salespersonFilter} onChange={(e) => setSalespersonFilter(e.target.value)} style={{ background: isLight ? '#f1f5f9' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '6px', padding: '5px 10px', fontSize: '0.8rem', fontWeight: '700' }}>
                       <option value="ALL">All Salespeople</option>
-                      <option value="Priya Nair">Priya Nair (Sales Exec)</option>
-                      <option value="Amit Patel">Amit Patel (Sales Exec)</option>
-                      <option value="Srinivas Rao">Srinivas Rao (Senior Exec)</option>
+                      {dynamicSalesExecutives.map((exec: any) => (
+                        <option key={exec.id || exec.name} value={exec.name}>
+                          {exec.name} ({exec.designation?.split(' ')[0] || 'Executive'})
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -6630,6 +7026,7 @@ export default function App() {
               setActiveCostSheetShareSubTab={setActiveCostSheetShareSubTab}
               isMobile={isMobile}
               setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+              handleOpenResumeQualification={handleOpenResumeQualification}
             />
           )}
 
@@ -8563,11 +8960,12 @@ export default function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
                       <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Sales Executive *</label>
-                      <select value={newCustomerForm.assigned_employee_id} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, assigned_employee_id: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}>
-                        <option value="Priya Nair">Priya Nair (Sales Exec)</option>
-                        <option value="Rahul Sharma">Rahul Sharma (Team Lead)</option>
-                        <option value="Deepak Verma">Deepak Verma (Sales Mgr)</option>
-                        <option value="Suresh Kumar">Suresh Kumar (Branch Mgr)</option>
+                      <select value={newCustomerForm.assigned_employee_id || (dynamicSalesExecutives[0]?.value || 'Priya Nair')} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, assigned_employee_id: e.target.value, assigned_employee_name: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}>
+                        {dynamicSalesExecutives.map((exec: any) => (
+                          <option key={exec.id || exec.name} value={exec.value}>
+                            👤 {exec.label}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -8747,15 +9145,15 @@ export default function App() {
                     👤 ASSIGN SALES EXECUTIVE / CLIENT RELATIONSHIP MANAGER *
                   </label>
                   <select 
-                    value={newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)'} 
-                    onChange={(e) => setNewCustomerForm({ ...newCustomerForm, assigned_employee_id: e.target.value })} 
+                    value={newCustomerForm.assigned_employee_id || (dynamicSalesExecutives[0]?.value || 'Priya Nair (Sales Exec)')} 
+                    onChange={(e) => setNewCustomerForm({ ...newCustomerForm, assigned_employee_id: e.target.value, assigned_employee_name: e.target.value })} 
                     style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: '900', padding: '10px 12px', borderRadius: '8px', fontSize: '0.9rem' }}
                   >
-                    <option value="Priya Nair (Sales Exec)">👤 Priya Nair — Senior Executive (Kondapur/Gachibowli)</option>
-                    <option value="Amit Patel (Lead Manager)">👤 Amit Patel — Lead Manager (West Zone)</option>
-                    <option value="Rahul Sharma (Property Specialist)">👤 Rahul Sharma — Property Specialist (Luxury Residential)</option>
-                    <option value="Sneha Reddy (CRM Exec)">👤 Sneha Reddy — Customer Relationship Manager</option>
-                    <option value="Vikram Varma (Branch Director)">👤 Vikram Varma — Branch Director</option>
+                    {dynamicSalesExecutives.map((exec: any) => (
+                      <option key={exec.id || exec.name} value={exec.value}>
+                        👤 {exec.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -8857,15 +9255,27 @@ export default function App() {
                     </button>
                   </div>
 
+                  {(((newLeadForm as any).call_disposition || 'CONNECTED_INTERESTED') === 'CONNECTED_INTERESTED') && (
+                    <div style={{ background: 'rgba(34, 197, 94, 0.12)', border: '1.5px solid #22c55e', color: '#22c55e', padding: '10px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800' }}>
+                      🎉 <strong>CONNECTED & INTERESTED SELECTED</strong>: Full requirement profiling (Steps 3–9) is <strong>UNLOCKED & ACTIVE</strong>. Click "Next Step (Step 3: Purpose & Type) →" below to capture property requirements step-by-step!
+                    </div>
+                  )}
+
                   {(newLeadForm as any).call_disposition === 'NOT_INTERESTED' && (
-                    <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', color: '#ef4444', padding: '8px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700' }}>
-                      ⚠️ Lead will be marked as <strong>NOT INTERESTED</strong> (Unqualified / Archived) and recorded into Customer & Lead Management.
+                    <div style={{ background: 'rgba(239, 68, 68, 0.12)', border: '1.5px solid #ef4444', color: '#ef4444', padding: '10px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800' }}>
+                      🚫 <strong>NOT INTERESTED SELECTED</strong>: Requirements profiling (Steps 3–9) is <strong>NOT APPLICABLE</strong>. Click "Save Lead & Exit" below to record this customer directly into the <strong>Not Interested Vault</strong> for future follow-up.
                     </div>
                   )}
 
                   {(newLeadForm as any).call_disposition === 'NO_RESPONSE' && (
-                    <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid #eab308', color: '#eab308', padding: '8px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '700' }}>
-                      ⚠️ Lead will be marked as <strong>NO RESPONSE / UNANSWERED</strong> and automatically queued for follow-up retry callbacks.
+                    <div style={{ background: 'rgba(234, 179, 8, 0.12)', border: '1.5px solid #eab308', color: '#eab308', padding: '10px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800' }}>
+                      📵 <strong>NO RESPONSE / UNANSWERED SELECTED</strong>: Requirements profiling (Steps 3–9) is <strong>NOT APPLICABLE</strong>. Click "Save Lead & Exit" below to record this customer into the <strong>No Response Queue</strong> for automated retry callbacks.
+                    </div>
+                  )}
+
+                  {(newLeadForm as any).call_disposition === 'CALL_BACK_LATER' && (
+                    <div style={{ background: 'rgba(56, 189, 248, 0.12)', border: '1.5px solid #38bdf8', color: '#38bdf8', padding: '10px 14px', borderRadius: '8px', fontSize: '0.78rem', fontWeight: '800' }}>
+                      ⏳ <strong>CALL BACK LATER / BUSY SELECTED</strong>: Requirements profiling (Steps 3–9) is <strong>NOT APPLICABLE</strong>. Click "Save Lead & Exit" below to record this customer into the <strong>Scheduled Callback Queue</strong> for follow-up.
                     </div>
                   )}
                 </div>
@@ -8890,14 +9300,103 @@ export default function App() {
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Primary Mobile Phone *</label>
-                    <input type="text" value={newCustomerForm.mobile} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, mobile: e.target.value })} placeholder="+91 98490 88888" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                    <input 
+                      type="text" 
+                      value={newCustomerForm.mobile} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const oldMobile = newCustomerForm.mobile;
+                        const currentWa = newCustomerForm.whatsapp;
+                        const shouldSyncWa = !currentWa || currentWa === 'N/A' || currentWa === oldMobile;
+                        setNewCustomerForm({ 
+                          ...newCustomerForm, 
+                          mobile: val, 
+                          phone: val,
+                          whatsapp: shouldSyncWa ? val : currentWa 
+                        });
+                      }} 
+                      placeholder="+91 98490 88888" 
+                      style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                      required 
+                    />
                   </div>
                 </div>
 
+                {/* SCHEDULED FOLLOW-UP & CALL ALERT REMINDER PANEL FOR NO_RESPONSE & CALL_BACK_LATER */}
+                {(((newLeadForm as any).call_disposition === 'NO_RESPONSE') || ((newLeadForm as any).call_disposition === 'CALL_BACK_LATER')) && (
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #0284c7', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <label style={{ fontSize: '0.8rem', color: '#fbbf24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🔔 SCHEDULED FOLLOW-UP & CALL ALERT REMINDER *
+                      </label>
+                      <span style={{ fontSize: '0.7rem', background: 'rgba(2, 132, 199, 0.2)', color: '#38bdf8', padding: '2px 8px', borderRadius: '12px', fontWeight: '800' }}>
+                        AUTO-ALERT ENFORCED
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                          📅 Next Follow-Up Date *
+                        </label>
+                        <input 
+                          type="date" 
+                          value={followupDate} 
+                          onChange={(e) => setFollowupDate(e.target.value)} 
+                          style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                          required 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                          ⏰ Next Follow-Up Time *
+                        </label>
+                        <input 
+                          type="time" 
+                          value={followupTime} 
+                          onChange={(e) => setFollowupTime(e.target.value)} 
+                          style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                          required 
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                        📝 Call Purpose / Action Plan Remarks
+                      </label>
+                      <input 
+                        type="text" 
+                        value={followupRemarks} 
+                        onChange={(e) => setFollowupRemarks(e.target.value)} 
+                        placeholder={(newLeadForm as any).call_disposition === 'NO_RESPONSE' ? "e.g. 1st Call Unanswered, retry callback scheduled" : "e.g. Customer busy on meeting, callback requested"} 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                      />
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>WhatsApp Number</label>
-                    <input type="text" value={newCustomerForm.whatsapp || newCustomerForm.mobile} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, whatsapp: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>WhatsApp Number</label>
+                      <button
+                        type="button"
+                        onClick={() => setNewCustomerForm({ ...newCustomerForm, whatsapp: newCustomerForm.mobile })}
+                        style={{ background: 'none', border: 'none', color: '#38bdf8', fontSize: '0.68rem', fontWeight: '800', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
+                        title="Copy Primary Mobile Phone to WhatsApp Number"
+                      >
+                        Same as Mobile
+                      </button>
+                    </div>
+                    <input 
+                      type="text" 
+                      value={newCustomerForm.whatsapp} 
+                      onChange={(e) => setNewCustomerForm({ ...newCustomerForm, whatsapp: e.target.value })} 
+                      placeholder="+91 98490 88888" 
+                      style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                    />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Email Address</label>
@@ -9326,6 +9825,7 @@ export default function App() {
                         assigned_employee_name: newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)',
                         created_by: 'USR-01',
                         quality_score: 94,
+                        last_completed_step: 9,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString()
                       };
@@ -9380,7 +9880,8 @@ export default function App() {
                         preferredArea: newCustomerForm.preferredArea || 'Kondapur',
                         configuration: newCustomerForm.configuration || '3BHK',
                         priority: 'HOT',
-                        score: 88
+                        score: 88,
+                        last_completed_step: 9
                       };
                       setCustomers(prev => {
                         const exists = prev.some(c => c.customer_number === finalCustomerCode || c.mobile === mobileStr);
@@ -9416,9 +9917,29 @@ export default function App() {
                   <button type="button" onClick={() => { setShowLeadModal(false); setShowAddCustomerModal(false); }} style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '10px 16px', borderRadius: '8px', fontWeight: '700', cursor: 'pointer' }}>
                     Save Draft
                   </button>
-                  <button type="button" onClick={() => setLeadIntakeStep(Math.min(9, leadIntakeStep + 1))} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>
-                    Next Step →
-                  </button>
+                  {leadIntakeStep === 2 && ((newLeadForm as any).call_disposition || 'CONNECTED_INTERESTED') !== 'CONNECTED_INTERESTED' ? (
+                    <button 
+                      type="button" 
+                      onClick={handleSaveLeadWithDisposition} 
+                      style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.4)' }}
+                    >
+                      💾 Save Lead & Exit (Bypass Steps 3–9)
+                    </button>
+                  ) : (
+                    <button 
+                      type="button" 
+                      onClick={() => {
+                        if (leadIntakeStep === 2 && ((newLeadForm as any).call_disposition || 'CONNECTED_INTERESTED') !== 'CONNECTED_INTERESTED') {
+                          handleSaveLeadWithDisposition();
+                        } else {
+                          setLeadIntakeStep(Math.min(9, leadIntakeStep + 1));
+                        }
+                      }} 
+                      style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}
+                    >
+                      Next Step →
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -11380,11 +11901,12 @@ export default function App() {
 
             <div>
               <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Target Sales Executive / Manager *:</label>
-              <select value={transferLeadForm.newOwnerId} onChange={(e) => setTransferLeadForm({ ...transferLeadForm, newOwnerId: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', color: '#4ade80', fontWeight: '800', border: '1px solid #0284c7', borderRadius: '6px', padding: '8px', fontSize: '0.85rem' }}>
-                <option value="USR-07">👤 Priya Nair (Sales Exec)</option>
-                <option value="USR-04">👤 Rahul Sharma (Team Lead)</option>
-                <option value="USR-14">👤 Ramesh Pawar (Field Exec)</option>
-                <option value="USR-06">👤 Amit Patel (Sales Exec)</option>
+              <select value={transferLeadForm.newOwnerId || (dynamicSalesExecutives[0]?.value || 'Priya Nair')} onChange={(e) => setTransferLeadForm({ ...transferLeadForm, newOwnerId: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', color: '#4ade80', fontWeight: '800', border: '1px solid #0284c7', borderRadius: '6px', padding: '8px', fontSize: '0.85rem' }}>
+                {dynamicSalesExecutives.map((exec: any) => (
+                  <option key={exec.id || exec.name} value={exec.value}>
+                    👤 {exec.label}
+                  </option>
+                ))}
               </select>
             </div>
 

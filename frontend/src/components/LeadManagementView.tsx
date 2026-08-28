@@ -29,6 +29,7 @@ interface LeadManagementViewProps {
   setActiveCostSheetShareSubTab: (subTab: string) => void;
   isMobile: boolean;
   setIsMobileSidebarOpen: (val: boolean) => void;
+  handleOpenResumeQualification?: (lead: any) => void;
 }
 
 export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
@@ -59,6 +60,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
   setActiveCostSheetShareSubTab,
   isMobile,
   setIsMobileSidebarOpen,
+  handleOpenResumeQualification,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -102,11 +104,14 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
               { id: 'today_followups', label: "Today's Follow-ups", count: leadsList.filter(l => l.next_followup && l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#fbbf24', badgeBg: '#eab308' },
               { id: 'overdue_followups', label: 'Overdue Follow-ups', count: leadsList.filter(l => l.next_followup && new Date(l.next_followup) < new Date() && !l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#ef4444', badgeBg: '#ef4444' },
               { id: 'interested', label: 'Interested Leads', count: leadsList.filter(l => ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.lead_status) || ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.call_disposition)).length, color: '#4ade80' },
+              { id: 'not_interested', label: '❌ Not Interested', count: leadsList.filter(l => l.lead_status === 'NOT_INTERESTED' || l.call_disposition === 'NOT_INTERESTED').length, color: '#ef4444', badgeBg: '#ef4444' },
+              { id: 'no_response', label: '📵 No Response', count: leadsList.filter(l => l.lead_status === 'NO_RESPONSE' || l.call_disposition === 'NO_RESPONSE').length, color: '#eab308', badgeBg: '#eab308' },
+              { id: 'call_back_later', label: '⏳ Call Back Later', count: leadsList.filter(l => l.lead_status === 'CALL_BACK_LATER' || l.call_disposition === 'CALL_BACK_LATER').length, color: '#38bdf8', badgeBg: '#0284c7' },
               { id: 'matching', label: 'Matching Pending', count: leadsList.filter(l => ['MATCHING_PENDING', 'MATCHING_DONE'].includes(l.lead_status)).length, color: '#c084fc' },
               { id: 'visit', label: 'Visit Leads', count: leadsList.filter(l => ['VISIT_PLANNED', 'VISIT_COMPLETED'].includes(l.lead_status)).length, color: '#38bdf8' },
               { id: 'converted', label: 'Converted Leads', count: leadsList.filter(l => ['CONVERTED', 'BOOKING_PROCESS'].includes(l.lead_status)).length, color: '#22c55e' },
               { id: 'nurture', label: 'Nurture / Recycle', count: leadsList.filter(l => l.lead_status === 'NURTURE' || l.lead_status === 'RECYCLE').length, color: isLight ? '#64748b' : '#94a3b8' },
-              { id: 'lost_closed', label: 'Lost / Closed', count: leadsList.filter(l => ['LOST', 'NOT_INTERESTED', 'CANCELLED'].includes(l.lead_status)).length, color: '#64748b' }
+              { id: 'lost_closed', label: 'Lost / Closed', count: leadsList.filter(l => ['LOST', 'CANCELLED'].includes(l.lead_status)).length, color: '#64748b' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -189,10 +194,13 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                   if (leadInboxTab === 'overdue_followups') return l.next_followup && new Date(l.next_followup) < new Date() && !l.next_followup.startsWith(new Date().toISOString().split('T')[0]);
                   if (leadInboxTab === 'nurture') return l.lead_status === 'NURTURE' || l.lead_status === 'RECYCLE';
                   if (leadInboxTab === 'interested') return ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.lead_status) || ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.call_disposition);
+                  if (leadInboxTab === 'not_interested') return l.lead_status === 'NOT_INTERESTED' || l.call_disposition === 'NOT_INTERESTED';
+                  if (leadInboxTab === 'no_response') return l.lead_status === 'NO_RESPONSE' || l.call_disposition === 'NO_RESPONSE';
+                  if (leadInboxTab === 'call_back_later') return l.lead_status === 'CALL_BACK_LATER' || l.call_disposition === 'CALL_BACK_LATER';
                   if (leadInboxTab === 'matching') return ['MATCHING_PENDING', 'MATCHING_DONE'].includes(l.lead_status);
                   if (leadInboxTab === 'visit') return ['VISIT_PLANNED', 'VISIT_COMPLETED'].includes(l.lead_status);
                   if (leadInboxTab === 'converted') return ['CONVERTED', 'BOOKING_PROCESS'].includes(l.lead_status);
-                  if (leadInboxTab === 'lost_closed') return ['LOST', 'NOT_INTERESTED', 'CANCELLED'].includes(l.lead_status);
+                  if (leadInboxTab === 'lost_closed') return ['LOST', 'CANCELLED'].includes(l.lead_status);
                   return true;
                 }).filter(l => matchesSearchQuery(l, searchQuery)).length} Leads)
               </h3>
@@ -227,16 +235,23 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                       if (leadInboxTab === 'overdue_followups') return l.next_followup && new Date(l.next_followup) < new Date() && !l.next_followup.startsWith(new Date().toISOString().split('T')[0]);
                       if (leadInboxTab === 'nurture') return l.lead_status === 'NURTURE' || l.lead_status === 'RECYCLE';
                       if (leadInboxTab === 'interested') return ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.lead_status) || ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.call_disposition);
+                      if (leadInboxTab === 'not_interested') return l.lead_status === 'NOT_INTERESTED' || l.call_disposition === 'NOT_INTERESTED';
+                      if (leadInboxTab === 'no_response') return l.lead_status === 'NO_RESPONSE' || l.call_disposition === 'NO_RESPONSE';
+                      if (leadInboxTab === 'call_back_later') return l.lead_status === 'CALL_BACK_LATER' || l.call_disposition === 'CALL_BACK_LATER';
                       if (leadInboxTab === 'matching') return ['MATCHING_PENDING', 'MATCHING_DONE'].includes(l.lead_status);
                       if (leadInboxTab === 'visit') return ['VISIT_PLANNED', 'VISIT_COMPLETED'].includes(l.lead_status);
                       if (leadInboxTab === 'converted') return ['CONVERTED', 'BOOKING_PROCESS'].includes(l.lead_status);
-                      if (leadInboxTab === 'lost_closed') return ['LOST', 'NOT_INTERESTED', 'CANCELLED'].includes(l.lead_status);
+                      if (leadInboxTab === 'lost_closed') return ['LOST', 'CANCELLED'].includes(l.lead_status);
                       return true;
                     })
                     .filter(l => leadSourceFilter === 'ALL' || l.source === leadSourceFilter)
                     .filter(l => leadPriorityFilter === 'ALL' || l.priority === leadPriorityFilter)
                     .filter(l => matchesSearchQuery(l, searchQuery))
                     .map((lead) => {
+                      const matchedCust = customers.find(c => (c.customer_number && c.customer_number === lead.customer_number) || (c.name && c.name === lead.customer_name) || (c.phone && c.phone === lead.mobile));
+                      const rawPhone = lead.mobile || lead.phone || lead.customer_mobile || matchedCust?.mobile || matchedCust?.phone || 'N/A';
+                      const custNum = lead.customer_number || lead.customer_id || matchedCust?.customer_number || 'N/A';
+
                       const isOverdue = lead.next_followup && new Date(lead.next_followup) < new Date() && !lead.next_followup.startsWith(new Date().toISOString().split('T')[0]);
                       const isToday = lead.next_followup && lead.next_followup.startsWith(new Date().toISOString().split('T')[0]);
 
@@ -252,17 +267,23 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                             </span>
                             <br />
                             <span
-                              onClick={() => openIdDetailsModal(lead.customer_number || lead.customer_id, 'CUSTOMER_ID')}
+                              onClick={() => openIdDetailsModal(custNum, 'CUSTOMER_ID')}
                               style={{ fontSize: '0.72rem', color: '#4ade80', fontFamily: 'monospace', textDecoration: 'underline', cursor: 'pointer' }}
                             >
-                              {lead.customer_number || lead.customer_id}
+                              👤 {custNum}
                             </span>
                           </td>
 
                           <td style={{ padding: '12px' }}>
                             <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.88rem' }}>{lead.customer_name}</strong>
                             <br />
-                            <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>{maskPhone(lead.mobile)}</span>
+                            {rawPhone !== 'N/A' ? (
+                              <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: '800', fontFamily: 'monospace', display: 'inline-flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                📞 <a href={`tel:${rawPhone}`} style={{ color: '#38bdf8', textDecoration: 'none' }}>{maskPhone(rawPhone)}</a>
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>N/A</span>
+                            )}
                           </td>
 
                           <td style={{ padding: '12px' }}>
@@ -272,13 +293,21 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                           </td>
 
                           <td style={{ padding: '12px' }}>
-                            <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{lead.preferred_location}</strong>
+                            <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{lead.preferred_location || 'Kondapur'}</strong>
                             <br />
-                            <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '800' }}>{lead.bhk || '3BHK'}</span>
+                            {(['NO_RESPONSE', 'CALL_BACK_LATER', 'NOT_INTERESTED'].includes(lead.call_disposition) || !lead.bhk || (lead.last_completed_step && lead.last_completed_step < 3)) ? (
+                              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', fontWeight: '700' }}>⏳ Pending (Step {lead.last_completed_step || 2})</span>
+                            ) : (
+                              <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '800' }}>{lead.bhk}</span>
+                            )}
                           </td>
 
                           <td style={{ padding: '12px', color: '#4ade80', fontWeight: '800' }}>
-                            {lead.budget_max ? formatIndianRupees(lead.budget_max) : '₹70 Lakhs+'}
+                            {(['NO_RESPONSE', 'CALL_BACK_LATER', 'NOT_INTERESTED'].includes(lead.call_disposition) || !lead.budget_max || (lead.last_completed_step && lead.last_completed_step < 3)) ? (
+                              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', fontWeight: '700' }}>⏳ Pending (Step {lead.last_completed_step || 2})</span>
+                            ) : (
+                              lead.budget_max ? formatIndianRupees(lead.budget_max) : '₹70 Lakhs+'
+                            )}
                           </td>
 
                           <td style={{ padding: '12px' }}>
@@ -311,6 +340,16 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
 
                           <td style={{ padding: '12px', textAlign: 'center' }}>
                             <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                              {handleOpenResumeQualification && (
+                                <button
+                                  onClick={() => handleOpenResumeQualification(lead)}
+                                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '3px' }}
+                                  title="Re-call customer & resume step-by-step qualification wizard"
+                                >
+                                  ▶️ Qualification (Step {lead.last_completed_step || 2})
+                                </button>
+                              )}
+
                               <button
                                 onClick={() => setShowCallDispositionModal({ open: true, lead })}
                                 style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem' }}
