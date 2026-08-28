@@ -14,6 +14,8 @@ import {
   Grid, List, Columns, Edit3, Trash2, CheckStack, Layers2, Navigation, Map, PieChart, BarChart2,
   GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck, Camera, Image as ImageIcon
 } from 'lucide-react';
+import { ProfileView } from './components/ProfileView';
+import { RoleManagementView } from './components/RoleManagementView';
 
 function ScheduleVisitModalContent({
   isLight = false,
@@ -2582,13 +2584,13 @@ export default function App() {
       console.error('Error reading customRoles from localStorage:', e);
     }
     return [
-      { key: 'SUPER_ADMIN', name: '1. OWNER / SUPER ADMIN', level: 'Level 5 (Highest)', scope: 'Universal All-Data Access', desc: 'Full administrative control, universal read/write/delete rights, emergency lockdown switch, and system configuration governance.', color: '#0284c7', iconName: 'ShieldCheck' },
-      { key: 'ADMIN', name: '2. ADMIN', level: 'Level 4 (High)', scope: 'Company-Wide Operations', desc: 'Executive management access to view/create/edit all properties, customer leads, and employee user accounts across branches.', color: '#38bdf8', iconName: 'Shield' },
-      { key: 'BRANCH_MANAGER', name: '3. BRANCH MANAGER', level: 'Level 3 (Branch Level)', scope: 'Assigned Branch Data', desc: 'Manages branch inventory, team leaders, site visits, cost sheets, and localized sales performance reporting.', color: '#10b981', iconName: 'Building2' },
-      { key: 'TELECALLER', name: '4. TELECALLER', level: 'Level 2 (Executive Desk)', scope: 'Assigned Calling Queue', desc: 'Inbound and outbound customer call logging, requirement profiling, follow-up scheduling, and lead status updates.', color: '#f59e0b', iconName: 'PhoneCall' },
-      { key: 'PROPERTY_MANAGEMENT', name: '5. PROPERTY MANAGEMENT', level: 'Level 3 (Inventory Unit)', scope: 'Tower Unit Board & Stock', desc: 'Live tower unit board management, pricing updates, inventory ingestion, floor plan attachments, and amenity tagging.', color: '#ec4899', iconName: 'Building' },
-      { key: 'SALES_MANAGEMENT', name: '6. SALES MANAGEMENT', level: 'Level 3 (Sales Unit)', scope: 'Sales Team & Pipeline', desc: 'Oversees 13-stage sales funnel, deal closures, site visit assignments, customer negotiation overrides, and booking sheets.', color: '#8b5cf6', iconName: 'Zap' },
-      { key: 'SALES_EMPLOYEE', name: '7. SALES EMPLOYEE', level: 'Level 2 (Executive Desk)', scope: 'Sales team member', desc: 'Property sales execution, customer site visits, lead follow-ups, and negotiation updates.', color: '#06b6d4', iconName: 'Users' }
+      { key: 'SUPER_ADMIN', name: 'OWNER / SUPER ADMIN', level: 'Level 5 (Highest)', scope: 'Universal All-Data Access', desc: 'Full administrative control, universal read/write/delete rights, emergency lockdown switch, and system configuration governance.', color: '#0284c7', iconName: 'ShieldCheck' },
+      { key: 'ADMIN', name: 'ADMIN', level: 'Level 4 (High)', scope: 'Company-Wide Operations', desc: 'Executive management access to view/create/edit all properties, customer leads, and employee user accounts across branches.', color: '#38bdf8', iconName: 'Shield' },
+      { key: 'BRANCH_MANAGER', name: 'BRANCH MANAGER', level: 'Level 3 (Branch Level)', scope: 'Assigned Branch Data', desc: 'Manages branch inventory, team leaders, site visits, cost sheets, and localized sales performance reporting.', color: '#10b981', iconName: 'Building2' },
+      { key: 'TELECALLER', name: 'TELECALLER', level: 'Level 2 (Executive Desk)', scope: 'Assigned Calling Queue', desc: 'Inbound and outbound customer call logging, requirement profiling, follow-up scheduling, and lead status updates.', color: '#f59e0b', iconName: 'PhoneCall' },
+      { key: 'PROPERTY_MANAGEMENT', name: 'PROPERTY MANAGEMENT', level: 'Level 3 (Inventory Unit)', scope: 'Tower Unit Board & Stock', desc: 'Live tower unit board management, pricing updates, inventory ingestion, floor plan attachments, and amenity tagging.', color: '#ec4899', iconName: 'Building' },
+      { key: 'SALES_MANAGEMENT', name: 'SALES MANAGEMENT', level: 'Level 3 (Sales Unit)', scope: 'Sales Team & Pipeline', desc: 'Oversees 13-stage sales funnel, deal closures, site visit assignments, customer negotiation overrides, and booking sheets.', color: '#8b5cf6', iconName: 'Zap' },
+      { key: 'SALES_EMPLOYEE', name: 'SALES EMPLOYEE', level: 'Level 2 (Executive Desk)', scope: 'Sales team member', desc: 'Property sales execution, customer site visits, lead follow-ups, and negotiation updates.', color: '#06b6d4', iconName: 'Users' }
     ];
   });
 
@@ -2656,7 +2658,7 @@ export default function App() {
 
   // 3. Approval Queue & Security Logs
   const [approvalRequests, setApprovalRequests] = useState([
-    { id: 'REQ-01', request_code: 'SRM-REQ-2026-000101', request_type: 'LEAD_TRANSFER', record_id: 'SRM-CUS-2026-000184 (Rohan Deshmukh)', requested_by: 'Priya Nair (Sales Exec)', requested_at: '16 Aug 2026 12:00 PM', old_val: 'Priya Nair', new_val: 'Rahul Sharma', reason: 'Customer requested senior consultant for villa project.', status: 'PENDING', approved_by: '' }
+    { id: 'REQ-01', request_code: 'SRM-REQ-2026-000101', request_type: 'LEAD_TRANSFER', record_id: 'SRM-CUS-2026-000184 (Rohan Deshmukh)', requested_by: 'Priya Nair (Sales Exec)', requested_at: '16 Aug 2026 12:00 PM', old_val: 'Priya Nair (Sales Exec)', new_val: 'Rahul Sharma (Team Lead)', reason: 'Customer requested senior consultant for villa project.', status: 'PENDING', approved_by: '' }
   ]);
 
   const [activeSessions, setActiveSessions] = useState([
@@ -3851,6 +3853,8 @@ export default function App() {
   const [showSecurityAuditModal, setShowSecurityAuditModal] = useState<{ open: boolean; user: any } | null>(null);
   const [auditSearchQuery, setAuditSearchQuery] = useState<string>('');
   const [auditCategoryFilter, setAuditCategoryFilter] = useState<string>('ALL');
+  const [userRoleScopeSearchQuery, setUserRoleScopeSearchQuery] = useState<string>('');
+  const [userRoleFilterCategory, setUserRoleFilterCategory] = useState<string>('ALL');
   const [dynamicUserAuditLogs, setDynamicUserAuditLogs] = useState<any[]>([]);
 
   const handleOpenSecurityAuditModal = (userObj: any) => {
@@ -4254,6 +4258,31 @@ export default function App() {
     setShowBranchModal(false);
     setEditingBranchId(null);
     setNewBranchForm({ branch_name: '', city: 'Kolkata', manager_name: 'Rajesh Varma (Super Admin)', address: '', target_revenue: '₹5,00,00,000', assigned_teams: 'Corporate Leadership Squad' });
+  };
+
+  const handleOpenEditBranchModal = (b: any) => {
+    setEditingBranchId(b.id);
+    setNewBranchForm({
+      branch_name: b.branch_name || '',
+      city: b.city || 'Kolkata',
+      manager_name: b.manager_name || 'Rajesh Varma (Super Admin)',
+      address: b.address || '',
+      target_revenue: b.target_revenue || '₹5,00,00,000',
+      assigned_teams: Array.isArray(b.teams) ? b.teams.join(', ') : (b.teams || 'Corporate Leadership Squad')
+    });
+    setShowBranchModal(true);
+  };
+
+  const handleOpenEditTeamModal = (t: any) => {
+    setEditingTeamId(t.id);
+    setNewTeamForm({
+      team_name: t.team_name || '',
+      branch_name: t.branch_name || 'Kolkata Branch',
+      department: t.department || 'Sales Operations',
+      leader_name: t.leader_name || 'Abinash Roy (Admin)',
+      monthly_target: t.monthly_target || '15 Property Units'
+    });
+    setShowTeamModal(true);
   };
 
   const handleDeleteBranch = (branchId: string, branchName: string) => {
@@ -5166,7 +5195,7 @@ export default function App() {
           <select value={currentRole} onChange={(e) => setCurrentRole(e.target.value)} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '6px', padding: '6px 10px', fontSize: '0.8rem', fontWeight: '700', cursor: 'pointer' }}>
             {customRoles.map((role, idx) => (
               <option key={role.key || idx} value={role.key}>
-                {role.name || `${idx + 1}. ${role.key}`}
+                {`${idx + 1}. ${(role.name || role.key).replace(/^\d+\.\s*/, '')}`}
               </option>
             ))}
           </select>
@@ -6462,697 +6491,39 @@ export default function App() {
 
           {/* CATEGORY 2: ADVANCED ROLE, USER & MANAGEMENT CONTROL SYSTEM (RBAC) */}
           {activeTab === 'role_management' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              
-              {/* EMERGENCY LOCKDOWN ACTIVE STATUS BANNER */}
-              {isLockdown && (
-                <div style={{ background: 'linear-gradient(135deg, #ef4444 0%, #b91c1c 100%)', color: '#ffffff', padding: '14px 20px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px', boxShadow: '0 6px 20px rgba(239, 68, 68, 0.35)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <ShieldAlert size={24} color="#ffffff" />
-                    <div>
-                      <h4 style={{ fontSize: '0.95rem', fontWeight: '900', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>🚨 EMERGENCY SYSTEM LOCKDOWN IS ACTIVE</h4>
-                      <p style={{ fontSize: '0.78rem', margin: '2px 0 0 0', opacity: 0.9 }}>
-                        All external lead ingestion, data exports, and non-admin session privileges are restricted.
-                      </p>
-                    </div>
-                  </div>
-                  <button onClick={() => setIsLockdown(false)} style={{ background: '#ffffff', color: '#dc2626', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
-                    🔓 Lift Lockdown Now
-                  </button>
-                </div>
-              )}
-
-              {/* SYSTEM GOVERNANCE HEADER */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>ADVANCED ROLE, USER & MANAGEMENT CONTROL SYSTEM</h2>
-                    <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>ENTERPRISE RBAC</span>
-                  </div>
-                  <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
-                    Active Enterprise Roles • Company & Branch Hierarchy • Maker-Checker Universal Approvals • Employee Exit Handover Engine
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button onClick={() => handleOpenAddUserModal()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <UserPlus size={15} /> + Add User
-                  </button>
-                  <button onClick={() => {
-                    setEditingBranchId(null);
-                    setNewBranchForm({ branch_name: '', city: 'Kolkata', manager_name: 'Rajesh Varma (Super Admin)', address: '', target_revenue: '₹5,00,00,000', assigned_teams: 'Corporate Leadership Squad' });
-                    setShowBranchModal(true);
-                  }} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Building2 size={15} /> + Add Branch
-                  </button>
-                  <button onClick={() => setShowTeamModal(true)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#4ade80', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Users size={15} /> + Add Team
-                  </button>
-                  <button 
-                    onClick={() => {
-                      const nextState = !isLockdown;
-                      setIsLockdown(nextState);
-                      alert(nextState ? '🚨 EMERGENCY LOCKDOWN ACTIVATED! Non-admin access restricted.' : '🟢 EMERGENCY LOCKDOWN LIFTED! Standard operations restored.');
-                    }} 
-                    style={{ 
-                      background: isLockdown ? 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)' : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
-                      color: '#ffffff', 
-                      border: 'none', 
-                      padding: '9px 16px', 
-                      borderRadius: '8px', 
-                      fontWeight: '900', 
-                      fontSize: '0.82rem', 
-                      cursor: 'pointer', 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      gap: '6px',
-                      boxShadow: isLockdown ? '0 4px 14px rgba(34, 197, 94, 0.4)' : '0 4px 14px rgba(239, 68, 68, 0.4)',
-                      letterSpacing: '0.3px'
-                    }}
-                  >
-                    <ShieldAlert size={16} color="#ffffff" /> {isLockdown ? '🟢 LIFT LOCKDOWN' : '🚨 EMERGENCY LOCKDOWN'}
-                  </button>
-                </div>
-              </div>
-
-              {/* 7 SUB-TABS NAVIGATION */}
-              <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
-                <button onClick={() => setActiveRoleSubTab('user_directory')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'user_directory' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'user_directory' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  👥 Employee Directory
-                </button>
-                <button onClick={() => setActiveRoleSubTab('permission_matrix')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'permission_matrix' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'permission_matrix' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  🔑 Active Roles & Security Matrix
-                </button>
-                <button onClick={() => setActiveRoleSubTab('org_hierarchy')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'org_hierarchy' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'org_hierarchy' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  🏢 Company & Branch Hierarchy
-                </button>
-                <button onClick={() => setActiveRoleSubTab('teams_directory')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'teams_directory' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'teams_directory' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  🛡️ Teams & Squads ({teams.length})
-                </button>
-                <button onClick={() => setActiveRoleSubTab('approval_queue')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'approval_queue' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'approval_queue' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  ⚖️ Universal Approval Queue ({approvalRequests.length})
-                </button>
-                <button onClick={() => setActiveRoleSubTab('session_security')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'session_security' ? '#0284c7' : '#1e293b', color: activeRoleSubTab === 'session_security' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  🚨 Active Sessions & Risk Alerts
-                </button>
-                <button onClick={() => setActiveRoleSubTab('exit_handover')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'exit_handover' ? '#ef4444' : '#1e293b', color: activeRoleSubTab === 'exit_handover' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  📋 Employee Exit & Handover Hub
-                </button>
-              </div>
-
-              {/* SUB-TAB 1: USER DIRECTORY & EMPLOYEE MANAGEMENT */}
-              {activeRoleSubTab === 'user_directory' && (
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>👥 Enterprise Employee Directory & Lifecycle Status</h3>
-                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Manages user accounts, assigned branches, reporting managers, phone masking, and security status.</p>
-                    </div>
-                  </div>
-
-                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.84rem' }}>
-                    <thead>
-                      <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                        <th style={{ padding: '12px' }}>User ID</th>
-                        <th style={{ padding: '12px' }}>Full Name & Username</th>
-                        <th style={{ padding: '12px' }}>Role</th>
-                        <th style={{ padding: '12px' }}>Branch & Dept</th>
-                        <th style={{ padding: '12px' }}>Team & Manager</th>
-                        <th style={{ padding: '12px' }}>Mobile Contact</th>
-                        <th style={{ padding: '12px' }}>Status</th>
-                        <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users
-                        .filter(u => currentRole === 'SUPER_ADMIN' || (u.role !== 'SUPER_ADMIN' && u.role !== 'OWNER' && u.id !== 'USR-01'))
-                        .filter(u => matchesSearchQuery(u, searchQuery))
-                        .map(u => (
-                        <tr key={u.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{u.id}</td>
-                          <td style={{ padding: '12px' }}>
-                            <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{u.full_name}</strong>
-                            <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>@{u.username}</span>
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '3px 8px', borderRadius: '6px', fontWeight: '800', fontSize: '0.73rem' }}>
-                              {u.role}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>{u.branch_name}</span>
-                            <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{u.department}</span>
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{u.team_name}</span>
-                            <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Mgr: {u.manager_name}</span>
-                          </td>
-                          <td style={{ padding: '12px', fontFamily: 'monospace', color: '#4ade80', fontWeight: '700' }}>
-                            {maskPhone(u.mobile)}
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            <span style={{ background: u.user_status === 'ACTIVE' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: u.user_status === 'ACTIVE' ? '#4ade80' : '#ef4444', padding: '3px 8px', borderRadius: '6px', fontWeight: '800', fontSize: '0.72rem' }}>
-                              ● {u.user_status || 'ACTIVE'}
-                            </span>
-                          </td>
-                          <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                              <button onClick={() => handleOpenEditUserModal(u)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}>Edit</button>
-                              <button onClick={() => handleResetUserPassword(u.id, u.full_name || u.username)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#fbbf24', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}>Reset</button>
-                              <button onClick={() => handleDeleteUser(u.id, u.full_name || u.username)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '700' }}>Delete</button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-</div>
-                </div>
-              )}
-
-              {/* SUB-TAB 2: ACTIVE ROLES MATRIX */}
-              {activeRoleSubTab === 'permission_matrix' && (
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span>🔑 {customRoles.length} Active Enterprise Roles & Security Governance</span>
-                      </h3>
-                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', margin: '4px 0 0 0' }}>
-                        Overview of active enterprise role hierarchy, security levels, and assigned user counts across Swaramayi CRM.
-                      </p>
-                    </div>
-                    <button onClick={() => {
-                      setEditingRoleKey(null);
-                      setNewRoleForm({
-                        role_name: '',
-                        role_key: '',
-                        level: 'Level 3 (Branch Level)',
-                        scope: 'Company-Wide Operations',
-                        desc: '',
-                        color: '#0284c7',
-                        iconName: 'ShieldCheck',
-                        data_scope: 'ALL_DATA',
-                        view: true,
-                        create: true,
-                        edit: true,
-                        delete: false,
-                        export: true,
-                        approve: false,
-                        price_change: false,
-                        owner_change: false,
-                        brokerage: false
-                      });
-                      setShowCustomRoleModal(true);
-                    }} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
-                      <UserPlus size={15} /> + Create Custom Role
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(2, 1fr)', gap: '14px' }}>
-                    {customRoles.map((role, idx) => {
-                      const assignedUsersCount = users.filter(u => u.role === role.key).length;
-                      let IconComp = ShieldCheck;
-                      if (role.iconName === 'Shield') IconComp = Shield;
-                      else if (role.iconName === 'Building2') IconComp = Building2;
-                      else if (role.iconName === 'PhoneCall') IconComp = PhoneCall;
-                      else if (role.iconName === 'Building') IconComp = Building;
-                      else if (role.iconName === 'Zap') IconComp = Zap;
-                      else if (role.key === 'SUPER_ADMIN') IconComp = ShieldCheck;
-                      else if (role.key === 'ADMIN') IconComp = Shield;
-                      else if (role.key === 'BRANCH_MANAGER') IconComp = Building2;
-                      else if (role.key === 'TELECALLER') IconComp = PhoneCall;
-                      else if (role.key === 'PROPERTY_MANAGEMENT') IconComp = Building;
-                      else if (role.key === 'SALES_MANAGEMENT') IconComp = Zap;
-
-                      return (
-                        <div key={idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
-                          <div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <div style={{ background: `${role.color || '#0284c7'}20`, padding: '6px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                  <IconComp size={18} color={role.color || '#0284c7'} />
-                                </div>
-                                <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                                  {role.name}
-                                </h4>
-                              </div>
-                              <span style={{ fontSize: '0.7rem', fontWeight: '800', color: role.color, background: `${role.color}15`, padding: '3px 8px', borderRadius: '20px', border: `1px solid ${role.color}40` }}>
-                                {role.level}
-                              </span>
-                            </div>
-
-                            <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', margin: 0, lineHeight: '1.5' }}>
-                              {role.desc}
-                            </p>
-                          </div>
-
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: isLight ? '1px solid #e2e8f0' : '1px solid #1e293b', fontSize: '0.75rem', flexWrap: 'wrap', gap: '8px' }}>
-                            <span style={{ color: isLight ? '#475569' : '#94a3b8', fontWeight: '700' }}>
-                              Scope: <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{role.scope}</strong>
-                            </span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ color: '#0284c7', fontWeight: '800', background: 'rgba(2, 132, 199, 0.1)', padding: '2px 8px', borderRadius: '6px' }}>
-                                👥 {assignedUsersCount} {assignedUsersCount === 1 ? 'User' : 'Users'}
-                              </span>
-                              <button 
-                                onClick={() => {
-                                  if (role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN') {
-                                    alert('❌ Access Denied: Admin cannot edit or modify the Owner / Super Admin role details.');
-                                    return;
-                                  }
-                                  const existingPerm = rolePermissions.find(p => p.role_key === role.key) || {};
-                                  const rawName = role.name.replace(/^\d+\.\s*/, '');
-                                  setEditingRoleKey(role.key);
-                                  setNewRoleForm({
-                                    role_name: rawName,
-                                    role_key: role.key,
-                                    level: role.level || 'Level 3 (Branch Level)',
-                                    scope: role.scope || 'Company-Wide Operations',
-                                    desc: role.desc || '',
-                                    color: role.color || '#0284c7',
-                                    iconName: role.iconName || 'ShieldCheck',
-                                    data_scope: existingPerm.data_scope || 'ALL_DATA',
-                                    view: existingPerm.view ?? true,
-                                    create: existingPerm.create ?? true,
-                                    edit: existingPerm.edit ?? true,
-                                    delete: existingPerm.delete ?? false,
-                                    export: existingPerm.export ?? true,
-                                    approve: existingPerm.approve ?? false,
-                                    price_change: existingPerm.price_change ?? false,
-                                    owner_change: existingPerm.owner_change ?? false,
-                                    brokerage: existingPerm.brokerage ?? false
-                                  });
-                                  setShowCustomRoleModal(true);
-                                }}
-                                disabled={role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN'}
-                                style={{ 
-                                  background: isLight ? '#ffffff' : '#1e293b', 
-                                  color: (role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN') ? '#94a3b8' : '#0284c7', 
-                                  border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', 
-                                  padding: '3px 8px', 
-                                  borderRadius: '4px', 
-                                  cursor: (role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN') ? 'not-allowed' : 'pointer', 
-                                  fontSize: '0.72rem', 
-                                  fontWeight: '800', 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  gap: '4px',
-                                  opacity: (role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN') ? 0.4 : 1
-                                }}
-                                title={role.key === 'SUPER_ADMIN' && currentRole !== 'SUPER_ADMIN' ? "Access Denied: Only Super Admin can edit Super Admin role" : "Edit Role Details & Security Scope"}
-                              >
-                                <Edit3 size={12} /> Edit
-                              </button>
-                              <button 
-                                onClick={() => {
-                                  if (role.key === 'SUPER_ADMIN') {
-                                    if (currentRole !== 'SUPER_ADMIN') {
-                                      alert('❌ Access Denied: Admin cannot delete the Owner / Super Admin role.');
-                                    } else {
-                                      alert('⚠️ System Lockdown Protection: The root "OWNER / SUPER ADMIN" role cannot be deleted.');
-                                    }
-                                    return;
-                                  }
-                                  if (role.key === 'ADMIN' && currentRole !== 'SUPER_ADMIN') {
-                                    alert('⚠️ System Protection: Root ADMIN role cannot be deleted by Admin.');
-                                    return;
-                                  }
-                                  const assigned = users.filter(u => u.role === role.key);
-                                  if (assigned.length > 0) {
-                                    alert(`⚠️ Cannot delete role "${role.name}" because ${assigned.length} employee(s) are currently assigned to this role. Please reassign them first.`);
-                                    return;
-                                  }
-                                  if (window.confirm(`Are you sure you want to delete the Enterprise Role "${role.name}"?`)) {
-                                    setCustomRoles(prev => prev.filter(r => r.key !== role.key));
-                                    setRolePermissions(prev => prev.filter(p => p.role_key !== role.key));
-                                    alert(`🗑️ Role "${role.name}" has been successfully deleted.`);
-                                  }
-                                }}
-                                disabled={(role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN'}
-                                style={{ 
-                                  background: ((role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN') ? '#64748b' : '#ef4444', 
-                                  color: '#ffffff', 
-                                  border: 'none', 
-                                  padding: '3px 8px', 
-                                  borderRadius: '4px', 
-                                  cursor: ((role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN') ? 'not-allowed' : 'pointer', 
-                                  fontSize: '0.72rem', 
-                                  fontWeight: '800', 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  gap: '4px',
-                                  opacity: ((role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN') ? 0.4 : 1
-                                }}
-                                title={(role.key === 'SUPER_ADMIN' || role.key === 'ADMIN') && currentRole !== 'SUPER_ADMIN' ? "Access Denied: Only Super Admin can delete this role" : "Delete Enterprise Role"}
-                              >
-                                <Trash2 size={12} /> Delete
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* SUB-TAB 3: COMPANY & BRANCH HIERARCHY TREE */}
-              {activeRoleSubTab === 'org_hierarchy' && (
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>🏢 Organizational Hierarchy Tree & Branch Mapping</h3>
-                  
-                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', borderRadius: '8px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '800', textTransform: 'uppercase' }}>COMPANY HEADQUARTERS</span>
-                        <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>Swaramayi Real Estate Marketing (Head Office, Kolkata)</h4>
-                      </div>
-                      <span style={{ background: '#0284c7', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem' }}>Super Admin: Rajesh Varma</span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '12px', paddingLeft: windowWidth <= 768 ? 0 : '20px' }}>
-                      {branches.map((b, i) => {
-                        const assignedStaffCount = users.filter(u => u.branch_name === b.branch_name).length;
-                        return (
-                          <div key={b.id || i} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', justifyContent: 'space-between' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>BRANCH OFFICE #{i + 1}</span>
-                                <span style={{ fontSize: '0.7rem', color: '#0284c7', background: 'rgba(2, 132, 199, 0.1)', padding: '2px 6px', borderRadius: '4px', fontWeight: '700' }}>{b.city || 'Hyderabad'}</span>
-                              </div>
-                              <strong style={{ fontSize: '0.95rem', color: isLight ? '#0f172a' : '#ffffff' }}>{b.branch_name}</strong>
-                              <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', margin: 0 }}>Manager: <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{b.manager_name}</strong></p>
-                              {b.address && <p style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', margin: 0 }}>📍 {b.address}</p>}
-                              
-                              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', padding: '8px', borderRadius: '6px', fontSize: '0.72rem', color: isLight ? '#475569' : '#cbd5e1' }}>
-                                <strong>Assigned Teams:</strong>
-                                {b.teams && b.teams.length > 0 ? b.teams.map((t: string, ti: number) => <div key={ti}>• {t}</div>) : <div>• General Operations Squad</div>}
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: isLight ? '1px solid #e2e8f0' : '1px solid #334155' }}>
-                              <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '700' }}>👥 {assignedStaffCount} Active {assignedStaffCount === 1 ? 'Employee' : 'Employees'}</span>
-                              <div style={{ display: 'flex', gap: '4px' }}>
-                                <button 
-                                  onClick={() => {
-                                    setEditingBranchId(b.id);
-                                    setNewBranchForm({
-                                      branch_name: b.branch_name,
-                                      city: b.city || 'Kolkata',
-                                      manager_name: b.manager_name || 'Rajesh Varma (Super Admin)',
-                                      address: b.address || '',
-                                      target_revenue: b.target_revenue || '₹5,00,00,000',
-                                      assigned_teams: Array.isArray(b.teams) ? b.teams.join(', ') : (b.teams || 'General Operations Squad')
-                                    });
-                                    setShowBranchModal(true);
-                                  }}
-                                  style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '3px 6px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '2px' }}
-                                  title="Edit Branch Information"
-                                >
-                                  <Edit3 size={11} /> Edit
-                                </button>
-                                <button 
-                                  onClick={() => handleDeleteBranch(b.id, b.branch_name)}
-                                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '3px 6px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '2px' }}
-                                  title="Delete Enterprise Branch"
-                                >
-                                  <Trash2 size={11} /> Delete
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* SUB-TAB: TEAMS & SQUADS DIRECTORY */}
-              {activeRoleSubTab === 'teams_directory' && (
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                  
-                  {/* HEADER BAR */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        🛡️ Enterprise Sales Teams & Squads Directory
-                      </h3>
-                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
-                        Manage operational squads, branch assignments, team leaders, and monthly targets across your organization.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* TEAMS GRID */}
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '16px' }}>
-                    {teams.map((t, idx) => {
-                      const assignedMembers = users.filter(u => u.team_name === t.team_name || u.department === t.department);
-                      return (
-                        <div key={t.id || idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px', position: 'relative' }}>
-                          
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                              <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: '800', textTransform: 'uppercase' }}>TEAM SQUAD #{idx + 1}</span>
-                              <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>{t.team_name}</h4>
-                            </div>
-                            <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800' }}>
-                              {t.department || 'Sales Unit'}
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
-                            <div>
-                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Parent Branch: </span>
-                              <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>🏢 {t.branch_name}</strong>
-                            </div>
-
-                            <div>
-                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Assigned Team Lead: </span>
-                              <strong style={{ color: '#4ade80' }}>👤 {t.leader_name}</strong>
-                            </div>
-
-                            <div>
-                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Monthly Sales Target: </span>
-                              <strong style={{ color: '#fbbf24' }}>🎯 {t.monthly_target || '15 Property Units'}</strong>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', marginTop: 'auto' }}>
-                            <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>
-                              👥 {assignedMembers.length} Active {assignedMembers.length === 1 ? 'Member' : 'Members'}
-                            </span>
-
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button
-                                onClick={() => {
-                                  setEditingTeamId(t.id);
-                                  setNewTeamForm({
-                                    team_name: t.team_name,
-                                    branch_name: t.branch_name,
-                                    department: t.department || 'Sales Operations',
-                                    leader_name: t.leader_name,
-                                    monthly_target: t.monthly_target || '15 Property Units'
-                                  });
-                                  setShowTeamModal(true);
-                                }}
-                                style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
-                              >
-                                ✏️ Edit
-                              </button>
-                              <button
-                                onClick={() => handleDeleteTeam(t.id, t.team_name)}
-                                style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800' }}
-                              >
-                                🗑️ Delete
-                              </button>
-                            </div>
-                          </div>
-
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* SUB-TAB 4: UNIVERSAL APPROVAL QUEUE & TWO-PERSON VERIFICATION */}
-              {activeRoleSubTab === 'approval_queue' && (
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>⚖️ Universal Approval Queue & Two-Person Maker-Checker Engine</h3>
-                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Requires management check & approval for sensitive price, ownership, transfer, and export requests.</p>
-                    </div>
-                    <span style={{ background: 'rgba(234, 179, 8, 0.15)', color: '#fbbf24', padding: '4px 10px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '800' }}>
-                      {approvalRequests.filter(r => r.status === 'PENDING').length} Pending Approval Requests
-                    </span>
-                  </div>
-
-                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                    <thead>
-                      <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                        <th style={{ padding: '10px' }}>Request Code</th>
-                        <th style={{ padding: '10px' }}>Request Type</th>
-                        <th style={{ padding: '10px' }}>Requested By</th>
-                        <th style={{ padding: '10px' }}>Target Record</th>
-                        <th style={{ padding: '10px' }}>Old Value &rarr; New Value</th>
-                        <th style={{ padding: '10px' }}>Reason</th>
-                        <th style={{ padding: '10px' }}>Status</th>
-                        <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {approvalRequests.map(r => (
-                        <tr key={r.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <td style={{ padding: '10px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{r.request_code}</td>
-                          <td style={{ padding: '10px' }}><span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>{r.request_type}</span></td>
-                          <td style={{ padding: '10px', color: isLight ? '#0f172a' : '#ffffff' }}>{r.requested_by}</td>
-                          <td style={{ padding: '10px', color: '#fbbf24' }}>{r.record_id}</td>
-                          <td style={{ padding: '10px' }}><span style={{ color: '#ef4444' }}>{r.old_val}</span> &rarr; <span style={{ color: '#4ade80', fontWeight: '800' }}>{r.new_val}</span></td>
-                          <td style={{ padding: '10px', color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem' }}>{r.reason}</td>
-                          <td style={{ padding: '10px' }}>
-                            <span style={{ background: r.status === 'PENDING' ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)', color: r.status === 'PENDING' ? '#fbbf24' : '#4ade80', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>
-                              {r.status}
-                            </span>
-                          </td>
-                          <td style={{ padding: '10px', textAlign: 'center' }}>
-                            {r.status === 'PENDING' ? (
-                              <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                                <button onClick={() => handleRespondApproval(r.id, 'APPROVED')} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem' }}>Approve</button>
-                                <button onClick={() => handleRespondApproval(r.id, 'REJECTED')} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem' }}>Reject</button>
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Approved by {r.approved_by || 'Admin'}</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-</div>
-                </div>
-              )}
-
-              {/* SUB-TAB 5: ACTIVE SESSIONS, DEVICE TRACKING & RISK ALERTS */}
-              {activeRoleSubTab === 'session_security' && (
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Key size={18} color="#38bdf8" /> ACTIVE USER SESSIONS & DEVICE TRACKING
-                    </h3>
-                    <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem' }}>
-                      <thead>
-                        <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                          <th style={{ padding: '8px' }}>User</th>
-                          <th style={{ padding: '8px' }}>IP Address</th>
-                          <th style={{ padding: '8px' }}>Device</th>
-                          <th style={{ padding: '8px' }}>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {activeSessions.map(s => (
-                          <tr key={s.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                            <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{s.user}</td>
-                            <td style={{ padding: '8px', fontFamily: 'monospace', color: '#38bdf8' }}>{s.ip}</td>
-                            <td style={{ padding: '8px', color: isLight ? '#64748b' : '#94a3b8' }}>{s.device}</td>
-                            <td style={{ padding: '8px' }}>
-                              <button onClick={() => alert(`Force logged out session ${s.id}`)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '3px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}>Force Logout</button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-</div>
-                  </div>
-
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #ef4444', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <ShieldAlert size={18} color="#ef4444" /> SECURITY RISK ALERTS & ANOMALY DETECTION
-                    </h3>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {[
-                        { risk: 'HIGH', user: 'Amit Patel', action: 'Bulk Customer Contact Export Attempt', reason: 'Tried exporting 250 records without BM approval.', time: 'Today 09:14 AM' },
-                        { risk: 'LOW', user: 'Priya Nair', action: 'After-Hours System Access', reason: 'Logged in at 11:45 PM from mobile IP.', time: '16 Aug 11:45 PM' }
-                      ].map((al, idx) => (
-                        <div key={idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '10px 12px', borderRadius: '8px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <span style={{ background: al.risk === 'HIGH' ? '#ef4444' : '#38bdf8', color: isLight ? '#0f172a' : '#ffffff', padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '900' }}>{al.risk} RISK</span>
-                            <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>{al.time}</span>
-                          </div>
-                          <h4 style={{ fontSize: '0.82rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', marginTop: '4px' }}>{al.action} ({al.user})</h4>
-                          <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{al.reason}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* SUB-TAB 6: EMPLOYEE EXIT & AUTOMATED REASSIGNMENT HANDOVER HUB */}
-              {activeRoleSubTab === 'exit_handover' && (
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #ef4444', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>📋 Employee Exit & Automated CRM Reassignment Handover Hub</h3>
-                      <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>When marking an employee as RESIGNED or TERMINATED, reassign all active records while preserving audit history.</p>
-                    </div>
-                    <span style={{ background: '#ef4444', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>
-                      SECURITY PROTOCOL ACTIVE
-                    </span>
-                  </div>
-
-                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Select Resigning / Exiting Employee:</label>
-                        <select style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '6px', padding: '8px', fontSize: '0.85rem' }}>
-                          <option value="USR-06">Amit Patel (Sales Exec - Sales Team Bravo)</option>
-                          <option value="USR-05">Priya Nair (Sales Exec - Sales Team Alpha)</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Select Target Reassignment Agent / Manager:</label>
-                        <select style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', color: '#4ade80', fontWeight: '800', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '6px', padding: '8px', fontSize: '0.85rem' }}>
-                          <option value="USR-04">Rahul Sharma (Team Lead)</option>
-                          <option value="USR-05">Priya Nair (Sales Exec)</option>
-                          <option value="USR-02">Vikram Reddy (GM)</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '14px', borderRadius: '8px', display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px', textAlign: 'center' }}>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8' }}>PENDING CUSTOMERS</span>
-                        <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>14 Records</h4>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8' }}>ACTIVE LEADS</span>
-                        <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8' }}>8 Leads</h4>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8' }}>UPCOMING SITE VISITS</span>
-                        <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#fbbf24' }}>2 Visits</h4>
-                      </div>
-                      <div>
-                        <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8' }}>ACTIVE BOOKINGS</span>
-                        <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80' }}>1 Booking</h4>
-                      </div>
-                    </div>
-
-                    <button onClick={() => alert('🔒 Reassigned 25 CRM records from Amit Patel to Rahul Sharma. Exiting user account disabled & sessions revoked.')} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', alignSelf: 'flex-end' }}>
-                      Execute Employee Exit & Reassign All CRM Records
-                    </button>
-                  </div>
-                </div>
-              )}
-
-            </div>
+            <RoleManagementView
+              isLockdown={isLockdown}
+              setIsLockdown={setIsLockdown}
+              isLight={isLight}
+              windowWidth={windowWidth}
+              handleOpenAddUserModal={handleOpenAddUserModal}
+              setShowCustomRoleModal={setShowCustomRoleModal}
+              setShowBranchModal={setShowBranchModal}
+              setShowTeamModal={setShowTeamModal}
+              activeRoleSubTab={activeRoleSubTab}
+              setActiveRoleSubTab={setActiveRoleSubTab}
+              customRoles={customRoles}
+              setCustomRoles={setCustomRoles}
+              currentRole={currentRole}
+              setCurrentRole={setCurrentRole}
+              userRoleScopeSearchQuery={userRoleScopeSearchQuery}
+              setUserRoleScopeSearchQuery={setUserRoleScopeSearchQuery}
+              userRoleFilterCategory={userRoleFilterCategory}
+              setUserRoleFilterCategory={setUserRoleFilterCategory}
+              users={users}
+              branches={branches}
+              teams={teams}
+              activeSessions={activeSessions}
+              approvalRequests={approvalRequests}
+              setApprovalRequests={setApprovalRequests}
+              handleOpenEditUserModal={handleOpenEditUserModal}
+              handleDeleteUser={handleDeleteUser}
+              handleOpenEditBranchModal={handleOpenEditBranchModal}
+              handleDeleteBranch={handleDeleteBranch}
+              handleOpenEditTeamModal={handleOpenEditTeamModal}
+              handleDeleteTeam={handleDeleteTeam}
+              handleOpenSecurityAuditModal={handleOpenSecurityAuditModal}
+            />
           )}
 
           {/* CATEGORY 3: PROJECT & PROPERTY INVENTORY MANAGEMENT */}
@@ -11970,454 +11341,18 @@ export default function App() {
           )}
 
           {/* CATEGORY 6: PROFILE */}
-          {activeTab === 'profile' && (() => {
-            const currentUser = users.find(u => u.role === currentRole || (currentRole === 'SUPER_ADMIN' && (u.id === 'USR-01' || u.role === 'SUPER_ADMIN'))) || users.find(u => u.role === currentRole) || users[0] || {
-              id: 'USR-01',
-              username: 'Rajesh Varma (Owner)',
-              full_name: 'Rajesh Varma',
-              email: 'rajesh.varma@swaramayi.com',
-              mobile: '+91 98490 00001',
-              role: 'SUPER_ADMIN',
-              branch_name: 'Head Office',
-              department: 'Executive Board',
-              team_name: 'Core Management',
-              manager_name: 'Self',
-              is_active: true,
-              user_status: 'ACTIVE'
-            };
-
-            const roleInfo = customRoles.find(r => {
-              const uRole = (currentUser.role || '').toUpperCase();
-              const rKey = (r.key || '').toUpperCase();
-              const rNameClean = (r.name || '').replace(/^\d+\.\s*/, '').toUpperCase();
-              return rKey === uRole || rNameClean === uRole;
-            }) || {
-              key: currentUser.role,
-              name: currentUser.role === 'SUPER_ADMIN' ? '1. OWNER / SUPER ADMIN' : currentUser.role === 'ADMIN' ? '2. ADMIN' : currentUser.role,
-              level: (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'OWNER') 
-                ? 'Level 5 (Highest)' 
-                : (currentUser.role === 'ADMIN') 
-                ? 'Level 4 (High)' 
-                : 'Level 3 (Branch Level)',
-              scope: (currentUser.role === 'SUPER_ADMIN' || currentUser.role === 'OWNER') 
-                ? 'Universal All-Data Access' 
-                : (currentUser.role === 'ADMIN') 
-                ? 'Company-Wide Operations' 
-                : `${currentUser.branch_name || 'Assigned Branch'} Data Access`,
-              desc: 'Enterprise role with authorized read/write access.',
-              color: '#0284c7'
-            };
-
-            const designation = currentUser.designation || (
-              currentUser.role === 'SUPER_ADMIN' ? 'Managing Director & Founder' :
-              currentUser.role === 'ADMIN' ? 'System Administrator' :
-              currentUser.role === 'GENERAL_MANAGER' ? 'General Manager' :
-              currentUser.role === 'BRANCH_MANAGER' ? 'Branch Head & Manager' :
-              currentUser.role === 'SALES_MANAGER' ? 'Senior Sales Manager' :
-              currentUser.role === 'TEAM_LEAD' ? 'Sales Team Leader' :
-              currentUser.role === 'TELECALLER' ? 'Telecalling Specialist' :
-              currentUser.role === 'PROPERTY_MANAGEMENT' ? 'Property & Stock Controller' :
-              currentUser.role === 'SALES_EMPLOYEE' ? 'Sales Executive' :
-              `${roleInfo.name || currentUser.role} Officer`
-            );
-
-            const directReportsCount = users.filter(u => 
-              u.id !== currentUser.id && 
-              (
-                (u.manager_name && (u.manager_name.includes(currentUser.full_name) || u.manager_name.includes(currentUser.username))) ||
-                (currentUser.role === 'SUPER_ADMIN')
-              )
-            ).length;
-
-            const permissionsList = currentUser.role === 'SUPER_ADMIN' ? [
-              'Full Read, Write & Delete Authority',
-              'Maker-Checker Universal Approvals',
-              'Executive Price Override Rights',
-              'Brokerage & Commission Governance',
-              'Emergency System Lockdown Switch'
-            ] : currentUser.role === 'ADMIN' ? [
-              'Company-Wide Read & Write Rights',
-              'Employee User Ingestion & Management',
-              'Property Inventory Governance',
-              'Lead Queue Allocation & Transfers',
-              'System Audit Log Inspection'
-            ] : currentUser.role === 'BRANCH_MANAGER' ? [
-              'Branch Lead & Customer Pipeline Access',
-              'Tower Unit Board & Stock View',
-              'Team Performance Reporting',
-              'Site Visit Scheduling & Approvals',
-              'Branch Expense & Target Tracking'
-            ] : currentUser.role === 'TELECALLER' ? [
-              'Inbound & Outbound Calling Queue Access',
-              'Customer Requirement Profiling',
-              'Follow-Up Scheduling & Lead Ingestion',
-              'Call Status & Activity Logging',
-              'Telecalling Conversion Performance'
-            ] : currentUser.role === 'PROPERTY_MANAGEMENT' ? [
-              'Live Tower Unit Board & Stock Ingestion',
-              'Property Pricing Updates & Unit Matrix',
-              'Floor Plan & Brochure Attachments',
-              'Amenity & Spec Tagging Governance',
-              'Developer Inventory Sync'
-            ] : [
-              'Assigned Lead Management',
-              'Customer Communication Logging',
-              'Follow-Up & Site Visit Requests',
-              'Property Inventory Lookup',
-              'Personal Performance Metrics'
-            ];
-
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                
-                {/* SUCCESS TOAST MESSAGE */}
-                {profileToastMessage && (
-                  <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#4ade80', borderRadius: '12px', padding: '14px 20px', fontWeight: '800', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <CheckCircle2 size={20} color="#22c55e" />
-                    <span>{profileToastMessage}</span>
-                  </div>
-                )}
-
-                {/* PROFILE BANNER / HEADER CARD */}
-                <div style={{
-                  background: isLight 
-                    ? 'linear-gradient(135deg, #ffffff 0%, #f1f5f9 100%)' 
-                    : 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
-                  border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                  borderRadius: '16px',
-                  padding: '28px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '20px',
-                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap' }}>
-                    {/* AVATAR BADGE */}
-                    <div style={{ position: 'relative' }}>
-                      <div style={{
-                        width: '90px',
-                        height: '90px',
-                        borderRadius: '24px',
-                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: '#ffffff',
-                        fontSize: '2.2rem',
-                        fontWeight: '900',
-                        boxShadow: '0 8px 20px rgba(2, 132, 199, 0.4)',
-                        border: '3px solid #38bdf8'
-                      }}>
-                        {currentUser.full_name ? currentUser.full_name.split(' ').map((n: string) => n[0]).join('') : 'RV'}
-                      </div>
-                      <div style={{
-                        position: 'absolute',
-                        bottom: '-4px',
-                        right: '-4px',
-                        background: '#22c55e',
-                        border: isLight ? '3px solid #ffffff' : '3px solid #0f172a',
-                        width: '22px',
-                        height: '22px',
-                        borderRadius: '50%'
-                      }} title="Active Now" />
-                    </div>
-
-                    {/* USER INFO */}
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                        <h1 style={{ fontSize: '1.75rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                          {currentUser.full_name}
-                        </h1>
-                        <span style={{
-                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                          color: '#ffffff',
-                          padding: '4px 12px',
-                          borderRadius: '20px',
-                          fontSize: '0.75rem',
-                          fontWeight: '900',
-                          letterSpacing: '0.5px'
-                        }}>
-                          👑 {currentUser.role === 'SUPER_ADMIN' ? 'SUPER ADMIN / OWNER' : (roleInfo.name || currentUser.role)}
-                        </span>
-                        <span style={{
-                          background: 'rgba(34, 197, 94, 0.15)',
-                          color: '#4ade80',
-                          border: '1px solid rgba(34, 197, 94, 0.3)',
-                          padding: '4px 10px',
-                          borderRadius: '20px',
-                          fontSize: '0.72rem',
-                          fontWeight: '800'
-                        }}>
-                          ● {currentUser.user_status || 'ACTIVE & VERIFIED'}
-                        </span>
-                      </div>
-
-                      <p style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.9rem', marginTop: '6px', marginBottom: '8px' }}>
-                        {currentUser.username} • User ID: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{currentUser.id}</strong>
-                      </p>
-
-                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', fontSize: '0.82rem', color: isLight ? '#475569' : '#cbd5e1' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <Building size={15} color="#38bdf8" /> {currentUser.branch_name || 'Head Office'}
-                        </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <Briefcase size={15} color="#fbbf24" /> {currentUser.department || 'Operations'}
-                        </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                          <ShieldCheck size={15} color="#4ade80" /> Security {roleInfo.level}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ACTION BUTTONS */}
-                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                    <button 
-                      onClick={() => handleStartEditProfile(currentUser)}
-                      style={{
-                        background: '#0284c7',
-                        color: '#ffffff',
-                        border: 'none',
-                        padding: '10px 18px',
-                        borderRadius: '10px',
-                        fontWeight: '800',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      <Edit3 size={16} /> Edit Details
-                    </button>
-                    <button 
-                      onClick={() => handleOpenSecurityAuditModal(currentUser)}
-                      style={{
-                        background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                        color: '#ffffff',
-                        border: 'none',
-                        padding: '10px 18px',
-                        borderRadius: '10px',
-                        fontWeight: '800',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)'
-                      }}
-                    >
-                      <Shield size={16} color="#ffffff" /> Security Audit
-                    </button>
-                  </div>
-                </div>
-
-                {/* 3-COLUMN DETAIL GRID */}
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(3, 1fr)', gap: '20px' }}>
-                  
-                  {/* COLUMN 1: CONTACT & PERSONAL INFORMATION */}
-                  <div style={{
-                    background: isLight ? '#ffffff' : '#1e293b',
-                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                    borderRadius: '14px',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                      <User size={20} color="#38bdf8" />
-                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                        Personal & Contact Details
-                      </h3>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Full Name</span>
-                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.full_name || currentUser.username}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Username & Alias</span>
-                        <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.username}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Email Address</span>
-                        <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.email || 'N/A'}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Mobile Contact</span>
-                        <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', fontFamily: 'monospace', marginTop: '2px' }}>{currentUser.mobile || 'N/A'}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Official Designation</span>
-                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{designation}</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* COLUMN 2: ORGANIZATION & HIERARCHY */}
-                  <div style={{
-                    background: isLight ? '#ffffff' : '#1e293b',
-                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                    borderRadius: '14px',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                      <Building2 size={20} color="#fbbf24" />
-                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                        Organizational Hierarchy
-                      </h3>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Assigned Branch</span>
-                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem', marginTop: '2px' }}>{currentUser.branch_name || 'Head Office (Kolkata)'}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Department</span>
-                        <strong style={{ display: 'block', color: '#38bdf8', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.department || 'Executive Board'}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Team Assignment</span>
-                        <strong style={{ display: 'block', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.team_name || 'Corporate Leadership Squad'}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Reporting Manager</span>
-                        <strong style={{ display: 'block', color: '#4ade80', fontSize: '0.9rem', marginTop: '2px' }}>{currentUser.manager_name || 'Self'}</strong>
-                      </div>
-
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Direct Reports Managed</span>
-                        <strong style={{ display: 'block', color: '#fbbf24', fontSize: '0.9rem', marginTop: '2px' }}>{directReportsCount} Active Staff Members</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* COLUMN 3: RBAC PERMISSIONS & ENTERPRISE SCOPE */}
-                  <div style={{
-                    background: isLight ? '#ffffff' : '#1e293b',
-                    border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                    borderRadius: '14px',
-                    padding: '20px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '16px'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                      <Key size={20} color="#22c55e" />
-                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                        RBAC Scope & Privileges
-                      </h3>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '0.85rem' }}>
-                      <div>
-                        <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>Data Scope Level</span>
-                        <strong style={{ display: 'block', color: roleInfo.color || '#22c55e', fontSize: '0.9rem', marginTop: '2px' }}>{roleInfo.scope} ({roleInfo.level})</strong>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
-                        {permissionsList.map((perm, pIdx) => (
-                          <div key={pIdx} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem', color: isLight ? '#334155' : '#cbd5e1' }}>
-                            <CheckCircle2 size={14} color={roleInfo.color || "#22c55e"} />
-                            <span>{perm}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-
-                {/* BOTTOM ROW: ACTIVE SESSIONS & RECENT ACTIVITY */}
-                <div style={{
-                  background: isLight ? '#ffffff' : '#1e293b',
-                  border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                  borderRadius: '14px',
-                  padding: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '14px'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Activity size={20} color="#0284c7" />
-                      <h3 style={{ fontSize: '1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                        Active Sessions & Security Authentication
-                      </h3>
-                    </div>
-                    <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: '800' }}>
-                      🔒 Hardware Key 2FA Active
-                    </span>
-                  </div>
-
-                  <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-                      <thead>
-                        <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <th style={{ padding: '8px 12px' }}>Session ID</th>
-                          <th style={{ padding: '8px 12px' }}>Authenticated User</th>
-                          <th style={{ padding: '8px 12px' }}>IP Address</th>
-                          <th style={{ padding: '8px 12px' }}>Device / Browser</th>
-                          <th style={{ padding: '8px 12px' }}>Login Time</th>
-                          <th style={{ padding: '8px 12px', textAlign: 'center' }}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(() => {
-                          const currentRoleLabel = currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : currentUser.role === 'ADMIN' ? 'Admin' : currentUser.role;
-                          const matchedInState = activeSessions.find(s => 
-                            s.user.toLowerCase().includes((currentUser.full_name || '').toLowerCase()) ||
-                            s.user.toLowerCase().includes((currentUser.username || '').toLowerCase())
-                          );
-                          const sessionsToDisplay = matchedInState ? [matchedInState] : [
-                            {
-                              id: `SES-${currentUser.id ? currentUser.id.replace(/[^0-9]/g, '') : '01'}`,
-                              user: `${currentUser.full_name || currentUser.username} (${currentRoleLabel})`,
-                              ip: '127.0.0.1 (Localhost)',
-                              device: 'Chrome / Windows 11',
-                              login_time: '27 Aug 09:00 AM',
-                              status: 'ACTIVE'
-                            }
-                          ];
-
-                          return sessionsToDisplay.map((s, idx) => (
-                            <tr key={s.id || idx} style={{ borderBottom: isLight ? '1px solid #f1f5f9' : '1px solid #334155' }}>
-                              <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{s.id}</td>
-                              <td style={{ padding: '10px 12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{s.user}</td>
-                              <td style={{ padding: '10px 12px', fontFamily: 'monospace', color: isLight ? '#475569' : '#cbd5e1' }}>{s.ip}</td>
-                              <td style={{ padding: '10px 12px', color: isLight ? '#475569' : '#cbd5e1' }}>{s.device}</td>
-                              <td style={{ padding: '10px 12px', color: '#fbbf24' }}>{s.login_time}</td>
-                              <td style={{ padding: '10px 12px', textAlign: 'center' }}>
-                                <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '800' }}>
-                                  ● {s.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ));
-                        })()}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-              </div>
-            );
-          })()}
+          {activeTab === 'profile' && (
+            <ProfileView
+              users={users}
+              currentRole={currentRole}
+              customRoles={customRoles}
+              isLight={isLight}
+              windowWidth={windowWidth}
+              profileToastMessage={profileToastMessage}
+              handleStartEditProfile={handleStartEditProfile}
+              handleOpenSecurityAuditModal={handleOpenSecurityAuditModal}
+            />
+          )}
 
           {/* CATEGORY 7: AGREEMENT MANAGEMENT (RESTORED CONTRACT MODAL & TABLE) */}
           {activeTab === 'agreement_management' && (
