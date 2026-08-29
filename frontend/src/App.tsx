@@ -1889,7 +1889,8 @@ export default function App() {
 
   useEffect(() => {
     if (!isLoggedIn && typeof window !== 'undefined') {
-      if (window.location.pathname !== '/login') {
+      const isPayRoute = window.location.pathname.startsWith('/pay') || window.location.search.includes('inv=') || window.location.search.includes('pay_inv=');
+      if (!isPayRoute && window.location.pathname !== '/login') {
         window.history.replaceState({}, '', '/login');
         setCurrentPath('/login');
       }
@@ -4041,6 +4042,7 @@ export default function App() {
   const [billingInvoiceCategory, setBillingInvoiceCategory] = useState<'CUSTOMER' | 'DEVELOPER'>('CUSTOMER');
   const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState<boolean>(false);
   const [showPrintInvoiceModal, setShowPrintInvoiceModal] = useState<{ open: boolean; invoice: any } | null>(null);
+  const [invoiceTemplateTheme, setInvoiceTemplateTheme] = useState<'SAND' | 'NAVY'>('SAND');
 
   const [invoices, setInvoices] = useState<any[]>(() => {
     try {
@@ -4060,9 +4062,12 @@ export default function App() {
         customer_name: 'Rohan Deshmukh',
         customer_number: 'SRM-CUS-2026-000184',
         customer_mobile: '+91 98490 12345',
+        customer_email: 'rohan.deshmukh@gmail.com',
         developer_name: 'Aparna Constructions',
         property_title: 'Aparna Zenon 3BHK (Unit A-504)',
         particulars: 'Property Consultation & Site Visit Processing Fee',
+        flat_price: '8000000',
+        parking_price: '400000',
         agreement_value: '₹84,00,000',
         taxable_value: 200000,
         cgst_rate: '9%',
@@ -4074,6 +4079,29 @@ export default function App() {
         created_date: '2026-08-25'
       },
       {
+        id: 'INV-CUS-02',
+        invoice_number: 'SRM-INV-CUS-2026-000406',
+        invoice_category: 'CUSTOMER',
+        customer_name: 'Ananya Sharma',
+        customer_number: 'SRM-CUS-2026-000192',
+        customer_mobile: '+91 91234 56789',
+        customer_email: 'ananya.sharma@gmail.com',
+        developer_name: 'My Home Group',
+        property_title: 'My Home Tarkshya 3BHK (Unit B-1202)',
+        particulars: 'Property Consultation & Processing Charges',
+        flat_price: '9500000',
+        parking_price: '500000',
+        agreement_value: '₹1,00,00,000',
+        taxable_value: 200000,
+        cgst_rate: '9%',
+        cgst_amount: 18000,
+        sgst_rate: '9%',
+        sgst_amount: 18000,
+        total_invoice_amount: 236000,
+        payment_status: 'PAID_SETTLED',
+        created_date: '2026-08-29'
+      },
+      {
         id: 'INV-DEV-01',
         invoice_number: 'SRM-INV-DEV-2026-000501',
         invoice_category: 'DEVELOPER',
@@ -4083,6 +4111,8 @@ export default function App() {
         customer_number: 'SRM-CUS-2026-000184',
         property_title: 'Aparna Zenon 3BHK (Unit A-504)',
         particulars: '2.0% Channel Partner Success Fee / Commission for Unit A-504',
+        flat_price: '8000000',
+        parking_price: '400000',
         agreement_value: '₹84,00,000',
         taxable_value: 168000,
         cgst_rate: '9%',
@@ -4092,6 +4122,32 @@ export default function App() {
         total_invoice_amount: 198240,
         payment_status: 'UNPAID_PENDING',
         created_date: '2026-08-26'
+      },
+      {
+        id: 'INV-DEV-02',
+        invoice_number: 'SRM-INV-DEV-2026-000505',
+        invoice_category: 'DEVELOPER',
+        developer_name: 'Aparna Constructions',
+        developer_gstin: '36AAACA1234F1Z5',
+        developer_contact_person: 'Mr. S. K. Reddy (VP Sales)',
+        developer_mobile: '+91 98490 99887',
+        developer_email: 'billing@aparnaconstructions.com',
+        customer_name: 'Rohan Deshmukh',
+        customer_number: 'SRM-CUS-2026-000184',
+        property_title: 'Aparna Zenon Premium 3BHK Residence',
+        particulars: '2.0% Channel Partner Success Fee / Commission for Unit A-504',
+        flat_price: '2000000',
+        parking_price: '500000',
+        agreement_value: '₹25,00,000',
+        brokerage_percent: '2.0',
+        taxable_value: 44000,
+        cgst_rate: '8%',
+        cgst_amount: 3520,
+        sgst_rate: '8%',
+        sgst_amount: 3520,
+        total_invoice_amount: 51040,
+        payment_status: 'UNPAID_PENDING',
+        created_date: '2026-08-29'
       }
     ];
   });
@@ -4110,6 +4166,12 @@ export default function App() {
     property_title: 'Aparna Zenon Premium 3BHK Residence',
     developer_name: 'Aparna Constructions',
     developer_gstin: '36AAACA1234F1Z5',
+    developer_contact_person: 'Mr. S. K. Reddy (VP Sales)',
+    developer_mobile: '+91 98490 99887',
+    developer_email: 'billing@aparnaconstructions.com',
+    developer_address: 'Aparna Infra Towers, Road No 12, Banjara Hills, Hyderabad - 500034',
+    developer_rera_id: 'P02400001234',
+    developer_place_of_supply: '36 - Telangana',
     property_locality: 'Kondapur, Hyderabad',
     property_configuration: '3 BHK Luxury Apartment',
     customer_name: 'Rohan Deshmukh',
@@ -4124,11 +4186,15 @@ export default function App() {
     parking_price: '400000',
     agreement_value: '8400000',
     brokerage_percent: '2.0',
-    taxable_value: '200000',
+    taxable_value: '168000',
     apply_gst: true,
     gst_rate: '18',
     cgst_rate: '9',
-    sgst_rate: '9'
+    sgst_rate: '9',
+    bank_name: 'HDFC Bank',
+    bank_account_number: '50200018942109',
+    bank_ifsc_code: 'HDFC0000128',
+    bank_upi_id: 'swaramayi@hdfcbank'
   });
   const [rawSelectedInvoice, setSelectedInvoice] = useState<any>(null);
   const selectedInvoice = rawSelectedInvoice || invoices[0] || {
@@ -5172,6 +5238,33 @@ export default function App() {
 
   const isLight = themeMode === 'light';
 
+  const isPublicPayRoute = typeof window !== 'undefined' && (
+    window.location.pathname.startsWith('/pay') ||
+    window.location.search.includes('inv=') ||
+    window.location.search.includes('pay_inv=')
+  );
+
+  if (isPublicPayRoute) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetInvNo = urlParams.get('inv') || urlParams.get('pay_inv') || 'SRM-INV-CUS-2026-000406';
+    const matchedInv = invoices.find(i => i.invoice_number === targetInvNo) || {
+      invoice_number: targetInvNo,
+      customer_name: 'Rohan Deshmukh',
+      property_title: 'Aparna Zenon Premium 3BHK Residence',
+      total_invoice_amount: 198240,
+      created_date: '2026-08-29'
+    };
+
+    return (
+      <PublicInvoiceCheckoutView 
+        invoice={matchedInv} 
+        onSettlePayment={(settledInvNo, txnId) => {
+          setInvoices(prev => prev.map(i => i.invoice_number === settledInvNo ? { ...i, payment_status: 'PAID_SETTLED', payment_mode: 'ONLINE', payment_ref: txnId } : i));
+        }} 
+      />
+    );
+  }
+
   const isLoginPage = !isLoggedIn || currentPath.toLowerCase().startsWith('/login');
 
   if (isLoginPage) {
@@ -5844,7 +5937,6 @@ export default function App() {
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>SWARAMAYI REAL ESTATE MARKETING</h2>
-                      <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>BI CONTROL CENTER</span>
                     </div>
                     <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
                       Role View: <strong style={{ color: '#0284c7' }}>{currentRole}</strong> • Scope: <strong style={{ color: '#16a34a' }}>ALL DATA DRILL-DOWN ENABLED</strong> • Updated: Real-time Live Records
@@ -7184,6 +7276,7 @@ export default function App() {
               billingInvoiceCategory={billingInvoiceCategory}
               setBillingInvoiceCategory={setBillingInvoiceCategory}
               invoices={invoices}
+              setInvoices={setInvoices}
               searchQuery={searchQuery}
               matchesSearchQuery={matchesSearchQuery}
               setCreateInvoiceForm={setCreateInvoiceForm}
@@ -12480,6 +12573,12 @@ export default function App() {
                 customer_gstin_pan: createInvoiceForm.customer_gstin_pan,
                 developer_name: createInvoiceForm.developer_name,
                 developer_gstin: createInvoiceForm.developer_gstin || '36AAACA1234F1Z5',
+                developer_contact_person: createInvoiceForm.developer_contact_person || 'Mr. S. K. Reddy (VP Sales)',
+                developer_mobile: createInvoiceForm.developer_mobile || '+91 98490 99887',
+                developer_email: createInvoiceForm.developer_email || 'billing@aparnaconstructions.com',
+                developer_address: createInvoiceForm.developer_address || 'Aparna Infra Towers, Road No 12, Banjara Hills, Hyderabad - 500034',
+                developer_rera_id: createInvoiceForm.developer_rera_id || 'P02400001234',
+                developer_place_of_supply: createInvoiceForm.developer_place_of_supply || '36 - Telangana',
                 property_title: createInvoiceForm.property_title,
                 particulars: createInvoiceForm.particulars,
                 flat_price: '₹' + Number(createInvoiceForm.flat_price || 8000000).toLocaleString('en-IN'),
@@ -12493,6 +12592,10 @@ export default function App() {
                 sgst_rate: `${sgstRate}%`,
                 sgst_amount: sgst,
                 total_invoice_amount: totalInv,
+                bank_name: createInvoiceForm.bank_name || 'HDFC Bank',
+                bank_account_number: createInvoiceForm.bank_account_number || '50200018942109',
+                bank_ifsc_code: createInvoiceForm.bank_ifsc_code || 'HDFC0000128',
+                bank_upi_id: createInvoiceForm.bank_upi_id || 'swaramayi@hdfcbank',
                 payment_status: 'UNPAID_PENDING',
                 created_date: new Date().toISOString().split('T')[0]
               };
@@ -12506,12 +12609,18 @@ export default function App() {
                 <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Invoice Category *</label>
                 <select 
                   value={createInvoiceForm.invoice_category} 
-                  onChange={(e) => setCreateInvoiceForm({ 
-                    ...createInvoiceForm, 
-                    invoice_category: e.target.value,
-                    particulars: e.target.value === 'DEVELOPER' ? '2.0% Channel Partner Success Fee / Commission for Unit A-504' : 'Property Consultation & Processing Charges',
-                    taxable_value: e.target.value === 'DEVELOPER' ? '168000' : '200000'
-                  })} 
+                  onChange={(e) => {
+                    const newCat = e.target.value;
+                    const agreeVal = Number(createInvoiceForm.agreement_value || 8400000);
+                    const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
+                    const compTaxable = Math.round(agreeVal * (brokPct / 100));
+                    setCreateInvoiceForm({ 
+                      ...createInvoiceForm, 
+                      invoice_category: newCat,
+                      particulars: newCat === 'DEVELOPER' ? '2.0% Channel Partner Success Fee / Commission for Unit A-504' : 'Property Consultation & Processing Charges',
+                      taxable_value: String(compTaxable)
+                    });
+                  }} 
                   style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #38bdf8', color: '#38bdf8', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
                 >
                   <option value="CUSTOMER">👤 B2C CUSTOMER INVOICE (Consultancy / Booking Advance)</option>
@@ -12547,7 +12656,7 @@ export default function App() {
                         const computedAgreementVal = computedFlatPrice + computedParkPrice;
                         const isDev = createInvoiceForm.invoice_category === 'DEVELOPER';
                         const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
-                        const computedTaxableVal = isDev ? Math.round(computedAgreementVal * (brokPct / 100)) : (createInvoiceForm.taxable_value || 200000);
+                        const computedTaxableVal = Math.round(computedAgreementVal * (brokPct / 100));
 
                         setCreateInvoiceForm({
                           ...createInvoiceForm,
@@ -12597,6 +12706,9 @@ export default function App() {
                           const numPrice = typeof matched.final_price === 'number' ? matched.final_price : (parseInt(String(matched.final_price).replace(/[^0-9]/g, '')) || 8400000);
                           const fPrice = Math.round(numPrice * 0.95);
                           const pPrice = Math.round(numPrice * 0.05);
+                          const compAgree = fPrice + pPrice;
+                          const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
+                          const compTaxable = Math.round(compAgree * (brokPct / 100));
                           setCreateInvoiceForm({
                             ...createInvoiceForm,
                             property_code: val,
@@ -12607,7 +12719,8 @@ export default function App() {
                             property_configuration: matched.configuration || '3 BHK Luxury Apartment',
                             flat_price: String(fPrice),
                             parking_price: String(pPrice),
-                            agreement_value: String(fPrice + pPrice)
+                            agreement_value: String(compAgree),
+                            taxable_value: String(compTaxable)
                           });
                         } else {
                           setCreateInvoiceForm({ ...createInvoiceForm, property_code: val });
@@ -12649,17 +12762,16 @@ export default function App() {
                 </div>
               </div>
 
-              {/* CARD 2: CUSTOMER MASTER DETAILS */}
-              {createInvoiceForm.invoice_category !== 'DEVELOPER' && (
-                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      👤 B2C CUSTOMER MASTER DETAILS & BILLING INFO
-                    </span>
-                    <span style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
-                      Auto-fill Enabled by Customer ID
-                    </span>
-                  </div>
+              {/* CARD: CUSTOMER / BUYER MASTER DETAILS */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    👤 {createInvoiceForm.invoice_category === 'DEVELOPER' ? 'LINKED CUSTOMER / BUYER MASTER DETAILS' : 'B2C CUSTOMER MASTER DETAILS & BILLING INFO'}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                    Auto-fill Enabled by Customer ID
+                  </span>
+                </div>
 
                   {/* QUICK SELECT EXISTING CUSTOMER DROPDOWN */}
                   <div>
@@ -12763,11 +12875,208 @@ export default function App() {
                     <input type="text" value={createInvoiceForm.customer_address || ''} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, customer_address: e.target.value })} placeholder="Flat No., Building Name, Street / Locality, City - Pincode" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
                   </div>
                 </div>
+
+              {/* CARD 2 (DEVELOPER): B2B DEVELOPER MASTER DETAILS & BILLING INFO */}
+              {createInvoiceForm.invoice_category === 'DEVELOPER' && (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #16a34a', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      🏢 B2B DEVELOPER MASTER DETAILS & CORPORATE BILLING INFO
+                    </span>
+                    <span style={{ fontSize: '0.7rem', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                      Auto-Fill Enabled by Builder Vault
+                    </span>
+                  </div>
+
+                  {/* QUICK SELECT EXISTING DEVELOPER DROPDOWN */}
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>⚡ Auto-Fill from Builder Vault (Select Developer / Corporate Entity):</label>
+                    <select
+                      value={createInvoiceForm.developer_name || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) return;
+                        const devList: Record<string, any> = {
+                          'Aparna Constructions': { gstin: '36AAACA1234F1Z5', contact: 'Mr. S. K. Reddy (VP Sales)', mobile: '+91 98490 99887', email: 'billing@aparnaconstructions.com', address: 'Aparna Infra Towers, Road No 12, Banjara Hills, Hyderabad - 500034', rera: 'P02400001234', pos: '36 - Telangana' },
+                          'My Home Group': { gstin: '36AABCM5678G1Z9', contact: 'Mr. V. Ramakrishna (GM Accounts)', mobile: '+91 91210 55443', email: 'accounts@myhomegroup.in', address: 'My Home Hub, Hitech City Main Rd, Madhapur, Hyderabad - 500081', rera: 'P02400002156', pos: '36 - Telangana' },
+                          'Prestige Group': { gstin: '36AAACP9876H1Z2', contact: 'Ms. Ananya Sharma (Finance Lead)', mobile: '+91 98800 11223', email: 'billing.hyd@prestigeconstructions.com', address: 'Prestige Falcon Towers, Financial District, Nanakramguda, Hyderabad - 500032', rera: 'P02400003980', pos: '36 - Telangana' },
+                          'Sumadhura Infracon': { gstin: '36AABCS4321J1Z4', contact: 'Mr. K. Mahesh (Channel Partner Mgr)', mobile: '+91 90001 88776', email: 'cp.billing@sumadhura.com', address: 'Sumadhura Horizon, Mindspace Circle, Hitech City, Hyderabad - 500081', rera: 'P02400004512', pos: '36 - Telangana' }
+                        };
+                        const devInfo = devList[val];
+                        if (devInfo) {
+                          setCreateInvoiceForm({
+                            ...createInvoiceForm,
+                            developer_name: val,
+                            developer_gstin: devInfo.gstin,
+                            developer_contact_person: devInfo.contact,
+                            developer_mobile: devInfo.mobile,
+                            developer_email: devInfo.email,
+                            developer_address: devInfo.address,
+                            developer_rera_id: devInfo.rera,
+                            developer_place_of_supply: devInfo.pos
+                          });
+                        } else {
+                          setCreateInvoiceForm({ ...createInvoiceForm, developer_name: val });
+                        }
+                      }}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', color: '#4ade80', padding: '7px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }}
+                    >
+                      <option value="">-- Select Developer / Builder Entity --</option>
+                      <option value="Aparna Constructions">🏢 Aparna Constructions & Estates Pvt Ltd</option>
+                      <option value="My Home Group">🏢 My Home Group (My Home Constructions)</option>
+                      <option value="Prestige Group">🏢 Prestige Estates Projects Ltd</option>
+                      <option value="Sumadhura Infracon">🏢 Sumadhura Infracon Pvt Ltd</option>
+                    </select>
+                  </div>
+
+                  {/* GRID ROW 1: DEVELOPER NAME, GSTIN, RERA ID */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🏢 Developer / Builder Corporate Name *</label>
+                      <input 
+                        type="text" 
+                        value={createInvoiceForm.developer_name || ''} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_name: e.target.value })} 
+                        placeholder="Aparna Constructions" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                        required 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📜 Developer GSTIN *</label>
+                      <input 
+                        type="text" 
+                        value={createInvoiceForm.developer_gstin || ''} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_gstin: e.target.value })} 
+                        placeholder="36AAACA1234F1Z5" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: '800' }} 
+                        required 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🏛️ Developer RERA Reg. No.</label>
+                      <input 
+                        type="text" 
+                        value={createInvoiceForm.developer_rera_id || 'P02400001234'} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_rera_id: e.target.value })} 
+                        placeholder="P02400001234" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace' }} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* GRID ROW 2: CONTACT PERSON, MOBILE, EMAIL */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>👤 Authorized Contact Person *</label>
+                      <input 
+                        type="text" 
+                        value={createInvoiceForm.developer_contact_person || 'Mr. S. K. Reddy (VP Sales)'} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_contact_person: e.target.value })} 
+                        placeholder="Mr. S. K. Reddy (VP Sales)" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📞 Developer Phone / Mobile *</label>
+                      <input 
+                        type="text" 
+                        value={createInvoiceForm.developer_mobile || '+91 98490 99887'} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_mobile: e.target.value })} 
+                        placeholder="+91 98490 99887" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>✉️ Official Billing Email *</label>
+                      <input 
+                        type="email" 
+                        value={createInvoiceForm.developer_email || 'billing@aparnaconstructions.com'} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_email: e.target.value })} 
+                        placeholder="billing@aparnaconstructions.com" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* GRID ROW 3: PLACE OF SUPPLY & CORPORATE ADDRESS */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📍 Place of Supply (State) *</label>
+                      <input 
+                        type="text" 
+                        value={createInvoiceForm.developer_place_of_supply || '36 - Telangana'} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_place_of_supply: e.target.value })} 
+                        placeholder="36 - Telangana" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🏢 Developer Registered Corporate Address *</label>
+                      <input 
+                        type="text" 
+                        value={createInvoiceForm.developer_address || 'Aparna Infra Towers, Road No 12, Banjara Hills, Hyderabad - 500034'} 
+                        onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, developer_address: e.target.value })} 
+                        placeholder="Aparna Infra Towers, Road No 12, Banjara Hills, Hyderabad - 500034" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+                  </div>
+                </div>
               )}
 
               <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Billed Particulars / Service Description *</label>
-                <input type="text" value={createInvoiceForm.particulars} onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, particulars: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>
+                    📝 Billed Particulars / Service Description *
+                  </label>
+                  <span style={{ fontSize: '0.7rem', color: '#0284c7', fontWeight: '700' }}>
+                    ⚡ Default Provided (Fully Editable Below)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* PRESET QUICK DROPDOWN */}
+                  <select
+                    value={
+                      ['Property Consultation & Processing Charges',
+                       '2.0% Channel Partner Success Fee / Brokerage',
+                       'Booking Advance & Property Registration Fee',
+                       'Real Estate Advisory & Documentation Charges',
+                       'Property Marketing & Site Visit Facilitation Fee'].includes(createInvoiceForm.particulars)
+                        ? createInvoiceForm.particulars
+                        : 'CUSTOM'
+                    }
+                    onChange={(e) => {
+                      if (e.target.value !== 'CUSTOM') {
+                        setCreateInvoiceForm({ ...createInvoiceForm, particulars: e.target.value });
+                      }
+                    }}
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: '#38bdf8', padding: '6px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700' }}
+                  >
+                    <option value="Property Consultation & Processing Charges">📋 Default (Customer): Property Consultation & Processing Charges</option>
+                    <option value="2.0% Channel Partner Success Fee / Brokerage">🏢 Default (Developer): 2.0% Channel Partner Success Fee / Brokerage</option>
+                    <option value="Booking Advance & Property Registration Fee">💳 Booking Advance & Property Registration Fee</option>
+                    <option value="Real Estate Advisory & Documentation Charges">📄 Real Estate Advisory & Documentation Charges</option>
+                    <option value="Property Marketing & Site Visit Facilitation Fee">🚗 Property Marketing & Site Visit Facilitation Fee</option>
+                    <option value="CUSTOM">✍️ Custom Description (Edit text manually below)</option>
+                  </select>
+
+                  {/* EDITABLE TEXT INPUT */}
+                  <input 
+                    type="text" 
+                    value={createInvoiceForm.particulars || 'Property Consultation & Processing Charges'} 
+                    onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, particulars: e.target.value })} 
+                    placeholder="Property Consultation & Processing Charges" 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    required 
+                  />
+                </div>
               </div>
 
               {/* CARD 3: AGREEMENT VALUE & BROKERAGE CALCULATION */}
@@ -12794,9 +13103,8 @@ export default function App() {
                         const flatVal = Number(e.target.value || 0);
                         const parkVal = Number(createInvoiceForm.parking_price || 0);
                         const totalAgree = flatVal + parkVal;
-                        const isDev = createInvoiceForm.invoice_category === 'DEVELOPER';
                         const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
-                        const computedTaxable = isDev ? Math.round(totalAgree * (brokPct / 100)) : (createInvoiceForm.taxable_value || 200000);
+                        const computedTaxable = Math.round(totalAgree * (brokPct / 100));
 
                         setCreateInvoiceForm({
                           ...createInvoiceForm,
@@ -12822,9 +13130,8 @@ export default function App() {
                         const flatVal = Number(createInvoiceForm.flat_price || 0);
                         const parkVal = Number(e.target.value || 0);
                         const totalAgree = flatVal + parkVal;
-                        const isDev = createInvoiceForm.invoice_category === 'DEVELOPER';
                         const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
-                        const computedTaxable = isDev ? Math.round(totalAgree * (brokPct / 100)) : (createInvoiceForm.taxable_value || 200000);
+                        const computedTaxable = Math.round(totalAgree * (brokPct / 100));
 
                         setCreateInvoiceForm({
                           ...createInvoiceForm,
@@ -12845,7 +13152,16 @@ export default function App() {
                     <input 
                       type="number" 
                       value={createInvoiceForm.agreement_value || ''} 
-                      onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, agreement_value: e.target.value })} 
+                      onChange={(e) => {
+                        const totalAgree = Number(e.target.value || 0);
+                        const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
+                        const computedTaxable = Math.round(totalAgree * (brokPct / 100));
+                        setCreateInvoiceForm({
+                          ...createInvoiceForm,
+                          agreement_value: e.target.value,
+                          taxable_value: String(computedTaxable)
+                        });
+                      }} 
                       placeholder="8400000" 
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', color: '#fbbf24', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '900' }} 
                       required 
@@ -12968,6 +13284,166 @@ export default function App() {
                 )}
               </div>
 
+              {/* CARD 5: AGENCY BANK ACCOUNT & PAYMENT RECEIPT DETAILS (SUPER ADMIN RESTRICTED) */}
+              {(() => {
+                const isSuperAdmin = currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER';
+                return (
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isSuperAdmin ? '1px solid #38bdf8' : '1px solid #e11d48', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '900', color: isSuperAdmin ? '#38bdf8' : '#f87171', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🏦 AGENCY BANK ACCOUNT & PAYMENT RECEIPT DETAILS
+                      </span>
+                      <span style={{ fontSize: '0.7rem', background: isSuperAdmin ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: isSuperAdmin ? '#4ade80' : '#f87171', padding: '2px 8px', borderRadius: '4px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isSuperAdmin ? '👑 Editable by Super Admin Only' : '🔒 Read-Only (Super Admin Access Only)'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Bank Name *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isSuperAdmin}
+                          value={createInvoiceForm.bank_name || 'HDFC Bank'} 
+                          onChange={(e) => isSuperAdmin && setCreateInvoiceForm({ ...createInvoiceForm, bank_name: e.target.value })} 
+                          placeholder="HDFC Bank" 
+                          style={{ width: '100%', background: !isSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isSuperAdmin ? 'not-allowed' : 'text', opacity: !isSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Account Number *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isSuperAdmin}
+                          value={createInvoiceForm.bank_account_number || '50200018942109'} 
+                          onChange={(e) => isSuperAdmin && setCreateInvoiceForm({ ...createInvoiceForm, bank_account_number: e.target.value })} 
+                          placeholder="50200018942109" 
+                          style={{ width: '100%', background: !isSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', cursor: !isSuperAdmin ? 'not-allowed' : 'text', opacity: !isSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>IFSC Code *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isSuperAdmin}
+                          value={createInvoiceForm.bank_ifsc_code || 'HDFC0000128'} 
+                          onChange={(e) => isSuperAdmin && setCreateInvoiceForm({ ...createInvoiceForm, bank_ifsc_code: e.target.value })} 
+                          placeholder="HDFC0000128" 
+                          style={{ width: '100%', background: !isSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', cursor: !isSuperAdmin ? 'not-allowed' : 'text', opacity: !isSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>UPI ID / VPA</label>
+                        <input 
+                          type="text" 
+                          disabled={!isSuperAdmin}
+                          value={createInvoiceForm.bank_upi_id || 'swaramayi@hdfcbank'} 
+                          onChange={(e) => isSuperAdmin && setCreateInvoiceForm({ ...createInvoiceForm, bank_upi_id: e.target.value })} 
+                          placeholder="swaramayi@hdfcbank" 
+                          style={{ width: '100%', background: !isSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isSuperAdmin ? 'not-allowed' : 'text', opacity: !isSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+                    </div>
+
+                    {!isSuperAdmin && (
+                      <div style={{ fontSize: '0.72rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '700' }}>
+                        🔒 Bank Account & Payment details are locked for non-Super Admin users. Only Super Admin can modify agency payout banking info.
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* CARD 6: SWARAMAYI CORPORATE DETAILS & REGISTERED BUSINESS INFO (SUPER ADMIN ONLY) */}
+              {(() => {
+                const isSuperAdmin = currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER';
+                return (
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isSuperAdmin ? '1px solid #38bdf8' : '1px solid #e11d48', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '900', color: isSuperAdmin ? '#38bdf8' : '#f87171', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🏢 SWARAMAYI CORPORATE DETAILS & REGISTERED BUSINESS INFO
+                      </span>
+                      <span style={{ fontSize: '0.7rem', background: isSuperAdmin ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: isSuperAdmin ? '#4ade80' : '#f87171', padding: '2px 8px', borderRadius: '4px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isSuperAdmin ? '👑 Editable by Super Admin Only' : '🔒 Read-Only (Super Admin Access Only)'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Company Registered Address *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isSuperAdmin}
+                          value={createInvoiceForm.company_address || 'Suite 402, Swaramayi Corporate Tower, Jubilee Hills, Hyderabad - 500033, Telangana'} 
+                          onChange={(e) => isSuperAdmin && setCreateInvoiceForm({ ...createInvoiceForm, company_address: e.target.value })} 
+                          placeholder="Suite 402, Swaramayi Corporate Tower, Jubilee Hills, Hyderabad - 500033" 
+                          style={{ width: '100%', background: !isSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isSuperAdmin ? 'not-allowed' : 'text', opacity: !isSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>TS-RERA Registration No. *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isSuperAdmin}
+                          value={createInvoiceForm.company_rera_no || 'P02400008492'} 
+                          onChange={(e) => isSuperAdmin && setCreateInvoiceForm({ ...createInvoiceForm, company_rera_no: e.target.value })} 
+                          placeholder="P02400008492" 
+                          style={{ width: '100%', background: !isSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', cursor: !isSuperAdmin ? 'not-allowed' : 'text', opacity: !isSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Corporate Email ID *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isSuperAdmin}
+                          value={createInvoiceForm.company_email || 'billing@swaramayi.com'} 
+                          onChange={(e) => isSuperAdmin && setCreateInvoiceForm({ ...createInvoiceForm, company_email: e.target.value })} 
+                          placeholder="billing@swaramayi.com" 
+                          style={{ width: '100%', background: !isSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isSuperAdmin ? 'not-allowed' : 'text', opacity: !isSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Corporate Mobile No. *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isSuperAdmin}
+                          value={createInvoiceForm.company_mobile || '+91 98490 12345'} 
+                          onChange={(e) => isSuperAdmin && setCreateInvoiceForm({ ...createInvoiceForm, company_mobile: e.target.value })} 
+                          placeholder="+91 98490 12345" 
+                          style={{ width: '100%', background: !isSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isSuperAdmin ? 'not-allowed' : 'text', opacity: !isSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Official Website *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isSuperAdmin}
+                          value={createInvoiceForm.company_website || 'https://www.swaramayi.com'} 
+                          onChange={(e) => isSuperAdmin && setCreateInvoiceForm({ ...createInvoiceForm, company_website: e.target.value })} 
+                          placeholder="https://www.swaramayi.com" 
+                          style={{ width: '100%', background: !isSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isSuperAdmin ? 'not-allowed' : 'text', opacity: !isSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+                    </div>
+
+                    {!isSuperAdmin && (
+                      <div style={{ fontSize: '0.72rem', color: '#f87171', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: '700' }}>
+                        🔒 Corporate Address, RERA No, Email, Mobile & Website are locked for non-Super Admin users. Only Super Admin can modify agency corporate details.
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* AUTO GST SUMMARY PREVIEW */}
               {(() => {
                 const taxVal = Number(createInvoiceForm.taxable_value || 0);
@@ -13015,81 +13491,427 @@ export default function App() {
       )}
 
 {/* MODAL: PRINT GST TAX INVOICE PDF MODAL */}
-      {showPrintInvoiceModal && showPrintInvoiceModal.open && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
-          <div style={{ background: '#ffffff', color: '#0f172a', borderRadius: '16px', width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px', border: '2px solid #0284c7' }}>
+      {showPrintInvoiceModal && showPrintInvoiceModal.open && (() => {
+        const themePresets = {
+          // OPTION 3. WARM SAND & CHAMPAGNE NUDE
+          SAND: {
+            name: 'Warm Sand & Champagne Nude',
+            badge: '🍨 CHAMPAGNE SAND',
+            headerBg: 'linear-gradient(135deg, #451a03 0%, #290e05 100%)',
+            headerBorder: '#d97706',
+            logoBg: 'linear-gradient(135deg, #78350f 0%, #451a03 100%)',
+            logoBorder: '#fde68a',
+            accentText: '#fcd34d',
+            cardBg: '#fffbeb',
+            cardBorder: '#fde68a',
+            cardTitle: '#b45309',
+            subHeaderBg: '#fef3c7',
+            subHeaderBorder: '#fde047',
+            subHeaderTitle: '#78350f',
+            subHeaderLink: '#b45309',
+            tableHeader: 'linear-gradient(135deg, #451a03 0%, #290e05 100%)',
+            totalBorder: '#b45309',
+            footerBg: 'linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)',
+            footerBorder: '#b45309',
+            footerText: '#290e05',
+            legalBg: '#290e05',
+            legalText: '#fde68a',
+            btnBg: 'linear-gradient(135deg, #b45309 0%, #78350f 100%)',
+            modalBorder: '#b45309',
+            badgeColor: '#b45309'
+          },
+          // OPTION 5. SOFT ICE BLUE & SLATE
+          NAVY: {
+            name: 'Soft Ice Blue & Slate',
+            badge: '💎 ICE BLUE SLATE',
+            headerBg: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            headerBorder: '#38bdf8',
+            logoBg: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            logoBorder: '#bae6fd',
+            accentText: '#7dd3fc',
+            cardBg: '#f0f9ff',
+            cardBorder: '#bae6fd',
+            cardTitle: '#0284c7',
+            subHeaderBg: '#e0f2fe',
+            subHeaderBorder: '#bae6fd',
+            subHeaderTitle: '#0369a1',
+            subHeaderLink: '#0284c7',
+            tableHeader: 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
+            totalBorder: '#0284c7',
+            footerBg: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+            footerBorder: '#0284c7',
+            footerText: '#0f172a',
+            legalBg: '#0f172a',
+            legalText: '#bae6fd',
+            btnBg: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+            modalBorder: '#0284c7',
+            badgeColor: '#0284c7'
+          }
+        };
+
+        const activeT = themePresets[invoiceTemplateTheme] || themePresets.SAND;
+
+        return (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.88)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
+          <style>{`
+            @media print {
+              @page {
+                size: A4 portrait;
+                margin: 0mm;
+              }
+              html, body {
+                background: #ffffff !important;
+                color: #0f172a !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                width: 100% !important;
+                height: 100% !important;
+                overflow: hidden !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              body * {
+                visibility: hidden !important;
+              }
+              .printable-gst-invoice, .printable-gst-invoice * {
+                visibility: visible !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              .printable-gst-invoice {
+                position: fixed !important;
+                left: 0 !important;
+                top: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                background: #ffffff !important;
+                color: #0f172a !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+                overflow: hidden !important;
+                border-radius: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              .no-print {
+                display: none !important;
+                height: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+              }
+            }
+          `}</style>
+          
+          <div className="printable-gst-invoice" style={{ background: '#ffffff', color: '#0f172a', borderRadius: '20px', width: '100%', maxWidth: '840px', maxHeight: '92vh', overflowY: 'auto', padding: '0', display: 'flex', flexDirection: 'column', border: `2px solid ${activeT.modalBorder}`, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
             
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #0284c7', paddingBottom: '16px' }}>
-              <div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0284c7' }}>SWARAMAYI REAL ESTATE MARKETING</h2>
-                <p style={{ fontSize: '0.8rem', color: '#475569', margin: '2px 0 0 0' }}>GSTIN: 36AAACS9012F1Z8 • Official GST 18% Tax Invoice</p>
+            {/* 🎨 INTERACTIVE DEMO TEMPLATE THEME SELECTOR TOOLBAR */}
+            <div className="no-print" style={{ background: '#0f172a', padding: '10px 20px', borderBottom: '1px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff', fontSize: '0.82rem', fontWeight: '900' }}>
+                <span style={{ fontSize: '1.1rem' }}>🎨</span> SELECT INVOICE TEMPLATE THEME:
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ background: showPrintInvoiceModal.invoice.invoice_category === 'DEVELOPER' ? '#16a34a' : '#0284c7', color: '#ffffff', padding: '3px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setInvoiceTemplateTheme('SAND')}
+                  style={{ background: invoiceTemplateTheme === 'SAND' ? '#b45309' : '#1e293b', color: '#ffffff', border: invoiceTemplateTheme === 'SAND' ? '2px solid #d97706' : '1px solid #334155', padding: '5px 12px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  🍨 Warm Sand & Champagne Nude {invoiceTemplateTheme === 'SAND' ? '(Active)' : ''}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setInvoiceTemplateTheme('NAVY')}
+                  style={{ background: invoiceTemplateTheme === 'NAVY' ? '#0284c7' : '#1e293b', color: '#ffffff', border: invoiceTemplateTheme === 'NAVY' ? '2px solid #38bdf8' : '1px solid #334155', padding: '5px 12px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  💎 Soft Ice Blue & Slate {invoiceTemplateTheme === 'NAVY' ? '(Active)' : ''}
+                </button>
+              </div>
+            </div>
+
+            {/* 🌟 LUXURY DYNAMIC HEADER BANNER */}
+            <div style={{ background: activeT.headerBg, color: '#ffffff', padding: '18px 24px', borderBottom: `4px solid ${activeT.headerBorder}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              
+              {/* COMPANY BRANDING LOGO & TITLES */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '300px' }}>
+                <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: activeT.logoBg, border: `2px solid ${activeT.logoBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4)', flexShrink: 0 }}>
+                  <Building2 size={30} color="#ffffff" />
+                </div>
+
+                <div>
+                  <h1 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#ffffff', margin: 0, letterSpacing: '-0.3px', textTransform: 'uppercase' }}>
+                    SWARAMAYI REAL ESTATE MARKETING
+                  </h1>
+                  
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginTop: '4px', flexWrap: 'wrap' }}>
+                    <span style={{ background: activeT.badgeColor, color: '#ffffff', padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '900', letterSpacing: '0.5px' }}>
+                      GSTIN: 36AAACS9012F1Z8
+                    </span>
+                    <span style={{ background: 'rgba(255, 255, 255, 0.15)', color: activeT.accentText, padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', border: `1px solid ${activeT.accentText}` }}>
+                      Official GST 18% Tax Invoice
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* INVOICE CARD BADGE */}
+              <div style={{ background: 'rgba(255, 255, 255, 0.08)', backdropFilter: 'blur(6px)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '12px', padding: '10px 14px', textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
+                <span style={{ background: showPrintInvoiceModal.invoice.invoice_category === 'DEVELOPER' ? '#16a34a' : activeT.badgeColor, color: '#ffffff', padding: '2px 8px', borderRadius: '8px', fontSize: '0.68rem', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   {showPrintInvoiceModal.invoice.invoice_category === 'DEVELOPER' ? 'B2B DEVELOPER BROKERAGE INVOICE' : 'B2C CUSTOMER SERVICE INVOICE'}
                 </span>
-                <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#0f172a', fontFamily: 'monospace', marginTop: '4px' }}>{showPrintInvoiceModal.invoice.invoice_number}</h4>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Date: {showPrintInvoiceModal.invoice.created_date || '2026-08-25'}</div>
+                
+                <div style={{ fontSize: '1.05rem', fontWeight: '900', color: activeT.accentText, fontFamily: 'monospace', margin: '2px 0 0 0' }}>
+                  {showPrintInvoiceModal.invoice.invoice_number}
+                </div>
+                
+                <div style={{ fontSize: '0.72rem', color: '#ffffff', fontWeight: '700', opacity: 0.9 }}>
+                  📅 Date: <strong>{showPrintInvoiceModal.invoice.created_date || '2026-08-29'}</strong>
+                </div>
               </div>
+
             </div>
 
-            <div style={{ background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.85rem' }}>
-              {showPrintInvoiceModal.invoice.invoice_category === 'DEVELOPER' ? (
-                <>
-                  <div><strong>Billed To (Developer):</strong> {showPrintInvoiceModal.invoice.developer_name}</div>
-                  <div><strong>Developer GSTIN:</strong> {showPrintInvoiceModal.invoice.developer_gstin || '36AAACA1234F1Z5'}</div>
-                  <div><strong>Customer Buyer:</strong> {showPrintInvoiceModal.invoice.customer_name} ({showPrintInvoiceModal.invoice.customer_number})</div>
-                  <div><strong>Property Unit:</strong> {showPrintInvoiceModal.invoice.property_title}</div>
-                </>
-              ) : (
-                <>
-                  <div><strong>Billed To (Customer):</strong> {showPrintInvoiceModal.invoice.customer_name}</div>
-                  <div><strong>Customer ID:</strong> {showPrintInvoiceModal.invoice.customer_number}</div>
-                  <div><strong>Contact Mobile:</strong> {showPrintInvoiceModal.invoice.customer_mobile || '+91 98490 12345'}</div>
-                  <div><strong>Property Unit:</strong> {showPrintInvoiceModal.invoice.property_title}</div>
-                </>
-              )}
-            </div>
-
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', border: '1px solid #cbd5e1' }}>
-              <thead>
-                <tr style={{ background: '#0284c7', color: '#ffffff' }}>
-                  <th style={{ padding: '10px', textAlign: 'left' }}>Description of Services / Particulars</th>
-                  <th style={{ padding: '10px', textAlign: 'right' }}>Taxable Value (₹)</th>
-                  <th style={{ padding: '10px', textAlign: 'right' }}>CGST (9%)</th>
-                  <th style={{ padding: '10px', textAlign: 'right' }}>SGST (9%)</th>
-                  <th style={{ padding: '10px', textAlign: 'right' }}>Total (₹)</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '10px', borderBottom: '1px solid #cbd5e1' }}>{showPrintInvoiceModal.invoice.particulars || 'Real Estate Services'}</td>
-                  <td style={{ padding: '10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1' }}>₹{Number(showPrintInvoiceModal.invoice.taxable_value || 200000).toLocaleString('en-IN')}</td>
-                  <td style={{ padding: '10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1' }}>₹{Number(showPrintInvoiceModal.invoice.cgst_amount || 18000).toLocaleString('en-IN')}</td>
-                  <td style={{ padding: '10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1' }}>₹{Number(showPrintInvoiceModal.invoice.sgst_amount || 18000).toLocaleString('en-IN')}</td>
-                  <td style={{ padding: '10px', textAlign: 'right', borderBottom: '1px solid #cbd5e1', fontWeight: '900', color: '#16a34a' }}>₹{Number(showPrintInvoiceModal.invoice.total_invoice_amount || 236000).toLocaleString('en-IN')}</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid #cbd5e1', paddingTop: '16px' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Bank Account & UPI Details for Payment</span>
-                <div style={{ fontWeight: '800', color: '#0f172a', fontSize: '0.8rem' }}>HDFC Bank • A/C: 50200018942109 • IFSC: HDFC0000128</div>
+            {/* MODAL MAIN CONTENT CONTAINER */}
+            <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              {/* CORPORATE CONTACT & ADDRESS SUB-HEADER BANNER */}
+              <div style={{ background: activeT.subHeaderBg, border: `1px solid ${activeT.subHeaderBorder}`, borderRadius: '10px', padding: '10px 14px', fontSize: '0.73rem', color: activeT.subHeaderTitle, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+                <div>
+                  🏢 <strong>Registered Corporate Office:</strong> {showPrintInvoiceModal.invoice.company_address || 'Suite 402, Swaramayi Corporate Tower, Jubilee Hills, Hyderabad - 500033, Telangana'}
+                </div>
+                <div style={{ display: 'flex', gap: '10px', fontWeight: '700', color: activeT.subHeaderLink, flexWrap: 'wrap' }}>
+                  <span>🆔 TS-RERA: {showPrintInvoiceModal.invoice.company_rera_no || 'P02400008492'}</span>
+                  <span>📧 Email: {showPrintInvoiceModal.invoice.company_email || 'billing@swaramayi.com'}</span>
+                  <span>📱 Phone: {showPrintInvoiceModal.invoice.company_mobile || '+91 98490 12345'}</span>
+                  <span>🌐 Web: {showPrintInvoiceModal.invoice.company_website || 'https://www.swaramayi.com'}</span>
+                </div>
               </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: '900' }}>● AUTHORIZED DIGITAL SIGNATURE</span>
-                <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace' }}>SHA256-INV-STAMP-#904128</div>
+
+              {/* TWO-COLUMN INFORMATIONAL CARDS */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                
+                {/* CARD 1: CUSTOMER / BILLING DETAILS */}
+                <div style={{ background: activeT.cardBg, border: `1px solid ${activeT.cardBorder}`, borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.78rem' }}>
+                  <div style={{ borderBottom: `1px solid ${activeT.cardBorder}`, paddingBottom: '4px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '0.9rem' }}>👤</span>
+                    <strong style={{ color: activeT.cardTitle, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CUSTOMER & BILLING DETAILS</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Billed To:</span>
+                    <strong style={{ color: '#0f172a' }}>{showPrintInvoiceModal.invoice.customer_name}</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Customer ID:</span>
+                    <span style={{ fontFamily: 'monospace', fontWeight: '700' }}>{showPrintInvoiceModal.invoice.customer_number || 'SRM-CUS-2026-000184'}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Contact Phone:</span>
+                    <strong>{showPrintInvoiceModal.invoice.customer_mobile || '+91 90490 12345'}</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Email Address:</span>
+                    <span>{showPrintInvoiceModal.invoice.customer_email || 'rohan.deshmukh@gmail.com'}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Place of Supply:</span>
+                    <strong>{showPrintInvoiceModal.invoice.place_of_supply || '36 - Telangana'}</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>GSTIN / PAN:</span>
+                    <strong style={{ fontFamily: 'monospace' }}>{showPrintInvoiceModal.invoice.customer_gstin_pan || '36ABCDE1234F1Z5'}</strong>
+                  </div>
+
+                  <div style={{ borderTop: `1px solid ${activeT.cardBorder}`, paddingTop: '4px', marginTop: '2px' }}>
+                    <span style={{ color: '#64748b', display: 'block', marginBottom: '1px' }}>Billing Address:</span>
+                    <div style={{ fontWeight: '600', color: '#1e293b' }}>{showPrintInvoiceModal.invoice.customer_address || 'Flat 402, Royal Heights, Jubilee Hills, Hyderabad - 500033'}</div>
+                  </div>
+                </div>
+
+                {/* CARD 2: PROPERTY & UNIT PARTICULARS */}
+                <div style={{ background: activeT.cardBg, border: `1px solid ${activeT.cardBorder}`, borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.78rem' }}>
+                  <div style={{ borderBottom: `1px solid ${activeT.cardBorder}`, paddingBottom: '4px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ fontSize: '0.9rem' }}>🏠</span>
+                    <strong style={{ color: activeT.cardTitle, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PROPERTY & UNIT PARTICULARS</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Property Code:</span>
+                    <span style={{ fontFamily: 'monospace', fontWeight: '700' }}>{showPrintInvoiceModal.invoice.property_code || 'SRM-PROP-2026-000421'}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Property Title:</span>
+                    <strong style={{ color: '#0f172a' }}>{showPrintInvoiceModal.invoice.property_title}</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Developer / Builder:</span>
+                    <strong>{showPrintInvoiceModal.invoice.developer_name || 'Aparna Constructions'}</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Configuration:</span>
+                    <span>{showPrintInvoiceModal.invoice.property_configuration || '3 BHK Luxury Apartment'}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Locality / City:</span>
+                    <span>{showPrintInvoiceModal.invoice.property_locality || 'Kondapur, Hyderabad'}</span>
+                  </div>
+
+                  <div style={{ borderTop: `1px solid ${activeT.cardBorder}`, paddingTop: '4px', marginTop: '2px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Flat Base Price:</span>
+                      <span>{typeof showPrintInvoiceModal.invoice.flat_price === 'number' ? `₹${showPrintInvoiceModal.invoice.flat_price.toLocaleString('en-IN')}` : (showPrintInvoiceModal.invoice.flat_price || '₹80,00,000')}</span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Agreement Value:</span>
+                      <strong style={{ color: activeT.cardTitle }}>{typeof showPrintInvoiceModal.invoice.agreement_value === 'number' ? `₹${showPrintInvoiceModal.invoice.agreement_value.toLocaleString('en-IN')}` : (showPrintInvoiceModal.invoice.agreement_value || '₹84,00,000')}</strong>
+                    </div>
+                  </div>
+                </div>
+
               </div>
+
+              {/* PARTICULARS & TAXABLE SERVICES TABLE */}
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', border: `1px solid ${activeT.cardBorder}`, borderRadius: '8px', overflow: 'hidden' }}>
+                <thead>
+                  <tr style={{ background: activeT.tableHeader, color: '#ffffff' }}>
+                    <th style={{ padding: '9px 12px', textAlign: 'left', fontWeight: '800' }}>Description of Services / Particulars</th>
+                    <th style={{ padding: '9px 12px', textAlign: 'right', fontWeight: '800' }}>Taxable Value (₹)</th>
+                    <th style={{ padding: '9px 12px', textAlign: 'right', fontWeight: '800' }}>CGST ({showPrintInvoiceModal.invoice.cgst_rate || '9%'})</th>
+                    <th style={{ padding: '9px 12px', textAlign: 'right', fontWeight: '800' }}>SGST ({showPrintInvoiceModal.invoice.sgst_rate || '9%'})</th>
+                    <th style={{ padding: '9px 12px', textAlign: 'right', fontWeight: '800' }}>Total Invoice Amount (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr style={{ background: '#ffffff' }}>
+                    <td style={{ padding: '10px 12px', borderBottom: `1px solid ${activeT.cardBorder}` }}>
+                      <strong style={{ fontSize: '0.84rem', color: '#0f172a' }}>{showPrintInvoiceModal.invoice.particulars || 'Property Consultation & Service Charges'}</strong>
+                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '2px' }}>
+                        Calculated at {showPrintInvoiceModal.invoice.brokerage_percent || '2.0'}% of Agreement Value ({typeof showPrintInvoiceModal.invoice.agreement_value === 'number' ? `₹${showPrintInvoiceModal.invoice.agreement_value.toLocaleString('en-IN')}` : (showPrintInvoiceModal.invoice.agreement_value || '₹84,00,000')})
+                      </div>
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${activeT.cardBorder}`, fontWeight: '700' }}>
+                      ₹{Number(showPrintInvoiceModal.invoice.taxable_value || 168000).toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${activeT.cardBorder}`, color: '#475569' }}>
+                      ₹{Number(showPrintInvoiceModal.invoice.cgst_amount || Math.round(Number(showPrintInvoiceModal.invoice.taxable_value || 168000) * 0.09)).toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${activeT.cardBorder}`, color: '#475569' }}>
+                      ₹{Number(showPrintInvoiceModal.invoice.sgst_amount || Math.round(Number(showPrintInvoiceModal.invoice.taxable_value || 168000) * 0.09)).toLocaleString('en-IN')}
+                    </td>
+                    <td style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${activeT.cardBorder}`, fontWeight: '900', color: '#16a34a', fontSize: '0.98rem' }}>
+                      ₹{Number(showPrintInvoiceModal.invoice.total_invoice_amount || Math.round(Number(showPrintInvoiceModal.invoice.taxable_value || 168000) * 1.18)).toLocaleString('en-IN')}
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              {/* TAX BREAKDOWN & AMOUNT IN WORDS SUMMARY */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '14px' }}>
+                
+                <div style={{ flex: 1, background: activeT.cardBg, border: `1px solid ${activeT.cardBorder}`, borderRadius: '10px', padding: '12px 14px', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ color: '#64748b', fontWeight: '800' }}>Amount Chargeable (in words):</span>
+                  <strong style={{ color: activeT.cardTitle, fontSize: '0.84rem', fontStyle: 'italic' }}>
+                    Rupees One Lakh Ninety-Eight Thousand Two Hundred Forty Only
+                  </strong>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '4px', borderTop: `1px dashed ${activeT.cardBorder}`, paddingTop: '4px' }}>
+                    ℹ Applicable GST Rates: CGST @ 9% + SGST @ 9% = Total GST 18%.
+                  </div>
+                </div>
+
+                <div style={{ width: '310px', background: activeT.cardBg, border: `1px solid ${activeT.cardBorder}`, borderRadius: '10px', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Subtotal (Taxable Value):</span>
+                    <strong>₹{Number(showPrintInvoiceModal.invoice.taxable_value || 168000).toLocaleString('en-IN')}</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>CGST (9%):</span>
+                    <span>₹{Number(showPrintInvoiceModal.invoice.cgst_amount || Math.round(Number(showPrintInvoiceModal.invoice.taxable_value || 168000) * 0.09)).toLocaleString('en-IN')}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>SGST (9%):</span>
+                    <span>₹{Number(showPrintInvoiceModal.invoice.sgst_amount || Math.round(Number(showPrintInvoiceModal.invoice.taxable_value || 168000) * 0.09)).toLocaleString('en-IN')}</span>
+                  </div>
+
+                  <div style={{ borderTop: `2px solid ${activeT.totalBorder}`, paddingTop: '6px', marginTop: '2px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: '900', color: '#0f172a', fontSize: '0.85rem' }}>TOTAL AMOUNT:</span>
+                    <strong style={{ color: activeT.cardTitle, fontSize: '1.2rem', fontWeight: '900' }}>
+                      ₹{Number(showPrintInvoiceModal.invoice.total_invoice_amount || Math.round(Number(showPrintInvoiceModal.invoice.taxable_value || 168000) * 1.18)).toLocaleString('en-IN')}
+                    </strong>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* 🛡️ LUXURY FOOTER CARD (BANKING DETAILS & DIGITAL SIGNATURE) */}
+              <div style={{ background: activeT.footerBg, border: `1px solid ${activeT.cardBorder}`, borderTop: `3px solid ${activeT.footerBorder}`, borderRadius: '12px', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: activeT.cardTitle, fontWeight: '900', letterSpacing: '0.5px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🏦 OFFICIAL BANK ACCOUNT DETAILS FOR PAYOUT / SETTLEMENT
+                  </span>
+                  <div style={{ fontWeight: '800', color: activeT.footerText, fontSize: '0.8rem', marginTop: '3px' }}>
+                    {showPrintInvoiceModal.invoice.bank_name || 'HDFC Bank'} • A/C: <span style={{ fontFamily: 'monospace' }}>{showPrintInvoiceModal.invoice.bank_account_number || '50200018942109'}</span> • IFSC: <span style={{ fontFamily: 'monospace' }}>{showPrintInvoiceModal.invoice.bank_ifsc_code || 'HDFC0000128'}</span>
+                    {showPrintInvoiceModal.invoice.bank_upi_id ? ` • UPI ID: ${showPrintInvoiceModal.invoice.bank_upi_id}` : ''}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '3px' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <CheckCircle2 size={15} color="#16a34a" /> AUTHORIZED DIGITAL SIGNATURE
+                  </span>
+                  <div style={{ background: '#ffffff', border: `1px solid ${activeT.cardBorder}`, padding: '3px 8px', borderRadius: '6px', fontSize: '0.68rem', color: activeT.footerText, fontFamily: 'monospace', fontWeight: '700' }}>
+                    SHA256-INV-STAMP-#904128
+                  </div>
+                </div>
+              </div>
+
+              {/* 🔒 BOTTOM SLIM LEGAL BAR */}
+              <div style={{ background: activeT.legalBg, color: activeT.legalText, padding: '8px 14px', borderRadius: '8px', textAlign: 'center', fontSize: '0.7rem', fontWeight: '600' }}>
+                🔒 Official Computer-Generated GST Tax Invoice • Issued under Telangana GST Act 2017 • Swaramayi Real Estate Marketing
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: `1px solid ${activeT.cardBorder}`, paddingTop: '14px' }}>
+                <button 
+                  onClick={() => window.print()} 
+                  style={{ background: activeT.btnBg, color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '10px', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)' }}
+                >
+                  🖨️ Print GST Invoice PDF
+                </button>
+                
+                <button 
+                  onClick={() => setShowPrintInvoiceModal(null)} 
+                  style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 22px', borderRadius: '10px', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer' }}
+                >
+                  Close
+                </button>
+              </div>
+
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-              <button onClick={() => window.print()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>🖨️ Print GST Invoice PDF</button>
-              <button onClick={() => setShowPrintInvoiceModal(null)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Close</button>
-            </div>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* MODAL: INSTANT BEST ALTERNATIVE PROPERTY RECOMMENDATIONS */}
       {showAlternativePropertyModal && (
@@ -13359,3 +14181,250 @@ export default function App() {
     </div>
   );
 }
+
+const PublicInvoiceCheckoutView: React.FC<{ invoice: any; onSettlePayment: (invNo: string, txnId: string) => void }> = ({ invoice, onSettlePayment }) => {
+  const [selectedPayMethod, setSelectedPayMethod] = useState<'UPI' | 'CARD' | 'INSTANT'>('UPI');
+  const [upiIdInput, setUpiIdInput] = useState<string>('rohan.deshmukh@okaxis');
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [paymentSuccess, setPaymentSuccess] = useState<any>(null);
+
+  const totalAmount = Number(invoice.total_invoice_amount || 198240);
+
+  return (
+    <div style={{ minHeight: '100vh', width: '100vw', background: '#0f172a', color: '#ffffff', fontFamily: 'system-ui, -apple-system, sans-serif', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '36px 16px' }}>
+      
+      {/* HEADER LOGO & BRANDING */}
+      <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '4px' }}>
+          <span style={{ fontSize: '1.8rem' }}>🏢</span>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#ffffff', letterSpacing: '-0.5px' }}>
+            Swaramayi Real Estate CRM
+          </h1>
+        </div>
+        <div style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: '700' }}>
+          Secure Vehicle & GST Invoice Payment Portal
+        </div>
+      </div>
+
+      {/* MAIN CHECKOUT CARD MATCHING IMAGE 3 */}
+      <div style={{ width: '100%', maxWidth: '520px', background: '#1e293b', border: '1px solid #334155', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.7)' }}>
+        
+        {/* HEADER PURPLE/BLUE BANNER */}
+        <div style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)', padding: '24px 28px', color: '#ffffff' }}>
+          <span style={{ fontSize: '0.7rem', fontWeight: '900', letterSpacing: '1px', opacity: 0.9, textTransform: 'uppercase' }}>
+            GST INVOICE CHECKOUT
+          </span>
+          <h1 style={{ fontSize: '2.5rem', fontWeight: '900', margin: '4px 0 10px 0' }}>
+            ₹{totalAmount.toLocaleString('en-IN')}
+          </h1>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', fontSize: '0.75rem' }}>
+            <span style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(4px)', padding: '3px 10px', borderRadius: '12px', fontWeight: '800' }}>
+              Invoice: {invoice.invoice_number}
+            </span>
+            <span style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(4px)', padding: '3px 10px', borderRadius: '12px', fontWeight: '800' }}>
+              Customer: {invoice.customer_name || invoice.developer_name || 'Rohan Deshmukh'}
+            </span>
+          </div>
+        </div>
+
+        {paymentSuccess ? (
+          /* SUCCESS CONFIRMATION RECEIPT */
+          <div style={{ padding: '32px 28px', display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center', textAlign: 'center' }}>
+            <div style={{ width: '72px', height: '72px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.2)', border: '2px solid #22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={40} color="#22c55e" />
+            </div>
+
+            <div>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#22c55e' }}>Payment Successful & Invoice Settled!</h2>
+              <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginTop: '6px' }}>
+                Your payment of ₹{totalAmount.toLocaleString('en-IN')} has been processed successfully.
+              </p>
+            </div>
+
+            <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '18px', width: '100%', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#94a3b8' }}>Transaction ID:</span><strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>#{paymentSuccess.txnId}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#94a3b8' }}>Invoice Number:</span><strong>{invoice.invoice_number}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#94a3b8' }}>Amount Settled:</span><strong style={{ color: '#22c55e' }}>₹{totalAmount.toLocaleString('en-IN')}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#94a3b8' }}>Payment Method:</span><strong>{paymentSuccess.mode}</strong></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span style={{ color: '#94a3b8' }}>Timestamp:</span><span>{paymentSuccess.timestamp}</span></div>
+              <div style={{ borderTop: '1px solid #334155', paddingTop: '8px', fontSize: '0.72rem', color: '#64748b' }}>
+                SHA256 Digital Verification: <span style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{paymentSuccess.hash}</span>
+              </div>
+            </div>
+
+            {/* SHARE SCREENSHOT & WHATSAPP RECEIPT ACTION BUTTONS */}
+            <div style={{ display: 'flex', gap: '10px', width: '100%', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  const phone = (invoice.customer_mobile || '').replace(/[^0-9]/g, '');
+                  const msg = encodeURIComponent(`✅ PAYMENT SUCCESSFUL RECEIPT - Swaramayi Real Estate CRM\n\n• Transaction ID: #${paymentSuccess.txnId}\n• Invoice Number: ${invoice.invoice_number}\n• Amount Settled: ₹${totalAmount.toLocaleString('en-IN')}\n• Payment Method: ${paymentSuccess.mode}\n• Timestamp: ${paymentSuccess.timestamp}\n\nSHA256 Verification: ${paymentSuccess.hash}\n\nThank you for choosing Swaramayi Real Estate Marketing!`);
+                  window.open(`https://wa.me/${phone}?text=${msg}`, '_blank');
+                }}
+                style={{ flex: 1, minWidth: '200px', background: '#22c55e', color: '#ffffff', border: 'none', padding: '12px 16px', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <Share2 size={18} /> Share Receipt on WhatsApp
+              </button>
+
+              <button
+                type="button"
+                onClick={() => window.print()}
+                style={{ flex: 1, minWidth: '200px', background: '#0284c7', color: '#ffffff', border: 'none', padding: '12px 16px', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                📸 Share Screenshot / Download Receipt
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* CHECKOUT FORM CONTENT */
+          <div style={{ padding: '24px 28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* INVOICE DETAILS SUMMARY CARD */}
+            <div style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.85rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Property Unit:</span>
+                <strong>{invoice.property_title || 'Aparna Zenon Premium 3BHK Residence'}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#94a3b8' }}>Total Payable Amount:</span>
+                <strong style={{ color: '#4ade80', fontSize: '1.1rem' }}>₹{totalAmount.toLocaleString('en-IN')}</strong>
+              </div>
+            </div>
+
+            {/* PAYMENT METHOD SELECTOR MATCHING IMAGE 3 */}
+            <div>
+              <label style={{ fontSize: '0.85rem', fontWeight: '800', color: '#ffffff', display: 'block', marginBottom: '10px' }}>
+                Select Payment Method
+              </label>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                
+                {/* OPTION 1: UPI */}
+                <div 
+                  onClick={() => setSelectedPayMethod('UPI')}
+                  style={{ 
+                    background: selectedPayMethod === 'UPI' ? '#0f172a' : '#1e293b', 
+                    border: selectedPayMethod === 'UPI' ? '2px solid #6366f1' : '1px solid #334155', 
+                    borderRadius: '12px', 
+                    padding: '14px 16px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input type="radio" checked={selectedPayMethod === 'UPI'} readOnly style={{ accentColor: '#6366f1' }} />
+                    <span style={{ fontSize: '0.9rem', fontWeight: '800' }}>📱 UPI / Google Pay / PhonePe / Paytm</span>
+                  </div>
+
+                  {selectedPayMethod === 'UPI' && (
+                    <div style={{ marginTop: '4px' }}>
+                      <input 
+                        type="text" 
+                        value={upiIdInput}
+                        onChange={(e) => setUpiIdInput(e.target.value)}
+                        placeholder="Enter UPI ID (e.g. mobile@upi or name@okaxis)"
+                        style={{ width: '100%', background: '#1e293b', border: '1px solid #475569', color: '#ffffff', padding: '10px', borderRadius: '8px', fontSize: '0.85rem' }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* OPTION 2: CREDIT / DEBIT CARD */}
+                <div 
+                  onClick={() => setSelectedPayMethod('CARD')}
+                  style={{ 
+                    background: selectedPayMethod === 'CARD' ? '#0f172a' : '#1e293b', 
+                    border: selectedPayMethod === 'CARD' ? '2px solid #6366f1' : '1px solid #334155', 
+                    borderRadius: '12px', 
+                    padding: '14px 16px', 
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input type="radio" checked={selectedPayMethod === 'CARD'} readOnly style={{ accentColor: '#6366f1' }} />
+                    <span style={{ fontSize: '0.9rem', fontWeight: '800' }}>💳 Credit / Debit Card</span>
+                  </div>
+
+                  {selectedPayMethod === 'CARD' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                      <input type="text" defaultValue="4532 8910 2034 9012" placeholder="Card Number" style={{ width: '100%', background: '#1e293b', border: '1px solid #475569', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace' }} />
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                        <input type="text" defaultValue="09/29" placeholder="MM/YY" style={{ width: '100%', background: '#1e293b', border: '1px solid #475569', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace' }} />
+                        <input type="password" defaultValue="849" placeholder="CVV" style={{ width: '100%', background: '#1e293b', border: '1px solid #475569', color: '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace' }} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* OPTION 3: INSTANT TEST ONLINE PAYMENT */}
+                <div 
+                  onClick={() => setSelectedPayMethod('INSTANT')}
+                  style={{ 
+                    background: selectedPayMethod === 'INSTANT' ? '#0f172a' : '#1e293b', 
+                    border: selectedPayMethod === 'INSTANT' ? '2px solid #22c55e' : '1px solid #334155', 
+                    borderRadius: '12px', 
+                    padding: '14px 16px', 
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <input type="radio" checked={selectedPayMethod === 'INSTANT'} readOnly style={{ accentColor: '#22c55e' }} />
+                    <span style={{ fontSize: '0.9rem', fontWeight: '800', color: '#4ade80' }}>⚡ Instant Test Online Payment (1-Click Settlement)</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* ACTION PAYMENT BUTTON */}
+            <button
+              type="button"
+              disabled={isProcessing}
+              onClick={() => {
+                setIsProcessing(true);
+                setTimeout(() => {
+                  const txnId = 'TXN-2026-' + Math.floor(100000 + Math.random() * 900000);
+                  const hash = 'SHA256-' + Math.random().toString(36).substring(2, 14).toUpperCase();
+                  
+                  onSettlePayment(invoice.invoice_number, txnId);
+                  
+                  setIsProcessing(false);
+                  setPaymentSuccess({
+                    txnId,
+                    hash,
+                    mode: selectedPayMethod === 'UPI' ? 'UPI (GPay / Paytm)' : (selectedPayMethod === 'CARD' ? 'Credit/Debit Card' : 'Direct Instant Settlement'),
+                    timestamp: new Date().toLocaleString('en-IN')
+                  });
+                }, 1200);
+              }}
+              style={{
+                background: 'linear-gradient(135deg, #4f46e5 0%, #4338ca 100%)',
+                color: '#ffffff',
+                border: 'none',
+                padding: '14px',
+                borderRadius: '12px',
+                fontWeight: '900',
+                fontSize: '1rem',
+                cursor: isProcessing ? 'wait' : 'pointer',
+                boxShadow: '0 4px 16px rgba(79, 70, 229, 0.4)',
+                marginTop: '6px'
+              }}
+            >
+              {isProcessing ? '⏳ Processing Payment with Bank Gateway...' : `Pay ₹${totalAmount.toLocaleString('en-IN')} & Settle Invoice`}
+            </button>
+
+            <div style={{ fontSize: '0.72rem', color: '#64748b', textAlign: 'center' }}>
+              🔒 256-bit SSL Encrypted Payment & Direct Invoice Settlement
+            </div>
+
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};

@@ -60,9 +60,6 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
             <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
               <Share2 size={24} color="#38bdf8" /> COST SHEET SHARING & CUSTOMER DELIVERY HUB
             </h2>
-            <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
-              SRM-PSH / DISPATCHER ACTIVE
-            </span>
           </div>
           <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
             Multi-Channel Cost Sheet Sharing • WhatsApp & Email Gateway • Open Counter Analytics • Customer Interest Handoff

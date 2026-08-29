@@ -70,7 +70,6 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>ADVANCED LEAD MANAGEMENT & FOLLOW-UP CONTROL SYSTEM</h2>
-            <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>CENTRAL LEAD DATABASE</span>
           </div>
           <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
             Single Central Lead Database • Permanent Unique Lead ID (SRM-LEAD-2026-XXXXXX) • Enforced Call Dispositions & Next Action Controls
