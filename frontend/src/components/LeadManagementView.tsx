@@ -62,6 +62,19 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
   setIsMobileSidebarOpen,
   handleOpenResumeQualification,
 }) => {
+  // DEDUPLICATE LEADS LIST BY CUSTOMER NUMBER & MOBILE TO PREVENT DUPLICATE ROWS
+  const uniqueLeadsList = React.useMemo(() => {
+    return Array.from(
+      leadsList.reduce((map: any, item: any) => {
+        const key = item.customer_number || item.customer_id || (item.mobile ? item.mobile.replace(/[^0-9]/g, '') : item.id);
+        if (!map.has(key)) {
+          map.set(key, item);
+        }
+        return map;
+      }, new Map()).values()
+    );
+  }, [leadsList]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -97,20 +110,20 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
         <>
           <div style={{ display: 'flex', gap: '6px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px', overflowX: 'auto', flexWrap: 'nowrap' }}>
             {[
-              { id: 'all', label: 'All Leads', count: leadsList.length, color: '#38bdf8' },
-              { id: 'unassigned', label: 'New & Unassigned', count: leadsList.filter(l => !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned').length, color: '#a855f7' },
-              { id: 'my_leads', label: 'My Leads', count: leadsList.filter(l => l.assigned_employee_id === 'USR-07' || l.assigned_employee_name?.includes('Priya')).length, color: '#38bdf8' },
-              { id: 'today_followups', label: "Today's Follow-ups", count: leadsList.filter(l => l.next_followup && l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#fbbf24', badgeBg: '#eab308' },
-              { id: 'overdue_followups', label: 'Overdue Follow-ups', count: leadsList.filter(l => l.next_followup && new Date(l.next_followup) < new Date() && !l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#ef4444', badgeBg: '#ef4444' },
-              { id: 'interested', label: 'Interested Leads', count: leadsList.filter(l => ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.lead_status) || ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.call_disposition)).length, color: '#4ade80' },
-              { id: 'not_interested', label: '❌ Not Interested', count: leadsList.filter(l => l.lead_status === 'NOT_INTERESTED' || l.call_disposition === 'NOT_INTERESTED').length, color: '#ef4444', badgeBg: '#ef4444' },
-              { id: 'no_response', label: '📵 No Response', count: leadsList.filter(l => l.lead_status === 'NO_RESPONSE' || l.call_disposition === 'NO_RESPONSE').length, color: '#eab308', badgeBg: '#eab308' },
-              { id: 'call_back_later', label: '⏳ Call Back Later', count: leadsList.filter(l => l.lead_status === 'CALL_BACK_LATER' || l.call_disposition === 'CALL_BACK_LATER').length, color: '#38bdf8', badgeBg: '#0284c7' },
-              { id: 'matching', label: 'Matching Pending', count: leadsList.filter(l => ['MATCHING_PENDING', 'MATCHING_DONE'].includes(l.lead_status)).length, color: '#c084fc' },
-              { id: 'visit', label: 'Visit Leads', count: leadsList.filter(l => ['VISIT_PLANNED', 'VISIT_COMPLETED'].includes(l.lead_status)).length, color: '#38bdf8' },
-              { id: 'converted', label: 'Converted Leads', count: leadsList.filter(l => ['CONVERTED', 'BOOKING_PROCESS'].includes(l.lead_status)).length, color: '#22c55e' },
-              { id: 'nurture', label: 'Nurture / Recycle', count: leadsList.filter(l => l.lead_status === 'NURTURE' || l.lead_status === 'RECYCLE').length, color: isLight ? '#64748b' : '#94a3b8' },
-              { id: 'lost_closed', label: 'Lost / Closed', count: leadsList.filter(l => ['LOST', 'CANCELLED'].includes(l.lead_status)).length, color: '#64748b' }
+              { id: 'all', label: 'All Leads', count: uniqueLeadsList.length, color: '#38bdf8' },
+              { id: 'unassigned', label: 'New & Unassigned', count: uniqueLeadsList.filter(l => !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned').length, color: '#a855f7' },
+              { id: 'my_leads', label: 'My Leads', count: uniqueLeadsList.filter(l => l.assigned_employee_id === 'USR-07' || l.assigned_employee_name?.includes('Priya')).length, color: '#38bdf8' },
+              { id: 'today_followups', label: "Today's Follow-ups", count: uniqueLeadsList.filter(l => l.next_followup && l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#fbbf24', badgeBg: '#eab308' },
+              { id: 'overdue_followups', label: 'Overdue Follow-ups', count: uniqueLeadsList.filter(l => l.next_followup && new Date(l.next_followup) < new Date() && !l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#ef4444', badgeBg: '#ef4444' },
+              { id: 'interested', label: 'Interested Leads', count: uniqueLeadsList.filter(l => ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.lead_status) || ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.call_disposition)).length, color: '#4ade80' },
+              { id: 'not_interested', label: '❌ Not Interested', count: uniqueLeadsList.filter(l => l.lead_status === 'NOT_INTERESTED' || l.call_disposition === 'NOT_INTERESTED').length, color: '#ef4444', badgeBg: '#ef4444' },
+              { id: 'no_response', label: '📵 No Response', count: uniqueLeadsList.filter(l => l.lead_status === 'NO_RESPONSE' || l.call_disposition === 'NO_RESPONSE').length, color: '#eab308', badgeBg: '#eab308' },
+              { id: 'call_back_later', label: '⏳ Call Back Later', count: uniqueLeadsList.filter(l => l.lead_status === 'CALL_BACK_LATER' || l.call_disposition === 'CALL_BACK_LATER').length, color: '#38bdf8', badgeBg: '#0284c7' },
+              { id: 'matching', label: 'Matching Pending', count: uniqueLeadsList.filter(l => ['MATCHING_PENDING', 'MATCHING_DONE'].includes(l.lead_status)).length, color: '#c084fc' },
+              { id: 'visit', label: 'Visit Leads', count: uniqueLeadsList.filter(l => ['VISIT_PLANNED', 'VISIT_COMPLETED'].includes(l.lead_status)).length, color: '#38bdf8' },
+              { id: 'converted', label: 'Converted Leads', count: uniqueLeadsList.filter(l => ['CONVERTED', 'BOOKING_PROCESS'].includes(l.lead_status)).length, color: '#22c55e' },
+              { id: 'nurture', label: 'Nurture / Recycle', count: uniqueLeadsList.filter(l => l.lead_status === 'NURTURE' || l.lead_status === 'RECYCLE').length, color: isLight ? '#64748b' : '#94a3b8' },
+              { id: 'lost_closed', label: 'Lost / Closed', count: uniqueLeadsList.filter(l => ['LOST', 'CANCELLED'].includes(l.lead_status)).length, color: '#64748b' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -186,7 +199,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
           <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
-                📋 Central Lead Master Vault ({leadsList.filter(l => {
+                📋 Central Lead Master Vault ({uniqueLeadsList.filter(l => {
                   if (leadInboxTab === 'unassigned') return !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned';
                   if (leadInboxTab === 'my_leads') return l.assigned_employee_id === 'USR-07' || l.assigned_employee_name?.includes('Priya');
                   if (leadInboxTab === 'today_followups') return l.next_followup && l.next_followup.startsWith(new Date().toISOString().split('T')[0]);
@@ -226,7 +239,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {leadsList
+                  {uniqueLeadsList
                     .filter(l => {
                       if (leadInboxTab === 'unassigned') return !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned';
                       if (leadInboxTab === 'my_leads') return l.assigned_employee_id === 'USR-07' || l.assigned_employee_name?.includes('Priya');
@@ -415,7 +428,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
 
             {Array.from({ length: 31 }, (_, i) => i + 1).map(day => {
               const dayStr = `2026-08-${String(day).padStart(2, '0')}`;
-              const dayLeads = leadsList.filter(l => l.next_followup && l.next_followup.startsWith(dayStr));
+              const dayLeads = uniqueLeadsList.filter(l => l.next_followup && l.next_followup.startsWith(dayStr));
 
               return (
                 <div key={day} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: day === 24 || day === 25 ? '2px solid #0284c7' : '1px solid #334155', borderRadius: '10px', padding: '10px', minHeight: '90px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -511,7 +524,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
             >
               <span style={{ fontSize: '0.72rem', color: '#e0f2fe', fontWeight: '800', textTransform: 'uppercase' }}>STEP 1: CENTRAL GATEWAY</span>
               <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '1.05rem', fontWeight: '900', margin: '2px 0 0 0' }}>📥 CENTRAL LEAD INBOX</h4>
-              <span style={{ fontSize: '0.75rem', color: '#bae6fd', fontWeight: '800' }}>{leadsList.length} Total Captured Leads</span>
+              <span style={{ fontSize: '0.75rem', color: '#bae6fd', fontWeight: '800' }}>{uniqueLeadsList.length} Total Captured Leads</span>
             </div>
 
             <ArrowDown size={20} color="#0284c7" />
@@ -533,7 +546,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
               >
                 <span style={{ fontSize: '0.7rem', color: '#c084fc', fontWeight: '900' }}>1. UNASSIGNED QUEUE</span>
                 <h5 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.88rem', margin: '2px 0 0 0' }}>🆕 NEW LEAD</h5>
-                <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{leadsList.filter(l => !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned').length} Pending Assignment</span>
+                <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{uniqueLeadsList.filter(l => !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned').length} Pending Assignment</span>
               </div>
 
               <div 
@@ -542,7 +555,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
               >
                 <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '900' }}>2. CRM ASSIGNED</span>
                 <h5 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.88rem', margin: '2px 0 0 0' }}>👤 ASSIGNED EXEC</h5>
-                <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{leadsList.filter(l => l.assigned_employee_id && l.assigned_employee_id !== 'Unassigned').length} Active Executives</span>
+                <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{uniqueLeadsList.filter(l => l.assigned_employee_id && l.assigned_employee_id !== 'Unassigned').length} Active Executives</span>
               </div>
 
               <div 
@@ -551,7 +564,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
               >
                 <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: '900' }}>3. SCHEDULED</span>
                 <h5 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.88rem', margin: '2px 0 0 0' }}>⏰ FOLLOW-UP</h5>
-                <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{leadsList.filter(l => l.next_followup).length} Scheduled Callbacks</span>
+                <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{uniqueLeadsList.filter(l => l.next_followup).length} Scheduled Callbacks</span>
               </div>
 
             </div>
@@ -572,7 +585,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
               {/* BRANCH 1: INTERESTED -> MATCHING -> COST SHEET -> VISIT -> AGREEMENT -> BOOKING */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #22c55e', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
                 <div style={{ background: '#22c55e', color: '#ffffff', padding: '6px 14px', borderRadius: '20px', fontWeight: '900', fontSize: '0.82rem', width: '100%', textAlign: 'center' }}>
-                  🟢 INTERESTED ({leadsList.filter(l => ['INTERESTED', 'CONNECTED_INTERESTED', 'MATCHING_PENDING', 'VISIT_PLANNED', 'CONVERTED'].includes(l.lead_status)).length})
+                  🟢 INTERESTED ({uniqueLeadsList.filter(l => ['INTERESTED', 'CONNECTED_INTERESTED', 'MATCHING_PENDING', 'VISIT_PLANNED', 'CONVERTED'].includes(l.lead_status)).length})
                 </div>
 
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.78rem' }}>
@@ -605,7 +618,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
               {/* BRANCH 2: NOT INTERESTED -> RE-CALL LATER */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #fbbf24', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
                 <div style={{ background: '#fbbf24', color: '#0f172a', padding: '6px 14px', borderRadius: '20px', fontWeight: '900', fontSize: '0.82rem', width: '100%', textAlign: 'center' }}>
-                  🟡 NOT INTERESTED ({leadsList.filter(l => l.lead_status === 'NURTURE' || l.lead_status === 'RECYCLE' || l.call_disposition === 'PROPERTY_SEARCH_LATER').length})
+                  🟡 NOT INTERESTED ({uniqueLeadsList.filter(l => l.lead_status === 'NURTURE' || l.lead_status === 'RECYCLE' || l.call_disposition === 'PROPERTY_SEARCH_LATER').length})
                 </div>
 
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.78rem', marginTop: '14px' }}>
@@ -624,7 +637,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
               {/* BRANCH 3: NO RESPONSE -> RETRY */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #ef4444', borderRadius: '16px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
                 <div style={{ background: '#ef4444', color: '#ffffff', padding: '6px 14px', borderRadius: '20px', fontWeight: '900', fontSize: '0.82rem', width: '100%', textAlign: 'center' }}>
-                  🔴 NO RESPONSE ({leadsList.filter(l => ['NO_ANSWER', 'UNREACHABLE', 'CALL_BACK_LATER'].includes(l.call_disposition) || l.lead_status === 'CALL_BACK_LATER').length})
+                  🔴 NO RESPONSE ({uniqueLeadsList.filter(l => ['NO_ANSWER', 'UNREACHABLE', 'CALL_BACK_LATER'].includes(l.call_disposition) || l.lead_status === 'CALL_BACK_LATER').length})
                 </div>
 
                 <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.78rem', marginTop: '14px' }}>
