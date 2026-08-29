@@ -315,11 +315,43 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                           </td>
 
                           <td style={{ padding: '12px', color: '#4ade80', fontWeight: '800' }}>
-                            {(['NO_RESPONSE', 'CALL_BACK_LATER', 'NOT_INTERESTED'].includes(lead.call_disposition) || !lead.budget_max || (lead.last_completed_step && lead.last_completed_step < 3)) ? (
-                              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', fontWeight: '700' }}>⏳ Pending (Step {lead.last_completed_step || 2})</span>
-                            ) : (
-                              lead.budget_max ? formatIndianRupees(lead.budget_max) : '₹70 Lakhs+'
-                            )}
+                            {(() => {
+                              const formatSingle = (v: any) => {
+                                if (v === null || v === undefined || v === '') return '';
+                                if (typeof v === 'number') {
+                                  if (v >= 10000000) return `₹${(v / 10000000).toFixed(2).replace(/\.00$/, '')} Cr`;
+                                  if (v >= 100000) return `₹${(v / 100000).toFixed(2).replace(/\.00$/, '')} Lakh`;
+                                  return '₹' + v.toLocaleString('en-IN');
+                                }
+                                const str = String(v).trim();
+                                if (!str || str === '0' || str === 'N/A') return '';
+                                const num = parseFloat(str.replace(/[^0-9.]/g, ''));
+                                if (!isNaN(num) && num > 1000) {
+                                  if (num >= 10000000) return `₹${(num / 10000000).toFixed(2).replace(/\.00$/, '')} Cr`;
+                                  if (num >= 100000) return `₹${(num / 100000).toFixed(2).replace(/\.00$/, '')} Lakh`;
+                                  return '₹' + num.toLocaleString('en-IN');
+                                }
+                                return str;
+                              };
+
+                              let display = '';
+                              if (lead.budget && String(lead.budget).trim() !== '' && lead.budget !== 'N/A' && !String(lead.budget).includes('undefined') && String(lead.budget).trim() !== '-') {
+                                display = String(lead.budget);
+                              } else {
+                                const fMin = formatSingle(lead.budget_min);
+                                const fMax = formatSingle(lead.budget_max);
+                                if (fMin && fMax) display = `${fMin} - ${fMax}`;
+                                else if (fMax) display = fMax;
+                                else if (fMin) display = fMin;
+                              }
+
+                              if (display && display !== 'N/A') return display;
+
+                              if (['NO_RESPONSE', 'CALL_BACK_LATER', 'NOT_INTERESTED'].includes(lead.call_disposition) || (lead.last_completed_step && lead.last_completed_step < 3)) {
+                                return <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', fontWeight: '700' }}>⏳ Pending (Step {lead.last_completed_step || 2})</span>;
+                              }
+                              return 'N/A';
+                            })()}
                           </td>
 
                           <td style={{ padding: '12px' }}>

@@ -303,7 +303,7 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                         name: l.customer_name,
                         mobile: l.mobile,
                         email: l.email || 'lead@swaramayi.com',
-                        budget: `${l.budget_min ? Math.round(l.budget_min / 100000) + 'L' : '70L'} - ${l.budget_max ? Math.round(l.budget_max / 100000) + 'L' : '85L'}`,
+                        budget: l.budget || ((l.budget_min || l.budget_max) ? `${l.budget_min || ''} - ${l.budget_max || ''}`.trim() : '50 Lakhs - 60 Lakhs'),
                         preferredArea: l.preferred_location || 'Kondapur',
                         configuration: l.bhk || '3BHK',
                         priority: l.priority || 'HOT',

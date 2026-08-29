@@ -2194,7 +2194,7 @@ export default function App() {
     loan_status: 'Pre-Approved',
     decision_timeline: 'Within 30 Days',
     brokerage_rate: '2.0%',
-    brokerage_payer: 'DEVELOPER',
+    brokerage_payer: 'CUSTOMER',
     preferred_projects: 'My Home, Rajapushpa, Aparna',
     family_requirements: 'East Facing, High Floor, Pool View',
     sub_source: 'Kondapur 3BHK Campaign',
@@ -3807,7 +3807,7 @@ export default function App() {
       parking: newCustomerForm.parking || existingCustomer?.parking || '',
       amenities: newCustomerForm.amenities || existingCustomer?.amenities || '',
       brokerage_rate: newCustomerForm.brokerage_rate || existingCustomer?.brokerage_rate || '2.0%',
-      brokerage_payer: newCustomerForm.brokerage_payer || existingCustomer?.brokerage_payer || 'DEVELOPER',
+      brokerage_payer: newCustomerForm.brokerage_payer || existingCustomer?.brokerage_payer || 'CUSTOMER',
       assigned_employee_id: newCustomerForm.assigned_employee_id || existingCustomer?.assigned_employee_id || (dynamicSalesExecutives[0]?.value || 'Priya Nair (Sales Exec)'),
       assigned_salesperson: newCustomerForm.assigned_employee_id || existingCustomer?.assigned_salesperson || (dynamicSalesExecutives[0]?.value || 'Priya Nair (Sales Exec)'),
       lead_status: leadStatus,
@@ -3858,7 +3858,7 @@ export default function App() {
       parking: newCustomerForm.parking || '',
       amenities: newCustomerForm.amenities || '',
       brokerage_rate: newCustomerForm.brokerage_rate || '2.0%',
-      brokerage_payer: newCustomerForm.brokerage_payer || 'DEVELOPER',
+      brokerage_payer: newCustomerForm.brokerage_payer || 'CUSTOMER',
       lead_status: leadStatus,
       call_disposition: disp,
       priority: priority,
@@ -3983,6 +3983,13 @@ export default function App() {
       pincode: newCustomerForm.pincode || '',
       language: newCustomerForm.language || 'Bengali',
       source: newCustomerForm.lead_source || newLeadForm.source || 'Direct Intake',
+      lead_source: newCustomerForm.lead_source || newLeadForm.source || 'Direct Intake',
+      campaign_id: newCustomerForm.campaign_id || newCustomerForm.project_posting_id || '',
+      project_posting_id: newCustomerForm.project_posting_id || newCustomerForm.campaign_id || '',
+      utm_source: newCustomerForm.utm_source || newCustomerForm.searched_property_code || '',
+      searched_property_code: newCustomerForm.searched_property_code || newCustomerForm.utm_source || '',
+      referral_name: newCustomerForm.referral_name || '',
+      referral_source: newCustomerForm.referral_source || newCustomerForm.referral_name || '',
       investment_purpose: newCustomerForm.investment_purpose || '',
       property_type: newCustomerForm.property_type || '',
       configuration: newCustomerForm.configuration || '',
@@ -4005,6 +4012,8 @@ export default function App() {
       facing: newCustomerForm.facing || '',
       parking: newCustomerForm.parking || '',
       amenities: newCustomerForm.amenities || '',
+      brokerage_rate: newCustomerForm.brokerage_rate || '',
+      brokerage_payer: newCustomerForm.brokerage_payer || '',
       assigned_employee_id: newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)',
       assigned_employee_name: newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)',
       lead_status: 'QUALIFICATION_DRAFT',
@@ -4029,6 +4038,12 @@ export default function App() {
       pincode: newCustomerForm.pincode || '',
       language: newCustomerForm.language || 'Bengali',
       lead_source: newCustomerForm.lead_source || 'Direct Intake',
+      campaign_id: newCustomerForm.campaign_id || newCustomerForm.project_posting_id || '',
+      project_posting_id: newCustomerForm.project_posting_id || newCustomerForm.campaign_id || '',
+      utm_source: newCustomerForm.utm_source || newCustomerForm.searched_property_code || '',
+      searched_property_code: newCustomerForm.searched_property_code || newCustomerForm.utm_source || '',
+      referral_name: newCustomerForm.referral_name || '',
+      referral_source: newCustomerForm.referral_source || newCustomerForm.referral_name || '',
       investment_purpose: newCustomerForm.investment_purpose || '',
       property_type: newCustomerForm.property_type || '',
       configuration: newCustomerForm.configuration || '',
@@ -4049,6 +4064,8 @@ export default function App() {
       facing: newCustomerForm.facing || '',
       parking: newCustomerForm.parking || '',
       amenities: newCustomerForm.amenities || '',
+      brokerage_rate: newCustomerForm.brokerage_rate || '',
+      brokerage_payer: newCustomerForm.brokerage_payer || '',
       assigned_salesperson: newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)',
       created_at: existingCustomer ? (existingCustomer.created_at || todayStr) : todayStr,
       updated_at: new Date().toISOString()
@@ -4106,12 +4123,15 @@ export default function App() {
       pincode: lead.pincode || '',
       language: lead.language || 'Bengali',
       lead_source: lead.lead_source || lead.source || 'Facebook',
-      utm_source: lead.utm_source || lead.campaign || '',
-      project_posting_id: lead.project_posting_id || '',
-      searched_property_code: lead.searched_property_code || '',
-      investment_purpose: lead.investment_purpose || lead.purpose || 'BUY / OUTRIGHT PURCHASE',
-      property_type: lead.property_type || 'Flat / Apartment (New / Builder)',
-      configuration: lead.configuration || lead.bhk || '2BHK',
+      campaign_id: lead.campaign_id || lead.project_posting_id || lead.campaign || '',
+      project_posting_id: lead.project_posting_id || lead.campaign_id || lead.campaign || '',
+      utm_source: lead.utm_source || lead.searched_property_code || '',
+      searched_property_code: lead.searched_property_code || lead.utm_source || '',
+      referral_name: lead.referral_name || lead.referral_source || '',
+      referral_source: lead.referral_source || lead.referral_name || '',
+      investment_purpose: lead.investment_purpose || lead.purpose || '',
+      property_type: lead.property_type || '',
+      configuration: lead.configuration || lead.bhk || '',
       preferredArea: lead.preferredArea || lead.preferred_location || lead.locality || '',
       secondary_areas: lead.secondary_areas || lead.secondaryAreas || '',
       secondaryAreas: lead.secondary_areas || lead.secondaryAreas || '',
@@ -4122,19 +4142,19 @@ export default function App() {
       radius_km: lead.radius_km || lead.radiusKm || 5,
       budget_min: lead.budget_min || '',
       budget_max: lead.budget_max || '',
-      budget_flexibility: lead.budget_flexibility || '± 10% Flexible',
+      budget_flexibility: lead.budget_flexibility !== undefined && lead.budget_flexibility !== null ? lead.budget_flexibility : '',
       carpet_area_min: lead.carpet_area_min !== undefined && lead.carpet_area_min !== null ? String(lead.carpet_area_min) : '',
       carpet_area_max: lead.carpet_area_max !== undefined && lead.carpet_area_max !== null ? String(lead.carpet_area_max) : '',
       area_unit: lead.area_unit || 'Sq.Ft.',
-      possession_status: lead.possession_status || lead.possession_preference || 'Ready to Move',
-      facing: lead.facing || 'East Facing',
-      parking: lead.parking || 'Covered Slot',
+      possession_status: lead.possession_status || lead.possession_preference || '',
+      facing: lead.facing || '',
+      parking: lead.parking || '',
       amenities: lead.amenities || '',
       loan_required: lead.loan_required !== undefined ? String(lead.loan_required) : 'Yes',
       loan_status: lead.loan_status || 'Pre-Approved',
       decision_timeline: lead.decision_timeline || 'Immediate (< 30 Days)',
-      brokerage_rate: lead.brokerage_rate || '2.0%',
-      brokerage_payer: lead.brokerage_payer || 'DEVELOPER',
+      brokerage_rate: lead.brokerage_rate !== undefined && lead.brokerage_rate !== null ? lead.brokerage_rate : '',
+      brokerage_payer: lead.brokerage_payer !== undefined && lead.brokerage_payer !== null ? lead.brokerage_payer : '',
       assigned_employee_id: lead.assigned_employee_id || lead.assigned_employee_name || 'Priya Nair (Sales Exec)',
       assigned_employee_name: lead.assigned_employee_name || 'Priya Nair (Sales Exec)'
     });
@@ -10458,16 +10478,14 @@ export default function App() {
                     <div>
                       <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Payer & Billing Channel *</label>
                       <select 
-                        value={newCustomerForm.brokerage_payer || 'DEVELOPER'} 
+                        value={newCustomerForm.brokerage_payer || 'CUSTOMER'} 
                         onChange={(e) => {
                           setNewCustomerForm({ ...newCustomerForm, brokerage_payer: e.target.value });
                           setNewLeadForm({ ...newLeadForm, brokerage_payer: e.target.value } as any);
                         }} 
                         style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
                       >
-                        <option value="DEVELOPER">🏢 Billed to Developer / Builder (B2B 2.0% MOU)</option>
                         <option value="CUSTOMER">👤 Billed to Customer Buyer (B2C Consultancy Fee)</option>
-                        <option value="SPLIT">⚖️ Split (1.0% Customer + 1.0% Developer)</option>
                       </select>
                     </div>
                   </div>
@@ -10622,7 +10640,7 @@ export default function App() {
                   </div>
                   <div>
                     <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Agreed Brokerage:</span>
-                    <strong style={{ display: 'block', color: '#4ade80', fontWeight: '900' }}>💰 {newCustomerForm.brokerage_rate || '2.0%'} ({newCustomerForm.brokerage_payer || 'DEVELOPER'})</strong>
+                    <strong style={{ display: 'block', color: '#4ade80', fontWeight: '900' }}>💰 {newCustomerForm.brokerage_rate || '2.0%'} ({newCustomerForm.brokerage_payer || 'CUSTOMER'})</strong>
                   </div>
                 </div>
 
@@ -10654,18 +10672,27 @@ export default function App() {
                   <button 
                     type="button" 
                     onClick={() => {
-                      const mobileStr = newCustomerForm.mobile || '+91 98490 88888';
-                      const nameStr = newCustomerForm.name || 'Sumanth Varma';
-                      const existingIdx = matchingRequestsQueue.findIndex(r => r.mobile === mobileStr || (r.customerName === nameStr && r.customerName.length > 0));
-                      
+                      const mobileStr = newCustomerForm.mobile || newCustomerForm.phone || '+91 98490 88888';
+                      const nameStr = newCustomerForm.name || 'Inbound Prospect';
                       const targetMobile = mobileStr.replace(/[^0-9]/g, '');
+                      const targetCustCode = newCustomerForm.customer_number;
+
+                      const existingCustomer = customers.find(c => 
+                        (targetCustCode && c.customer_number === targetCustCode) ||
+                        (targetMobile && c.mobile && c.mobile.replace(/[^0-9]/g, '') === targetMobile)
+                      );
+
                       const existingLead = leadsList.find(l => 
                         (activeEditingLeadId && (l.id === activeEditingLeadId || l.lead_number === activeEditingLeadId)) ||
-                        (finalCustomerCode && l.customer_number === finalCustomerCode) ||
+                        (targetCustCode && l.customer_number === targetCustCode) ||
                         (targetMobile && l.mobile && l.mobile.replace(/[^0-9]/g, '') === targetMobile)
                       );
 
+                      const finalCustomerCode = targetCustCode || (existingCustomer ? existingCustomer.customer_number : generateNextCustomerCode());
                       const leadNum = existingLead ? existingLead.lead_number : generateNextLeadCode();
+                      const reqId = generateNextMatchingCode();
+
+                      const existingIdx = matchingRequestsQueue.findIndex(r => r.mobile === mobileStr || (r.customerName === nameStr && r.customerName.length > 0));
 
                       // 1. CREATE OR UPDATE OFFICIAL CENTRAL LEAD MASTER RECORD
                       const newLeadRecord = {
@@ -10688,10 +10715,13 @@ export default function App() {
                         language: newCustomerForm.language || 'Bengali',
                         source: newCustomerForm.lead_source || 'Meta Ads',
                         lead_source: newCustomerForm.lead_source || 'Meta Ads',
-                        campaign: newCustomerForm.campaign_id || newCustomerForm.utm_source || 'Summer Campaign 2026',
-                        utm_source: newCustomerForm.utm_source || newCustomerForm.campaign_id || '',
-                        project_posting_id: newCustomerForm.project_posting_id || '',
-                        searched_property_code: newCustomerForm.searched_property_code || '',
+                        campaign: newCustomerForm.campaign_id || newCustomerForm.project_posting_id || 'Summer Campaign 2026',
+                        campaign_id: newCustomerForm.campaign_id || newCustomerForm.project_posting_id || '',
+                        project_posting_id: newCustomerForm.project_posting_id || newCustomerForm.campaign_id || '',
+                        utm_source: newCustomerForm.utm_source || newCustomerForm.searched_property_code || '',
+                        searched_property_code: newCustomerForm.searched_property_code || newCustomerForm.utm_source || '',
+                        referral_name: newCustomerForm.referral_name || '',
+                        referral_source: newCustomerForm.referral_source || newCustomerForm.referral_name || '',
                         preferred_location: newCustomerForm.preferredArea || 'Madhyamgram',
                         preferredArea: newCustomerForm.preferredArea || 'Madhyamgram',
                         secondary_areas: newCustomerForm.secondary_areas || '',
@@ -10721,7 +10751,7 @@ export default function App() {
                         loan_status: newCustomerForm.loan_status || 'Pre-Approved',
                         decision_timeline: newCustomerForm.decision_timeline || 'Immediate (< 30 Days)',
                         brokerage_rate: newCustomerForm.brokerage_rate || '2.0%',
-                        brokerage_payer: newCustomerForm.brokerage_payer || 'DEVELOPER',
+                        brokerage_payer: newCustomerForm.brokerage_payer || 'CUSTOMER',
                         priority: 'HOT',
                         lead_status: 'MATCHING_PENDING',
                         call_disposition: 'CONNECTED_INTERESTED',
@@ -10811,8 +10841,12 @@ export default function App() {
                         pincode: newCustomerForm.pincode || '700129',
                         language: newCustomerForm.language || 'Bengali',
                         lead_source: newCustomerForm.lead_source || 'Meta Ads',
-                        project_posting_id: newCustomerForm.project_posting_id || '',
-                        searched_property_code: newCustomerForm.searched_property_code || '',
+                        campaign_id: newCustomerForm.campaign_id || newCustomerForm.project_posting_id || '',
+                        project_posting_id: newCustomerForm.project_posting_id || newCustomerForm.campaign_id || '',
+                        utm_source: newCustomerForm.utm_source || newCustomerForm.searched_property_code || '',
+                        searched_property_code: newCustomerForm.searched_property_code || newCustomerForm.utm_source || '',
+                        referral_name: newCustomerForm.referral_name || '',
+                        referral_source: newCustomerForm.referral_source || newCustomerForm.referral_name || '',
                         investment_purpose: newCustomerForm.investment_purpose || '',
                         property_type: newCustomerForm.property_type || '',
                         configuration: newCustomerForm.configuration || '',
@@ -10825,13 +10859,17 @@ export default function App() {
                         avoided_floors: newCustomerForm.non_preferred_floor || '',
                         budget_min: newCustomerForm.budget_min || '',
                         budget_max: newCustomerForm.budget_max || '',
+                        budget_flexibility: newCustomerForm.budget_flexibility || '',
+                        carpet_area_min: newCustomerForm.carpet_area_min || '',
+                        carpet_area_max: newCustomerForm.carpet_area_max || '',
+                        area_unit: newCustomerForm.area_unit || 'Sq.Ft.',
                         budget: `${newCustomerForm.budget_min} - ${newCustomerForm.budget_max}`,
                         possession_status: newCustomerForm.possession_status || '',
                         facing: newCustomerForm.facing || '',
                         parking: newCustomerForm.parking || '',
                         amenities: newCustomerForm.amenities || '',
                         brokerage_rate: newCustomerForm.brokerage_rate || '2.0%',
-                        brokerage_payer: newCustomerForm.brokerage_payer || 'DEVELOPER',
+                        brokerage_payer: newCustomerForm.brokerage_payer || 'CUSTOMER',
                         assigned_salesperson: newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)',
                         priority: 'HOT',
                         score: dynamicScore,
@@ -10854,10 +10892,8 @@ export default function App() {
                       setSelectedMatchingId(reqId);
                       setShowLeadModal(false);
                       setShowAddCustomerModal(false);
-                      setActiveTab('lead_management');
-                      setLeadViewMode('inbox');
-                      setLeadInboxTab('all');
-                      alert(`🎉 INGESTED NEW LEAD SUCCESSFULLY!\n\n• Lead ID: ${leadNum}\n• Customer ID: ${finalCustomerCode}\n• Matching ID: ${reqId}\n• Dynamic Audit Score: ${dynamicScore}%\n• Assigned CRM Executive: ${newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)'}\n\nPersisted into Central Lead Database & Local Storage!`);
+                      setActiveTab('matching_management');
+                      alert(`🎉 INGESTED NEW LEAD & GENERATED MATCHING ID SUCCESSFULLY!\n\n• Lead ID: ${leadNum}\n• Customer ID: ${finalCustomerCode}\n• Matching ID: ${reqId}\n• Dynamic Audit Score: ${dynamicScore}%\n• Assigned CRM Executive: ${newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)'}\n\nNavigating to Matching Management Engine...`);
                     }}
                     style={{ flex: 2, background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >
