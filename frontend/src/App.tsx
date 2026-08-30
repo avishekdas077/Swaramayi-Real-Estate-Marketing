@@ -12,7 +12,7 @@ import {
   Compass, QrCode, Share2, Layers3, Activity, Eye, EyeOff, ThumbsUp, ThumbsDown,
   Upload, FileUp, FileDown, Table, FileSignature, Scale, PenTool, ReceiptText, Calculator, Landmark,
   Grid, List, Columns, Edit3, Trash2, Layers2, Navigation, Map as MapIcon, PieChart, BarChart2,
-  GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck, Camera, Image as ImageIcon
+  GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck, Camera, Image as ImageIcon, SearchCode
 } from 'lucide-react';
 import { ProfileView } from './components/ProfileView';
 import { RoleManagementView } from './components/RoleManagementView';
@@ -26,6 +26,7 @@ import { CostSheetSharingView } from './components/CostSheetSharingView';
 import { CustomerManagementView } from './components/CustomerManagementView';
 import { LeadManagementView } from './components/LeadManagementView';
 import { MatchingManagementView } from './components/MatchingManagementView';
+import { PropertySourcingRequestsView } from './components/PropertySourcingRequestsView';
 
 function ScheduleVisitModalContent({
   isLight = false,
@@ -2303,43 +2304,139 @@ export default function App() {
   const [bulkPropertyCsvText, setBulkPropertyCsvText] = useState(
     `Title, Developer, ProjectName, Locality, City, Latitude, Longitude, PropertyType, Configuration, TowerBlock, FloorNumber, UnitNumber, CarpetArea, SuperBuiltupArea, Facing, Furnishing, PossessionStatus, AskingPrice, PricePerSqft, ParkingSlot, KeyAmenities, Status\n` +
     `"My Home Sayuk 3BHK Residence", "My Home Group", "My Home Sayuk Phase 1", "Tellapur", "Hyderabad", "17.4612", "78.3689", "Apartment", "3BHK", "Tower A", "14th Floor", "Flat 1402", "1850 Sq.Ft.", "2450 Sq.Ft.", "East Facing", "Semi-Furnished", "Ready to Move", "₹1.65 Crore", "₹8918/Sq.Ft.", "2 Covered Slots + EV", "Clubhouse; Swimming Pool; Gym; 100% Power Backup", "AVAILABLE"\n` +
-    `"Madhyamgram 2BHK Apartment", "Dhriti Apartments", "Dhriti Residency", "Madhyamgram", "Kolkata", "22.698021", "88.463723", "Apartment", "2BHK", "Block A", "Top Floor", "Flat 402", "714.75 Sq.Ft.", "950 Sq.Ft.", "East Facing", "Unfurnished", "Ready to Move", "3584000", "4000/Sq.Ft.", "1 Covered Slot", "Gated Security; Lift; Power Backup", "AVAILABLE"\n` +
+    `"Madhyamgram 2BHK Apartment", "Dhriti Apartments", "Dhriti Residency", "Madhyamgram", "Kolkata", "22.698021", "88.463723", "Apartment", "2BHK", "Block A", "Top Floor", "Flat 402", "714.75 Sq.Ft.", "950 Sq.Ft.", "East Facing", "Unfurnished", "Ready to Move", "₹35.84 Lakhs", "₹4000/Sq.Ft.", "1 Covered Slot", "Gated Security; Lift; Power Backup", "AVAILABLE"\n` +
     `"Rajapushpa Imperia 2BHK Suite", "Rajapushpa Properties", "Rajapushpa Imperia Block 2", "Tellapur", "Hyderabad", "17.4401", "78.3489", "Apartment", "2BHK", "Block 2", "8th Floor", "Flat 805", "1350 Sq.Ft.", "1780 Sq.Ft.", "North-East Facing", "Unfurnished", "Ready to Move", "₹1.15 Crore", "₹8518/Sq.Ft.", "1 Covered Slot", "Gated Security; Gym; Children Play Area", "AVAILABLE"\n` +
     `"Aparna New Heights 4BHK Sky Villa", "Aparna Constructions", "Aparna Zenith Sky Suites", "Gachibowli", "Hyderabad", "17.4478", "78.3789", "Penthouse", "4BHK", "Tower 3", "28th Floor", "Flat 2801", "2800 Sq.Ft.", "3600 Sq.Ft.", "West Facing", "Fully Furnished", "Under Construction Dec 2026", "₹2.75 Crore", "₹9821/Sq.Ft.", "3 Covered Slots + EV Charger", "Private Terrace Pool; Jacuzzi; EV Charger", "AVAILABLE"\n` +
-    `"Jayabheri Peak Luxury Villa", "Jayabheri Properties", "Jayabheri Peak County", "Kokapet", "Hyderabad", "17.4201", "78.3410", "Gated Villa", "5BHK Villa", "Villa Block 5", "G+2 Floor", "Villa 12", "4500 Sq.Ft.", "5800 Sq.Ft.", "East Facing", "Fully Furnished", "Ready to Move", "₹5.20 Crore", "₹11555/Sq.Ft.", "4 Private Parking Slots", "Private Lawn; Private Lift; Solar Power", "AVAILABLE"`
+    `"Jayabheri Peak Luxury Villa", "Jayabheri Properties", "Jayabheri Peak County", "Kokapet", "Hyderabad", "17.4201", "78.3410", "Gated Villa", "5BHK Villa", "Villa Block 5", "G+2 Floor", "Villa 12", "4500 Sq.Ft.", "5800 Sq.Ft.", "East Facing", "Fully Furnished", "Ready to Move", "₹5.20 Crore", "₹11555/Sq.Ft.", "4 Private Parking Slots", "Private Lawn; Private Lift; Solar Power", "AVAILABLE"\n` +
+    `"Lansum Elena 3BHK Premium", "Lansum Properties", "Lansum Elena Residences", "Kokapet", "Hyderabad", "17.4190", "78.3395", "Apartment", "3BHK", "Tower B", "12th Floor", "Flat 1204", "1920 Sq.Ft.", "2550 Sq.Ft.", "North Facing", "Semi-Furnished", "Ready to Move", "₹1.85 Crore", "₹9635/Sq.Ft.", "2 Covered Slots", "Clubhouse; Squash Court; Infinity Pool", "AVAILABLE"\n` +
+    `"Star Horizon 2BHK Smart Home", "Star Builders", "Star Horizon Phase 2", "Madhyamgram", "Kolkata", "22.6955", "88.4610", "Apartment", "2BHK", "Block B", "4th Floor", "Flat 401", "820 Sq.Ft.", "1080 Sq.Ft.", "South-East Facing", "Unfurnished", "Under Construction Jun 2026", "₹42.50 Lakhs", "₹5182/Sq.Ft.", "1 Covered Slot", "Rooftop Garden; Intercom; CCTV", "AVAILABLE"\n` +
+    `"Cyber Towers Commercial Floor", "Cybertech Infra", "Cyber Towers Sector 4", "HITEC City", "Hyderabad", "17.4500", "78.3810", "Commercial Office", "Commercial Unit", "Block C", "4th Floor", "Unit 402", "1500 Sq.Ft.", "2100 Sq.Ft.", "North Facing", "Bare Shell", "Ready to Move", "₹1.75 Crore", "₹11666/Sq.Ft.", "3 Reserved Basement Slots", "24/7 Security; High Speed Elevators; Central AC", "AVAILABLE"\n` +
+    `"Aparna Zenon 3BHK Deluxe", "Aparna Constructions", "Aparna Zenon Nanakramguda", "Nanakramguda", "Hyderabad", "17.4285", "78.3560", "Apartment", "3BHK", "Tower 5", "16th Floor", "Flat 1603", "1680 Sq.Ft.", "2220 Sq.Ft.", "East Facing", "Semi-Furnished", "Ready to Move", "₹1.48 Crore", "₹8809/Sq.Ft.", "2 Covered Slots", "Temperature Controlled Pool; Tennis Court", "AVAILABLE"\n` +
+    `"Prestige High Fields 3BHK Suite", "Prestige Group", "Prestige High Fields Phase 1", "Financial District", "Hyderabad", "17.4350", "78.3490", "Apartment", "3BHK", "Tower 2", "22nd Floor", "Flat 2202", "1740 Sq.Ft.", "2300 Sq.Ft.", "North-East Facing", "Unfurnished", "Ready to Move", "₹1.72 Crore", "₹9885/Sq.Ft.", "2 Covered Slots + EV", "Supermarket; Pharmacy; Badminton Court", "AVAILABLE"`
   );
 
   const handleOpenLeadModal = () => {
     setActiveEditingLeadId(null);
     const nextCode = generateNextCustomerCode();
-    setNewCustomerForm(prev => ({
-      ...prev,
+    setNewCustomerForm({
+      customer_number: nextCode,
       name: '',
+      phone: '',
       mobile: '',
       whatsapp: '',
       email: '',
-      city: 'Hyderabad',
-      pincode: '500084',
+      city: 'Kolkata',
+      locality: '',
       address: '',
-      customer_number: nextCode
-    }));
-    setShowLeadModal(true);
+      pincode: '',
+      language: 'Bengali',
+      lead_source: 'Meta Ads',
+      sub_source: '',
+      campaign_id: '',
+      project_posting_id: '',
+      utm_source: '',
+      searched_property_code: '',
+      referral_name: '',
+      referral_source: '',
+      investment_purpose: 'BUY / OUTRIGHT PURCHASE',
+      property_type: 'Flat / Apartment',
+      configuration: '2BHK',
+      preferredArea: '',
+      secondary_areas: '',
+      floor_pref: 'Mid Floor (4th - 8th)',
+      non_preferred_floor: 'Ground Floor / Top Floor',
+      budget_min: '',
+      budget_max: '',
+      budget_flexibility: '± 10% Flexible',
+      carpet_area_min: '',
+      carpet_area_max: '',
+      area_unit: 'Sq.Ft.',
+      possession_status: 'Ready to Move',
+      purchase_timeline: 'Immediate (< 30 Days)',
+      facing: 'East Facing',
+      parking: 'Covered Slot',
+      amenities: '',
+      loan_required: 'Yes',
+      loan_amount: '',
+      loan_status: 'Pre-Approved',
+      decision_timeline: 'Immediate (< 30 Days)',
+      brokerage_rate: '2.0%',
+      brokerage_payer: 'CUSTOMER',
+      preferred_projects: '',
+      family_requirements: '',
+      assigned_employee_id: 'Priya Nair (Sales Exec)',
+      assigned_employee_name: 'Priya Nair (Sales Exec)',
+      team_leader_id: 'USR-06',
+      priority: 'HOT',
+      score: 85
+    });
+    setNewLeadForm({
+      call_disposition: 'CONNECTED_INTERESTED',
+      brokerage_payer: 'CUSTOMER',
+      brokerage_rate: '2.0%'
+    } as any);
+    setFollowupDate(new Date().toISOString().split('T')[0]);
+    setFollowupTime('11:00');
+    setFollowupRemarks('');
     setLeadIntakeStep(1);
+    setShowLeadModal(true);
   };
 
   const handleOpenAddCustomerModal = () => {
+    setActiveEditingLeadId(null);
     const nextCode = generateNextCustomerCode();
-    setNewCustomerForm(prev => ({
-      ...prev,
+    setNewCustomerForm({
+      customer_number: nextCode,
       name: '',
+      phone: '',
       mobile: '',
       whatsapp: '',
       email: '',
-      city: 'Hyderabad',
-      pincode: '500084',
+      city: 'Kolkata',
+      locality: '',
       address: '',
-      customer_number: nextCode
-    }));
+      pincode: '',
+      language: 'Bengali',
+      lead_source: 'Meta Ads',
+      sub_source: '',
+      campaign_id: '',
+      project_posting_id: '',
+      utm_source: '',
+      searched_property_code: '',
+      referral_name: '',
+      referral_source: '',
+      investment_purpose: 'BUY / OUTRIGHT PURCHASE',
+      property_type: 'Flat / Apartment',
+      configuration: '2BHK',
+      preferredArea: '',
+      secondary_areas: '',
+      floor_pref: 'Mid Floor (4th - 8th)',
+      non_preferred_floor: 'Ground Floor / Top Floor',
+      budget_min: '',
+      budget_max: '',
+      budget_flexibility: '± 10% Flexible',
+      carpet_area_min: '',
+      carpet_area_max: '',
+      area_unit: 'Sq.Ft.',
+      possession_status: 'Ready to Move',
+      purchase_timeline: 'Immediate (< 30 Days)',
+      facing: 'East Facing',
+      parking: 'Covered Slot',
+      amenities: '',
+      loan_required: 'Yes',
+      loan_amount: '',
+      loan_status: 'Pre-Approved',
+      decision_timeline: 'Immediate (< 30 Days)',
+      brokerage_rate: '2.0%',
+      brokerage_payer: 'CUSTOMER',
+      preferred_projects: '',
+      family_requirements: '',
+      assigned_employee_id: 'Priya Nair (Sales Exec)',
+      assigned_employee_name: 'Priya Nair (Sales Exec)',
+      team_leader_id: 'USR-06',
+      priority: 'HOT',
+      score: 85
+    });
     setShowAddCustomerModal(true);
   };
 
@@ -3722,6 +3819,62 @@ export default function App() {
     return Array.from(execMap.values());
   }, [users, customers, leadsList, bookings, scheduledVisits]);
 
+  // Helper: Auto-Hydrate Previous Customer Details into Wizard
+  const handleAutoHydrateCustomerDetails = (foundRecord: any) => {
+    if (!foundRecord) return;
+
+    const targetCustCode = foundRecord.customer_number || foundRecord.customer_id || newCustomerForm.customer_number;
+    const targetLeadId = foundRecord.lead_number || foundRecord.id || null;
+
+    setNewCustomerForm({
+      ...newCustomerForm,
+      customer_number: targetCustCode,
+      name: foundRecord.customer_name || foundRecord.name || newCustomerForm.name,
+      mobile: foundRecord.mobile || foundRecord.phone || newCustomerForm.mobile,
+      phone: foundRecord.phone || foundRecord.mobile || newCustomerForm.phone,
+      whatsapp: foundRecord.whatsapp || foundRecord.whatsapp_number || foundRecord.mobile || newCustomerForm.whatsapp,
+      email: (foundRecord.email && foundRecord.email !== 'N/A') ? foundRecord.email : newCustomerForm.email,
+      city: foundRecord.city || newCustomerForm.city || 'Kolkata',
+      locality: foundRecord.locality || foundRecord.address || newCustomerForm.locality,
+      address: foundRecord.address || foundRecord.locality || newCustomerForm.address,
+      pincode: foundRecord.pincode || newCustomerForm.pincode,
+      language: foundRecord.language || newCustomerForm.language || 'Bengali',
+      lead_source: foundRecord.lead_source || foundRecord.source || newCustomerForm.lead_source || 'Meta Ads',
+      campaign_id: foundRecord.campaign_id || foundRecord.campaign || newCustomerForm.campaign_id,
+      project_posting_id: foundRecord.project_posting_id || newCustomerForm.project_posting_id,
+      utm_source: foundRecord.utm_source || newCustomerForm.utm_source,
+      searched_property_code: foundRecord.searched_property_code || newCustomerForm.searched_property_code,
+      referral_name: foundRecord.referral_name || newCustomerForm.referral_name,
+      referral_source: foundRecord.referral_source || newCustomerForm.referral_source,
+      investment_purpose: foundRecord.investment_purpose || foundRecord.purpose || newCustomerForm.investment_purpose,
+      property_type: foundRecord.property_type || newCustomerForm.property_type,
+      configuration: foundRecord.configuration || foundRecord.bhk || newCustomerForm.configuration,
+      preferredArea: foundRecord.preferredArea || foundRecord.preferred_location || newCustomerForm.preferredArea,
+      secondary_areas: foundRecord.secondary_areas || foundRecord.secondaryAreas || newCustomerForm.secondary_areas,
+      floor_pref: foundRecord.floor_pref || foundRecord.floor_preference || newCustomerForm.floor_pref,
+      non_preferred_floor: foundRecord.non_preferred_floor || foundRecord.avoided_floors || newCustomerForm.non_preferred_floor,
+      budget_min: foundRecord.budget_min || newCustomerForm.budget_min,
+      budget_max: foundRecord.budget_max || newCustomerForm.budget_max,
+      budget_flexibility: foundRecord.budget_flexibility || newCustomerForm.budget_flexibility,
+      carpet_area_min: foundRecord.carpet_area_min || newCustomerForm.carpet_area_min,
+      carpet_area_max: foundRecord.carpet_area_max || newCustomerForm.carpet_area_max,
+      area_unit: foundRecord.area_unit || newCustomerForm.area_unit || 'Sq.Ft.',
+      possession_status: foundRecord.possession_status || foundRecord.possession_preference || newCustomerForm.possession_status,
+      facing: foundRecord.facing || newCustomerForm.facing,
+      parking: foundRecord.parking || newCustomerForm.parking,
+      amenities: foundRecord.amenities || newCustomerForm.amenities,
+      brokerage_rate: foundRecord.brokerage_rate || newCustomerForm.brokerage_rate || '2.0%',
+      brokerage_payer: foundRecord.brokerage_payer || newCustomerForm.brokerage_payer || 'CUSTOMER',
+      assigned_employee_id: foundRecord.assigned_employee_id || foundRecord.assigned_salesperson || newCustomerForm.assigned_employee_id
+    });
+
+    if (targetLeadId) {
+      setActiveEditingLeadId(targetLeadId);
+    }
+
+    alert(`✨ PREVIOUS CUSTOMER DETAILS DETECTED & HYDRATED!\n\n• Customer Name: ${foundRecord.customer_name || foundRecord.name}\n• Phone Number: ${foundRecord.mobile || foundRecord.phone}\n• Existing Customer ID: ${targetCustCode}\n${targetLeadId ? `• Linked Lead ID: ${targetLeadId}\n` : ''}\nAll contact details & property requirements restored into wizard!`);
+  };
+
   // --------------------------------------------------------------------------
   // INGEST LEAD WITH NON-INTERESTED / NO-RESPONSE / CALLBACK DISPOSITION (BYPASS STEPS 3-9)
   // --------------------------------------------------------------------------
@@ -3729,16 +3882,19 @@ export default function App() {
     const disp = (newLeadForm as any).call_disposition || 'CONNECTED_INTERESTED';
     const targetMobile = (newCustomerForm.mobile || newCustomerForm.phone || newLeadForm.mobile || '').replace(/[^0-9]/g, '');
     const targetCustCode = newCustomerForm.customer_number;
+    const cleanName = (newCustomerForm.name || newLeadForm.customer_name || '').trim().toLowerCase();
 
     const existingLead = leadsList.find(l => 
       (activeEditingLeadId && (l.id === activeEditingLeadId || l.lead_number === activeEditingLeadId)) ||
-      (targetCustCode && l.customer_number === targetCustCode) ||
-      (targetMobile && l.mobile && l.mobile.replace(/[^0-9]/g, '') === targetMobile)
+      (targetCustCode && (l.customer_number === targetCustCode || l.customer_id === targetCustCode)) ||
+      (targetMobile && targetMobile.length >= 4 && ((l.mobile && l.mobile.replace(/[^0-9]/g, '').includes(targetMobile)) || (l.phone && l.phone.replace(/[^0-9]/g, '').includes(targetMobile)))) ||
+      (cleanName && cleanName.length >= 3 && cleanName !== 'inbound prospect' && (l.customer_name || l.name || '').trim().toLowerCase() === cleanName)
     );
 
     const existingCustomer = customers.find(c => 
       (targetCustCode && c.customer_number === targetCustCode) ||
-      (targetMobile && c.mobile && c.mobile.replace(/[^0-9]/g, '') === targetMobile)
+      (targetMobile && targetMobile.length >= 4 && ((c.mobile && c.mobile.replace(/[^0-9]/g, '').includes(targetMobile)) || (c.phone && c.phone.replace(/[^0-9]/g, '').includes(targetMobile)))) ||
+      (cleanName && cleanName.length >= 3 && cleanName !== 'inbound prospect' && (c.name || '').trim().toLowerCase() === cleanName)
     );
 
     const leadNum = existingLead ? existingLead.lead_number : `SRM-LD-2026-000${leadsList.length + 101}`;
@@ -3952,16 +4108,19 @@ export default function App() {
     const targetMobile = (newCustomerForm.mobile || newCustomerForm.phone || newLeadForm.mobile || '').replace(/[^0-9]/g, '');
     const targetCustCode = newCustomerForm.customer_number;
     const custName = newCustomerForm.name || newLeadForm.customer_name || 'Inbound Prospect Draft';
+    const cleanName = custName.trim().toLowerCase();
 
     const existingLead = leadsList.find(l => 
       (activeEditingLeadId && (l.id === activeEditingLeadId || l.lead_number === activeEditingLeadId)) ||
-      (targetCustCode && l.customer_number === targetCustCode) ||
-      (targetMobile && l.mobile && l.mobile.replace(/[^0-9]/g, '') === targetMobile)
+      (targetCustCode && (l.customer_number === targetCustCode || l.customer_id === targetCustCode)) ||
+      (targetMobile && targetMobile.length >= 4 && ((l.mobile && l.mobile.replace(/[^0-9]/g, '').includes(targetMobile)) || (l.phone && l.phone.replace(/[^0-9]/g, '').includes(targetMobile)))) ||
+      (cleanName && cleanName.length >= 3 && cleanName !== 'inbound prospect draft' && (l.customer_name || l.name || '').trim().toLowerCase() === cleanName)
     );
 
     const existingCustomer = customers.find(c => 
       (targetCustCode && c.customer_number === targetCustCode) ||
-      (targetMobile && c.mobile && c.mobile.replace(/[^0-9]/g, '') === targetMobile)
+      (targetMobile && targetMobile.length >= 4 && ((c.mobile && c.mobile.replace(/[^0-9]/g, '').includes(targetMobile)) || (c.phone && c.phone.replace(/[^0-9]/g, '').includes(targetMobile)))) ||
+      (cleanName && cleanName.length >= 3 && cleanName !== 'inbound prospect draft' && (c.name || '').trim().toLowerCase() === cleanName)
     );
 
     const leadNum = existingLead ? existingLead.lead_number : `SRM-LD-2026-000${leadsList.length + 101}`;
@@ -4216,6 +4375,7 @@ export default function App() {
   const [devProjectOtpInput, setDevProjectOtpInput] = useState<string>('749201');
   const [devProjectOtpVerified, setDevProjectOtpVerified] = useState<boolean>(false);
   const [devProjectMobile, setDevProjectMobile] = useState<string>('+91 98490 88776');
+  const [devProjectAltMobile, setDevProjectAltMobile] = useState<string>('');
   const [verifiedDevProjectsList, setVerifiedDevProjectsList] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('swaramayi_verified_dev_projects_v1');
@@ -5105,63 +5265,104 @@ export default function App() {
     if (editingProperty && editingProperty.id) {
       setProperties(prev => prev.map(p => p.id === editingProperty.id ? {
         ...p,
-        title: newPropertyForm.title,
-        developer: newPropertyForm.developer,
-        locality: newPropertyForm.locality,
-        property_type: newPropertyForm.property_type,
-        configuration: newPropertyForm.configuration,
-        carpet_area: newPropertyForm.carpet_area,
-        super_builtup_area: newPropertyForm.super_builtup_area,
-        facing: newPropertyForm.facing,
-        floor_no: newPropertyForm.floor_no,
-        tower_block: newPropertyForm.tower_block,
-        final_price: newPropertyForm.final_price,
-        price_sqft: newPropertyForm.price_sqft,
-        commission_pct: newPropertyForm.commission_pct,
-        possession_status: newPropertyForm.possession_status,
-        maintenance_monthly: newPropertyForm.maintenance_monthly,
-        status: newPropertyForm.status,
-        latitude: newPropertyForm.latitude,
-        longitude: newPropertyForm.longitude,
-        building_photo: newPropertyForm.building_photo || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
-        key_custody: newPropertyForm.key_custody,
-        description: newPropertyForm.description
+        ...newPropertyForm,
+        id: editingProperty.id,
+        property_code: editingProperty.property_code,
+        title: newPropertyForm.title || p.title,
+        developer: newPropertyForm.developer || p.developer,
+        developer_id: newPropertyForm.developer_id || p.developer_id || 'SRM-DEV-2026-000105',
+        developer_mobile: devProjectMobile || newPropertyForm.developer_mobile || p.developer_mobile || '9883395102',
+        developer_alt_mobile: devProjectAltMobile || newPropertyForm.developer_alt_mobile || p.developer_alt_mobile || '7044293951',
+        locality: newPropertyForm.locality || p.locality,
+        property_type: newPropertyForm.property_type || p.property_type,
+        configuration: newPropertyForm.configuration || p.configuration,
+        carpet_area: newPropertyForm.carpet_area || p.carpet_area,
+        super_builtup_area: newPropertyForm.super_builtup_area || p.super_builtup_area,
+        floor_num: newPropertyForm.floor_num || newPropertyForm.floor_no || p.floor_num || '2nd Floor',
+        floor_number: newPropertyForm.floor_num || newPropertyForm.floor_no || p.floor_number || '2nd Floor',
+        total_floors: newPropertyForm.total_floors || p.total_floors || 'G+4 Floors',
+        facing: newPropertyForm.facing || p.facing,
+        furnishing: newPropertyForm.furnishing || p.furnishing,
+        tower_block: newPropertyForm.tower_block || p.tower_block,
+        final_price: newPropertyForm.final_price || p.final_price,
+        price_sqft: newPropertyForm.price_sqft || p.price_sqft,
+        car_parking: newPropertyForm.car_parking || p.car_parking,
+        parking_price: newPropertyForm.parking_price || p.parking_price,
+        commission_pct: newPropertyForm.commission_pct || p.commission_pct,
+        possession_status: newPropertyForm.possession_status || p.possession_status,
+        maintenance_monthly: newPropertyForm.maintenance_monthly || p.maintenance_monthly,
+        status: newPropertyForm.status || p.status,
+        latitude: newPropertyForm.latitude || p.latitude,
+        longitude: newPropertyForm.longitude || p.longitude,
+        building_photos: newPropertyForm.building_photos && newPropertyForm.building_photos.length > 0 ? newPropertyForm.building_photos : (p.building_photos || []),
+        building_photo: newPropertyForm.building_photo || p.building_photo || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
+        unit_photos: newPropertyForm.unit_photos && newPropertyForm.unit_photos.length > 0 ? newPropertyForm.unit_photos : (p.unit_photos || []),
+        unit_photo: newPropertyForm.unit_photo || p.unit_photo || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+        project_posting_id: newPropertyForm.project_posting_id || p.project_posting_id || 'PRJ-POST-2026-8802',
+        key_custody: newPropertyForm.key_custody || p.key_custody,
+        description: newPropertyForm.description || p.description,
+        site_person_name: newPropertyForm.site_person_name || p.site_person_name,
+        site_person_contact: newPropertyForm.site_person_contact || p.site_person_contact
       } : p));
       setShowAddPropertyModal(false);
       setShowPropertyModal(false);
       const code = editingProperty.property_code;
       setEditingProperty(null);
-      alert(`✏️ Property Master Record ${code} updated successfully with building photo & details!`);
+      setActiveProjectSubTab('property_master');
+      alert(`✅ Property Master Record ${code} saved & updated successfully into central inventory registry!`);
       return;
     }
 
     const newPropCode = generateNextPropertyCode();
     const newP = {
+      ...newPropertyForm,
       id: `PROP-${Date.now()}`,
       property_code: newPropCode,
       title: newPropertyForm.title || 'New Luxury Project',
       developer: newPropertyForm.developer || 'Swaramayi Developer Partner',
+      developer_id: newPropertyForm.developer_id || 'SRM-DEV-2026-000105',
+      developer_mobile: devProjectMobile || newPropertyForm.developer_mobile || '9883395102',
+      developer_alt_mobile: devProjectAltMobile || newPropertyForm.developer_alt_mobile || '7044293951',
       locality: newPropertyForm.locality || 'Kondapur / Madhyamgram',
       configuration: newPropertyForm.configuration || '3BHK',
-      carpet_area: newPropertyForm.carpet_area || '1,650 Sq.Ft.',
-      final_price: newPropertyForm.final_price || '₹1.50 Crore',
-      price_sqft: newPropertyForm.price_sqft || '₹9,090/Sq.Ft.',
+      carpet_area: newPropertyForm.carpet_area || '898.1 Sq.Ft.',
+      super_builtup_area: newPropertyForm.super_builtup_area || '1,283 Sq.Ft.',
+      final_price: newPropertyForm.final_price || '₹46,08,000',
+      price_sqft: newPropertyForm.price_sqft || '₹5,131/Sq.Ft.',
       status: newPropertyForm.status || 'AVAILABLE',
       property_type: newPropertyForm.property_type || 'Flat / Apartment',
       tower_block: newPropertyForm.tower_block || 'Tower A',
-      floor_no: newPropertyForm.floor_no || '10th Floor',
-      facing: newPropertyForm.facing || 'East Facing',
+      floor_num: newPropertyForm.floor_num || newPropertyForm.floor_no || '2nd Floor',
+      floor_number: newPropertyForm.floor_num || newPropertyForm.floor_no || '2nd Floor',
+      total_floors: newPropertyForm.total_floors || 'G+4 Floors',
+      facing: newPropertyForm.facing || 'South Facing',
+      furnishing: newPropertyForm.furnishing || 'Semi-Furnished',
+      car_parking: newPropertyForm.car_parking || '1 Covered Parking Slot',
+      parking_price: newPropertyForm.parking_price || '300000',
       possession_status: newPropertyForm.possession_status || 'Ready to Move',
-      latitude: newPropertyForm.latitude || '22.698021',
-      longitude: newPropertyForm.longitude || '88.463723',
+      latitude: newPropertyForm.latitude || '22.722361',
+      longitude: newPropertyForm.longitude || '88.493403',
+      building_photos: newPropertyForm.building_photos && newPropertyForm.building_photos.length > 0 
+        ? newPropertyForm.building_photos 
+        : ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80'],
       building_photo: newPropertyForm.building_photo || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
+      unit_photos: newPropertyForm.unit_photos && newPropertyForm.unit_photos.length > 0 
+        ? newPropertyForm.unit_photos 
+        : ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80', 'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=800&q=80'],
+      unit_photo: newPropertyForm.unit_photo || 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+      project_posting_id: newPropertyForm.project_posting_id || 'PRJ-POST-2026-8802',
+      key_custody: newPropertyForm.key_custody || 'Builder Site Office',
+      description: newPropertyForm.description || 'Pool facing Vastu East, 3 balconies',
+      site_person_name: newPropertyForm.site_person_name || 'Rajesh Kumar (Site Manager)',
+      site_person_contact: newPropertyForm.site_person_contact || '+91 98490 77665',
       map_x: 35 + Math.random() * 30,
       map_y: 35 + Math.random() * 30
     };
-    setProperties([newP, ...properties]);
+    setProperties(prev => [newP, ...prev]);
     setShowAddPropertyModal(false);
     setShowPropertyModal(false);
-    alert(`🏠 New Property Master ${newPropCode} registered successfully!`);
+    setActiveProjectSubTab('property_master');
+    alert(`🎉 Property Registration Complete! New Property Master ${newPropCode} saved & registered into Central Stock Inventory Registry!`);
   };
 
   const handleCreateLeadSubmit = (e: React.FormEvent) => {
@@ -5917,6 +6118,9 @@ export default function App() {
           <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('matching_management'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'matching_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'matching_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'matching_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <Target size={18} /> <span>Matching Management</span>
           </button>
+          <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('property_sourcing_requests'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'property_sourcing_requests' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'property_sourcing_requests' ? '#38bdf8' : '#94a3b8', border: activeTab === 'property_sourcing_requests' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <SearchCode size={18} /> <span>Property Sourcing Requests</span>
+          </button>
           <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('customer_management'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'customer_management' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'customer_management' ? '#38bdf8' : '#94a3b8', border: activeTab === 'customer_management' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <Users size={18} /> <span>Customer Management</span>
           </button>
@@ -6247,7 +6451,7 @@ export default function App() {
 
                   {/* QUICK ACTIONS BUTTON SUITE */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <button onClick={() => setShowLeadModal(true)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button onClick={handleOpenLeadModal} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <UserPlus size={14} /> + Add Customer
                     </button>
                     <button onClick={handleOpenAddPropertyModal} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -7361,6 +7565,8 @@ export default function App() {
               setNewPropertyForm={setNewPropertyForm}
               devProjectMobile={devProjectMobile}
               setDevProjectMobile={setDevProjectMobile}
+              devProjectAltMobile={devProjectAltMobile}
+              setDevProjectAltMobile={setDevProjectAltMobile}
               verifiedDevProjectsList={verifiedDevProjectsList}
               setVerifiedDevProjectsList={setVerifiedDevProjectsList}
               devProjectOtpVerified={devProjectOtpVerified}
@@ -7421,6 +7627,7 @@ export default function App() {
               isMobile={isMobile}
               setIsMobileSidebarOpen={setIsMobileSidebarOpen}
               handleOpenResumeQualification={handleOpenResumeQualification}
+              handleOpenLeadModal={handleOpenLeadModal}
             />
           )}
 
@@ -7492,6 +7699,20 @@ export default function App() {
               calculatePropertyMatchScore={calculatePropertyMatchScore}
               handleRowLevelCreateCostSheet={handleRowLevelCreateCostSheet}
               handleBulkCreateCostSheets={handleBulkCreateCostSheets}
+            />
+          )}
+
+          {/* CATEGORY: PROPERTY SOURCING REQUESTS */}
+          {activeTab === 'property_sourcing_requests' && (
+            <PropertySourcingRequestsView
+              isLight={isLight}
+              windowWidth={windowWidth}
+              leadsList={leadsList}
+              customers={customers}
+              properties={properties}
+              openIdDetailsModal={openIdDetailsModal}
+              maskPhone={maskPhone}
+              setActiveTab={setActiveTab}
             />
           )}
 
@@ -9505,33 +9726,54 @@ export default function App() {
             </div>
 
             {/* LIVE DUPLICATE CHECKER WARNING BANNER */}
-            {(newCustomerForm.mobile || '').length >= 6 && (() => {
+            {((newCustomerForm.mobile || '').length >= 4 || (newCustomerForm.name || '').length >= 3) && (() => {
               const cleanMobile = (newCustomerForm.mobile || '').replace(/[^0-9]/g, '');
+              const cleanName = (newCustomerForm.name || '').trim().toLowerCase();
               const currentCustCode = newCustomerForm.customer_number;
+
               const foundLead = leadsList.find(l => {
                 if (activeEditingLeadId && (l.id === activeEditingLeadId || l.lead_number === activeEditingLeadId)) return false;
                 if (currentCustCode && (l.customer_number === currentCustCode || l.customer_id === currentCustCode)) return false;
-                return l.mobile && cleanMobile.length >= 6 && (l.mobile || '').replace(/[^0-9]/g, '').includes(cleanMobile);
+                const lMob = (l.mobile || l.phone || '').replace(/[^0-9]/g, '');
+                const lName = (l.customer_name || l.name || '').trim().toLowerCase();
+                const mobMatch = cleanMobile.length >= 4 && lMob.length >= 4 && (lMob.includes(cleanMobile) || cleanMobile.includes(lMob));
+                const nameMatch = cleanName.length >= 3 && cleanName !== 'inbound prospect' && lName === cleanName;
+                return mobMatch || nameMatch;
               });
+
               const foundCust = customers.find(c => {
                 if (currentCustCode && c.customer_number === currentCustCode) return false;
-                return c.mobile && cleanMobile.length >= 6 && (c.mobile || '').replace(/[^0-9]/g, '').includes(cleanMobile);
+                const cMob = (c.mobile || c.phone || '').replace(/[^0-9]/g, '');
+                const cName = (c.name || '').trim().toLowerCase();
+                const mobMatch = cleanMobile.length >= 4 && cMob.length >= 4 && (cMob.includes(cleanMobile) || cleanMobile.includes(cMob));
+                const nameMatch = cleanName.length >= 3 && cleanName !== 'inbound prospect' && cName === cleanName;
+                return mobMatch || nameMatch;
               });
+
               const isDuplicate = !!(foundLead || foundCust);
+              const targetRecord = foundLead || foundCust;
 
               return (
-                <div style={{ background: isDuplicate ? 'rgba(239, 68, 68, 0.15)' : '#0f172a', border: isDuplicate ? '2px solid #ef4444' : '1px solid #fbbf24', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ background: isDuplicate ? 'rgba(239, 68, 68, 0.18)' : '#0f172a', border: isDuplicate ? '2px solid #ef4444' : '1px solid #fbbf24', borderRadius: '10px', padding: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
                     <ShieldAlert size={18} color={isDuplicate ? '#ef4444' : '#fbbf24'} />
                     <span style={{ fontSize: '0.78rem', color: isDuplicate ? '#f87171' : '#fbbf24', fontWeight: '800' }}>
                       {isDuplicate 
-                        ? `⚠️ DUPLICATE MATCH DETECTED! Existing record found for mobile '${newCustomerForm.mobile}' (${foundLead ? `Lead ${foundLead.lead_number} - ${foundLead.customer_name}` : `Customer ${foundCust?.customer_number} - ${foundCust?.name}`}).`
-                        : `🔍 Live Duplicate Scanner: Phone '${newCustomerForm.mobile}' scanned across Central Lead Database & Customer Master.`}
+                        ? `⚠️ PREVIOUS CUSTOMER DETECTED! Existing record found: ${foundLead ? `Lead ${foundLead.lead_number} (${foundLead.customer_name})` : `Customer ${foundCust?.customer_number} (${foundCust?.name})`}. Duplicate creation is BLOCKED — updates will link in-place.`
+                        : `🔍 Live Duplicate Scanner: Phone '${newCustomerForm.mobile || 'N/A'}' scanned across Central Lead Database & Customer Master.`}
                     </span>
                   </div>
                   {isDuplicate ? (
-                    <div style={{ display: 'flex', gap: '6px' }}>
-                      <span style={{ background: '#ef4444', color: '#ffffff', padding: '3px 10px', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '900' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleAutoHydrateCustomerDetails(targetRecord)}
+                        style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        title="Click to fetch & auto-fill previous customer details into wizard"
+                      >
+                        ⚡ Fetch & Auto-Fill Previous Details
+                      </button>
+                      <span style={{ background: '#ef4444', color: '#ffffff', padding: '4px 10px', borderRadius: '4px', fontSize: '0.73rem', fontWeight: '900' }}>
                         🔴 DUPLICATE DETECTED
                       </span>
                     </div>
@@ -9683,7 +9925,7 @@ export default function App() {
                   </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Full Name *</label>
                     <input type="text" value={newCustomerForm.name} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, name: e.target.value })} placeholder="e.g. Sumanth Varma" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
@@ -9708,6 +9950,16 @@ export default function App() {
                       placeholder="+91 98490 88888" 
                       style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} 
                       required 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Alternative Phone Number (Secondary Contact)</label>
+                    <input 
+                      type="text" 
+                      value={newCustomerForm.phone_secondary || ''} 
+                      onChange={(e) => setNewCustomerForm({ ...newCustomerForm, phone_secondary: e.target.value })} 
+                      placeholder="e.g. +91 70442 93951" 
+                      style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} 
                     />
                   </div>
                 </div>
@@ -10676,22 +10928,26 @@ export default function App() {
                       const nameStr = newCustomerForm.name || 'Inbound Prospect';
                       const targetMobile = mobileStr.replace(/[^0-9]/g, '');
                       const targetCustCode = newCustomerForm.customer_number;
+                      const cleanName = nameStr.trim().toLowerCase();
 
                       const existingCustomer = customers.find(c => 
                         (targetCustCode && c.customer_number === targetCustCode) ||
-                        (targetMobile && c.mobile && c.mobile.replace(/[^0-9]/g, '') === targetMobile)
+                        (targetMobile && targetMobile.length >= 4 && ((c.mobile && c.mobile.replace(/[^0-9]/g, '').includes(targetMobile)) || (c.phone && c.phone.replace(/[^0-9]/g, '').includes(targetMobile)))) ||
+                        (cleanName && cleanName.length >= 3 && cleanName !== 'inbound prospect' && (c.name || '').trim().toLowerCase() === cleanName)
                       );
 
                       const existingLead = leadsList.find(l => 
                         (activeEditingLeadId && (l.id === activeEditingLeadId || l.lead_number === activeEditingLeadId)) ||
-                        (targetCustCode && l.customer_number === targetCustCode) ||
-                        (targetMobile && l.mobile && l.mobile.replace(/[^0-9]/g, '') === targetMobile)
+                        (targetCustCode && (l.customer_number === targetCustCode || l.customer_id === targetCustCode)) ||
+                        (targetMobile && targetMobile.length >= 4 && ((l.mobile && l.mobile.replace(/[^0-9]/g, '').includes(targetMobile)) || (l.phone && l.phone.replace(/[^0-9]/g, '').includes(targetMobile)))) ||
+                        (cleanName && cleanName.length >= 3 && cleanName !== 'inbound prospect' && (l.customer_name || l.name || '').trim().toLowerCase() === cleanName)
                       );
 
-                      const finalCustomerCode = targetCustCode || (existingCustomer ? existingCustomer.customer_number : generateNextCustomerCode());
+                      const finalCustomerCode = targetCustCode || (existingCustomer ? existingCustomer.customer_number : (existingLead ? existingLead.customer_number : generateNextCustomerCode()));
                       const leadNum = existingLead ? existingLead.lead_number : generateNextLeadCode();
                       const reqId = generateNextMatchingCode();
 
+                      const isDuplicateDetected = !!(existingLead || existingCustomer);
                       const existingIdx = matchingRequestsQueue.findIndex(r => r.mobile === mobileStr || (r.customerName === nameStr && r.customerName.length > 0));
 
                       // 1. CREATE OR UPDATE OFFICIAL CENTRAL LEAD MASTER RECORD
@@ -10893,7 +11149,7 @@ export default function App() {
                       setShowLeadModal(false);
                       setShowAddCustomerModal(false);
                       setActiveTab('matching_management');
-                      alert(`🎉 INGESTED NEW LEAD & GENERATED MATCHING ID SUCCESSFULLY!\n\n• Lead ID: ${leadNum}\n• Customer ID: ${finalCustomerCode}\n• Matching ID: ${reqId}\n• Dynamic Audit Score: ${dynamicScore}%\n• Assigned CRM Executive: ${newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)'}\n\nNavigating to Matching Management Engine...`);
+                      alert(`🎉 INGESTED & UPDATED LEAD SUCCESSFULLY!\n\n• Lead ID: ${leadNum}\n• Customer ID: ${finalCustomerCode}\n• Matching ID: ${reqId}\n• Dynamic Audit Score: ${dynamicScore}%\n• Assigned CRM Executive: ${newCustomerForm.assigned_employee_id || 'Priya Nair (Sales Exec)'}\n${isDuplicateDetected ? '\n⚠️ DUPLICATE MATCH DETECTED: Pre-existing lead/customer profile updated in place (No duplicate record created)!\n' : ''}\nNavigating to Matching Management Engine...`);
                     }}
                     style={{ flex: 2, background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                   >
@@ -11309,12 +11565,17 @@ export default function App() {
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button 
                   onClick={() => {
-                    const blob = new Blob([bulkPropertyCsvText], { type: 'text/csv' });
+                    const csvContent = '\uFEFF' + bulkPropertyCsvText;
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'sample_swaramayi_property_inventory_template.csv';
+                    a.download = 'Swaramayi_Bulk_Property_Inventory_Sample_Template.csv';
+                    document.body.appendChild(a);
                     a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    alert('📥 SAMPLE TEMPLATE DOWNLOADED SUCCESSFULLY!\n\nFile: Swaramayi_Bulk_Property_Inventory_Sample_Template.csv\n• Includes all 22 full inventory columns\n• Populated with 10 complete sample property inventory records\n• Ready for Excel/Google Sheets editing & bulk upload!');
                   }}
                   style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >

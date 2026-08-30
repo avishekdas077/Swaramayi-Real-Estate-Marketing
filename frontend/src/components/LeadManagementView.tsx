@@ -30,6 +30,7 @@ interface LeadManagementViewProps {
   isMobile: boolean;
   setIsMobileSidebarOpen: (val: boolean) => void;
   handleOpenResumeQualification?: (lead: any) => void;
+  handleOpenLeadModal?: () => void;
 }
 
 export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
@@ -61,6 +62,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
   isMobile,
   setIsMobileSidebarOpen,
   handleOpenResumeQualification,
+  handleOpenLeadModal,
 }) => {
   // DEDUPLICATE LEADS LIST BY CUSTOMER NUMBER & MOBILE TO PREVENT DUPLICATE ROWS
   const uniqueLeadsList = React.useMemo(() => {
@@ -99,7 +101,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
           <button onClick={() => setLeadViewMode(leadViewMode === 'analytics' ? 'inbox' : 'analytics')} style={{ background: leadViewMode === 'analytics' ? '#0284c7' : (isLight ? '#f1f5f9' : '#0f172a'), color: leadViewMode === 'analytics' ? '#ffffff' : (isLight ? '#0f172a' : '#ffffff'), border: leadViewMode === 'analytics' ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Sparkles size={15} color={leadViewMode === 'analytics' ? '#ffffff' : (isLight ? '#0284c7' : 'currentColor')} /> {leadViewMode === 'analytics' ? '📋 Back to Central Inbox' : '📊 Lead & Performance Analytics'}
           </button>
-          <button onClick={() => setShowLeadModal(true)} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
+          <button onClick={() => handleOpenLeadModal ? handleOpenLeadModal() : setShowLeadModal(true)} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
             <UserPlus size={16} /> + CREATE NEW LEAD
           </button>
         </div>
