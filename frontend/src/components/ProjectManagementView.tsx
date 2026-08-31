@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, Building2, Share2, ArrowRightLeft, Compass, Navigation, Camera, Search, X } from 'lucide-react';
+import { Upload, Building2, Share2, ArrowRightLeft, Compass, Navigation, Camera, Video, Search, X } from 'lucide-react';
 
 interface ProjectManagementViewProps {
   isLight: boolean;
@@ -192,6 +192,72 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   const [newDevProjectTitleInput, setNewDevProjectTitleInput] = React.useState<string>('');
   const [newDevProjectLocalityInput, setNewDevProjectLocalityInput] = React.useState<string>('');
   const [viewPropertyModal, setViewPropertyModal] = React.useState<any | null>(null);
+
+  // LIVE VIDEO RECORDING & MEDIA CAPTURE STATE
+  const [isRecordingVideo, setIsRecordingVideo] = React.useState<boolean>(false);
+  const [recordingSeconds, setRecordingSeconds] = React.useState<number>(0);
+  const videoPreviewRef = React.useRef<HTMLVideoElement | null>(null);
+  const mediaRecorderRef = React.useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = React.useRef<Blob[]>([]);
+  const recordingTimerRef = React.useRef<any>(null);
+
+  const startLiveVideoRecording = async () => {
+    try {
+      recordedChunksRef.current = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      if (videoPreviewRef.current) {
+        videoPreviewRef.current.srcObject = stream;
+        videoPreviewRef.current.play();
+      }
+      const recorder = new MediaRecorder(stream);
+      recorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) {
+          recordedChunksRef.current.push(e.data);
+        }
+      };
+      recorder.start(1000);
+      mediaRecorderRef.current = recorder;
+      setIsRecordingVideo(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds((prev) => prev + 1);
+      }, 1000);
+    } catch (err) {
+      console.error('Camera/Mic permission error:', err);
+      alert('Unable to access camera/microphone for live video recording. Please ensure camera permissions are granted in your browser settings.');
+    }
+  };
+
+  const stopLiveVideoRecording = () => {
+    if (mediaRecorderRef.current && isRecordingVideo) {
+      mediaRecorderRef.current.stop();
+      if (videoPreviewRef.current && videoPreviewRef.current.srcObject) {
+        const stream = videoPreviewRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach((track) => track.stop());
+        videoPreviewRef.current.srcObject = null;
+      }
+      clearInterval(recordingTimerRef.current);
+      setIsRecordingVideo(false);
+
+      setTimeout(() => {
+        const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const videoBase64 = reader.result as string;
+          if (videoBase64) {
+            setNewPropertyForm((prev: any) => {
+              const currentVideos = Array.isArray(prev.unit_videos) ? prev.unit_videos : [];
+              return {
+                ...prev,
+                unit_videos: [...currentVideos, videoBase64]
+              };
+            });
+          }
+        };
+        reader.readAsDataURL(blob);
+      }, 500);
+    }
+  };
 
   // PROJECT PARKING STOCK MAP & PERSISTENCE WITH PRICING
   const [projectParkingStockMap, setProjectParkingStockMap] = React.useState<Record<string, {
@@ -1245,6 +1311,16 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     </div>
                   );
                 })()}
+
+                {/* SECTION 1 SAVE & COMPLETE REGISTRATION ACTION BUTTON */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px', borderTop: isLight ? '2px dashed #cbd5e1' : '2px dashed #334155' }}>
+                  <button 
+                    type="submit"
+                    style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '10px', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)' }}
+                  >
+                    💾 SAVE & COMPLETE REGISTRATION (SECTION 1 COMPLETED)
+                  </button>
+                </div>
               </div>
 
               {/* SECTION 2: PROPERTY SPECIFICATIONS & UNIT DETAILS */}
@@ -1462,31 +1538,46 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Tower / Block Name</label>
                     <input type="text" value={newPropertyForm.tower_block} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, tower_block: e.target.value })} placeholder="Tower B - Sapphire" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
                   </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: '#fbbf24', fontWeight: '900', display: 'block', marginBottom: '6px' }}>Number Of Towers in Project / Complex *</label>
+                    <input 
+                      type="text" 
+                      value={newPropertyForm.number_of_towers || ''} 
+                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, number_of_towers: e.target.value })} 
+                      placeholder="e.g. 1 Standalone Tower / 4 Towers Complex" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #fbbf24', color: '#fbbf24', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                    />
+                  </div>
                 </div>
 
-                {/* SECTION 2 MULTIPLE UNIT INTERIOR & FLOOR PLAN PHOTO CAPTURE WIDGET */}
+                {/* SECTION 2 MULTIPLE UNIT INTERIOR, FLOOR PLAN PHOTO & LIVE VIDEO CAPTURE WIDGET */}
                 {(() => {
                   const unitPhotosList: string[] = Array.isArray(newPropertyForm.unit_photos) 
                     ? newPropertyForm.unit_photos 
                     : (newPropertyForm.unit_photo ? [newPropertyForm.unit_photo] : []);
+
+                  const unitVideosList: string[] = Array.isArray(newPropertyForm.unit_videos)
+                    ? newPropertyForm.unit_videos
+                    : [];
 
                   return (
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #38bdf8', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                         <div>
                           <span style={{ fontSize: '0.86rem', color: '#38bdf8', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Camera size={18} color="#38bdf8" /> 📸 Unit Interior, Room Layout & Floor Plan Photos (Multiple Uploads)
+                            <Camera size={18} color="#38bdf8" /> 📸 Unit Interior, Room Layout, Floor Plan Photos & Walkthrough Videos
                           </span>
                           <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '3px 0 0 0' }}>
-                            Capture flat interiors, living room, modular kitchen, master bedroom, balcony views, and 2D/3D floor plans.
+                            Capture & upload flat interiors, room layouts, floor plans, and record live unit walkthrough videos.
                           </p>
                         </div>
 
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {/* MULTIPLE FILES UPLOAD BUTTON */}
-                          <label style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.35)' }}>
-                            <Camera size={16} color="#ffffff" />
-                            📸 UPLOAD MULTIPLE UNIT PHOTOS
+                          {/* UPLOAD MULTIPLE PHOTOS BUTTON */}
+                          <label style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.35)' }}>
+                            <Camera size={15} color="#ffffff" />
+                            📸 UPLOAD UNIT PHOTOS
                             <input 
                               type="file" 
                               accept="image/*" 
@@ -1517,6 +1608,49 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                             />
                           </label>
 
+                          {/* UPLOAD VIDEO FILE BUTTON */}
+                          <label style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(168, 85, 247, 0.35)' }}>
+                            <Video size={15} color="#ffffff" />
+                            📹 UPLOAD UNIT VIDEO FILE
+                            <input 
+                              type="file" 
+                              accept="video/*" 
+                              multiple
+                              style={{ display: 'none' }}
+                              onChange={(e) => {
+                                const files = e.target.files;
+                                if (files && files.length > 0) {
+                                  const fileArray = Array.from(files);
+                                  const readPromises = fileArray.map(file => {
+                                    return new Promise<string>((resolve) => {
+                                      const reader = new FileReader();
+                                      reader.onload = (evt) => resolve(evt.target?.result as string || '');
+                                      reader.readAsDataURL(file);
+                                    });
+                                  });
+                                  Promise.all(readPromises).then(base64Results => {
+                                    const validResults = base64Results.filter(b => b);
+                                    const updatedList = [...unitVideosList, ...validResults];
+                                    setNewPropertyForm((prev: any) => ({
+                                      ...prev,
+                                      unit_videos: updatedList
+                                    }));
+                                  });
+                                }
+                              }}
+                            />
+                          </label>
+
+                          {/* LIVE RECORD VIDEO BUTTON */}
+                          <button
+                            type="button"
+                            onClick={isRecordingVideo ? stopLiveVideoRecording : startLiveVideoRecording}
+                            style={{ background: isRecordingVideo ? '#ef4444' : '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: isRecordingVideo ? '0 0 12px rgba(239, 68, 68, 0.8)' : '0 2px 10px rgba(34, 197, 94, 0.35)' }}
+                          >
+                            <Video size={15} color="#ffffff" />
+                            {isRecordingVideo ? `⏹️ STOP & SAVE VIDEO (${recordingSeconds}s)` : '🎥 RECORD LIVE UNIT VIDEO'}
+                          </button>
+
                           {/* SAMPLE PRESET GALLERY BUTTON */}
                           <button
                             type="button"
@@ -1541,48 +1675,86 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         </div>
                       </div>
 
-                      {/* ADD CUSTOM UNIT PHOTO URL INPUT & BUTTON */}
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <input 
-                          type="text" 
-                          id="newUnitPhotoUrlInput"
-                          placeholder="Paste interior / floor plan photo URL and press Enter or click Add"
-                          style={{ flex: 1, background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.84rem' }} 
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              const val = (e.target as HTMLInputElement).value.trim();
-                              if (val) {
+                      {/* LIVE VIDEO CAMERA VIEWFINDER OVERLAY WHEN RECORDING */}
+                      {isRecordingVideo && (
+                        <div style={{ background: '#000000', border: '2px solid #ef4444', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                            <span style={{ color: '#ef4444', fontWeight: '900', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              🔴 RECORDING LIVE WALKTHROUGH VIDEO ({recordingSeconds} SECONDS)
+                            </span>
+                            <button 
+                              type="button"
+                              onClick={stopLiveVideoRecording}
+                              style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer' }}
+                            >
+                              ⏹️ Stop Recording
+                            </button>
+                          </div>
+                          <video 
+                            ref={videoPreviewRef} 
+                            muted 
+                            playsInline 
+                            style={{ width: '100%', maxHeight: '240px', borderRadius: '8px', background: '#0f172a', objectFit: 'cover' }} 
+                          />
+                        </div>
+                      )}
+
+                      {/* ADD CUSTOM PHOTO & VIDEO URL INPUTS */}
+                      <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input 
+                            type="text" 
+                            id="newUnitPhotoUrlInput"
+                            placeholder="Paste interior / floor plan photo URL"
+                            style={{ flex: 1, background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.84rem' }} 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const el = document.getElementById('newUnitPhotoUrlInput') as HTMLInputElement;
+                              if (el && el.value.trim()) {
+                                const val = el.value.trim();
                                 const updatedList = [...unitPhotosList, val];
                                 setNewPropertyForm((prev: any) => ({
                                   ...prev,
                                   unit_photos: updatedList,
                                   unit_photo: updatedList[0] || ''
                                 }));
-                                (e.target as HTMLInputElement).value = '';
+                                el.value = '';
                               }
-                            }
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const el = document.getElementById('newUnitPhotoUrlInput') as HTMLInputElement;
-                            if (el && el.value.trim()) {
-                              const val = el.value.trim();
-                              const updatedList = [...unitPhotosList, val];
-                              setNewPropertyForm((prev: any) => ({
-                                ...prev,
-                                unit_photos: updatedList,
-                                unit_photo: updatedList[0] || ''
-                              }));
-                              el.value = '';
-                            }
-                          }}
-                          style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                        >
-                          ➕ Add Unit Photo URL
-                        </button>
+                            }}
+                            style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '8px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          >
+                            ➕ Add Photo URL
+                          </button>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input 
+                            type="text" 
+                            id="newUnitVideoUrlInput"
+                            placeholder="Paste video walkthrough URL / YouTube link"
+                            style={{ flex: 1, background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.84rem' }} 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const el = document.getElementById('newUnitVideoUrlInput') as HTMLInputElement;
+                              if (el && el.value.trim()) {
+                                const val = el.value.trim();
+                                const updatedList = [...unitVideosList, val];
+                                setNewPropertyForm((prev: any) => ({
+                                  ...prev,
+                                  unit_videos: updatedList
+                                }));
+                                el.value = '';
+                              }
+                            }}
+                            style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          >
+                            📹 Add Video URL
+                          </button>
+                        </div>
                       </div>
 
                       {/* MULTIPLE UNIT PHOTOS GALLERY GRID */}
@@ -1590,7 +1762,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: '10px', padding: '12px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: '0.76rem', color: '#38bdf8', fontWeight: '900' }}>
-                              🖼️ UPLOADED UNIT & INTERIOR GALLERY ({unitPhotosList.length} Photo{unitPhotosList.length > 1 ? 's' : ''})
+                              🖼️ UPLOADED UNIT & INTERIOR PHOTO GALLERY ({unitPhotosList.length} Photo{unitPhotosList.length > 1 ? 's' : ''})
                             </span>
                             <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
                               Photo #1 will be shown on matching cost sheets
@@ -1629,6 +1801,50 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           </div>
                         </div>
                       )}
+
+                      {/* UPLOADED UNIT WALKTHROUGH VIDEO GALLERY GRID */}
+                      {unitVideosList.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '12px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.76rem', color: '#a855f7', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Video size={16} color="#a855f7" /> 🎬 UPLOADED UNIT WALKTHROUGH VIDEO GALLERY ({unitVideosList.length} Video{unitVideosList.length > 1 ? 's' : ''})
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                              Full HD video playback enabled
+                            </span>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
+                            {unitVideosList.map((videoUrl, idx) => (
+                              <div key={idx} style={{ position: 'relative', background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #a855f7', borderRadius: '10px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <video 
+                                  controls 
+                                  src={videoUrl} 
+                                  style={{ width: '100%', height: '140px', borderRadius: '6px', background: '#000000', objectFit: 'cover' }} 
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                  <span style={{ fontSize: '0.68rem', fontWeight: '900', color: '#a855f7' }}>
+                                    📹 Walkthrough Video #{idx + 1}
+                                  </span>
+                                  <button 
+                                    type="button" 
+                                    onClick={() => {
+                                      const updatedList = unitVideosList.filter((_, i) => i !== idx);
+                                      setNewPropertyForm((prev: any) => ({
+                                        ...prev,
+                                        unit_videos: updatedList
+                                      }));
+                                    }}
+                                    style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', padding: '3px 8px', borderRadius: '4px', fontSize: '0.66rem', fontWeight: '800', cursor: 'pointer' }}
+                                  >
+                                    🗑️ Remove Video
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
@@ -1637,10 +1853,10 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
               {/* SECTION 3: COMMERCIALS, PRICING & BROKERAGE */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#16a34a' : '#4ade80', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
-                  3. Pricing, Commercials & Brokerage Agreements
+                  3. Pricing, Commercials, Parking & All-Inclusive Final Valuation
                 </h4>
 
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '14px' }}>
                   <div>
                     <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Price per Sq.Ft. (INR) *</label>
                     <input 
@@ -1661,7 +1877,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           final_price: computedFlatPrice
                         });
                       }} 
-                      placeholder="e.g. 3250"
+                      placeholder="e.g. 5131"
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #38bdf8', color: '#38bdf8', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
                     />
                   </div>
@@ -1686,120 +1902,53 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           price_sqft: computedPriceSqft
                         });
                       }} 
-                      placeholder="e.g. ₹57,50,000"
+                      placeholder="e.g. ₹65,83,073"
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
                     />
                   </div>
 
-                  {/* TOTAL ALL-INCLUSIVE FINAL PRICE (INCLUDES ALL CHARGES & TAXES) */}
-                  {(() => {
-                    const rawBasePrice = newPropertyForm.final_price || (parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) && parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, '')) ? `₹${Math.round(parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) * parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, '')))}` : '');
-                    const computedCalc = calculateIndividualCostSheet({
-                      ...newPropertyForm,
-                      final_price: rawBasePrice
-                    });
-                    const computedAllInStr = rawBasePrice && computedCalc.totalEstimatedCost > 0 ? computedCalc.totalEstimatedCostStr : '';
-
-                    return (
-                      <div>
-                        <label style={{ fontSize: '0.78rem', color: '#22c55e', fontWeight: '900', display: 'block', marginBottom: '6px' }}>
-                          🏆 Total All-Inclusive Final Price (INR) [Base + Charges + Taxes] *
-                        </label>
-                        <input 
-                          type="text" 
-                          value={newPropertyForm.total_all_inclusive_price || computedAllInStr} 
-                          onChange={(e) => setNewPropertyForm({ ...newPropertyForm, total_all_inclusive_price: e.target.value })} 
-                          placeholder="e.g. ₹70,32,500 (All-Inclusive Landed Price)"
-                          style={{ width: '100%', background: 'rgba(34, 197, 94, 0.12)', border: '2px solid #22c55e', color: isLight ? '#15803d' : '#4ade80', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.92rem' }} 
-                        />
-                        <div style={{ fontSize: '0.68rem', color: '#22c55e', fontWeight: '800', marginTop: '4px' }}>
-                          ✓ Auto-sums Base + Parking + Amenities + Statutory GST & Stamp Duty
-                        </div>
-                      </div>
-                    );
-                  })()}
-
+                  {/* PARKING REQUIRED YES / NO OPTION */}
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Agreed Brokerage Fee %</label>
-                    <input type="text" value={newPropertyForm.commission_pct} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, commission_pct: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#d97706' : '#fbbf24', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
+                    <label style={{ fontSize: '0.78rem', color: '#0284c7', fontWeight: '900', display: 'block', marginBottom: '6px' }}>Parking Required? *</label>
+                    <select 
+                      value={newPropertyForm.parking_required || 'YES'} 
+                      onChange={(e) => {
+                        const req = e.target.value;
+                        setNewPropertyForm((prev: any) => ({
+                          ...prev,
+                          parking_required: req,
+                          parking_price: req === 'NO' ? '0' : (prev.parking_price && prev.parking_price !== '0' ? prev.parking_price : '300000')
+                        }));
+                      }} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', color: '#38bdf8', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
+                    >
+                      <option value="YES">✅ YES — Parking Required & Allotted</option>
+                      <option value="NO">❌ NO — Parking Not Required (₹0 Charge)</option>
+                    </select>
+                  </div>
+
+                  {/* GST CHARGE OPTION */}
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: '#a855f7', fontWeight: '900', display: 'block', marginBottom: '6px' }}>Statutory GST Charge (%) *</label>
+                    <select 
+                      value={newPropertyForm.gst_pct || '5%'} 
+                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, gst_pct: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #a855f7', color: '#a855f7', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
+                    >
+                      <option value="5%">5% GST (Under Construction Standard)</option>
+                      <option value="1%">1% GST (Affordable Housing Rate)</option>
+                      <option value="12%">12% GST (Commercial Real Estate)</option>
+                      <option value="0%">0% GST (Ready-to-Move / Exempt)</option>
+                    </select>
                   </div>
                 </div>
 
-                {/* LIVE PROJECT PARKING STOCK METRIC BANNER */}
-                {(() => {
-                  const currProj = (newPropertyForm.title || newPropertyForm.project_name || 'TILOTTAMA APPARTMENT').trim();
-                  const pStockLimits = projectParkingStockMap[currProj] || 
-                    Object.entries(projectParkingStockMap).find(([k]) => k.toLowerCase().includes(currProj.toLowerCase()) || currProj.toLowerCase().includes(k.toLowerCase()))?.[1] ||
-                    { totalCovered: 15, priceCovered: 300000, totalEv: 3, priceEv: 450000, totalOpen: 10, priceOpen: 150000 };
-
-                  const matchingProps = properties.filter((p: any) => {
-                    const pT = (p.title || p.project_name || '').toLowerCase();
-                    const cT = currProj.toLowerCase();
-                    return pT.includes(cT) || cT.includes(pT);
-                  });
-
-                  let assignedCovered = 0;
-                  let assignedEv = 0;
-                  let assignedOpen = 0;
-
-                  matchingProps.forEach((p: any) => {
-                    const avail = p.parking_availability || '';
-                    if (avail.includes('2 Covered') || avail.includes('2 Slots')) assignedCovered += 2;
-                    else if (avail.includes('1 Covered') || avail.includes('Covered Car')) assignedCovered += 1;
-
-                    if (avail.includes('EV')) assignedEv += 1;
-                    if (avail.includes('Open') || avail.includes('Uncovered')) assignedOpen += 1;
-                  });
-
-                  const remCovered = Math.max(0, pStockLimits.totalCovered - assignedCovered);
-                  const remEv = Math.max(0, pStockLimits.totalEv - assignedEv);
-                  const remOpen = Math.max(0, pStockLimits.totalOpen - assignedOpen);
-
-                  const fmtPrice = (val: any) => {
-                    if (typeof val === 'number') return `₹${val.toLocaleString('en-IN')}`;
-                    return val ? `₹${val}` : 'N/A';
-                  };
-
-                  return (
-                    <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #0284c7', borderRadius: '12px', padding: '14px', marginBottom: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '0.85rem', fontWeight: '900', color: '#38bdf8' }}>🚗 PROJECT PARKING STOCK & PRICING TRACKER:</span>
-                          <strong style={{ fontSize: '0.88rem', color: isLight ? '#0f172a' : '#ffffff' }}>{currProj}</strong>
-                        </div>
-                        <div style={{ display: 'flex', gap: '14px', marginTop: '6px', flexWrap: 'wrap' }}>
-                          <span style={{ fontSize: '0.75rem', color: remCovered > 0 ? '#4ade80' : '#ef4444', fontWeight: '800' }}>
-                            🚗 Covered: {remCovered} / {pStockLimits.totalCovered} Available <small style={{ color: '#38bdf8' }}>({fmtPrice(pStockLimits.priceCovered)})</small>
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: remEv > 0 ? '#fbbf24' : '#ef4444', fontWeight: '800' }}>
-                            ⚡ EV Stations: {remEv} / {pStockLimits.totalEv} Available <small style={{ color: '#38bdf8' }}>({fmtPrice(pStockLimits.priceEv)})</small>
-                          </span>
-                          <span style={{ fontSize: '0.75rem', color: remOpen > 0 ? '#38bdf8' : '#ef4444', fontWeight: '800' }}>
-                            🅿️ Open Slots: {remOpen} / {pStockLimits.totalOpen} Available <small style={{ color: '#38bdf8' }}>({fmtPrice(pStockLimits.priceOpen)})</small>
-                          </span>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setParkingModalProjectName(currProj);
-                          setParkingModalForm(pStockLimits);
-                          setShowManageParkingModal(true);
-                        }}
-                        style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: '800', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        ⚙️ Manage Project Parking Stock & Pricing
-                      </button>
-                    </div>
-                  );
-                })()}
-
-                {/* PARKING & AMENITY CHARGES ROW WITH PRESETS */}
                 <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
+                  {/* PARKING TYPE SELECTION */}
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Car Parking Availability *</label>
+                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Car Parking Slot Type</label>
                     <select 
+                      disabled={(newPropertyForm.parking_required || 'YES') === 'NO'}
                       value={newPropertyForm.parking_availability || 'Covered Car Parking (1 Slot Included)'} 
                       onChange={(e) => {
                         const availVal = e.target.value;
@@ -1811,7 +1960,6 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         else if (availVal.includes('Covered') || availVal.includes('1 Covered')) autoPrice = pLimits.priceCovered;
                         else if (availVal.includes('EV')) autoPrice = pLimits.priceEv;
                         else if (availVal.includes('Open') || availVal.includes('Uncovered')) autoPrice = pLimits.priceOpen;
-                        else if (availVal.includes('No Parking')) autoPrice = 'Included in Flat Price';
 
                         setNewPropertyForm({ 
                           ...newPropertyForm, 
@@ -1819,7 +1967,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           parking_price: autoPrice !== undefined ? autoPrice : newPropertyForm.parking_price
                         });
                       }} 
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800' }}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', opacity: (newPropertyForm.parking_required || 'YES') === 'NO' ? 0.5 : 1 }}
                     >
                       <option value="Covered Car Parking (1 Slot Included)">🚗 1 Covered Car Parking Slot (Single)</option>
                       <option value="Covered Car Parking (2 Slots Included)">🚗🚗 2 Covered Car Parking Slots (Tandem)</option>
@@ -1828,171 +1976,36 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                       <option value="Uncovered / Open Parking">🅿️ 1 Open / Surface Parking Slot</option>
                       <option value="1 Mechanical Stacker Slot">🏗️ 1 Mechanical Stacker Parking Slot</option>
                       <option value="3 Premium Basement Slots">🏎️ 3 Premium Basement Parking Slots</option>
-                      <option value="Additional Parking Available">➕ Additional Parking Available for Purchase</option>
-                      <option value="No Parking Allotted">❌ No Parking Allotted</option>
                     </select>
                   </div>
 
+                  {/* PARKING PRICE TAG */}
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Parking Price (INR) *</label>
+                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Parking Charge (INR) *</label>
                     <input 
                       type="text" 
-                      value={newPropertyForm.parking_price !== undefined ? newPropertyForm.parking_price : ''} 
+                      disabled={(newPropertyForm.parking_required || 'YES') === 'NO'}
+                      value={(newPropertyForm.parking_required || 'YES') === 'NO' ? '0' : (newPropertyForm.parking_price !== undefined ? newPropertyForm.parking_price : '300000')} 
                       onChange={(e) => setNewPropertyForm({ ...newPropertyForm, parking_price: e.target.value })} 
-                      placeholder="Enter Parking Price (e.g. Included in Flat Price / ₹3,00,000)"
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '9px 10px', borderRadius: '8px', fontSize: '0.82rem' }} 
+                      placeholder="e.g. 300000"
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: (newPropertyForm.parking_required || 'YES') === 'NO' ? '#ef4444' : '#38bdf8', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', opacity: (newPropertyForm.parking_required || 'YES') === 'NO' ? 0.6 : 1 }} 
                     />
                   </div>
 
+                  {/* AMENITY CHARGES */}
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Amenity Charges (INR) *</label>
+                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Amenity & Clubhouse Charges (INR) *</label>
                     <input 
                       type="text" 
-                      value={newPropertyForm.amenity_charges !== undefined ? newPropertyForm.amenity_charges : ''} 
+                      value={newPropertyForm.amenity_charges !== undefined ? newPropertyForm.amenity_charges : '150000'} 
                       onChange={(e) => setNewPropertyForm({ ...newPropertyForm, amenity_charges: e.target.value })} 
-                      placeholder="Enter Amenity Charges (e.g. Included in Flat Price / ₹2,50,000)"
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '9px 10px', borderRadius: '8px', fontSize: '0.82rem' }} 
+                      placeholder="e.g. 150000"
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
                     />
                   </div>
                 </div>
 
-                {/* PRICING LIVE CALCULATION SUMMARY CARD */}
-                {(() => {
-                  const basePriceVal = newPropertyForm.final_price || (parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) && parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, '')) ? `₹${Math.round(parseFloat((newPropertyForm.price_sqft || '').replace(/[^0-9.]/g, '')) * parseFloat((newPropertyForm.super_builtup_area || '').replace(/[^0-9.]/g, '')))}` : '');
-                  if (!basePriceVal) return null;
-                  const computedCalc = calculateIndividualCostSheet({
-                    ...newPropertyForm,
-                    final_price: basePriceVal
-                  });
 
-                  if (computedCalc.totalEstimatedCost === 0) return null;
-
-                  return (
-                    <div style={{ background: 'rgba(34, 197, 94, 0.12)', border: '1.5px solid #22c55e', borderRadius: '10px', padding: '12px 16px', fontSize: '0.82rem', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                      <div>
-                        <div style={{ color: '#22c55e', fontWeight: '900', fontSize: '0.9rem', marginBottom: '2px' }}>
-                          🏆 TOTAL ALL-INCLUSIVE FINAL LANDED COST: <span style={{ color: isLight ? '#15803d' : '#4ade80', fontSize: '1.05rem', fontWeight: '900', textDecoration: 'underline' }}>{newPropertyForm.total_all_inclusive_price || computedCalc.totalEstimatedCostStr}</span>
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1' }}>
-                          <strong>Base Flat:</strong> {computedCalc.basePriceStr} • <strong>Parking:</strong> {computedCalc.parkingStr} • <strong>Amenities:</strong> {computedCalc.clubStr !== 'Included in Flat Price' ? computedCalc.clubStr : computedCalc.amenityStr || 'Included'} • <strong>Subtotal:</strong> {computedCalc.subtotalStr} • <strong>GST ({computedCalc.gstPct}%):</strong> {formatIndianRupees(computedCalc.gstAmount)} • <strong>Stamp Duty ({computedCalc.stampDutyPct}%):</strong> {formatIndianRupees(computedCalc.stampDutyAmount)} • <strong>Reg Fee ({computedCalc.registrationPct}%):</strong> {formatIndianRupees(computedCalc.registrationAmount)}
-                        </div>
-                      </div>
-                      <span style={{ background: '#22c55e', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', whiteSpace: 'nowrap' }}>
-                        ALL-INCLUSIVE FINAL
-                      </span>
-                    </div>
-                  );
-                })()}
-
-                {/* ITEMIZED PROPERTY PRICE & TAX BREAKUP SUB-CONTAINER FOR COST SHEET */}
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
-                    <h5 style={{ fontSize: '0.88rem', fontWeight: '900', color: '#0284c7', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      🧾 Itemized Property Price & Tax Breakup (Used for Cost Sheet Calculations)
-                    </h5>
-                    <span style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800' }}>
-                      ⚡ AUTO-SYNCED TO COST SHEET
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '12px' }}>
-                    <div>
-                      <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Floor Rise Charge (INR)</label>
-                      <input 
-                        type="text" 
-                        value={newPropertyForm.floor_rise_charge || ''} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, floor_rise_charge: e.target.value })} 
-                        placeholder="Enter Floor Rise Charge (e.g. ₹50,000)"
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Preferential Location Charge (PLC)</label>
-                      <input 
-                        type="text" 
-                        value={newPropertyForm.plc_charge || ''} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, plc_charge: e.target.value })} 
-                        placeholder="Enter Preferential Location Charge (PLC)"
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Clubhouse & Gated Amenities Membership</label>
-                      <input 
-                        type="text" 
-                        value={newPropertyForm.clubhouse_charge || ''} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, clubhouse_charge: e.target.value })} 
-                        placeholder="Enter Clubhouse Membership Charge"
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Advance Maintenance Charge (1 Year)</label>
-                      <input 
-                        type="text" 
-                        value={newPropertyForm.advance_maintenance_charge || ''} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, advance_maintenance_charge: e.target.value })} 
-                        placeholder="Enter Advance Maintenance Charge"
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Infrastructure & Legal Documentation Fee</label>
-                      <input 
-                        type="text" 
-                        value={newPropertyForm.legal_doc_charge || ''} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, legal_doc_charge: e.target.value })} 
-                        placeholder="Enter Infrastructure & Legal Documentation Fee"
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
-                      />
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>GST Rate (%) *</label>
-                      <select 
-                        value={newPropertyForm.gst_pct || '5.0%'} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, gst_pct: e.target.value })} 
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#0284c7', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
-                      >
-                        <option value="5.0%">5.0% GST (Under Construction Standard)</option>
-                        <option value="0.0%">0.0% GST (Ready to Move / Exempt)</option>
-                        <option value="1.0%">1.0% GST (Affordable Housing Rate)</option>
-                        <option value="12.0%">12.0% GST (Commercial Real Estate)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Stamp Duty Rate (%) *</label>
-                      <select 
-                        value={newPropertyForm.stamp_duty_pct || '5.0%'} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, stamp_duty_pct: e.target.value })} 
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#0284c7', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
-                      >
-                        <option value="5.0%">5.0% Stamp Duty (Standard Rate)</option>
-                        <option value="7.5%">7.5% Stamp Duty (High Value Rate)</option>
-                        <option value="4.0%">4.0% Stamp Duty (Women Concession)</option>
-                        <option value="6.0%">6.0% Stamp Duty (State Concession)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Registration Fee (%) *</label>
-                      <select 
-                        value={newPropertyForm.registration_fee_pct || '1.0%'} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, registration_fee_pct: e.target.value })} 
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#0284c7', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
-                      >
-                        <option value="1.0%">1.0% Registration Fee (Standard Rate)</option>
-                        <option value="0.5%">0.5% Registration Fee (Flat Cap Rate)</option>
-                        <option value="2.0%">2.0% Registration Fee (Commercial Rate)</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
                   <div>
@@ -2612,21 +2625,18 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
         const buildingPhotosList: string[] = Array.from(new Set([
           ...(Array.isArray(viewPropertyModal.building_photos) && viewPropertyModal.building_photos.length > 0 ? viewPropertyModal.building_photos : []),
           ...(viewPropertyModal.building_photo ? [viewPropertyModal.building_photo] : []),
-          ...modalProjProps.flatMap((p: any) => Array.isArray(p.building_photos) ? p.building_photos : (p.building_photo ? [p.building_photo] : [])),
-          'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'
+          ...modalProjProps.flatMap((p: any) => Array.isArray(p.building_photos) ? p.building_photos : (p.building_photo ? [p.building_photo] : []))
         ])).filter(Boolean);
 
         // 📸 PROPERTY CODE WISE UNIT INTERIOR & FLOOR PLAN PHOTOS (Strictly scoped to viewPropertyModal.property_code)
         const unitPhotosList: string[] = Array.from(new Set([
           ...(Array.isArray(viewPropertyModal.unit_photos) && viewPropertyModal.unit_photos.length > 0 ? viewPropertyModal.unit_photos : []),
-          ...(viewPropertyModal.unit_photo ? [viewPropertyModal.unit_photo] : []),
-          'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80',
-          'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80'
+          ...(viewPropertyModal.unit_photo ? [viewPropertyModal.unit_photo] : [])
+        ])).filter(Boolean);
+
+        // 📹 PROPERTY CODE WISE UNIT WALKTHROUGH VIDEOS
+        const unitVideosModalList: string[] = Array.from(new Set([
+          ...(Array.isArray(viewPropertyModal.unit_videos) && viewPropertyModal.unit_videos.length > 0 ? viewPropertyModal.unit_videos : [])
         ])).filter(Boolean);
 
         return (
@@ -2818,39 +2828,76 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
-                    {buildingPhotosList.map((url, idx) => (
-                      <div key={idx} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #0284c7', background: '#000000', cursor: 'pointer', height: '110px' }} onClick={() => window.open(url, '_blank')}>
-                        <img src={url} alt={`Building Photo ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(15, 23, 42, 0.85)', color: '#ffffff', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
-                          {idx === 0 ? '⭐ Primary Exterior Cover' : idx === 1 ? '🏢 Building Elevation' : `Exterior #${idx + 1}`}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                  {buildingPhotosList.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+                      {buildingPhotosList.map((url, idx) => (
+                        <div key={idx} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #0284c7', background: '#000000', cursor: 'pointer', height: '110px' }} onClick={() => window.open(url, '_blank')}>
+                          <img src={url} alt={`Building Photo ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(15, 23, 42, 0.85)', color: '#ffffff', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
+                            {idx === 0 ? '⭐ Primary Exterior Cover' : idx === 1 ? '🏢 Building Elevation' : `Exterior #${idx + 1}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px dashed #eab308', borderRadius: '8px', padding: '16px', color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.82rem', textAlign: 'center', fontWeight: '700' }}>
+                      📷 No building exterior photos uploaded for this project yet.
+                    </div>
+                  )}
                 </div>
 
-                {/* SECTION 6: 📸 UNIT INTERIOR, ROOM LAYOUT & FLOOR PLAN PHOTOS (PROPERTY CODE WISE) */}
-                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #38bdf8', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* SECTION 6: 📸 UNIT INTERIOR, ROOM LAYOUT & FLOOR PLAN PHOTOS & WALKTHROUGH VIDEOS (PROPERTY CODE WISE) */}
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #38bdf8', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
                     <h4 style={{ fontSize: '0.9rem', fontWeight: '900', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                      📸 UNIT INTERIOR, ROOM LAYOUT & FLOOR PLAN PHOTOS (PROPERTY CODE WISE: {viewPropertyModal.property_code}) ({unitPhotosList.length} Photos Listed)
+                      📸 UNIT INTERIOR & FLOOR PLAN PHOTOS (PROPERTY CODE WISE: {viewPropertyModal.property_code}) ({unitPhotosList.length} Photos Listed)
                     </h4>
                     <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
                       🔑 Scoped to Property Code ({viewPropertyModal.property_code})
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
-                    {unitPhotosList.map((url, idx) => (
-                      <div key={idx} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #38bdf8', background: '#000000', cursor: 'pointer', height: '110px' }} onClick={() => window.open(url, '_blank')}>
-                        <img src={url} alt={`Unit Interior Photo ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(15, 23, 42, 0.85)', color: '#ffffff', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
-                          {idx === 0 ? '🛋️ Living Room Layout' : idx === 1 ? '🛏️ Bedroom Interior' : idx === 2 ? '🍳 Kitchen View' : `Floor Plan #${idx + 1}`}
+                  {unitPhotosList.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+                      {unitPhotosList.map((url, idx) => (
+                        <div key={idx} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #38bdf8', background: '#000000', cursor: 'pointer', height: '110px' }} onClick={() => window.open(url, '_blank')}>
+                          <img src={url} alt={`Unit Interior Photo ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(15, 23, 42, 0.85)', color: '#ffffff', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
+                            {idx === 0 ? '🛋️ Living Room Layout' : idx === 1 ? '🛏️ Bedroom Interior' : idx === 2 ? '🍳 Kitchen View' : `Floor Plan #${idx + 1}`}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px dashed #38bdf8', borderRadius: '8px', padding: '16px', color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.82rem', textAlign: 'center', fontWeight: '700' }}>
+                      📸 No unit interior photos uploaded for this property code yet.
+                    </div>
+                  )}
+
+                  {/* 🎬 UNIT WALKTHROUGH VIDEO GALLERY IN INSPECTION VAULT */}
+                  {unitVideosModalList.length > 0 && (
+                    <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <h4 style={{ fontSize: '0.86rem', fontWeight: '900', color: '#a855f7', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                          <Video size={16} color="#a855f7" /> 🎬 UNIT WALKTHROUGH VIDEO GALLERY ({unitVideosModalList.length} Video{unitVideosModalList.length > 1 ? 's' : ''})
+                        </h4>
+                        <span style={{ fontSize: '0.72rem', background: 'rgba(168, 85, 247, 0.2)', color: '#a855f7', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                          Full HD Playback Enabled
                         </span>
                       </div>
-                    ))}
-                  </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(2, 1fr)', gap: '12px' }}>
+                        {unitVideosModalList.map((videoUrl, idx) => (
+                          <div key={idx} style={{ background: '#000000', border: '1.5px solid #a855f7', borderRadius: '12px', padding: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <video controls src={videoUrl} style={{ width: '100%', height: '160px', borderRadius: '8px', objectFit: 'cover' }} />
+                            <span style={{ color: '#a855f7', fontSize: '0.72rem', fontWeight: '900' }}>
+                              🎥 Recorded Unit Walkthrough #{idx + 1}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* SECTION 6: 👤 SITE CONTACT PERSON & PROPERTY HIGHLIGHTS */}
