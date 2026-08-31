@@ -42,6 +42,7 @@ interface ProjectManagementViewProps {
   setActiveRadius: (r: any) => void;
   calculateIndividualCostSheet: (form: any) => any;
   formatIndianRupees: (amount: number) => string;
+  detectLocalityFromCoords?: (lat: string, lng: string) => Promise<{ locality: string; fullAddress: string; rawDetails: any }>;
 }
 
 export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
@@ -85,6 +86,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   setActiveRadius,
   calculateIndividualCostSheet,
   formatIndianRupees,
+  detectLocalityFromCoords,
 }) => {
   // DEVELOPER MASTER ID REGISTRY STATE & PERSISTENCE
   const PROJECT_GPS_MAP: Record<string, { lat: string; lng: string }> = {
@@ -1134,13 +1136,54 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '12px' }}>
                     <div>
                       <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>GPS Latitude (Exact Map Lat)</label>
-                      <input type="text" value={newPropertyForm.latitude} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, latitude: e.target.value })} placeholder="e.g. 22.698021 or 17.44008" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                      <input 
+                        type="text" 
+                        value={newPropertyForm.latitude} 
+                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, latitude: e.target.value })} 
+                        placeholder="e.g. 22.698021 or 17.44008" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                      />
                     </div>
                     <div>
                       <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>GPS Longitude (Exact Map Long)</label>
-                      <input type="text" value={newPropertyForm.longitude} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, longitude: e.target.value })} placeholder="e.g. 88.463723 or 78.34891" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                      <input 
+                        type="text" 
+                        value={newPropertyForm.longitude} 
+                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, longitude: e.target.value })} 
+                        placeholder="e.g. 88.463723 or 78.34891" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                      />
                     </div>
                   </div>
+
+                  {/* MAXIMUM DETECTED FULL ADDRESS BREAKDOWN CARD */}
+                  {newPropertyForm.full_address && (
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#22c55e', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          📍 MAXIMUM FETCHED GPS DETAILED ADDRESS
+                        </span>
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            if (navigator.clipboard) {
+                              navigator.clipboard.writeText(newPropertyForm.full_address);
+                              alert('📋 Maximum Fetched Address copied to clipboard!');
+                            }
+                          }}
+                          style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e', border: 'none', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}
+                        >
+                          📋 Copy Address
+                        </button>
+                      </div>
+                      <div style={{ fontSize: '0.85rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', lineHeight: '1.4' }}>
+                        🏢 {newPropertyForm.full_address}
+                      </div>
+                      <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                        ✓ Maximum granular address auto-fetched via GPS sensors & reverse geocoding API
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* MULTIPLE BUILDING & EXTERIOR ELEVATION PHOTO CAPTURE WIDGET */}

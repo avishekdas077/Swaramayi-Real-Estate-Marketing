@@ -4907,6 +4907,93 @@ export default function App() {
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // 📍 MAXIMUM DETAILED GPS REVERSE GEOCODING ADDRESS DETECTOR ENGINE
+  const detectLocalityFromCoords = async (latStr: string, lngStr: string): Promise<{ locality: string; fullAddress: string; rawDetails: any }> => {
+    const lat = parseFloat(latStr);
+    const lng = parseFloat(lngStr);
+    if (isNaN(lat) || isNaN(lng)) {
+      return { locality: '', fullAddress: '', rawDetails: null };
+    }
+
+    // 1. Instant Geofence Precision Fallback (Offline Capable)
+    const geofences = [
+      { latMin: 22.71, latMax: 22.75, lngMin: 88.47, lngMax: 88.52, locality: 'BARASAT, CHAPADALI', fullAddress: 'Chapadali Bus Terminus Hub, Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India' },
+      { latMin: 22.67, latMax: 22.71, lngMin: 88.43, lngMax: 88.47, locality: 'Madhyamgram Hub / Jessore Road', fullAddress: 'Madhyamgram Chowrastha, Jessore Road, North 24 Parganas, Kolkata, West Bengal - 700129, India' },
+      { latMin: 22.56, latMax: 22.63, lngMin: 88.42, lngMax: 88.49, locality: 'New Town Action Area / Salt Lake Sector V', fullAddress: 'Action Area I, Major Arterial Road, New Town, Salt Lake Sector V, North 24 Parganas, West Bengal - 700156, India' },
+      { latMin: 22.48, latMax: 22.56, lngMin: 88.32, lngMax: 88.42, locality: 'Kolkata South / Ballygunge Hub', fullAddress: 'Ballygunge Circular Road, Gariahat, Kolkata South, West Bengal - 700019, India' },
+      { latMin: 17.43, latMax: 17.47, lngMin: 78.33, lngMax: 78.38, locality: 'Kondapur Hub / HITEC City Sector', fullAddress: 'Kondapur Main Road, Near Cyber Towers, HITEC City, Ranga Reddy District, Hyderabad, Telangana - 500084, India' },
+      { latMin: 17.41, latMax: 17.45, lngMin: 78.35, lngMax: 78.40, locality: 'Gachibowli Financial District', fullAddress: 'Financial District, ISB Road, Gachibowli, Ranga Reddy District, Hyderabad, Telangana - 500032, India' },
+      { latMin: 17.47, latMax: 17.52, lngMin: 78.33, lngMax: 78.38, locality: 'Miyapur Hub / Chandanagar', fullAddress: 'Miyapur Cross Roads, NH 65, Serilingampally, Ranga Reddy, Hyderabad, Telangana - 500049, India' },
+      { latMin: 17.38, latMax: 17.43, lngMin: 78.42, lngMax: 78.48, locality: 'Banjara Hills / Jubilee Hills', fullAddress: 'Road No. 1, Banjara Hills, Khairatabad, Hyderabad, Telangana - 500034, India' }
+    ];
+
+    const geofenceMatch = geofences.find(g => lat >= g.latMin && lat <= g.latMax && lng >= g.lngMin && lng <= g.lngMax);
+
+    // 2. OpenStreetMap Nominatim Reverse Geocoding API Call for Maximum Detailed Full Address
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3500);
+      const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`, {
+        signal: controller.signal,
+        headers: { 'Accept-Language': 'en' }
+      });
+      clearTimeout(timeoutId);
+
+      if (resp.ok) {
+        const data = await resp.json();
+        const addr = data.address || {};
+
+        const buildingOrAmenity = addr.building || addr.amenity || addr.shop || addr.office || addr.tourism || '';
+        const road = addr.road || addr.street || addr.pedestrian || addr.highway || '';
+        const neighbourhood = addr.neighbourhood || addr.suburb || addr.quarter || addr.residential || '';
+        const districtOrTown = addr.subdistrict || addr.town || addr.village || addr.city_district || addr.municipality || '';
+        const city = addr.city || addr.county || addr.state_district || '';
+        const state = addr.state || '';
+        const postcode = addr.postcode || '';
+        const country = addr.country || 'India';
+
+        const parts = [
+          buildingOrAmenity,
+          road,
+          neighbourhood,
+          districtOrTown,
+          city,
+          state ? (postcode ? `${state} - ${postcode}` : state) : postcode,
+          country
+        ].filter(Boolean);
+
+        const constructedFullAddress = parts.length > 0 ? parts.join(', ') : (data.display_name || '');
+
+        const primaryLoc = neighbourhood || districtOrTown || city || 'Central Hub';
+        const secondaryLoc = city && !primaryLoc.toLowerCase().includes(city.toLowerCase()) ? city : '';
+        const shortLocalityStr = secondaryLoc ? `${primaryLoc} Hub / ${secondaryLoc}` : primaryLoc;
+
+        return {
+          locality: shortLocalityStr,
+          fullAddress: constructedFullAddress || (geofenceMatch ? geofenceMatch.fullAddress : shortLocalityStr),
+          rawDetails: addr
+        };
+      }
+    } catch (e) {
+      console.log('Reverse geocoding API offline or timed out, using precision geofence fallback', e);
+    }
+
+    if (geofenceMatch) {
+      return {
+        locality: geofenceMatch.locality,
+        fullAddress: geofenceMatch.fullAddress,
+        rawDetails: null
+      };
+    }
+
+    const fallbackLocStr = `Sector (${lat.toFixed(4)}, ${lng.toFixed(4)})`;
+    return {
+      locality: fallbackLocStr,
+      fullAddress: `Exact Coordinates (${lat}, ${lng}), Landed Locality Area`,
+      rawDetails: null
+    };
+  };
+
   const handleCaptureCurrentGpsLocation = () => {
     if (!navigator.geolocation) {
       alert('❌ Geolocation is not supported by your browser or device.');
@@ -4914,38 +5001,44 @@ export default function App() {
     }
 
     setIsCapturingGps(true);
-    setGpsCaptureStatus('📡 Accessing device GPS sensors...');
+    setGpsCaptureStatus('📡 Accessing device GPS sensors & fetching maximum detailed address...');
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const lat = position.coords.latitude.toFixed(6);
         const lng = position.coords.longitude.toFixed(6);
         const accuracy = position.coords.accuracy ? ` (±${Math.round(position.coords.accuracy)}m accuracy)` : '';
 
+        const result = await detectLocalityFromCoords(lat, lng);
+
         setNewPropertyForm(prev => ({
           ...prev,
           latitude: lat,
-          longitude: lng
+          longitude: lng,
+          full_address: result.fullAddress || prev.full_address || ''
         }));
 
         setIsCapturingGps(false);
-        setGpsCaptureStatus(`✓ GPS Coordinates Captured Live: ${lat}, ${lng}${accuracy}`);
+        setGpsCaptureStatus(`✓ GPS Coordinates Captured Live (${lat}, ${lng}${accuracy}) • Address: ${result.fullAddress}`);
       },
-      (error) => {
+      async (error) => {
         setIsCapturingGps(false);
         let errorMsg = 'Unable to retrieve GPS location.';
         if (error.code === error.PERMISSION_DENIED) errorMsg = 'Location permission denied by browser/device.';
         else if (error.code === error.POSITION_UNAVAILABLE) errorMsg = 'GPS location unavailable.';
         else if (error.code === error.TIMEOUT) errorMsg = 'GPS location request timed out.';
 
-        const fallbackLat = '22.698021';
-        const fallbackLng = '88.463723';
+        const fallbackLat = '22.722361';
+        const fallbackLng = '88.493403';
+        const result = await detectLocalityFromCoords(fallbackLat, fallbackLng);
+
         setNewPropertyForm(prev => ({
           ...prev,
           latitude: prev.latitude || fallbackLat,
-          longitude: prev.longitude || fallbackLng
+          longitude: prev.longitude || fallbackLng,
+          full_address: prev.full_address || result.fullAddress
         }));
-        setGpsCaptureStatus(`⚠️ ${errorMsg} Default coordinates set (${fallbackLat}, ${fallbackLng}).`);
+        setGpsCaptureStatus(`⚠️ ${errorMsg} Default coordinates set (${fallbackLat}, ${fallbackLng}) • Address: ${result.fullAddress}`);
       },
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
@@ -5296,6 +5389,7 @@ export default function App() {
         developer_mobile: devProjectMobile || newPropertyForm.developer_mobile || p.developer_mobile || '9883395102',
         developer_alt_mobile: devProjectAltMobile || newPropertyForm.developer_alt_mobile || p.developer_alt_mobile || '7044293951',
         locality: newPropertyForm.locality || p.locality,
+        full_address: newPropertyForm.full_address || p.full_address || newPropertyForm.locality || p.locality,
         property_type: newPropertyForm.property_type || p.property_type,
         configuration: newPropertyForm.configuration || p.configuration,
         carpet_area: newPropertyForm.carpet_area || p.carpet_area,
@@ -5352,6 +5446,7 @@ export default function App() {
       developer_mobile: devProjectMobile || newPropertyForm.developer_mobile || '9883395102',
       developer_alt_mobile: devProjectAltMobile || newPropertyForm.developer_alt_mobile || '7044293951',
       locality: newPropertyForm.locality || 'Kondapur / Madhyamgram',
+      full_address: newPropertyForm.full_address || newPropertyForm.locality || 'Chapadali Bus Terminus Hub, Jessore Road, Barasat, North 24 Parganas, West Bengal - 700124, India',
       configuration: newPropertyForm.configuration || '3BHK',
       carpet_area: newPropertyForm.carpet_area || '898.1 Sq.Ft.',
       super_builtup_area: newPropertyForm.super_builtup_area || '1,283 Sq.Ft.',
@@ -7608,6 +7703,7 @@ export default function App() {
               isCapturingGps={isCapturingGps}
               gpsCaptureStatus={gpsCaptureStatus}
               handleCaptureCurrentGpsLocation={handleCaptureCurrentGpsLocation}
+              detectLocalityFromCoords={detectLocalityFromCoords}
               handleCreatePropertySubmit={handleCreatePropertySubmit}
               generateNextPropertyCode={generateNextPropertyCode}
               handleOpenAddPropertyModal={handleOpenAddPropertyModal}
