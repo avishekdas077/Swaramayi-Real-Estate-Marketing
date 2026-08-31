@@ -238,6 +238,8 @@ export interface AgreementRecord {
 export interface InvoiceRecord {
   id: string;
   invoice_number: string; // SRM-INV-2026-000401
+  invoice_category?: 'CUSTOMER' | 'DEVELOPER';
+  branch_name?: string;
   invoice_type: 'DEVELOPER_COMMISSION_GST' | 'CUSTOMER_TOKEN_RECEIPT' | 'SERVICE_BILL';
   booking_code: string;
   customer_name: string;

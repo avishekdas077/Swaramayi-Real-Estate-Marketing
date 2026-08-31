@@ -12,6 +12,9 @@ interface BillingManagementViewProps {
   setCreateInvoiceForm: (form: any) => void;
   setShowCreateInvoiceModal: (val: boolean) => void;
   setShowPrintInvoiceModal: (val: any) => void;
+  currentRole?: string;
+  users?: any[];
+  branches?: any[];
 }
 
 export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
@@ -25,7 +28,21 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
   setCreateInvoiceForm,
   setShowCreateInvoiceModal,
   setShowPrintInvoiceModal,
+  currentRole,
+  users = [],
+  branches = [],
 }) => {
+  const getCurrentUserBranch = () => {
+    const matchedUser = (users || []).find((u: any) => u.role === currentRole) || (users || []).find((u: any) => u.id === 'USR-01') || (users || [])[0];
+    if (matchedUser && matchedUser.branch_name) {
+      if (matchedUser.branch_name === 'Head Office') return 'Head Office (Kolkata)';
+      return matchedUser.branch_name;
+    }
+    if (currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER') return 'Head Office (Kolkata)';
+    if (branches && branches.length > 0) return branches[0].branch_name;
+    return 'Head Office (Kolkata)';
+  };
+
   const [datePeriodFilter, setDatePeriodFilter] = useState<'ALL' | 'TODAY' | 'WEEK' | 'MONTH' | 'CUSTOM'>('ALL');
   const [startDateFilter, setStartDateFilter] = useState<string>('2026-08-01');
   const [endDateFilter, setEndDateFilter] = useState<string>('2026-08-31');
@@ -105,6 +122,7 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
             onClick={() => {
               setCreateInvoiceForm({
                 invoice_category: billingInvoiceCategory,
+                branch_name: getCurrentUserBranch(),
                 customer_name: 'Rohan Deshmukh',
                 customer_number: 'SRM-CUS-2026-000184',
                 customer_mobile: '+91 90490 12345',
@@ -282,7 +300,7 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                <th style={{ padding: '12px' }}>Invoice Number & Date</th>
+                <th style={{ padding: '12px' }}>Invoice Number & Branch</th>
                 <th style={{ padding: '12px' }}>{billingInvoiceCategory === 'DEVELOPER' ? 'Developer / Builder Name & GSTIN' : 'Customer Name & Contact'}</th>
                 <th style={{ padding: '12px' }}>Property Title & Particulars</th>
                 <th style={{ padding: '12px' }}>Taxable Value & GST (18%)</th>
@@ -302,7 +320,10 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                       <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}>
                         🆔 {i.invoice_number}
                       </span>
-                      <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
+                      <div style={{ fontSize: '0.74rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', marginTop: '4px' }}>
+                        🏛️ {i.branch_name || 'Kolkata Branch'}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
                         📅 {i.created_date || '2026-08-25'}
                       </div>
                     </td>

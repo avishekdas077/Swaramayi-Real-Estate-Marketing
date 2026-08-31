@@ -478,6 +478,7 @@ export function seedDatabase() {
       {
         id: 'INV-01',
         invoice_number: 'SRM-INV-2026-000401',
+        branch_name: 'Kolkata Branch',
         invoice_type: 'DEVELOPER_COMMISSION_GST',
         booking_code: 'SRM-BKG-2026-000201',
         customer_name: 'Anand Kumar',

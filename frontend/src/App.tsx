@@ -4506,9 +4506,20 @@ export default function App() {
   const [showPrintInvoiceModal, setShowPrintInvoiceModal] = useState<{ open: boolean; invoice: any } | null>(null);
   const [invoiceTemplateTheme, setInvoiceTemplateTheme] = useState<'SAND' | 'NAVY'>('SAND');
 
+  const getCurrentUserBranch = () => {
+    const matchedUser = (users || []).find((u: any) => u.role === currentRole) || (users || []).find((u: any) => u.id === 'USR-01') || (users || [])[0];
+    if (matchedUser && matchedUser.branch_name) {
+      if (matchedUser.branch_name === 'Head Office') return 'Head Office (Kolkata)';
+      return matchedUser.branch_name;
+    }
+    if (currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER') return 'Head Office (Kolkata)';
+    if (branches && branches.length > 0) return branches[0].branch_name;
+    return 'Head Office (Kolkata)';
+  };
+
   const [invoices, setInvoices] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_invoices_v4');
+      const saved = localStorage.getItem('swaramayi_invoices_v6');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
@@ -4521,6 +4532,7 @@ export default function App() {
         id: 'INV-CUS-01',
         invoice_number: 'SRM-INV-CUS-2026-000401',
         invoice_category: 'CUSTOMER',
+        branch_name: 'Head Office (Kolkata)',
         customer_name: 'Rohan Deshmukh',
         customer_number: 'SRM-CUS-2026-000184',
         customer_mobile: '+91 98490 12345',
@@ -4544,6 +4556,7 @@ export default function App() {
         id: 'INV-CUS-02',
         invoice_number: 'SRM-INV-CUS-2026-000406',
         invoice_category: 'CUSTOMER',
+        branch_name: 'Head Office (Kolkata)',
         customer_name: 'Ananya Sharma',
         customer_number: 'SRM-CUS-2026-000192',
         customer_mobile: '+91 91234 56789',
@@ -4567,6 +4580,7 @@ export default function App() {
         id: 'INV-DEV-01',
         invoice_number: 'SRM-INV-DEV-2026-000501',
         invoice_category: 'DEVELOPER',
+        branch_name: 'Head Office (Kolkata)',
         developer_name: 'Aparna Constructions',
         developer_gstin: '36AAACA1234F1Z5',
         customer_name: 'Rohan Deshmukh',
@@ -4589,6 +4603,7 @@ export default function App() {
         id: 'INV-DEV-02',
         invoice_number: 'SRM-INV-DEV-2026-000505',
         invoice_category: 'DEVELOPER',
+        branch_name: 'Head Office (Kolkata)',
         developer_name: 'Aparna Constructions',
         developer_gstin: '36AAACA1234F1Z5',
         developer_contact_person: 'Mr. S. K. Reddy (VP Sales)',
@@ -4616,7 +4631,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_invoices_v4', JSON.stringify(invoices));
+      localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(invoices));
     } catch (e) {
       console.error('Error saving invoices to localStorage:', e);
     }
@@ -4624,6 +4639,7 @@ export default function App() {
 
   const [createInvoiceForm, setCreateInvoiceForm] = useState({
     invoice_category: 'CUSTOMER',
+    branch_name: 'Head Office (Kolkata)',
     property_code: 'SRM-PROP-2026-000421',
     property_title: 'Aparna Zenon Premium 3BHK Residence',
     developer_name: 'Aparna Constructions',
@@ -4658,6 +4674,12 @@ export default function App() {
     bank_ifsc_code: 'HDFC0000128',
     bank_upi_id: 'swaramayi@hdfcbank'
   });
+
+  useEffect(() => {
+    const activeBranch = getCurrentUserBranch();
+    setCreateInvoiceForm(prev => ({ ...prev, branch_name: activeBranch }));
+  }, [currentRole, users, branches]);
+
   const [rawSelectedInvoice, setSelectedInvoice] = useState<any>(null);
   const selectedInvoice = rawSelectedInvoice || invoices[0] || {
     id: 'INV-EMPTY',
@@ -7813,6 +7835,9 @@ export default function App() {
               setCreateInvoiceForm={setCreateInvoiceForm}
               setShowCreateInvoiceModal={setShowCreateInvoiceModal}
               setShowPrintInvoiceModal={setShowPrintInvoiceModal}
+              currentRole={currentRole}
+              users={users}
+              branches={branches}
             />
           )}
 
@@ -13743,6 +13768,7 @@ export default function App() {
                 id: `INV-${Date.now()}`,
                 invoice_number: invNum,
                 invoice_category: createInvoiceForm.invoice_category,
+                branch_name: createInvoiceForm.branch_name || 'Kolkata Branch',
                 property_code: createInvoiceForm.property_code || 'SRM-PROP-2026-000421',
                 property_locality: createInvoiceForm.property_locality,
                 property_configuration: createInvoiceForm.property_configuration,
@@ -13787,27 +13813,50 @@ export default function App() {
               alert(`🎉 Invoice ${invNum} created successfully for ${isDev ? createInvoiceForm.developer_name : createInvoiceForm.customer_name}!`);
             }} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               
-              <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Invoice Category *</label>
-                <select 
-                  value={createInvoiceForm.invoice_category} 
-                  onChange={(e) => {
-                    const newCat = e.target.value;
-                    const agreeVal = Number(createInvoiceForm.agreement_value || 8400000);
-                    const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
-                    const compTaxable = Math.round(agreeVal * (brokPct / 100));
-                    setCreateInvoiceForm({ 
-                      ...createInvoiceForm, 
-                      invoice_category: newCat,
-                      particulars: newCat === 'DEVELOPER' ? '2.0% Channel Partner Success Fee / Commission for Unit A-504' : 'Property Consultation & Processing Charges',
-                      taxable_value: String(compTaxable)
-                    });
-                  }} 
-                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #38bdf8', color: '#38bdf8', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
-                >
-                  <option value="CUSTOMER">👤 B2C CUSTOMER INVOICE (Consultancy / Booking Advance)</option>
-                  <option value="DEVELOPER">🏢 B2B DEVELOPER INVOICE (2.0% Channel Partner Brokerage)</option>
-                </select>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Invoice Category *</label>
+                  <select 
+                    value={createInvoiceForm.invoice_category} 
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      const agreeVal = Number(createInvoiceForm.agreement_value || 8400000);
+                      const brokPct = Number(createInvoiceForm.brokerage_percent || 2.0);
+                      const compTaxable = Math.round(agreeVal * (brokPct / 100));
+                      setCreateInvoiceForm({ 
+                        ...createInvoiceForm, 
+                        invoice_category: newCat,
+                        particulars: newCat === 'DEVELOPER' ? '2.0% Channel Partner Success Fee / Commission for Unit A-504' : 'Property Consultation & Processing Charges',
+                        taxable_value: String(compTaxable)
+                      });
+                    }} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #38bdf8', color: '#38bdf8', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
+                  >
+                    <option value="CUSTOMER">👤 B2C CUSTOMER INVOICE (Consultancy / Booking Advance)</option>
+                    <option value="DEVELOPER">🏢 B2B DEVELOPER INVOICE (2.0% Channel Partner Brokerage)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Issuing Branch *</label>
+                  <select 
+                    value={createInvoiceForm.branch_name || 'Kolkata Branch'} 
+                    onChange={(e) => setCreateInvoiceForm({ ...createInvoiceForm, branch_name: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #38bdf8', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
+                  >
+                    {branches && branches.length > 0 ? (
+                      branches.map((b: any, idx: number) => (
+                        <option key={idx} value={b.branch_name}>{b.branch_name} ({b.city})</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Head Office (Kolkata)">Head Office (Kolkata)</option>
+                        <option value="Kolkata Branch">Kolkata Branch</option>
+                        <option value="Hyderabad Corporate HQ">Hyderabad Corporate HQ</option>
+                      </>
+                    )}
+                  </select>
+                </div>
               </div>
 
               {/* CARD 1: PROPERTY MASTER & STOCK INVENTORY DETAILS */}
@@ -14837,6 +14886,9 @@ export default function App() {
                     <span style={{ background: activeT.badgeColor, color: '#ffffff', padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '900', letterSpacing: '0.5px' }}>
                       GSTIN: 36AAACS9012F1Z8
                     </span>
+                    <span style={{ background: 'rgba(255, 255, 255, 0.25)', color: '#ffffff', padding: '2px 10px', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '900', letterSpacing: '0.5px', border: '1px solid rgba(255, 255, 255, 0.4)' }}>
+                      🏛️ Branch: {showPrintInvoiceModal.invoice.branch_name || 'Kolkata Branch'}
+                    </span>
                     <span style={{ background: 'rgba(255, 255, 255, 0.15)', color: activeT.accentText, padding: '2px 8px', borderRadius: '10px', fontSize: '0.7rem', fontWeight: '800', border: `1px solid ${activeT.accentText}` }}>
                       Official GST 18% Tax Invoice
                     </span>
@@ -14867,6 +14919,8 @@ export default function App() {
               {/* CORPORATE CONTACT & ADDRESS SUB-HEADER BANNER */}
               <div style={{ background: activeT.subHeaderBg, border: `1px solid ${activeT.subHeaderBorder}`, borderRadius: '10px', padding: '10px 14px', fontSize: '0.73rem', color: activeT.subHeaderTitle, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
                 <div>
+                  🏛️ <strong>Issuing Enterprise Branch:</strong> <span style={{ fontWeight: '900', color: activeT.cardTitle }}>{showPrintInvoiceModal.invoice.branch_name || 'Kolkata Branch'}</span>
+                  <span style={{ margin: '0 8px', opacity: 0.5 }}>|</span>
                   🏢 <strong>Registered Corporate Office:</strong> {showPrintInvoiceModal.invoice.company_address || 'Suite 402, Swaramayi Corporate Tower, Jubilee Hills, Hyderabad - 500033, Telangana'}
                 </div>
                 <div style={{ display: 'flex', gap: '10px', fontWeight: '700', color: activeT.subHeaderLink, flexWrap: 'wrap' }}>
@@ -14885,6 +14939,11 @@ export default function App() {
                   <div style={{ borderBottom: `1px solid ${activeT.cardBorder}`, paddingBottom: '4px', marginBottom: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                     <span style={{ fontSize: '0.9rem' }}>👤</span>
                     <strong style={{ color: activeT.cardTitle, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>CUSTOMER & BILLING DETAILS</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Issuing Branch:</span>
+                    <strong style={{ color: activeT.cardTitle }}>{showPrintInvoiceModal.invoice.branch_name || 'Kolkata Branch'}</strong>
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
