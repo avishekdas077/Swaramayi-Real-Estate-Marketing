@@ -43,9 +43,18 @@ function ScheduleVisitModalContent({
   setShowScheduleVisitModal,
   setActiveTab,
   setActiveVisitSubTab,
-  setSelectedVisitPlanId
+  setSelectedVisitPlanId,
+  dynamicSalesExecutives = []
 }: any) {
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+
+  const execList = Array.isArray(dynamicSalesExecutives) && dynamicSalesExecutives.length > 0
+    ? dynamicSalesExecutives
+    : [
+        { id: 'EXE-01', name: 'Priya Nair (Sales Exec)', value: 'Priya Nair (Sales Exec)', label: 'Priya Nair (Sales Exec)' },
+        { id: 'EXE-02', name: 'Ramesh Pawar (Field Exec)', value: 'Ramesh Pawar (Field Exec)', label: 'Ramesh Pawar (Field Exec)' },
+        { id: 'EXE-03', name: 'Sanjay Dutt (Senior Consultant)', value: 'Sanjay Dutt (Senior Consultant)', label: 'Sanjay Dutt (Senior Consultant)' }
+      ];
   const [selectedCsIds, setSelectedCsIds] = useState<string[]>(
     eligibleCostSheets.map((c: any) => c.costSheetId)
   );
@@ -471,10 +480,10 @@ function ScheduleVisitModalContent({
 
           <div>
             <label style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: '900', display: 'block', marginBottom: '4px' }}>3. Assigned Sales Executive</label>
-            <select value={assignedExec || (dynamicSalesExecutives[0]?.value || 'Priya Nair')} onChange={(e) => setAssignedExec(e.target.value)} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '800', padding: '8px 10px', borderRadius: '6px', fontSize: '0.82rem' }}>
-              {dynamicSalesExecutives.map((exec: any) => (
+            <select value={assignedExec || (execList[0]?.value || 'Priya Nair')} onChange={(e) => setAssignedExec(e.target.value)} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '800', padding: '8px 10px', borderRadius: '6px', fontSize: '0.82rem' }}>
+              {execList.map((exec: any) => (
                 <option key={exec.id || exec.name} value={exec.value}>
-                  👤 {exec.label}
+                  👤 {exec.label || exec.name || exec.value}
                 </option>
               ))}
             </select>
@@ -6006,16 +6015,18 @@ export default function App() {
             <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '300px', height: '300px', background: 'rgba(255, 255, 255, 0.1)', borderRadius: '50%' }} />
 
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-                <div style={{ background: '#ffffff', padding: '10px', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0, 0, 0, 0.2)' }}>
-                  <Building2 size={32} color="#0284c7" />
-                </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px', flexWrap: 'wrap' }}>
+                <img 
+                  src="/swaramayi-logo.png" 
+                  alt="Swaramayi Real Estate Marketing Logo" 
+                  style={{ height: '64px', background: '#ffffff', padding: '6px 14px', borderRadius: '16px', boxShadow: '0 6px 20px rgba(0, 0, 0, 0.3)', objectFit: 'contain' }} 
+                />
                 <div>
-                  <h1 style={{ fontSize: '1.5rem', fontWeight: '900', letterSpacing: '-0.5px', color: '#ffffff', margin: 0 }}>
-                    SWARAMAYI
+                  <h1 style={{ fontSize: '1.6rem', fontWeight: '900', letterSpacing: '-0.5px', color: '#ffffff', margin: 0 }}>
+                    SWARAMAYI REAL ESTATE MARKETING
                   </h1>
-                  <span style={{ fontSize: '0.72rem', color: '#bae6fd', fontWeight: '800', letterSpacing: '1px', textTransform: 'uppercase' }}>
-                    Real Estate Marketing CRM & OS
+                  <span style={{ fontSize: '0.75rem', color: '#bae6fd', fontWeight: '800', letterSpacing: '1px', textTransform: 'uppercase' }}>
+                    Enterprise BI Control Center & Automated Real Estate Operating System
                   </span>
                 </div>
               </div>
@@ -6225,13 +6236,15 @@ export default function App() {
         transition: 'left 0.3s ease',
         boxShadow: isMobile && isMobileSidebarOpen ? '4px 0 24px rgba(0,0,0,0.3)' : 'none'
       }}>
-        <div style={{ padding: '20px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', width: '40px', height: '40px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Building2 size={24} color="#ffffff" />
-          </div>
+        <div style={{ padding: '16px 20px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <img 
+            src="/swaramayi-logo.png" 
+            alt="Swaramayi Real Estate Logo" 
+            style={{ height: '48px', objectFit: 'contain', background: '#ffffff', padding: '4px 8px', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.3)', flexShrink: 0 }} 
+          />
           <div>
-            <h1 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>SWARAMAYI CRM</h1>
-            <p style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '600' }}>ENTERPRISE REAL ESTATE OS</p>
+            <h1 style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0, lineHeight: '1.2' }}>SWARAMAYI CRM</h1>
+            <p style={{ fontSize: '0.68rem', color: isLight ? '#0284c7' : '#38bdf8', fontWeight: '800', margin: 0 }}>REAL ESTATE MARKETING</p>
           </div>
         </div>
 
@@ -6581,8 +6594,13 @@ export default function App() {
               <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: isLight ? '0 4px 16px rgba(0,0,0,0.04)' : 'none' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
                   <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>SWARAMAYI REAL ESTATE MARKETING</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <img 
+                        src="/swaramayi-logo.png" 
+                        alt="Swaramayi Logo" 
+                        style={{ height: '42px', objectFit: 'contain', background: '#ffffff', padding: '4px 10px', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.2)' }} 
+                      />
+                      <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>SWARAMAYI REAL ESTATE MARKETING</h2>
                     </div>
                     <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
                       Role View: <strong style={{ color: '#0284c7' }}>{currentRole}</strong> • Scope: <strong style={{ color: '#16a34a' }}>ALL DATA DRILL-DOWN ENABLED</strong> • Updated: Real-time Live Records
@@ -7882,6 +7900,8 @@ export default function App() {
               downloadCostSheetPDF={downloadCostSheetPDF}
               setShowScheduleVisitModal={setShowScheduleVisitModal}
               costSheetShares={costSheetShares}
+              setActiveTab={setActiveTab}
+              setActiveVisitSubTab={setActiveVisitSubTab}
             />
           )}
 
@@ -12739,6 +12759,7 @@ export default function App() {
             setShowScheduleVisitModal={setShowScheduleVisitModal}
             setActiveTab={setActiveTab}
             setActiveVisitSubTab={setActiveVisitSubTab}
+            dynamicSalesExecutives={dynamicSalesExecutives}
           />
         );
       })()}
@@ -15006,9 +15027,11 @@ export default function App() {
               
               {/* COMPANY BRANDING LOGO & TITLES */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flex: 1, minWidth: '300px' }}>
-                <div style={{ width: '52px', height: '52px', borderRadius: '14px', background: activeT.logoBg, border: `2px solid ${activeT.logoBorder}`, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4)', flexShrink: 0 }}>
-                  <Building2 size={30} color="#ffffff" />
-                </div>
+                <img 
+                  src="/swaramayi-logo.png" 
+                  alt="Swaramayi Real Estate Logo" 
+                  style={{ height: '56px', background: '#ffffff', padding: '4px 12px', borderRadius: '14px', boxShadow: '0 6px 20px rgba(0, 0, 0, 0.4)', objectFit: 'contain', flexShrink: 0 }} 
+                />
 
                 <div>
                   <h1 style={{ fontSize: '1.35rem', fontWeight: '900', color: '#ffffff', margin: 0, letterSpacing: '-0.3px', textTransform: 'uppercase' }}>
@@ -15573,11 +15596,12 @@ const PublicInvoiceCheckoutView: React.FC<{ invoice: any; onSettlePayment: (invN
       
       {/* HEADER LOGO & BRANDING */}
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', marginBottom: '4px' }}>
-          <span style={{ fontSize: '1.8rem' }}>🏢</span>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#ffffff', letterSpacing: '-0.5px' }}>
-            Swaramayi Real Estate CRM
-          </h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginBottom: '10px' }}>
+          <img 
+            src="/swaramayi-logo.png" 
+            alt="Swaramayi Real Estate Logo" 
+            style={{ height: '64px', background: '#ffffff', padding: '6px 16px', borderRadius: '16px', boxShadow: '0 6px 24px rgba(0, 0, 0, 0.5)', objectFit: 'contain' }} 
+          />
         </div>
         <div style={{ fontSize: '0.82rem', color: '#94a3b8', fontWeight: '700' }}>
           Secure Vehicle & GST Invoice Payment Portal

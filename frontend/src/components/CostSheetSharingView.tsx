@@ -24,6 +24,8 @@ interface CostSheetSharingViewProps {
   downloadCostSheetPDF: (item: any) => void;
   setShowScheduleVisitModal: (val: any) => void;
   costSheetShares: any[];
+  setActiveTab?: (tab: string) => void;
+  setActiveVisitSubTab?: (subTab: string) => void;
 }
 
 export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
@@ -49,6 +51,8 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
   downloadCostSheetPDF,
   setShowScheduleVisitModal,
   costSheetShares = [],
+  setActiveTab,
+  setActiveVisitSubTab,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -342,7 +346,11 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                                 📥 PDF
                               </button>
                               <button 
-                                onClick={() => setShowScheduleVisitModal({ open: true, costSheet: item })} 
+                                onClick={() => {
+                                  if (setActiveTab) setActiveTab('visit_management');
+                                  if (setActiveVisitSubTab) setActiveVisitSubTab('visit_route_planner');
+                                  setShowScheduleVisitModal({ open: true, costSheet: item });
+                                }} 
                                 style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}
                                 title="Schedule Site Visit for this Cost Sheet customer & property"
                               >

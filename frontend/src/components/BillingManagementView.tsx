@@ -697,13 +697,20 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
             
             {/* HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #22c55e', paddingBottom: '16px' }}>
-              <div>
-                <span style={{ background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', letterSpacing: '0.5px' }}>
-                  🔒 256-BIT SSL SECURE PAYMENT GATEWAY
-                </span>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>
-                  SWARAMAYI REAL ESTATE ONLINE CHECKOUT
-                </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <img 
+                  src="/swaramayi-logo.png" 
+                  alt="Swaramayi Logo" 
+                  style={{ height: '46px', background: '#ffffff', padding: '3px 10px', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.2)', objectFit: 'contain' }} 
+                />
+                <div>
+                  <span style={{ background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', letterSpacing: '0.5px' }}>
+                    🔒 256-BIT SSL SECURE PAYMENT GATEWAY
+                  </span>
+                  <h2 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px', margin: 0 }}>
+                    SWARAMAYI REAL ESTATE ONLINE CHECKOUT
+                  </h2>
+                </div>
               </div>
               <button onClick={() => { setShowCustomerPaymentPortal(null); setPaymentSuccessReceipt(null); }} style={{ background: 'none', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer' }}><X size={22} /></button>
             </div>
