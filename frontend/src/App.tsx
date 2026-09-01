@@ -4412,121 +4412,6 @@ export default function App() {
     }
   }, [verifiedDevProjectsList]);
 
-  // FETCH LATEST DATA FROM MONGODB ATLAS ON MOUNT
-  useEffect(() => {
-    const fetchMongoDBData = async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/v1/crm/sync');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.status === 'SUCCESS' && json.data) {
-            if (Array.isArray(json.data.users) && json.data.users.length > 0) {
-              setUsers(json.data.users);
-            }
-            if (Array.isArray(json.data.teams) && json.data.teams.length > 0) {
-              setTeams(json.data.teams);
-            }
-            if (Array.isArray(json.data.branches) && json.data.branches.length > 0) {
-              setBranches(json.data.branches);
-            }
-            if (Array.isArray(json.data.properties)) {
-              setProperties(json.data.properties);
-            }
-            if (Array.isArray(json.data.customers)) {
-              setCustomers(json.data.customers);
-            }
-            if (Array.isArray(json.data.leads)) {
-              setLeadsList(json.data.leads);
-            }
-            if (Array.isArray(json.data.agreements)) {
-              setAgreements(json.data.agreements);
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Initial MongoDB sync fetch note:', err);
-      }
-    };
-    fetchMongoDBData();
-  }, []);
-
-  // GLOBAL REAL-TIME MONGODB ATLAS AUTO-SYNC EFFECT
-  useEffect(() => {
-    const syncDataWithMongoDB = async () => {
-      try {
-        const payload = {
-          users,
-          teams,
-          branches,
-          properties,
-          customers,
-          leads: leadsList,
-          agreements
-        };
-        await fetch('http://localhost:5000/api/v1/crm/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      } catch (err) {
-        // Fallback silently if server offline
-      }
-    };
-    const timer = setTimeout(syncDataWithMongoDB, 2000);
-    return () => clearTimeout(timer);
-  }, [users, teams, branches, properties, customers, leadsList, agreements]);
-  const [rawSelectedAgreement, setSelectedAgreement] = useState<any>(null);
-  const selectedAgreement = rawSelectedAgreement || agreements[0] || { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' };
-
-
-
-  const [showNewBookingModal, setShowNewBookingModal] = useState<boolean>(false);
-  const [showAllotmentModal, setShowAllotmentModal] = useState<{ open: boolean; booking: any } | null>(null);
-  const [newBookingForm, setNewBookingForm] = useState({
-    customer_name: 'Rohan Deshmukh',
-    customer_number: 'SRM-CUS-2026-000184',
-    customer_mobile: '+91 98490 12345',
-    project_name: 'Aparna Zenon',
-    developer_name: 'Aparna Constructions',
-    property_title: 'Aparna Zenon Premium 3BHK Residence',
-    tower_unit: 'Tower A - Unit A-504',
-    agreement_value: '8400000',
-    token_amount: '500000',
-    payment_mode: 'Bank Transfer / NEFT',
-    payment_ref: 'NEFT-AXIS-994821',
-    sales_executive: 'Priya Nair (Sales Exec)'
-  });
-
-  // VISIT SATISFACTION, REQUIREMENT UPDATE & ALTERNATIVE PROPERTY RECOMMENDATION STATES
-  const [showUpdateRequirementModal, setShowUpdateRequirementModal] = useState<{ open: boolean; customer: any } | null>(null);
-  const [showAlternativePropertyModal, setShowAlternativePropertyModal] = useState<{ open: boolean; customer: any; currentProperty: any } | null>(null);
-  const [showLogSalesFeedbackModal, setShowLogSalesFeedbackModal] = useState<boolean>(false);
-  const [salesFeedbackForm, setSalesFeedbackForm] = useState({
-    visitPlanId: 'SRM-VP-2026-000001',
-    customerName: 'Rohan Deshmukh',
-    propertyTitle: 'Aparna Zenon 3BHK',
-    rating: '5',
-    satisfaction: '😍 Highly Satisfied (Ready for Booking)',
-    dislike_reason: 'None',
-    buyer_intent: '🔥 HOT - Booking Lead',
-    executive_notes: 'Customer loved the balcony view and project amenities.'
-  });
-  const [billingInvoiceCategory, setBillingInvoiceCategory] = useState<'CUSTOMER' | 'DEVELOPER'>('CUSTOMER');
-  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState<boolean>(false);
-  const [showPrintInvoiceModal, setShowPrintInvoiceModal] = useState<{ open: boolean; invoice: any } | null>(null);
-  const [invoiceTemplateTheme, setInvoiceTemplateTheme] = useState<'SAND' | 'NAVY'>('SAND');
-
-  const getCurrentUserBranch = () => {
-    const matchedUser = (users || []).find((u: any) => u.role === currentRole) || (users || []).find((u: any) => u.id === 'USR-01') || (users || [])[0];
-    if (matchedUser && matchedUser.branch_name) {
-      if (matchedUser.branch_name === 'Head Office') return 'Head Office (Kolkata)';
-      return matchedUser.branch_name;
-    }
-    if (currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER') return 'Head Office (Kolkata)';
-    if (branches && branches.length > 0) return branches[0].branch_name;
-    return 'Head Office (Kolkata)';
-  };
-
   const [invoices, setInvoices] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('swaramayi_invoices_v6');
@@ -4646,6 +4531,126 @@ export default function App() {
       console.error('Error saving invoices to localStorage:', e);
     }
   }, [invoices]);
+
+  // FETCH LATEST DATA FROM MONGODB ATLAS ON MOUNT
+  useEffect(() => {
+    const fetchMongoDBData = async () => {
+      try {
+        const res = await fetch('http://localhost:5000/api/v1/crm/sync');
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'SUCCESS' && json.data) {
+            if (Array.isArray(json.data.users) && json.data.users.length > 0) {
+              setUsers(json.data.users);
+            }
+            if (Array.isArray(json.data.teams) && json.data.teams.length > 0) {
+              setTeams(json.data.teams);
+            }
+            if (Array.isArray(json.data.branches) && json.data.branches.length > 0) {
+              setBranches(json.data.branches);
+            }
+            if (Array.isArray(json.data.properties)) {
+              setProperties(json.data.properties);
+            }
+            if (Array.isArray(json.data.customers)) {
+              setCustomers(json.data.customers);
+            }
+            if (Array.isArray(json.data.leads)) {
+              setLeadsList(json.data.leads);
+            }
+            if (Array.isArray(json.data.agreements)) {
+              setAgreements(json.data.agreements);
+            }
+            if (Array.isArray(json.data.invoices) && json.data.invoices.length > 0) {
+              setInvoices(json.data.invoices);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Initial MongoDB sync fetch note:', err);
+      }
+    };
+    fetchMongoDBData();
+  }, []);
+
+  // GLOBAL REAL-TIME MONGODB ATLAS AUTO-SYNC EFFECT
+  useEffect(() => {
+    const syncDataWithMongoDB = async () => {
+      try {
+        const payload = {
+          users,
+          teams,
+          branches,
+          properties,
+          customers,
+          leads: leadsList,
+          agreements,
+          invoices
+        };
+        await fetch('http://localhost:5000/api/v1/crm/sync', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (err) {
+        // Fallback silently if server offline
+      }
+    };
+    const timer = setTimeout(syncDataWithMongoDB, 2000);
+    return () => clearTimeout(timer);
+  }, [users, teams, branches, properties, customers, leadsList, agreements, invoices]);
+  const [rawSelectedAgreement, setSelectedAgreement] = useState<any>(null);
+  const selectedAgreement = rawSelectedAgreement || agreements[0] || { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' };
+
+
+
+  const [showNewBookingModal, setShowNewBookingModal] = useState<boolean>(false);
+  const [showAllotmentModal, setShowAllotmentModal] = useState<{ open: boolean; booking: any } | null>(null);
+  const [newBookingForm, setNewBookingForm] = useState({
+    customer_name: 'Rohan Deshmukh',
+    customer_number: 'SRM-CUS-2026-000184',
+    customer_mobile: '+91 98490 12345',
+    project_name: 'Aparna Zenon',
+    developer_name: 'Aparna Constructions',
+    property_title: 'Aparna Zenon Premium 3BHK Residence',
+    tower_unit: 'Tower A - Unit A-504',
+    agreement_value: '8400000',
+    token_amount: '500000',
+    payment_mode: 'Bank Transfer / NEFT',
+    payment_ref: 'NEFT-AXIS-994821',
+    sales_executive: 'Priya Nair (Sales Exec)'
+  });
+
+  // VISIT SATISFACTION, REQUIREMENT UPDATE & ALTERNATIVE PROPERTY RECOMMENDATION STATES
+  const [showUpdateRequirementModal, setShowUpdateRequirementModal] = useState<{ open: boolean; customer: any } | null>(null);
+  const [showAlternativePropertyModal, setShowAlternativePropertyModal] = useState<{ open: boolean; customer: any; currentProperty: any } | null>(null);
+  const [showLogSalesFeedbackModal, setShowLogSalesFeedbackModal] = useState<boolean>(false);
+  const [salesFeedbackForm, setSalesFeedbackForm] = useState({
+    visitPlanId: 'SRM-VP-2026-000001',
+    customerName: 'Rohan Deshmukh',
+    propertyTitle: 'Aparna Zenon 3BHK',
+    rating: '5',
+    satisfaction: '😍 Highly Satisfied (Ready for Booking)',
+    dislike_reason: 'None',
+    buyer_intent: '🔥 HOT - Booking Lead',
+    executive_notes: 'Customer loved the balcony view and project amenities.'
+  });
+  const [billingInvoiceCategory, setBillingInvoiceCategory] = useState<'CUSTOMER' | 'DEVELOPER'>('CUSTOMER');
+  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState<boolean>(false);
+  const [showPrintInvoiceModal, setShowPrintInvoiceModal] = useState<{ open: boolean; invoice: any } | null>(null);
+  const [invoiceTemplateTheme, setInvoiceTemplateTheme] = useState<'SAND' | 'NAVY'>('SAND');
+
+  const getCurrentUserBranch = () => {
+    const matchedUser = (users || []).find((u: any) => u.role === currentRole) || (users || []).find((u: any) => u.id === 'USR-01') || (users || [])[0];
+    if (matchedUser && matchedUser.branch_name) {
+      if (matchedUser.branch_name === 'Head Office') return 'Head Office (Kolkata)';
+      return matchedUser.branch_name;
+    }
+    if (currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER') return 'Head Office (Kolkata)';
+    if (branches && branches.length > 0) return branches[0].branch_name;
+    return 'Head Office (Kolkata)';
+  };
+
 
   const [createInvoiceForm, setCreateInvoiceForm] = useState({
     invoice_category: 'CUSTOMER',
