@@ -43,6 +43,7 @@ interface ProjectManagementViewProps {
   calculateIndividualCostSheet: (form: any) => any;
   formatIndianRupees: (amount: number) => string;
   detectLocalityFromCoords?: (lat: string, lng: string) => Promise<{ locality: string; fullAddress: string; rawDetails: any }>;
+  setPropertyUnits?: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
@@ -84,9 +85,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   matchesSearchQuery,
   activeRadius,
   setActiveRadius,
-  calculateIndividualCostSheet,
   formatIndianRupees,
   detectLocalityFromCoords,
+  setPropertyUnits,
 }) => {
   // DEVELOPER MASTER ID REGISTRY STATE & PERSISTENCE
   const PROJECT_GPS_MAP: Record<string, { lat: string; lng: string }> = {
@@ -192,8 +193,220 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   const [newDevMobileInput, setNewDevMobileInput] = React.useState<string>('');
   const [newDevAltMobileInput, setNewDevAltMobileInput] = React.useState<string>('');
   const [newDevProjectTitleInput, setNewDevProjectTitleInput] = React.useState<string>('');
-  const [newDevProjectLocalityInput, setNewDevProjectLocalityInput] = React.useState<string>('');
   const [viewPropertyModal, setViewPropertyModal] = React.useState<any | null>(null);
+
+  // MULTIPLE PROPERTY UNITS BUILDER & SLIDER STATE
+  const [showMultipleUnitsSlider, setShowMultipleUnitsSlider] = React.useState<{ open: boolean; project?: any } | null>(null);
+  const [projectUnitsList, setProjectUnitsList] = React.useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_project_units_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {}
+    return propertyUnits && propertyUnits.length > 0 ? propertyUnits : [
+      {
+        id: 'UNIT-101',
+        propertyId: 'SRM-PROP-2026-000426',
+        projectTitle: 'BISNUPRIYA PLAZA',
+        developerName: 'BISWAJIT KARMAKAR',
+        unitNumber: 'Flat 101',
+        unit_num: 'Flat 101',
+        unit_code: 'SRM-PROP-2026-000426-Flat101',
+        bhk: '2BHK',
+        floor: '1st Floor',
+        tower: 'Tower A',
+        superBuiltupArea: '1,150 Sq.Ft.',
+        carpetArea: '805 Sq.Ft.',
+        area: '805 Sq.Ft.',
+        priceSqft: '₹4,000/Sq.Ft.',
+        basePrice: '₹46,00,000',
+        price: '₹46,00,000',
+        facing: 'East Facing',
+        parking: '1 Covered Car Parking Slot',
+        status: 'AVAILABLE'
+      },
+      {
+        id: 'UNIT-102',
+        propertyId: 'SRM-PROP-2026-000426',
+        projectTitle: 'BISNUPRIYA PLAZA',
+        developerName: 'BISWAJIT KARMAKAR',
+        unitNumber: 'Flat 102',
+        unit_num: 'Flat 102',
+        unit_code: 'SRM-PROP-2026-000426-Flat102',
+        bhk: '3BHK',
+        floor: '1st Floor',
+        tower: 'Tower A',
+        superBuiltupArea: '1,450 Sq.Ft.',
+        carpetArea: '1,015 Sq.Ft.',
+        area: '1,015 Sq.Ft.',
+        priceSqft: '₹4,200/Sq.Ft.',
+        basePrice: '₹60,90,000',
+        price: '₹60,90,000',
+        facing: 'North-East Facing',
+        parking: '1 Covered Car Parking Slot',
+        status: 'AVAILABLE'
+      },
+      {
+        id: 'UNIT-201',
+        propertyId: 'SRM-PROP-2026-000426',
+        projectTitle: 'BISNUPRIYA PLAZA',
+        developerName: 'BISWAJIT KARMAKAR',
+        unitNumber: 'Flat 201',
+        unit_num: 'Flat 201',
+        unit_code: 'SRM-PROP-2026-000426-Flat201',
+        bhk: '3BHK',
+        floor: '2nd Floor',
+        tower: 'Tower A',
+        superBuiltupArea: '1,450 Sq.Ft.',
+        carpetArea: '1,015 Sq.Ft.',
+        area: '1,015 Sq.Ft.',
+        priceSqft: '₹4,300/Sq.Ft.',
+        basePrice: '₹62,35,000',
+        price: '₹62,35,000',
+        facing: 'East Facing',
+        parking: '1 Covered Car Parking Slot',
+        status: 'BOOKED'
+      }
+    ];
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_project_units_v1', JSON.stringify(projectUnitsList));
+    } catch (e) {}
+  }, [projectUnitsList]);
+
+  const [sliderUnitForm, setSliderUnitForm] = React.useState<any>({
+    unitNumber: 'Flat 301',
+    bhk: '2BHK',
+    floor: '3rd Floor',
+    tower: 'Tower A',
+    superBuiltupArea: '1,283 Sq.Ft.',
+    deductionPct: '35%',
+    carpetArea: '898.1 Sq.Ft.',
+    facing: 'East Facing',
+    furnishing: 'Semi-Furnished',
+    priceSqft: '5131',
+    basePrice: '₹65,83,073',
+    parkingRequired: 'YES',
+    parking: '1 Covered Car Parking Slot',
+    parkingPrice: '300000',
+    amenityCharges: '150000',
+    gstPct: '5%',
+    totalAllInclusivePrice: '₹73,84,727',
+    selectedAmenities: [
+      '24/7 Power Backup',
+      'Water Supply',
+      'Security',
+      'CCTV cameras',
+      'Elevators',
+      'Gymnasium',
+      'Swimming Pool',
+      'Clubhouse'
+    ],
+    keyCustody: 'Builder Site Office',
+    description: 'Pool facing Vastu East, 3 balconies',
+    status: 'AVAILABLE',
+    unitPhotos: [],
+    unitVideos: []
+  });
+
+  // PROPERTY ADDITION MODE STATE ('single' = Standalone Property, 'multiple' = Project Multi-Unit Builder)
+  const [propertyAddMode, setPropertyAddMode] = React.useState<'single' | 'multiple'>('multiple');
+
+  // PARKING STOCK MANAGEMENT STATE (PERSISTED IN LOCALSTORAGE)
+  const [parkingStockConfig, setParkingStockConfig] = React.useState<any>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_parking_stock_v1');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {}
+    return {
+      'Covered Single': { total: 24, price: 300000, label: '🚗 Covered Single Car Slot' },
+      'Covered Tandem': { total: 10, price: 500000, label: '🚗🚗 Covered Tandem (2 Slots)' },
+      'EV Charging': { total: 6, price: 450000, label: '⚡ EV Fast Charging Slot' },
+      'Open Surface': { total: 15, price: 150000, label: '🅿️ Open / Surface Parking' },
+      'Mechanical Stacker': { total: 8, price: 200000, label: '🏗️ Mechanical Stacker Slot' }
+    };
+  });
+
+  const [showStep2ParkingConfigModal, setShowStep2ParkingConfigModal] = React.useState<boolean>(false);
+
+  // AUTOMATED PROJECT ID GENERATOR (SRM-PROJ-2026-000088)
+  const generateNextProjectId = React.useCallback(() => {
+    const year = new Date().getFullYear();
+    let maxId = 87;
+    (properties || []).forEach((p: any) => {
+      const match = (p.project_id || p.id || '').match(/SRM-PROJ-\d+-(\d+)/i) || (p.project_id || '').match(/PROJ-\d+-(\d+)/i);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (!isNaN(num) && num > maxId) maxId = num;
+      }
+    });
+    return `SRM-PROJ-${year}-${String(maxId + 1).padStart(6, '0')}`;
+  }, [properties]);
+
+  // AUTOMATED SEQUENTIAL INDIVIDUAL PROPERTY CODE GENERATOR FOR EVERY ADDITION (SRM-PROP-2026-000428, SRM-PROP-2026-000429...)
+  const generateDynamicPropertyCode = React.useCallback((offset = 0) => {
+    const year = new Date().getFullYear();
+    let maxNum = 427;
+
+    (properties || []).forEach((p: any) => {
+      const pCode = p.property_code || p.id || '';
+      const match = pCode.match(/SRM-PROP-\d+-(\d+)/i) || pCode.match(/PROP-\d+-(\d+)/i);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        if (!isNaN(val) && val > maxNum) maxNum = val;
+      }
+    });
+
+    (projectUnitsList || []).forEach((u: any) => {
+      const uCode = u.unit_code || u.property_code || u.propertyId || u.id || '';
+      const match = uCode.match(/SRM-PROP-\d+-(\d+)/i) || uCode.match(/PROP-\d+-(\d+)/i);
+      if (match) {
+        const val = parseInt(match[1], 10);
+        if (!isNaN(val) && val > maxNum) maxNum = val;
+      }
+    });
+
+    const nextNum = maxNum + 1 + offset;
+    return `SRM-PROP-${year}-${String(nextNum).padStart(6, '0')}`;
+  }, [properties, projectUnitsList]);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_parking_stock_v1', JSON.stringify(parkingStockConfig));
+    } catch (e) {}
+  }, [parkingStockConfig]);
+
+  // LIVE PARKING ALLOCATION STATS CALCULATOR
+  const getParkingAllocationStats = React.useCallback((projCode: string) => {
+    const currentUnits = projectUnitsList.filter((u: any) => 
+      u.propertyId === projCode || 
+      (u.projectTitle && u.projectTitle.toLowerCase() === (projCode || '').toLowerCase())
+    );
+
+    const allocated: Record<string, number> = {
+      'Covered Single': 0,
+      'Covered Tandem': 0,
+      'EV Charging': 0,
+      'Open Surface': 0,
+      'Mechanical Stacker': 0
+    };
+
+    currentUnits.forEach((u: any) => {
+      if (u.parkingRequired === 'NO' || u.parking === 'No Parking Allocated') return;
+      const pStr = (u.parking || '').toLowerCase();
+      if (pStr.includes('tandem') || pStr.includes('2 covered')) allocated['Covered Tandem']++;
+      else if (pStr.includes('ev')) allocated['EV Charging']++;
+      else if (pStr.includes('open') || pStr.includes('surface')) allocated['Open Surface']++;
+      else if (pStr.includes('stacker')) allocated['Mechanical Stacker']++;
+      else if (pStr.includes('covered') || pStr.includes('1 covered')) allocated['Covered Single']++;
+    });
+
+    return allocated;
+  }, [projectUnitsList]);
 
   // LIVE VIDEO RECORDING & MEDIA CAPTURE STATE
   const [isRecordingVideo, setIsRecordingVideo] = React.useState<boolean>(false);
@@ -557,8 +770,23 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           <button onClick={() => setShowBulkImportPropertyModal(true)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: windowWidth <= 640 ? '100%' : 'auto' }}>
             <Upload size={15} /> 📥 Import Bulk Inventory
           </button>
-          <button onClick={handleOpenAddPropertyModal} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Building2 size={15} /> + Add Property Master
+          <button 
+            onClick={() => {
+              setPropertyAddMode('single');
+              handleOpenAddPropertyModal();
+            }} 
+            style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            🏠 + Add Single Property
+          </button>
+          <button 
+            onClick={() => {
+              setPropertyAddMode('multiple');
+              handleOpenAddPropertyModal();
+            }} 
+            style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            🏢 + Add Multiple Units Project
           </button>
           <button onClick={() => alert('📄 Generating Property Stock Inventory CSV Report...')} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#4ade80', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Share2 size={15} /> Export Inventory
@@ -571,8 +799,23 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
         <button onClick={() => setActiveProjectSubTab('property_master')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'property_master' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'property_master' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
           🏠 Property Master Stock ({properties.length})
         </button>
-        <button onClick={handleOpenAddPropertyModal} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_property_master' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_property_master' ? '#ffffff' : '#0284c7', border: activeProjectSubTab === 'add_property_master' ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          <Building2 size={16} /> {editingProperty ? `✏️ Edit Property (${editingProperty.property_code})` : '➕ Add Property Master'}
+        <button 
+          onClick={() => {
+            setPropertyAddMode('single');
+            handleOpenAddPropertyModal();
+          }} 
+          style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_property_master' && propertyAddMode === 'single' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_property_master' && propertyAddMode === 'single' ? '#ffffff' : '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          🏠 Add Single Property
+        </button>
+        <button 
+          onClick={() => {
+            setPropertyAddMode('multiple');
+            handleOpenAddPropertyModal();
+          }} 
+          style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_property_master' && propertyAddMode === 'multiple' ? '#a855f7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_property_master' && propertyAddMode === 'multiple' ? '#ffffff' : '#a855f7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+        >
+          🏢 Add Multiple Units Project
         </button>
         <button onClick={() => setActiveProjectSubTab('live_inventory_board')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'live_inventory_board' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'live_inventory_board' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
           🏢 Live Tower Unit Grid ({propertyUnits.length})
@@ -695,10 +938,10 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 💾 SAVE & COMPLETE REGISTRATION
               </button>
 
-              <div style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #38bdf8', borderRadius: '10px', padding: '10px 18px', textAlign: 'right' }}>
-                <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', textTransform: 'uppercase', display: 'block' }}>Stock Tracking Code</span>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#0284c7', fontFamily: 'monospace', margin: '2px 0 0 0' }}>
-                  {editingProperty ? editingProperty.property_code : (newPropertyForm.property_code || generateNextPropertyCode())}
+              <div style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1.5px solid #38bdf8', borderRadius: '10px', padding: '8px 16px', textAlign: 'right' }}>
+                <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: '900', textTransform: 'uppercase', display: 'block' }}>🔑 Master Project ID</span>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0284c7', fontFamily: 'monospace', margin: '2px 0 0 0' }}>
+                  {newPropertyForm.project_id || generateNextProjectId()}
                 </h3>
               </div>
             </div>
@@ -708,6 +951,38 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: windowWidth <= 640 ? '16px' : '28px', boxShadow: isLight ? '0 4px 16px rgba(0,0,0,0.04)' : 'none' }}>
             <form onSubmit={handleCreatePropertySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
+              {/* 🔀 PROPERTY REGISTRATION MODE SWITCHER BANNER */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #0284c7', borderRadius: '14px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SELECT INVENTORY REGISTRATION MODE</span>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0, marginTop: '2px' }}>
+                    {propertyAddMode === 'single' ? '🏠 SINGLE PROPERTY STANDALONE MODE ACTIVE' : '🏢 MULTIPLE PROPERTY UNITS / PROJECT BUILDER MODE ACTIVE'}
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', margin: 0, marginTop: '2px' }}>
+                    {propertyAddMode === 'single' 
+                      ? 'Best for standalone villas, independent houses, resale flats, or single stock entries.'
+                      : 'Best for multi-unit projects (e.g. BISNUPRIYA PLAZA) with 5, 10, or 20+ flats/units under the same developer.'}
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', background: isLight ? '#e2e8f0' : '#1e293b', padding: '4px', borderRadius: '10px', gap: '6px' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => setPropertyAddMode('single')}
+                    style={{ background: propertyAddMode === 'single' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'transparent', color: propertyAddMode === 'single' ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    🏠 Single Property Add
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={() => setPropertyAddMode('multiple')}
+                    style={{ background: propertyAddMode === 'multiple' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'transparent', color: propertyAddMode === 'multiple' ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    🏢 Multiple Units Project
+                  </button>
+                </div>
+              </div>
+
               {/* SECTION 1: PROJECT & DEVELOPER IDENTIFICATION */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px' }}>
@@ -719,234 +994,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   </span>
                 </div>
 
-                {/* SEARCH & FETCH EXISTING PROPERTY BY PROPERTY CODE */}
-                <div style={{ background: 'rgba(56, 189, 248, 0.12)', border: '1.5px solid #38bdf8', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                    <label style={{ fontSize: '0.82rem', color: '#38bdf8', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-                      🔑 SEARCH & FETCH EXISTING PROPERTY BY PROPERTY CODE (e.g. SRM-PROP-2026-000427) *
-                    </label>
-                    {selectedPropCode && (
-                      <button 
-                        type="button" 
-                        onClick={() => {
-                          const p = properties.find((item: any) => item.property_code === selectedPropCode);
-                          if (p) setViewPropertyModal(p);
-                        }}
-                        style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        👁️ View Full Details ({selectedPropCode})
-                      </button>
-                    )}
-                  </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '1fr 1fr', gap: '12px' }}>
-                    {/* INPUT SEARCH BY CODE */}
-                    <div style={{ position: 'relative' }}>
-                      <input 
-                        type="text"
-                        value={propCodeSearchQuery}
-                        onChange={(e) => {
-                          const q = e.target.value;
-                          setPropCodeSearchQuery(q);
-                          if (q.trim().length >= 1) {
-                            const lowerQ = q.toLowerCase().trim();
-                            const foundProp = properties.find((p: any) => 
-                              (p.property_code || '').toLowerCase().includes(lowerQ) ||
-                              (p.id || '').toLowerCase().includes(lowerQ)
-                            );
-                            if (foundProp) {
-                              handleSelectPropertyByCode(foundProp);
-                            }
-                          }
-                        }}
-                        placeholder="🔎 Type Property Code (e.g. SRM-PROP-2026-000427)..."
-                        style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '1.5px solid #38bdf8', color: '#38bdf8', fontWeight: '900', padding: '8px 12px 8px 34px', borderRadius: '8px', fontSize: '0.88rem', fontFamily: 'monospace' }}
-                      />
-                      <Search size={16} style={{ position: 'absolute', left: '10px', top: '10px', color: '#38bdf8' }} />
-                    </div>
-
-                    {/* DROPDOWN LIST OF PROPERTY CODES */}
-                    <select
-                      value={selectedPropCode}
-                      onChange={(e) => {
-                        const pCode = e.target.value;
-                        setSelectedPropCode(pCode);
-                        const foundProp = properties.find((p: any) => p.property_code === pCode);
-                        if (foundProp) {
-                          handleSelectPropertyByCode(foundProp);
-                        }
-                      }}
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '1.5px solid #0284c7', color: '#38bdf8', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem', fontFamily: 'monospace' }}
-                    >
-                      <option value="">-- SELECT FROM LIST OF REGISTERED PROPERTY CODES ({properties.length} Available) --</option>
-                      {properties.map((p: any) => (
-                        <option key={p.id} value={p.property_code}>
-                          🔑 {p.property_code} — {p.title} ({p.developer})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* DEVELOPER ID & PROJECT MASTER LOOKUP CONTAINER */}
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #0284c7', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '1fr 1fr', gap: '14px' }}>
-                    
-                    {/* DEVELOPER SEARCH & SELECT BY DEVELOPER ID */}
-                    <div>
-                      <label style={{ fontSize: '0.78rem', color: '#fbbf24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                        🔍 SEARCH & SELECT DEVELOPER BY DEVELOPER ID / BUILDER NAME *
-                      </label>
-
-                      {/* LIVE SEARCH INPUT FOR DEVELOPER */}
-                      <div style={{ position: 'relative', marginBottom: '8px' }}>
-                        <input 
-                          type="text"
-                          value={devSearchQuery}
-                          onChange={(e) => {
-                            const q = e.target.value;
-                            setDevSearchQuery(q);
-                            if (q.trim().length >= 1) {
-                              const lowerQ = q.toLowerCase().trim();
-                              const matchedDev = developerMasterList.find(dev => 
-                                dev.id.toLowerCase().includes(lowerQ) ||
-                                dev.name.toLowerCase().includes(lowerQ) ||
-                                (dev.mobile && dev.mobile.toLowerCase().includes(lowerQ)) ||
-                                (dev.altMobile && dev.altMobile.toLowerCase().includes(lowerQ)) ||
-                                (dev.projects && dev.projects.some((p: any) => p.title?.toLowerCase().includes(lowerQ) || p.locality?.toLowerCase().includes(lowerQ)))
-                              );
-                              if (matchedDev) {
-                                handleSelectDeveloperObj(matchedDev);
-                              } else {
-                                setSelectedDevId('');
-                                setSelectedProjectId('');
-                                setDevProjectMobile('');
-                                if (setDevProjectAltMobile) setDevProjectAltMobile('');
-                                setNewPropertyForm((prev: any) => ({
-                                  ...prev,
-                                  developer_id: '',
-                                  developer: q,
-                                  title: '',
-                                  locality: ''
-                                }));
-                              }
-                            } else {
-                              setSelectedDevId('');
-                              setSelectedProjectId('');
-                              setDevProjectMobile('');
-                              if (setDevProjectAltMobile) setDevProjectAltMobile('');
-                              setNewPropertyForm((prev: any) => ({
-                                ...prev,
-                                developer_id: '',
-                                developer: '',
-                                title: '',
-                                locality: ''
-                              }));
-                            }
-                          }}
-                          placeholder="🔎 Type Developer ID, Builder Name, or Mobile (e.g. LITTON SEN, SRM-DEV-105)..."
-                          style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #0284c7', color: '#38bdf8', fontWeight: '800', padding: '8px 12px 8px 34px', borderRadius: '8px', fontSize: '0.84rem' }}
-                        />
-                        <Search size={15} style={{ position: 'absolute', left: '10px', top: '10px', color: '#0284c7' }} />
-                      </div>
-
-                      <select 
-                        value={selectedDevId}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setSelectedDevId(val);
-                          setSelectedProjectId('');
-                          if (val === 'NEW_DEV') {
-                            const newId = `SRM-DEV-2026-000${developerMasterList.length + 105}`;
-                            setNewPropertyForm((prev: any) => ({ ...prev, developer_id: newId }));
-                          } else {
-                            const found = developerMasterList.find(d => d.id === val);
-                            if (found) {
-                              handleSelectDeveloperObj(found);
-                            }
-                          }
-                        }}
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #0284c7', color: '#38bdf8', fontWeight: '900', padding: '10px 12px', borderRadius: '8px', fontSize: '0.88rem' }}
-                      >
-                        <option value="">-- SELECT REGISTERED DEVELOPER ID OR ADD NEW ({filteredDevs.length} Found) --</option>
-                        {filteredDevs.map(dev => (
-                          <option key={dev.id} value={dev.id}>
-                            🏢 {dev.id} — {dev.name} ({dev.mobile})
-                          </option>
-                        ))}
-                        <option value="NEW_DEV">➕ Register New Developer ID Master</option>
-                      </select>
-                    </div>
-
-                    {/* PROJECT SELECTOR DROPDOWN */}
-                    <div>
-                      <label style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
-                        📁 SELECT REGISTERED PROJECT TITLE & NAME ({filteredProjects.length} Projects Listed)
-                      </label>
-
-                      {/* LIVE SEARCH INPUT FOR PROJECT */}
-                      <div style={{ position: 'relative', marginBottom: '8px' }}>
-                        <input 
-                          type="text"
-                          value={projectSearchQuery}
-                          onChange={(e) => {
-                            const q = e.target.value;
-                            setProjectSearchQuery(q);
-                            if (q.trim().length >= 1) {
-                              const lowerQ = q.toLowerCase().trim();
-                              const matchedProj = allGlobalProjects.find((p: any) =>
-                                p.title.toLowerCase().includes(lowerQ) ||
-                                p.locality.toLowerCase().includes(lowerQ)
-                              );
-                              if (matchedProj) {
-                                handleSelectProjectObj(matchedProj);
-                              }
-                            }
-                          }}
-                          placeholder="🔎 Type to search Project Title or Locality (e.g. TILOTTAMA, Bhooja, Zenon)..."
-                          style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #38bdf8', color: '#4ade80', fontWeight: '800', padding: '8px 12px 8px 34px', borderRadius: '8px', fontSize: '0.84rem' }}
-                        />
-                        <Search size={15} style={{ position: 'absolute', left: '10px', top: '10px', color: '#38bdf8' }} />
-                      </div>
-
-                      <select
-                        value={selectedProjectId}
-                        onChange={(e) => {
-                          const pVal = e.target.value;
-                          setSelectedProjectId(pVal);
-                          if (pVal && pVal !== 'NEW_PROJECT') {
-                            const foundProj = allGlobalProjects.find((p: any) => p.id === pVal);
-                            if (foundProj) {
-                              handleSelectProjectObj(foundProj);
-                            }
-                          }
-                        }}
-                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #38bdf8', color: '#4ade80', fontWeight: '900', padding: '10px 12px', borderRadius: '8px', fontSize: '0.88rem' }}
-                      >
-                        <option value="">-- SELECT EXISTING REGISTERED PROJECT ({filteredProjects.length} Available) --</option>
-                        {filteredProjects.map((proj: any) => (
-                          <option key={proj.id} value={proj.id}>
-                            🏢 {proj.title} ({proj.locality}) — Dev: {proj.devName || 'LITTON SEN'}
-                          </option>
-                        ))}
-                        <option value="NEW_PROJECT">➕ Add / Type Individual Project Title & Name</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* ACTIVE DEVELOPER BADGE SUMMARY */}
-                  {selectedDev && (
-                    <div style={{ background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                      <div style={{ fontSize: '0.82rem', color: isLight ? '#0f172a' : '#ffffff' }}>
-                        <span style={{ color: '#fbbf24', fontWeight: '900', marginRight: '8px' }}>🆔 DEVELOPER ID: {selectedDev.id}</span>
-                        <strong style={{ color: '#38bdf8' }}>{selectedDev.name}</strong> • 📱 {selectedDev.mobile} • 📧 {selectedDev.email}
-                      </div>
-                      <span style={{ fontSize: '0.72rem', background: '#0284c7', color: '#ffffff', padding: '3px 10px', borderRadius: '12px', fontWeight: '800' }}>
-                        {selectedDev.projects.length} Registered Projects
-                      </span>
-                    </div>
-                  )}
-                </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
                   <div>
@@ -954,7 +1002,13 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     <input 
                       type="text" 
                       value={newPropertyForm.developer} 
-                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, developer: e.target.value })} 
+                      onChange={(e) => {
+                        const devVal = e.target.value;
+                        setNewPropertyForm({ ...newPropertyForm, developer: devVal, developer_mobile: devVal === 'SUMAN' || devVal === 'BISWAJIT KARMAKAR' ? newPropertyForm.developer_mobile : '' });
+                        if (setDevProjectMobile && devVal !== 'BISWAJIT KARMAKAR') {
+                          setDevProjectMobile('');
+                        }
+                      }} 
                       placeholder="e.g. My Home Constructions / Dhriti Builders / Aparna" 
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
                       required 
@@ -1355,8 +1409,114 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   );
                 })()}
 
+                {/* 🏊 PROJECT & DEVELOPER AMENITIES (MULTIPLE SELECTION OPTION INSIDE SECTION 1) */}
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #a855f7', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <h4 style={{ fontSize: '0.96rem', fontWeight: '900', color: '#a855f7', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        🏊 PROJECT & DEVELOPER AMENITIES & INFRASTRUCTURE FEATURES (MULTIPLE SELECTION)
+                      </h4>
+                      <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
+                        Select all project-wide amenities available under {newPropertyForm.title || 'this Project Master'}. These amenities auto-link to all project units.
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          const allIds = [
+                            '24/7 Power Backup', 'Water Supply', 'Security', 'CCTV cameras',
+                            'Elevators', 'backup power', 'Fire Safety', 'Gymnasium',
+                            'Swimming Pool', 'Clubhouse', "Children's Play Area", 'Sports Courts',
+                            'Track', 'Gardens', 'Waste Management', 'EV Charging Stations',
+                            'Intercom Facility', 'Yoga Deck', 'Senior Citizen Park'
+                          ];
+                          setNewPropertyForm({ ...newPropertyForm, selected_amenities: allIds });
+                        }}
+                        style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '900', cursor: 'pointer' }}
+                      >
+                        Select All Amenities
+                      </button>
+                      <button 
+                        type="button"
+                        onClick={() => setNewPropertyForm({ ...newPropertyForm, selected_amenities: [] })}
+                        style={{ background: isLight ? '#e2e8f0' : '#334155', color: isLight ? '#475569' : '#cbd5e1', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '800', cursor: 'pointer' }}
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : windowWidth <= 1024 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+                    {[
+                      { id: '24/7 Power Backup', label: '⚡ 24/7 Power Backup' },
+                      { id: 'Water Supply', label: '🚰 24-Hour Water Supply' },
+                      { id: 'Security', label: '🛡️ 24/7 Security Patrol' },
+                      { id: 'CCTV cameras', label: '📹 CCTV Surveillance' },
+                      { id: 'Elevators', label: '🛗 High-Speed Elevators' },
+                      { id: 'backup power', label: '⚡ Backup Generator' },
+                      { id: 'Fire Safety', label: '🧯 Fire Safety System' },
+                      { id: 'Gymnasium', label: '🏋️ Fitness Gymnasium' },
+                      { id: 'Swimming Pool', label: '🏊 Swimming Pool' },
+                      { id: 'Clubhouse', label: '🏛️ Luxury Clubhouse' },
+                      { id: "Children's Play Area", label: "🛝 Kids Play Area" },
+                      { id: 'Sports Courts', label: '🏸 Sports Courts' },
+                      { id: 'Track', label: '🏃 Jogging Track' },
+                      { id: 'Gardens', label: '🌳 Landscaped Gardens' },
+                      { id: 'Waste Management', label: '♻️ STP & Waste Mgmt' },
+                      { id: 'EV Charging Stations', label: '🔌 EV Charging Stations' },
+                      { id: 'Intercom Facility', label: '🔐 Intercom & Video Door' },
+                      { id: 'Yoga Deck', label: '🧘 Yoga & Meditation Deck' },
+                      { id: 'Senior Citizen Park', label: '👵 Senior Citizen Park' }
+                    ].map((amenity) => {
+                      const selectedList = newPropertyForm.selected_amenities || [];
+                      const isChecked = selectedList.includes(amenity.id);
+                      return (
+                        <label 
+                          key={amenity.id}
+                          style={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '8px', 
+                            background: isChecked ? (isLight ? 'rgba(168, 85, 247, 0.12)' : 'rgba(168, 85, 247, 0.18)') : (isLight ? '#ffffff' : '#0f172a'),
+                            border: isChecked ? '2px solid #a855f7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
+                            padding: '8px 12px', 
+                            borderRadius: '8px', 
+                            cursor: 'pointer',
+                            fontSize: '0.8rem',
+                            fontWeight: isChecked ? '800' : '600',
+                            color: isChecked ? (isLight ? '#7e22ce' : '#c084fc') : (isLight ? '#334155' : '#cbd5e1'),
+                            transition: 'all 0.15s ease-in-out'
+                          }}
+                        >
+                          <input 
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              let updated = [...selectedList];
+                              if (e.target.checked) {
+                                if (!updated.includes(amenity.id)) updated.push(amenity.id);
+                              } else {
+                                updated = updated.filter(i => i !== amenity.id);
+                              }
+                              setNewPropertyForm({ ...newPropertyForm, selected_amenities: updated });
+                            }}
+                          />
+                          {amenity.label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 {/* SECTION 1 SAVE & COMPLETE REGISTRATION ACTION BUTTON */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px', borderTop: isLight ? '2px dashed #cbd5e1' : '2px dashed #334155' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', paddingTop: '12px', borderTop: isLight ? '2px dashed #cbd5e1' : '2px dashed #334155' }}>
+                  <div>
+                    <span style={{ fontSize: '0.76rem', color: '#0284c7', fontWeight: '900', background: 'rgba(56, 189, 248, 0.15)', padding: '6px 14px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
+                      🔑 ASSIGNED MASTER PROJECT ID: <strong style={{ fontFamily: 'monospace', fontSize: '0.88rem' }}>{newPropertyForm.project_id || generateNextProjectId()}</strong>
+                    </span>
+                  </div>
+
                   <button 
                     type="submit"
                     style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '10px', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)' }}
@@ -1366,8 +1526,11 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 </div>
               </div>
 
-              {/* SECTION 2: PROPERTY SPECIFICATIONS & UNIT DETAILS */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* SECTIONS 2, 3 & 5: SINGLE STANDALONE PROPERTY SPECIFICATIONS (ONLY VISIBLE IN SINGLE PROPERTY MODE) */}
+              {propertyAddMode === 'single' && (
+                <>
+                  {/* SECTION 2: PROPERTY SPECIFICATIONS & UNIT DETAILS */}
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#d97706' : '#fbbf24', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
                   2. Property Specifications & Unit Details
                 </h4>
@@ -1950,25 +2113,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     />
                   </div>
 
-                  {/* PARKING REQUIRED YES / NO OPTION */}
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: '#0284c7', fontWeight: '900', display: 'block', marginBottom: '6px' }}>Parking Required? *</label>
-                    <select 
-                      value={newPropertyForm.parking_required || 'YES'} 
-                      onChange={(e) => {
-                        const req = e.target.value;
-                        setNewPropertyForm((prev: any) => ({
-                          ...prev,
-                          parking_required: req,
-                          parking_price: req === 'NO' ? '0' : (prev.parking_price && prev.parking_price !== '0' ? prev.parking_price : '300000')
-                        }));
-                      }} 
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', color: '#38bdf8', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
-                    >
-                      <option value="YES">✅ YES — Parking Required & Allotted</option>
-                      <option value="NO">❌ NO — Parking Not Required (₹0 Charge)</option>
-                    </select>
-                  </div>
+
 
                   {/* GST CHARGE OPTION */}
                   <div>
@@ -1987,53 +2132,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
-                  {/* PARKING TYPE SELECTION */}
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Car Parking Slot Type</label>
-                    <select 
-                      disabled={(newPropertyForm.parking_required || 'YES') === 'NO'}
-                      value={newPropertyForm.parking_availability || 'Covered Car Parking (1 Slot Included)'} 
-                      onChange={(e) => {
-                        const availVal = e.target.value;
-                        const currProj = (newPropertyForm.title || newPropertyForm.project_name || 'TILOTTAMA APPARTMENT').trim();
-                        const pLimits = projectParkingStockMap[currProj] || { priceCovered: 300000, priceEv: 450000, priceOpen: 150000 };
 
-                        let autoPrice = newPropertyForm.parking_price;
-                        if (availVal.includes('2 Covered')) autoPrice = typeof pLimits.priceCovered === 'number' ? pLimits.priceCovered * 2 : pLimits.priceCovered;
-                        else if (availVal.includes('Covered') || availVal.includes('1 Covered')) autoPrice = pLimits.priceCovered;
-                        else if (availVal.includes('EV')) autoPrice = pLimits.priceEv;
-                        else if (availVal.includes('Open') || availVal.includes('Uncovered')) autoPrice = pLimits.priceOpen;
-
-                        setNewPropertyForm({ 
-                          ...newPropertyForm, 
-                          parking_availability: availVal,
-                          parking_price: autoPrice !== undefined ? autoPrice : newPropertyForm.parking_price
-                        });
-                      }} 
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', opacity: (newPropertyForm.parking_required || 'YES') === 'NO' ? 0.5 : 1 }}
-                    >
-                      <option value="Covered Car Parking (1 Slot Included)">🚗 1 Covered Car Parking Slot (Single)</option>
-                      <option value="Covered Car Parking (2 Slots Included)">🚗🚗 2 Covered Car Parking Slots (Tandem)</option>
-                      <option value="1 Covered Slot + EV Station">⚡ 1 Covered Slot + EV Fast Charging Station</option>
-                      <option value="2 Covered Slots + EV Fast Charger">⚡🚗 2 Covered Slots + EV Fast Charger</option>
-                      <option value="Uncovered / Open Parking">🅿️ 1 Open / Surface Parking Slot</option>
-                      <option value="1 Mechanical Stacker Slot">🏗️ 1 Mechanical Stacker Parking Slot</option>
-                      <option value="3 Premium Basement Slots">🏎️ 3 Premium Basement Parking Slots</option>
-                    </select>
-                  </div>
-
-                  {/* PARKING PRICE TAG */}
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Parking Charge (INR) *</label>
-                    <input 
-                      type="text" 
-                      disabled={(newPropertyForm.parking_required || 'YES') === 'NO'}
-                      value={(newPropertyForm.parking_required || 'YES') === 'NO' ? '0' : (newPropertyForm.parking_price !== undefined ? newPropertyForm.parking_price : '300000')} 
-                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, parking_price: e.target.value })} 
-                      placeholder="e.g. 300000"
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: (newPropertyForm.parking_required || 'YES') === 'NO' ? '#ef4444' : '#38bdf8', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', opacity: (newPropertyForm.parking_required || 'YES') === 'NO' ? 0.6 : 1 }} 
-                    />
-                  </div>
 
                   {/* AMENITY CHARGES */}
                   <div>
@@ -2071,98 +2170,6 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                       <option value="BOOKED">🔴 BOOKED</option>
                     </select>
                   </div>
-                </div>
-              </div>
-
-              {/* SECTION 4: AMENITIES AVAILABLE (MULTIPLE SELECTION) */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px', flexWrap: 'wrap', gap: '10px' }}>
-                  <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#0284c7' : '#38bdf8' }}>
-                    4. Amenities Available & Infrastructure Features (Multiple Selection)
-                  </h4>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        const allIds = [
-                          '24/7 Power Backup', 'Water Supply', 'Security', 'CCTV cameras',
-                          'Elevators', 'backup power', 'Fire Safety', 'Gymnasium',
-                          'Swimming Pool', 'Clubhouse', "Children's Play Area", 'Sports Courts',
-                          'Track', 'Gardens', 'Waste Management', 'EV Charging Stations'
-                        ];
-                        setNewPropertyForm({ ...newPropertyForm, selected_amenities: allIds });
-                      }}
-                      style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
-                    >
-                      Select All (16 Amenities)
-                    </button>
-                    <button 
-                      type="button"
-                      onClick={() => setNewPropertyForm({ ...newPropertyForm, selected_amenities: [] })}
-                      style={{ background: isLight ? '#e2e8f0' : '#334155', color: isLight ? '#475569' : '#cbd5e1', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
-                    >
-                      Clear All
-                    </button>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : windowWidth <= 1024 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
-                  {[
-                    { id: '24/7 Power Backup', label: '⚡ 24/7 Power Backup' },
-                    { id: 'Water Supply', label: '🚰 Water Supply (24 Hours)' },
-                    { id: 'Security', label: '🛡️ 24/7 Security Guard' },
-                    { id: 'CCTV cameras', label: '📹 CCTV Cameras' },
-                    { id: 'Elevators', label: '🛗 High-Speed Elevators' },
-                    { id: 'backup power', label: '⚡ Backup Power Generator' },
-                    { id: 'Fire Safety', label: '🧯 Fire Safety System' },
-                    { id: 'Gymnasium', label: '🏋️ Fitness Gymnasium' },
-                    { id: 'Swimming Pool', label: '🏊 Swimming Pool' },
-                    { id: 'Clubhouse', label: '🏛️ Luxury Clubhouse' },
-                    { id: "Children's Play Area", label: "🛝 Children's Play Area" },
-                    { id: 'Sports Courts', label: '🏸 Multi-Sports Courts' },
-                    { id: 'Track', label: '🏃 Jogging / Walking Track' },
-                    { id: 'Gardens', label: '🌳 Landscaped Gardens' },
-                    { id: 'Waste Management', label: '♻️ Waste Management & STP' },
-                    { id: 'EV Charging Stations', label: '🔌 EV Charging Stations' }
-                  ].map((amenity) => {
-                    const selectedList = newPropertyForm.selected_amenities || [];
-                    const isChecked = selectedList.includes(amenity.id);
-                    return (
-                      <label 
-                        key={amenity.id}
-                        style={{ 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '8px', 
-                          background: isChecked ? (isLight ? 'rgba(56, 189, 248, 0.12)' : 'rgba(56, 189, 248, 0.18)') : (isLight ? '#ffffff' : '#1e293b'),
-                          border: isChecked ? '2px solid #38bdf8' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
-                          padding: '8px 12px', 
-                          borderRadius: '8px', 
-                          cursor: 'pointer',
-                          fontSize: '0.8rem',
-                          fontWeight: isChecked ? '800' : '600',
-                          color: isChecked ? (isLight ? '#0284c7' : '#38bdf8') : (isLight ? '#334155' : '#cbd5e1'),
-                          transition: 'all 0.15s ease-in-out'
-                        }}
-                      >
-                        <input 
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            let updated = [...selectedList];
-                            if (e.target.checked) {
-                              if (!updated.includes(amenity.id)) updated.push(amenity.id);
-                            } else {
-                              updated = updated.filter(i => i !== amenity.id);
-                            }
-                            setNewPropertyForm({ ...newPropertyForm, selected_amenities: updated });
-                          }}
-                          style={{ accentColor: '#38bdf8', width: '15px', height: '15px' }}
-                        />
-                        <span>{amenity.label}</span>
-                      </label>
-                    );
-                  })}
                 </div>
               </div>
 
@@ -2217,6 +2224,8 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   </div>
                 </div>
               </div>
+            </>
+          )}
 
               {/* FULL PAGE ACTION FOOTER BUTTONS */}
               <div style={{ display: 'flex', gap: '16px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '20px', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
@@ -2227,11 +2236,47 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 >
                   Cancel & Return to Registry
                 </button>
+                {propertyAddMode === 'multiple' && (
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      const targetProj = editingProperty || {
+                        id: `PROP-${Date.now()}`,
+                        property_code: newPropertyForm.property_code || generateNextPropertyCode(),
+                        title: newPropertyForm.title || 'BISNUPRIYA PLAZA',
+                        developer: newPropertyForm.developer || 'BISWAJIT KARMAKAR',
+                        developer_mobile: devProjectMobile || '9163408797',
+                        locality: newPropertyForm.locality || 'BC SEN ROAD NEAR SHAKTIPUR AUTO STAND'
+                      };
+                      setShowMultipleUnitsSlider({ open: true, project: targetProj });
+                    }}
+                    style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '14px 24px', borderRadius: '10px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(168, 85, 247, 0.4)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    🏢 STEP 2: OPEN MULTIPLE UNITS SLIDER BUILDER
+                  </button>
+                )}
                 <button 
                   type="submit" 
-                  style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', border: 'none', padding: '14px 36px', borderRadius: '10px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(22, 163, 74, 0.4)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  onClick={() => {
+                    if (propertyAddMode === 'multiple') {
+                      setTimeout(() => {
+                        const targetProj = editingProperty || {
+                          id: `PROP-${Date.now()}`,
+                          property_code: newPropertyForm.property_code || generateNextPropertyCode(),
+                          title: newPropertyForm.title || 'BISNUPRIYA PLAZA',
+                          developer: newPropertyForm.developer || 'BISWAJIT KARMAKAR',
+                          developer_mobile: devProjectMobile || '9163408797',
+                          locality: newPropertyForm.locality || 'BC SEN ROAD NEAR SHAKTIPUR AUTO STAND'
+                        };
+                        setShowMultipleUnitsSlider({ open: true, project: targetProj });
+                      }, 300);
+                    }
+                  }}
+                  style={{ background: propertyAddMode === 'single' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', border: 'none', padding: '14px 36px', borderRadius: '10px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(22, 163, 74, 0.4)', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
-                  {editingProperty ? `💾 SAVE & UPDATE PROPERTY (${editingProperty.property_code})` : `💾 SAVE & COMPLETE PROPERTY REGISTRATION (${newPropertyForm.property_code || generateNextPropertyCode()})`}
+                  {propertyAddMode === 'single'
+                    ? (editingProperty ? `💾 SAVE & UPDATE SINGLE PROPERTY (${editingProperty.property_code})` : `💾 SAVE & COMPLETE SINGLE PROPERTY REGISTRATION`)
+                    : (editingProperty ? `💾 SAVE & UPDATE PROJECT (${editingProperty.property_code})` : `🏢 SAVE PROJECT & OPEN MULTI-UNIT SLIDER`)}
                 </button>
               </div>
 
@@ -2322,7 +2367,8 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         </td>
                         <td style={{ padding: '12px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                            <button onClick={() => setViewPropertyModal(p)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>👁️ View</button>
+                            <button onClick={() => setShowMultipleUnitsSlider({ open: true, project: p })} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }} title="Open Multiple Property Units Builder Slider for this project">🏢 Units Slider</button>
+                            <button onClick={() => setViewPropertyModal(p)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>👁️ View</button>
                             <button onClick={() => handleStartEditProperty(p)} style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Edit</button>
                             <button onClick={() => handleDeleteProperty(p.id, p.property_code)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Delete</button>
                           </div>
@@ -2523,7 +2569,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
       )}
 
       {/* MANAGE PROJECT PARKING STOCK MODAL */}
-      {showManageParkingModal && (
+      {showStep2ParkingConfigModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
           <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #0284c7', borderRadius: '20px', width: '100%', maxWidth: '520px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
@@ -2991,6 +3037,613 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           </div>
         );
       })()}
+
+      {/* 🏢 SLIDER DRAWER: MULTIPLE PROPERTY UNITS BUILDER & SLIDER UNDER SAME PROJECT */}
+      {showMultipleUnitsSlider && showMultipleUnitsSlider.open && (() => {
+        const currentProject = showMultipleUnitsSlider.project || properties[0] || {
+          title: 'BISNUPRIYA PLAZA',
+          developer: 'BISWAJIT KARMAKAR',
+          developer_mobile: '9163408797',
+          locality: 'BC SEN ROAD NEAR SHAKTIPUR AUTO STAND',
+          property_code: 'SRM-PROP-2026-000426'
+        };
+
+        const projectTitleStr = currentProject.title || currentProject.propertyTitle || 'BISNUPRIYA PLAZA';
+        const devNameStr = currentProject.developer || currentProject.developerName || 'BISWAJIT KARMAKAR';
+        const devMobileStr = currentProject.developer_mobile || currentProject.mobile || '9163408797';
+        const localityStr = currentProject.locality || 'BC SEN ROAD NEAR SHAKTIPUR AUTO STAND';
+        const propCodeStr = currentProject.property_code || currentProject.id || 'SRM-PROP-2026-000426';
+
+        // Filter units under this project
+        const currentProjectUnits = projectUnitsList.filter(u => 
+          u.propertyId === propCodeStr || 
+          u.propertyId === currentProject.id ||
+          (u.projectTitle && u.projectTitle.toLowerCase() === projectTitleStr.toLowerCase())
+        );
+
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: isLight ? '#f8fafc' : '#0f172a', zIndex: 99999, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', width: '100vw', maxWidth: '100vw', height: '100vh', overflowY: 'auto', padding: '24px 36px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* SLIDER FULLSCREEN HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '2px solid #e2e8f0' : '2px solid #334155', paddingBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '5px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '900', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.4)' }}>
+                      🏢 STEP 2: MULTI-UNIT INVENTORY BUILDER (FULL SCREEN MODE)
+                    </span>
+                    <span style={{ background: '#22c55e', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.76rem', fontWeight: '900' }}>
+                      {currentProjectUnits.length} Units Registered
+                    </span>
+                  </div>
+                  <h2 style={{ fontSize: '1.45rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '6px', margin: 0 }}>
+                    MULTIPLE PROPERTY UNITS BUILDER & SLIDER
+                  </h2>
+                  <p style={{ fontSize: '0.82rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px', margin: 0 }}>
+                    Full screen multi-unit inventory manager — add, configure and slide through multiple property flat / unit inventories under {projectTitleStr}.
+                  </p>
+                </div>
+                
+                <button 
+                  onClick={() => setShowMultipleUnitsSlider(null)} 
+                  style={{ background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(239, 68, 68, 0.4)' }}
+                >
+                  <X size={18} /> Close Fullscreen Builder
+                </button>
+              </div>
+
+              {/* PROJECT IDENTIFICATION CONTEXT BANNER CARD */}
+              <div style={{ background: isLight ? 'rgba(2, 132, 199, 0.08)' : 'rgba(2, 132, 199, 0.15)', border: '2px solid #0284c7', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: '900', fontFamily: 'monospace', background: 'rgba(56, 189, 248, 0.2)', padding: '2px 8px', borderRadius: '4px', border: '1px solid #38bdf8' }}>
+                        🔑 PROJECT ID: {currentProject.project_id || 'SRM-PROJ-2026-000088'}
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900', fontFamily: 'monospace', background: 'rgba(34, 197, 94, 0.2)', padding: '2px 8px', borderRadius: '4px', border: '1px solid #22c55e' }}>
+                        🏷️ NEXT AUTOMATED PROPERTY ID: {generateDynamicPropertyCode(0)}
+                      </span>
+                    </div>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                      🏢 {projectTitleStr}
+                    </h3>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '800' }}>REGISTERED DEVELOPER</span>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#22c55e', margin: 0 }}>
+                      👤 {devNameStr}
+                    </h4>
+                    <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>
+                      📱 {devMobileStr}
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '8px', fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  <span>📍 Locality: <strong>{localityStr}</strong></span>
+                  <span>🏗️ Tower/Block: <strong>{currentProject.tower_block || 'Tower A'}</strong></span>
+                  <span>🏬 Total Floors: <strong>{currentProject.total_floors || 'G+4 Floors'}</strong></span>
+                </div>
+              </div>
+
+              {/* 🚗 LIVE PARKING STOCK & INVENTORY MANAGEMENT PANEL */}
+              {(() => {
+                const allocStats = getParkingAllocationStats(propCodeStr);
+
+                return (
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #eab308', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <h4 style={{ fontSize: '0.98rem', fontWeight: '900', color: '#eab308', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          🚗 PROJECT PARKING STOCK & INVENTORY MANAGEMENT
+                        </h4>
+                        <p style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
+                          Live parking slot availability tracking for {projectTitleStr}. Auto-calculates stock counts as flat units are assigned parking.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* PARKING CARDS GRID */}
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: '10px' }}>
+                      {Object.entries(parkingStockConfig).map(([key, cfg]: [string, any]) => {
+                        const alloc = allocStats[key] || 0;
+                        const avail = Math.max(0, (cfg.total || 0) - alloc);
+                        const isLow = avail <= 2 && avail > 0;
+                        const isOut = avail === 0;
+
+                        return (
+                          <div key={key} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isOut ? '2px solid #ef4444' : isLow ? '2px solid #f59e0b' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), borderRadius: '10px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            <span style={{ fontSize: '0.72rem', fontWeight: '800', color: isLight ? '#334155' : '#cbd5e1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {cfg.label}
+                            </span>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: '2px' }}>
+                              <span style={{ fontSize: '1.15rem', fontWeight: '900', color: isOut ? '#ef4444' : isLow ? '#f59e0b' : '#22c55e' }}>
+                                {avail} <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '600' }}>avail</span>
+                              </span>
+                              <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                {alloc}/{cfg.total} sold
+                              </span>
+                            </div>
+
+                            <div style={{ background: isLight ? '#e2e8f0' : '#334155', borderRadius: '4px', height: '5px', width: '100%', overflow: 'hidden', marginTop: '4px' }}>
+                              <div style={{ background: isOut ? '#ef4444' : isLow ? '#f59e0b' : '#22c55e', height: '100%', width: `${Math.min(100, (alloc / (cfg.total || 1)) * 100)}%`, transition: 'width 0.3s ease-in-out' }} />
+                            </div>
+
+                            <span style={{ fontSize: '0.68rem', color: '#eab308', fontWeight: '800', marginTop: '2px' }}>
+                              Rate: ₹{(cfg.price || 0).toLocaleString('en-IN')}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* FULL SPECIFICATION UNIT REGISTRATION FORM UNDER THIS PROJECT */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #0284c7', borderRadius: '14px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: '#38bdf8', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      ➕ ADD NEW FULL-SPECIFICATION UNIT FLAT UNDER THIS PROJECT
+                    </h4>
+                    <span style={{ fontSize: '0.74rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', marginTop: '2px', display: 'block' }}>
+                      🚪 Individual Property ID for this Addition: <strong style={{ fontFamily: 'monospace', color: '#22c55e', fontSize: '0.85rem' }}>{generateDynamicPropertyCode(0)}</strong>
+                    </span>
+                  </div>
+                  <span style={{ fontSize: '0.74rem', background: '#22c55e', color: '#ffffff', padding: '4px 12px', borderRadius: '6px', fontWeight: '800' }}>
+                    ✓ Auto-linked to {projectTitleStr} (Project ID: {currentProject.project_id || 'SRM-PROJ-2026-000088'})
+                  </span>
+                </div>
+
+                {/* 📐 SUB-SECTION 2: PROPERTY SPECIFICATIONS & UNIT DETAILS */}
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h5 style={{ fontSize: '0.92rem', fontWeight: '900', color: '#0284c7', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    📐 2. Property Specifications & Unit Details
+                  </h5>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '4px' }}>
+                        🏷️ Individual Property ID (Auto-Created) *
+                      </label>
+                      <input 
+                        type="text" 
+                        readOnly
+                        value={generateDynamicPropertyCode(0)} 
+                        style={{ width: '100%', background: isLight ? 'rgba(34, 197, 94, 0.12)' : 'rgba(34, 197, 94, 0.18)', border: '2px solid #22c55e', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem', fontFamily: 'monospace' }} 
+                      />
+                    </div>
+
+                    {/* CONSTRUCTION / POSSESSION STATUS OPTIONS */}
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#0284c7' : '#38bdf8', fontWeight: '900', display: 'block', marginBottom: '4px' }}>
+                        🏗️ Construction / Possession Status *
+                      </label>
+                      <select 
+                        value={sliderUnitForm.constructionStatus || 'Ready to Move'} 
+                        onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, constructionStatus: e.target.value })} 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '2px solid #0284c7', color: isLight ? '#0284c7' : '#38bdf8', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '800' }}
+                      >
+                        <option value="Ready to Move">🔑 Ready to Move</option>
+                        <option value="Under Construction">🏗️ Under Construction</option>
+                      </select>
+                    </div>
+
+                    {/* IF UNDER CONSTRUCTION: HANDOVER YEAR & MONTH */}
+                    {sliderUnitForm.constructionStatus === 'Under Construction' && (
+                      <>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#eab308', fontWeight: '900', display: 'block', marginBottom: '4px' }}>
+                            📅 Handover Year *
+                          </label>
+                          <select 
+                            value={sliderUnitForm.handoverYear || '2026'} 
+                            onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, handoverYear: e.target.value })} 
+                            style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '2px solid #eab308', color: '#eab308', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '800' }}
+                          >
+                            <option value="2026">2026</option>
+                            <option value="2027">2027</option>
+                            <option value="2028">2028</option>
+                            <option value="2029">2029</option>
+                            <option value="2030">2030</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: '#eab308', fontWeight: '900', display: 'block', marginBottom: '4px' }}>
+                            🗓️ Handover Month *
+                          </label>
+                          <select 
+                            value={sliderUnitForm.handoverMonth || 'December'} 
+                            onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, handoverMonth: e.target.value })} 
+                            style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '2px solid #eab308', color: '#eab308', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '800' }}
+                          >
+                            {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                              <option key={m} value={m}>{m}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </>
+                    )}
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>BHK Configuration *</label>
+                      <select value={sliderUnitForm.bhk} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, bhk: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '800' }}>
+                        <option value="1BHK">1BHK</option>
+                        <option value="2BHK">2BHK</option>
+                        <option value="3BHK">3BHK</option>
+                        <option value="4BHK">4BHK</option>
+                        <option value="5BHK">5BHK / Sky Villa</option>
+                        <option value="Duplex Villa">Duplex Villa</option>
+                        <option value="Penthouse">Penthouse</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Tower / Block Name</label>
+                      <input type="text" value={sliderUnitForm.tower} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, tower: e.target.value })} placeholder="e.g. Tower A / Block 1" style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }} />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Super Built-up Area (Sq.Ft.) *</label>
+                      <input 
+                        type="text" 
+                        value={sliderUnitForm.superBuiltupArea} 
+                        onChange={(e) => {
+                          const superVal = e.target.value;
+                          const sNum = parseFloat(superVal.replace(/[^0-9.]/g, '')) || 0;
+                          const dedPct = parseFloat(sliderUnitForm.deductionPct || '35') || 35;
+                          const calcCarpet = sNum > 0 ? (sNum * (1 - dedPct / 100)).toFixed(1) + ' Sq.Ft.' : sliderUnitForm.carpetArea;
+                          
+                          const rateNum = parseFloat(sliderUnitForm.priceSqft?.replace(/[^0-9.]/g, '') || '5131') || 0;
+                          const calcBase = sNum > 0 && rateNum > 0 ? '₹' + Math.round(sNum * rateNum).toLocaleString('en-IN') : sliderUnitForm.basePrice;
+
+                          setSliderUnitForm({ 
+                            ...sliderUnitForm, 
+                            superBuiltupArea: superVal,
+                            carpetArea: calcCarpet,
+                            basePrice: calcBase
+                          });
+                        }} 
+                        placeholder="e.g. 1,283 Sq.Ft." 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '1.5px solid #fbbf24', color: '#fbbf24', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Super to Carpet Deduction %</label>
+                      <select 
+                        value={sliderUnitForm.deductionPct || '35%'} 
+                        onChange={(e) => {
+                          const dedStr = e.target.value;
+                          const dedPct = parseFloat(dedStr) || 35;
+                          const sNum = parseFloat(sliderUnitForm.superBuiltupArea?.replace(/[^0-9.]/g, '') || '0') || 0;
+                          const calcCarpet = sNum > 0 ? (sNum * (1 - dedPct / 100)).toFixed(1) + ' Sq.Ft.' : sliderUnitForm.carpetArea;
+                          setSliderUnitForm({ ...sliderUnitForm, deductionPct: dedStr, carpetArea: calcCarpet });
+                        }} 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '800' }}
+                      >
+                        <option value="35%">35% Deduction (Standard Builder Loading)</option>
+                        <option value="30%">30% Deduction</option>
+                        <option value="25%">25% Deduction</option>
+                        <option value="20%">20% Deduction</option>
+                        <option value="40%">40% Deduction</option>
+                        <option value="0%">0% Deduction (No Loading)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Carpet Area (Sq.Ft.) *</label>
+                      <input type="text" value={sliderUnitForm.carpetArea} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, carpetArea: e.target.value })} placeholder="e.g. 898.1 Sq.Ft." style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '1.5px solid #38bdf8', color: '#38bdf8', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }} />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Vastu Facing</label>
+                      <select value={sliderUnitForm.facing} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, facing: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }}>
+                        <option value="East Facing">East Facing</option>
+                        <option value="North-East Facing">North-East Facing</option>
+                        <option value="North Facing">North Facing</option>
+                        <option value="North-West Facing">North-West Facing</option>
+                        <option value="West Facing">West Facing</option>
+                        <option value="South-West Facing">South-West Facing</option>
+                        <option value="South Facing">South Facing</option>
+                        <option value="South-East Facing">South-East Facing</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Unit Floor Number *</label>
+                      <select value={sliderUnitForm.floor} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, floor: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '800' }}>
+                        <option value="Ground Floor">Ground Floor</option>
+                        <option value="1st Floor">1st Floor</option>
+                        <option value="2nd Floor">2nd Floor</option>
+                        <option value="3rd Floor">3rd Floor</option>
+                        <option value="4th Floor">4th Floor</option>
+                        <option value="5th Floor">5th Floor</option>
+                        <option value="6th Floor">6th Floor</option>
+                        <option value="7th Floor">7th Floor</option>
+                        <option value="Top Floor / Penthouse">Top Floor / Penthouse</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Furnishing Status</label>
+                      <select value={sliderUnitForm.furnishing || 'Semi-Furnished'} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, furnishing: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }}>
+                        <option value="Unfurnished">Unfurnished</option>
+                        <option value="Semi-Furnished">Semi-Furnished</option>
+                        <option value="Fully Furnished">Fully Furnished</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 💰 SUB-SECTION 3: PRICING, COMMERCIALS, PARKING & ALL-INCLUSIVE FINAL VALUATION */}
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h5 style={{ fontSize: '0.92rem', fontWeight: '900', color: '#22c55e', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    💰 3. Pricing, Commercials, Parking & All-Inclusive Final Valuation
+                  </h5>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Price per Sq.Ft. (INR) *</label>
+                      <input 
+                        type="text" 
+                        value={sliderUnitForm.priceSqft} 
+                        onChange={(e) => {
+                          const rateVal = e.target.value;
+                          const rNum = parseFloat(rateVal.replace(/[^0-9.]/g, '')) || 0;
+                          const sNum = parseFloat(sliderUnitForm.superBuiltupArea?.replace(/[^0-9.]/g, '') || '1283') || 0;
+                          const calcBase = sNum > 0 && rNum > 0 ? '₹' + Math.round(sNum * rNum).toLocaleString('en-IN') : sliderUnitForm.basePrice;
+
+                          // Auto calculate total
+                          const bNum = sNum * rNum;
+                          const pNum = parseFloat(sliderUnitForm.parkingPrice || '0') || 0;
+                          const aNum = parseFloat(sliderUnitForm.amenityCharges || '0') || 0;
+                          const gstPctNum = parseFloat(sliderUnitForm.gstPct || '5') || 0;
+                          const taxVal = (bNum + pNum + aNum) * (gstPctNum / 100);
+                          const calcTotal = '₹' + Math.round(bNum + pNum + aNum + taxVal).toLocaleString('en-IN');
+
+                          setSliderUnitForm({ 
+                            ...sliderUnitForm, 
+                            priceSqft: rateVal,
+                            basePrice: calcBase,
+                            totalAllInclusivePrice: calcTotal
+                          });
+                        }} 
+                        placeholder="e.g. 5131" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '1.5px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Base Unit Flat Price (INR) *</label>
+                      <input type="text" value={sliderUnitForm.basePrice} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, basePrice: e.target.value })} placeholder="e.g. ₹65,83,073" style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '2px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }} />
+                    </div>
+
+
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Amenity & Maintenance Charges (INR)</label>
+                      <input type="text" value={sliderUnitForm.amenityCharges || '150000'} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, amenityCharges: e.target.value })} placeholder="e.g. 150000" style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }} />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>GST Charge Option</label>
+                      <select value={sliderUnitForm.gstPct || '5%'} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, gstPct: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }}>
+                        <option value="5%">5% GST (Standard Residential Construction)</option>
+                        <option value="1%">1% GST (Affordable Housing Scheme)</option>
+                        <option value="18%">18% GST (Commercial Real Estate)</option>
+                        <option value="0%">0% GST (Exempted / Resale)</option>
+                      </select>
+                    </div>
+
+                    <div style={{ gridColumn: windowWidth <= 640 ? 'span 1' : 'span 2' }}>
+                      <label style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: '900', display: 'block', marginBottom: '4px' }}>Total All-Inclusive Final Price (INR) [Base + Charges + Taxes] *</label>
+                      <input type="text" value={sliderUnitForm.totalAllInclusivePrice || '₹73,84,727'} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, totalAllInclusivePrice: e.target.value })} placeholder="e.g. ₹73,84,727" style={{ width: '100%', background: 'rgba(34, 197, 94, 0.15)', border: '2px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '1rem' }} />
+                    </div>
+                  </div>
+                </div>
+
+
+
+                {/* 🔑 SUB-SECTION 5: UNIT AVAILABILITY & KEYS CUSTODY */}
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <h5 style={{ fontSize: '0.92rem', fontWeight: '900', color: '#fbbf24', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🔑 5. Unit Availability & Keys Custody
+                  </h5>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Unit Availability Status</label>
+                      <select value={sliderUnitForm.status} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, status: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '1.5px solid #22c55e', color: sliderUnitForm.status === 'AVAILABLE' ? '#22c55e' : '#ef4444', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }}>
+                        <option value="AVAILABLE">🟢 AVAILABLE</option>
+                        <option value="BOOKED">🔴 BOOKED / SOLD</option>
+                        <option value="RESERVED">🟡 RESERVED</option>
+                        <option value="BLOCKED">🟠 HELD / BLOCKED</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Key Custody / Site Location</label>
+                      <input type="text" value={sliderUnitForm.keyCustody || 'Builder Site Office'} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, keyCustody: e.target.value })} placeholder="e.g. Site Manager Office" style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }} />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Property Highlights & Notes</label>
+                      <input type="text" value={sliderUnitForm.description || 'Pool facing Vastu East'} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, description: e.target.value })} placeholder="e.g. Pool facing Vastu East" style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* SAVE BUTTON */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px' }}>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      if (!sliderUnitForm.basePrice) {
+                        return alert('Please enter Base Unit Price!');
+                      }
+                      const assignedPropId = generateDynamicPropertyCode(0);
+                      const unitShortNum = `Unit ${assignedPropId.split('-').pop()}`;
+                      const newU = {
+                        id: `UNIT-${Date.now()}`,
+                        propertyId: assignedPropId,
+                        project_id: currentProject.project_id || 'SRM-PROJ-2026-000088',
+                        projectTitle: projectTitleStr,
+                        developerName: devNameStr,
+                        unitNumber: unitShortNum,
+                        unit_num: unitShortNum,
+                        unit_code: assignedPropId,
+                        property_code: assignedPropId,
+                        constructionStatus: sliderUnitForm.constructionStatus || 'Ready to Move',
+                        handoverYear: sliderUnitForm.constructionStatus === 'Under Construction' ? (sliderUnitForm.handoverYear || '2026') : '',
+                        handoverMonth: sliderUnitForm.constructionStatus === 'Under Construction' ? (sliderUnitForm.handoverMonth || 'December') : '',
+                        bhk: sliderUnitForm.bhk,
+                        floor: sliderUnitForm.floor,
+                        tower: sliderUnitForm.tower || 'Tower A',
+                        superBuiltupArea: sliderUnitForm.superBuiltupArea || '1,283 Sq.Ft.',
+                        deductionPct: sliderUnitForm.deductionPct || '35%',
+                        carpetArea: sliderUnitForm.carpetArea || '898.1 Sq.Ft.',
+                        area: sliderUnitForm.carpetArea || '898.1 Sq.Ft.',
+                        priceSqft: sliderUnitForm.priceSqft || '5131',
+                        basePrice: sliderUnitForm.basePrice,
+                        price: sliderUnitForm.basePrice,
+                        parkingRequired: sliderUnitForm.parkingRequired || 'YES',
+                        parking: sliderUnitForm.parking || '1 Covered Car Parking Slot',
+                        parkingPrice: sliderUnitForm.parkingPrice || '300000',
+                        amenityCharges: sliderUnitForm.amenityCharges || '150000',
+                        gstPct: sliderUnitForm.gstPct || '5%',
+                        totalAllInclusivePrice: sliderUnitForm.totalAllInclusivePrice || '₹73,84,727',
+                        selectedAmenities: sliderUnitForm.selectedAmenities || [],
+                        keyCustody: sliderUnitForm.keyCustody || 'Builder Site Office',
+                        description: sliderUnitForm.description || '',
+                        facing: sliderUnitForm.facing,
+                        furnishing: sliderUnitForm.furnishing || 'Semi-Furnished',
+                        status: sliderUnitForm.status || 'AVAILABLE',
+                        unitPhotos: sliderUnitForm.unitPhotos || [],
+                        unitVideos: sliderUnitForm.unitVideos || []
+                      };
+
+                      const updatedUnits = [newU, ...projectUnitsList];
+                      setProjectUnitsList(updatedUnits);
+                      if (setPropertyUnits) setPropertyUnits(updatedUnits);
+
+                      // Auto-advance unit number for fast entry (e.g. Flat 301 -> Flat 302)
+                      const numMatch = sliderUnitForm.unitNumber.match(/(\d+)/);
+                      let nextUnitStr = `Flat ${currentProjectUnits.length + 102}`;
+                      if (numMatch) {
+                        const nextNum = parseInt(numMatch[1], 10) + 1;
+                        nextUnitStr = sliderUnitForm.unitNumber.replace(/\d+/, String(nextNum));
+                      }
+
+                      setSliderUnitForm({
+                        ...sliderUnitForm,
+                        unitNumber: nextUnitStr,
+                        basePrice: sliderUnitForm.basePrice
+                      });
+
+                      alert(`🎉 ADDED FULL-SPECIFICATION UNIT ${newU.unitNumber} (INDIVIDUAL PROPERTY ID: ${assignedPropId}) TO PROJECT ${projectTitleStr}!\n\nNext Unit Property ID will be: ${generateDynamicPropertyCode(1)}.`);
+                    }}
+                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '12px 28px', borderRadius: '10px', fontWeight: '900', fontSize: '0.92rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)' }}
+                  >
+                    ➕ SAVE & ADD FULL SPECIFICATION UNIT TO PROJECT
+                  </button>
+                </div>
+              </div>
+
+              {/* SLIDER FOOTER */}
+              <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'center', borderTop: isLight ? '2px solid #e2e8f0' : '2px solid #334155', paddingTop: '16px' }}>
+                <button 
+                  onClick={() => setShowMultipleUnitsSlider(null)} 
+                  style={{ background: isLight ? '#f1f5f9' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '800', fontSize: '0.88rem', cursor: 'pointer' }}
+                >
+                  Close Builder Workspace
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ⚙️ MODAL: MANAGE PARKING STOCK CAPACITIES & RATES */}
+      {showStep2ParkingConfigModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #eab308', borderRadius: '16px', width: '100%', maxWidth: '650px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#eab308', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  ⚙️ MANAGE PARKING STOCK CAPACITIES & RATES
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
+                  Update total parking slot limits & default rates for your property projects.
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowStep2ParkingConfigModal(false)}
+                style={{ background: isLight ? '#f1f5f9' : '#334155', border: 'none', color: isLight ? '#0f172a' : '#ffffff', width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxHeight: '60vh', overflowY: 'auto', paddingRight: '4px' }}>
+              {Object.entries(parkingStockConfig).map(([key, cfg]: [string, any]) => (
+                <div key={key} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '2fr 1fr 1fr', gap: '12px', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>
+                      {cfg.label}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Category Key: {key}</span>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Total Slot Count</label>
+                    <input 
+                      type="number"
+                      value={cfg.total || 0}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10) || 0;
+                        setParkingStockConfig({
+                          ...parkingStockConfig,
+                          [key]: { ...cfg, total: val }
+                        });
+                      }}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #eab308', color: '#eab308', fontWeight: '900', padding: '6px 10px', borderRadius: '6px', fontSize: '0.88rem' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Default Rate (INR)</label>
+                    <input 
+                      type="number"
+                      value={cfg.price || 0}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10) || 0;
+                        setParkingStockConfig({
+                          ...parkingStockConfig,
+                          [key]: { ...cfg, price: val }
+                        });
+                      }}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '6px 10px', borderRadius: '6px', fontSize: '0.88rem' }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+              <button 
+                onClick={() => setShowStep2ParkingConfigModal(false)}
+                style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)' }}
+              >
+                💾 SAVE PARKING CONFIGURATION
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

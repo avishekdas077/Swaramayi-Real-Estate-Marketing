@@ -7782,6 +7782,7 @@ export default function App() {
               setActiveProjectSubTab={setActiveProjectSubTab}
               properties={properties}
               propertyUnits={propertyUnits}
+              setPropertyUnits={setPropertyUnits}
               projectVisitAgreements={projectVisitAgreements}
               editingProperty={editingProperty}
               newPropertyForm={newPropertyForm}
