@@ -6351,21 +6351,21 @@ export default function App() {
       <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         
         {/* TOP CONTROL HEADER */}
-        <header style={{ position: 'sticky', top: 0, zIndex: 900, background: isLight ? '#ffffff' : '#0f172a', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: isMobile ? '10px 14px' : '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+        <header style={{ position: 'sticky', top: 0, zIndex: 900, background: isLight ? '#ffffff' : '#0f172a', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: isMobile ? '8px 12px' : '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: isMobile ? '8px' : '12px', flexWrap: 'wrap' }}>
           {isMobile && (
             <button 
               onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-              style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
               title="Toggle Mobile Navigation Menu"
             >
               <Menu size={20} />
             </button>
           )}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: isLight ? '#f1f5f9' : '#1e293b', border: '1px solid #0284c7', padding: '6px 14px', borderRadius: '8px', width: isMobile ? '100%' : '440px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: isLight ? '#f1f5f9' : '#1e293b', border: '1px solid #0284c7', padding: '6px 12px', borderRadius: '8px', flex: isMobile ? '1' : '0 0 440px', minWidth: isMobile ? '0' : '440px' }}>
             <Search size={16} color="#38bdf8" />
             <input
               type="text"
-              placeholder="🔍 Universal Search (Property Code, Title, Customer, Mobile...)"
+              placeholder={isMobile ? "🔍 Universal Search..." : "🔍 Universal Search (Property Code, Title, Customer, Mobile...)"}
               value={searchQuery}
               onChange={(e) => {
                 const val = e.target.value;
@@ -6411,31 +6411,34 @@ export default function App() {
             )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '10px', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end', flexWrap: 'nowrap' }}>
 
             {/* 🔔 FOLLOW-UP CALL ALERTS NOTIFICATION BELL */}
-            <div style={{ position: 'relative' }}>
+            <div style={{ position: 'relative', flex: isMobile ? 1 : 'none', display: 'flex' }}>
               <button
                 type="button"
                 onClick={() => setShowNotificationDrawer(!showNotificationDrawer)}
                 style={{
+                  width: isMobile ? '100%' : 'auto',
+                  justifyContent: 'center',
                   background: systemNotifications.filter(n => !n.is_read).length > 0 ? 'rgba(239, 68, 68, 0.2)' : (isLight ? '#f1f5f9' : '#1e293b'),
                   color: systemNotifications.filter(n => !n.is_read).length > 0 ? '#ef4444' : (isLight ? '#0284c7' : '#38bdf8'),
                   border: systemNotifications.filter(n => !n.is_read).length > 0 ? '1px solid #ef4444' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
-                  padding: '8px 12px',
+                  padding: isMobile ? '8px 10px' : '8px 12px',
                   borderRadius: '6px',
                   fontWeight: '800',
-                  fontSize: '0.8rem',
+                  fontSize: isMobile ? '0.78rem' : '0.8rem',
                   cursor: 'pointer',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '6px',
-                  position: 'relative'
+                  gap: '4px',
+                  position: 'relative',
+                  whiteSpace: 'nowrap'
                 }}
                 title="View Scheduled Follow-Up Call Alerts"
               >
-                <PhoneCall size={15} color={uniqueNotifications.filter(n => !n.is_read).length > 0 ? '#ef4444' : '#38bdf8'} />
-                <span>Call Alerts</span>
+                <PhoneCall size={14} color={uniqueNotifications.filter(n => !n.is_read).length > 0 ? '#ef4444' : '#38bdf8'} />
+                <span>{isMobile ? 'Alerts' : 'Call Alerts'}</span>
                 {uniqueNotifications.filter(n => !n.is_read).length > 0 && (
                   <span style={{ background: '#ef4444', color: '#ffffff', fontSize: '0.68rem', fontWeight: '900', padding: '1px 6px', borderRadius: '10px', marginLeft: '2px' }}>
                     {uniqueNotifications.filter(n => !n.is_read).length}
@@ -6445,7 +6448,7 @@ export default function App() {
 
               {/* DROPDOWN MENU */}
               {showNotificationDrawer && (
-                <div style={{ position: 'absolute', right: 0, top: '42px', width: '380px', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', zIndex: 1000, padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ position: 'absolute', left: isMobile ? 0 : 'auto', right: 0, top: '42px', width: isMobile ? '300px' : '380px', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', borderRadius: '12px', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', zIndex: 1000, padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <PhoneCall size={16} color="#38bdf8" />
@@ -6507,7 +6510,7 @@ export default function App() {
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '8px', gap: '8px' }}>
                     <button
                       type="button"
                       onClick={() => setSystemNotifications([])}
@@ -6515,6 +6518,24 @@ export default function App() {
                     >
                       Clear All Alerts
                     </button>
+                    {isMobile && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsLoggedIn(false);
+                          setCurrentPath('/login');
+                          if (typeof window !== 'undefined') {
+                            sessionStorage.removeItem('swaramayi_is_logged_in');
+                            sessionStorage.removeItem('swaramayi_current_role');
+                            localStorage.removeItem('swaramayi_is_logged_in');
+                            window.history.pushState({}, '', '/login');
+                          }
+                        }}
+                        style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid #ef4444', padding: '4px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <LogOut size={12} /> Logout
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={() => setShowNotificationDrawer(false)}
@@ -6527,60 +6548,104 @@ export default function App() {
               )}
             </div>
 
-            <button onClick={() => exportToCSV(properties, 'CRM_Export')} style={{ background: isLight ? '#f1f5f9' : '#1e293b', color: isLight ? '#0284c7' : '#fbbf24', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <FileDown size={14} /> Export CSV Report
+            <button onClick={() => exportToCSV(properties, 'CRM_Export')} style={{ flex: isMobile ? 1 : 'none', justifyContent: 'center', background: isLight ? '#f1f5f9' : '#1e293b', color: isLight ? '#0284c7' : '#fbbf24', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: isMobile ? '8px 10px' : '8px 14px', borderRadius: '6px', fontWeight: '700', fontSize: isMobile ? '0.78rem' : '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}>
+              <FileDown size={14} /> {isMobile ? 'Export' : 'Export CSV Report'}
             </button>
             <button 
               onClick={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')} 
               title={themeMode === 'dark' ? 'Switch background display to Light Mode' : 'Switch background display to Dark Mode'} 
               style={{ 
+                flex: isMobile ? 1 : 'none',
+                justifyContent: 'center',
                 background: themeMode === 'dark' ? 'linear-gradient(135deg, #1e293b 0%, #334155 100%)' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', 
                 color: '#ffffff', 
                 border: themeMode === 'dark' ? '1px solid #fbbf24' : '1px solid #0284c7', 
-                padding: '8px 16px', 
+                padding: isMobile ? '8px 10px' : '8px 16px', 
                 borderRadius: '6px', 
                 fontWeight: '900', 
-                fontSize: '0.8rem', 
+                fontSize: isMobile ? '0.78rem' : '0.8rem', 
                 cursor: 'pointer', 
                 display: 'flex', 
                 alignItems: 'center', 
-                gap: '6px', 
+                gap: '4px', 
                 boxShadow: themeMode === 'dark' ? '0 2px 8px rgba(251, 191, 36, 0.25)' : '0 2px 8px rgba(2, 132, 199, 0.35)', 
-                transition: 'all 0.2s ease-in-out' 
+                transition: 'all 0.2s ease-in-out',
+                whiteSpace: 'nowrap'
               }}
             >
-              {themeMode === 'dark' ? <><Sun size={15} color="#fbbf24" /> ☀️ Light Mode</> : <><Moon size={15} color="#ffffff" /> 🌙 Dark Mode</>}
+              {themeMode === 'dark' ? <><Sun size={14} color="#fbbf24" /> {isMobile ? 'Light' : '☀️ Light Mode'}</> : <><Moon size={14} color="#ffffff" /> {isMobile ? 'Dark' : '🌙 Dark Mode'}</>}
             </button>
-            <button 
-              onClick={() => {
-                setIsLoggedIn(false);
-                setCurrentPath('/login');
-                if (typeof window !== 'undefined') {
-                              sessionStorage.removeItem('swaramayi_is_logged_in');
-                  sessionStorage.removeItem('swaramayi_current_role');
-                  localStorage.removeItem('swaramayi_is_logged_in');
-                  window.history.pushState({}, '', '/login');
-                }
-              }} 
-              title="Logout / Switch Account" 
-              style={{ 
-                background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
-                color: '#ffffff', 
-                border: 'none', 
-                padding: '8px 16px', 
-                borderRadius: '6px', 
-                fontWeight: '900', 
-                fontSize: '0.8rem', 
-                cursor: 'pointer', 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '6px',
-                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.35)'
-              }}
-            >
-              <LogOut size={15} /> 🔒 Logout
-            </button>
+            {!isMobile && (
+              <button 
+                onClick={() => {
+                  setIsLoggedIn(false);
+                  setCurrentPath('/login');
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.removeItem('swaramayi_is_logged_in');
+                    sessionStorage.removeItem('swaramayi_current_role');
+                    localStorage.removeItem('swaramayi_is_logged_in');
+                    window.history.pushState({}, '', '/login');
+                  }
+                }} 
+                title="Logout / Switch Account" 
+                style={{ 
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
+                  color: '#ffffff', 
+                  border: 'none', 
+                  padding: '8px 16px', 
+                  borderRadius: '6px', 
+                  fontWeight: '900', 
+                  fontSize: '0.8rem', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '4px',
+                  boxShadow: '0 2px 8px rgba(239, 68, 68, 0.35)',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0
+                }}
+              >
+                <LogOut size={14} /> 🔒 Logout
+              </button>
+            )}
           </div>
+
+          {isMobile && (
+            <div style={{ width: '100%', display: 'flex', justifyContent: 'flex-start', marginTop: '2px' }}>
+              <button 
+                onClick={() => {
+                  setIsLoggedIn(false);
+                  setCurrentPath('/login');
+                  if (typeof window !== 'undefined') {
+                    sessionStorage.removeItem('swaramayi_is_logged_in');
+                    sessionStorage.removeItem('swaramayi_current_role');
+                    localStorage.removeItem('swaramayi_is_logged_in');
+                    window.history.pushState({}, '', '/login');
+                  }
+                }} 
+                title="Logout / Switch Account" 
+                style={{ 
+                  width: '48%',
+                  maxWidth: '180px',
+                  background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
+                  color: '#ffffff', 
+                  border: 'none', 
+                  padding: '6px 12px', 
+                  borderRadius: '8px', 
+                  fontWeight: '900', 
+                  fontSize: '0.78rem', 
+                  cursor: 'pointer', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 8px rgba(239, 68, 68, 0.35)'
+                }}
+              >
+                <LogOut size={14} /> 🔒 Logout
+              </button>
+            </div>
+          )}
         </header>
 
         {/* MAIN BODY DISPLAY */}
@@ -7204,14 +7269,14 @@ export default function App() {
 
                       {/* 4. PROPERTY INVENTORY AGING & AUTOMATED MATCH ALERTS */}
                       <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? '6px' : '0' }}>
+                          <h3 style={{ fontSize: isMobile ? '0.95rem' : '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <Clock size={18} color="#fbbf24" /> PROPERTY STOCK AGING & DEAD INVENTORY
                           </h3>
                           <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800' }}>Total Stock: {totalStockCount} Units</span>
                         </div>
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(3, 1fr)' : 'repeat(5, 1fr)', gap: '8px' }}>
                           {[
                             { range: '0–30 Days', count: freshStock, label: 'Fresh Stock', color: '#4ade80' },
                             { range: '31–60 Days', count: activeStock, label: 'Active', color: '#38bdf8' },
@@ -7219,10 +7284,10 @@ export default function App() {
                             { range: '91–180 Days', count: slowStock, label: 'Slow', color: '#f97316' },
                             { range: '180+ Days', count: deadStock, label: 'Stale / Dead', color: '#ef4444' }
                           ].map((a, idx) => (
-                            <div key={idx} onClick={() => openDrillDown(`STOCK AGING: ${a.range}`, properties)} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${a.color}`, padding: '10px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
-                              <span style={{ fontSize: '0.65rem', color: a.color, fontWeight: '800' }}>{a.range}</span>
-                              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: a.color }}>{a.count}</h4>
-                              <span style={{ fontSize: '0.6rem', color: isLight ? '#64748b' : '#94a3b8' }}>{a.label}</span>
+                            <div key={idx} onClick={() => openDrillDown(`STOCK AGING: ${a.range}`, properties)} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: `1px solid ${a.color}`, padding: isMobile ? '8px 6px' : '10px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                              <span style={{ fontSize: isMobile ? '0.72rem' : '0.65rem', color: a.color, fontWeight: '800', display: 'block', whiteSpace: 'nowrap' }}>{a.range}</span>
+                              <h4 style={{ fontSize: isMobile ? '1.3rem' : '1.2rem', fontWeight: '900', color: a.color, margin: isMobile ? '2px 0' : '0' }}>{a.count}</h4>
+                              <span style={{ fontSize: isMobile ? '0.68rem' : '0.6rem', color: isLight ? '#64748b' : '#94a3b8', display: 'block' }}>{a.label}</span>
                             </div>
                           ))}
                         </div>
