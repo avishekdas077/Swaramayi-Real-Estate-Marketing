@@ -2099,6 +2099,16 @@ export default function App() {
     }
   }, [projectVisitAgreements]);
 
+  useEffect(() => {
+    const handleBeforePrint = () => {
+      document.querySelectorAll('.printable-gst-invoice, .printable-pva-card').forEach((el) => {
+        el.scrollTop = 0;
+      });
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+    return () => window.removeEventListener('beforeprint', handleBeforePrint);
+  }, []);
+
   // PVA MODAL STATES
   const [showPvaVerificationModal, setShowPvaVerificationModal] = useState<{ open: boolean; plan: any; stop: any } | null>(null);
   const [showPvaDocumentModal, setShowPvaDocumentModal] = useState<{ open: boolean; pva: any } | null>(null);
@@ -8008,7 +8018,7 @@ export default function App() {
       {/* PRINTABLE GST TAX INVOICE MODAL */}
       {showInvoiceModal && selectedInvoice && (
         <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ background: '#ffffff', color: '#0f172a', width: '750px', borderRadius: '12px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className="printable-gst-invoice" style={{ background: '#ffffff', color: '#0f172a', width: '750px', borderRadius: '12px', padding: '32px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #0284c7', paddingBottom: '16px' }}>
               <div>
                 <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#0284c7' }}>SWARAMAYI REAL ESTATE MARKETING</h2>
@@ -8054,9 +8064,13 @@ export default function App() {
             </table>
 </div>
 
-            <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px' }}>
+            <div className="no-print" style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '16px' }}>
               <button onClick={() => setShowInvoiceModal(false)} style={{ background: '#64748b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}>Close</button>
-              <button onClick={() => window.print()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800' }}>Print PDF</button>
+              <button onClick={() => {
+                const el = document.querySelector('.printable-gst-invoice');
+                if (el) el.scrollTop = 0;
+                window.print();
+              }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800' }}>Print PDF</button>
             </div>
           </div>
         </div>
@@ -14892,7 +14906,8 @@ export default function App() {
                 margin: 0 !important;
                 padding: 0 !important;
                 width: 100% !important;
-                height: 100% !important;
+                height: 100vh !important;
+                max-height: 100vh !important;
                 overflow: hidden !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
@@ -14906,25 +14921,33 @@ export default function App() {
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
+                box-sizing: border-box !important;
               }
               .printable-gst-invoice {
                 position: fixed !important;
                 left: 0 !important;
                 top: 0 !important;
                 right: 0 !important;
+                bottom: 0 !important;
                 width: 100% !important;
                 max-width: 100% !important;
-                height: auto !important;
+                height: 100% !important;
+                max-height: 100vh !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
                 background: #ffffff !important;
                 color: #0f172a !important;
+                page-break-before: avoid !important;
                 page-break-after: avoid !important;
                 page-break-inside: avoid !important;
+                break-before: avoid !important;
+                break-after: avoid !important;
+                break-inside: avoid !important;
                 overflow: hidden !important;
                 border-radius: 0 !important;
+                transform: none !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
@@ -14945,7 +14968,7 @@ export default function App() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ffffff', fontSize: '0.82rem', fontWeight: '900' }}>
                 <span style={{ fontSize: '1.1rem' }}>🎨</span> SELECT INVOICE TEMPLATE THEME:
               </div>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={() => setInvoiceTemplateTheme('SAND')}
@@ -14960,6 +14983,15 @@ export default function App() {
                   style={{ background: invoiceTemplateTheme === 'NAVY' ? '#0284c7' : '#1e293b', color: '#ffffff', border: invoiceTemplateTheme === 'NAVY' ? '2px solid #38bdf8' : '1px solid #334155', padding: '5px 12px', borderRadius: '8px', fontSize: '0.76rem', fontWeight: '800', cursor: 'pointer' }}
                 >
                   💎 Soft Ice Blue & Slate {invoiceTemplateTheme === 'NAVY' ? '(Active)' : ''}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowPrintInvoiceModal(null)}
+                  title="Close Invoice Modal"
+                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: '900', cursor: 'pointer', marginLeft: '4px', boxShadow: '0 2px 8px rgba(239, 68, 68, 0.4)' }}
+                >
+                  ✕
                 </button>
               </div>
             </div>
@@ -15010,7 +15042,7 @@ export default function App() {
             </div>
 
             {/* MODAL MAIN CONTENT CONTAINER */}
-            <div style={{ padding: '18px 24px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               
               {/* CORPORATE CONTACT & ADDRESS SUB-HEADER BANNER */}
               <div style={{ background: activeT.subHeaderBg, border: `1px solid ${activeT.subHeaderBorder}`, borderRadius: '10px', padding: '10px 14px', fontSize: '0.73rem', color: activeT.subHeaderTitle, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
@@ -15229,7 +15261,11 @@ export default function App() {
               {/* ACTION BUTTONS */}
               <div className="no-print" style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: `1px solid ${activeT.cardBorder}`, paddingTop: '14px' }}>
                 <button 
-                  onClick={() => window.print()} 
+                  onClick={() => {
+                    const modalEl = document.querySelector('.printable-gst-invoice');
+                    if (modalEl) modalEl.scrollTop = 0;
+                    window.print();
+                  }} 
                   style={{ background: activeT.btnBg, color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '10px', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(0, 0, 0, 0.25)' }}
                 >
                   🖨️ Print GST Invoice PDF
