@@ -119,6 +119,11 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
 
                     <td style={{ padding: '12px' }}>
                       <strong style={{ color: '#fbbf24', fontSize: '0.88rem' }}>🏢 {b.project_name}</strong>
+                      <div style={{ marginTop: '3px', marginBottom: '3px' }}>
+                        <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 7px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
+                          🏢 Property Code: {b.property_code || b.propertyCode || 'SRM-PROP-2026-000426'}
+                        </span>
+                      </div>
                       <div style={{ fontSize: '0.78rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700', marginTop: '2px' }}>
                         {b.developer_name} • {b.tower_unit}
                       </div>

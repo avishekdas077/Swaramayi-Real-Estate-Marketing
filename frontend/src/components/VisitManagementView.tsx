@@ -44,6 +44,11 @@ interface VisitManagementViewProps {
   setUpdateReqForm: (val: any) => void;
   setShowUpdateRequirementModal: (val: any) => void;
   setShowLiveRouteTrackingModal: (val: any) => void;
+  bookings?: any[];
+  setBookings?: React.Dispatch<React.SetStateAction<any[]>>;
+  setScheduledVisits?: React.Dispatch<React.SetStateAction<any[]>>;
+  setVisitPlans?: React.Dispatch<React.SetStateAction<any[]>>;
+  setActiveBookingSubTab?: (tab: any) => void;
 }
 
 export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
@@ -89,6 +94,11 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
   setUpdateReqForm,
   setShowUpdateRequirementModal,
   setShowLiveRouteTrackingModal,
+  bookings = [],
+  setBookings,
+  setScheduledVisits,
+  setVisitPlans,
+  setActiveBookingSubTab,
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -563,11 +573,11 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                       </td>
                       <td style={{ padding: '10px' }}>
                         <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.82rem' }}>{v.propertyTitle}</strong>
-                        {v.propertyCode && (
-                          <>
-                            <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>{v.propertyCode}</span>
-                          </>
-                        )}
+                        <div style={{ marginTop: '3px', marginBottom: '3px' }}>
+                          <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 7px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
+                            🏢 Property Code: {v.propertyCode || v.propCode || 'SRM-PROP-2026-000426'}
+                          </span>
+                        </div>
                         <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>
                           <MapPin size={11} color="#38bdf8" />
                           <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: '800' }}>
@@ -651,50 +661,80 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                           <button onClick={() => { setActiveVisitSubTab('visit_feedback'); alert(`⭐ Opening feedback form for Visit ${v.visitId}`); }} style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}>⭐ Feedback</button>
                           <button 
                             onClick={() => {
-                              const matchedLead = leadsList.find(l => 
-                                l.customer_number === v.customerNumber || 
-                                l.mobile === v.mobile || 
-                                l.customer_name.toLowerCase() === (v.customerName || '').toLowerCase()
-                              );
-                              setActiveTab('lead_management');
-                              if (matchedLead) {
-                                setShowLead360Drawer({ open: true, lead: matchedLead, tab: 'OVERVIEW' });
-                                alert(`📋 Transferred Customer ${v.customerName} (${v.customerNumber || v.mobile}) to Lead Management workspace! Opened 360° Lead Drawer.`);
-                              } else {
-                                alert(`📋 Transferred Customer ${v.customerName} (${v.customerNumber || v.mobile}) to Lead Management workspace.`);
-                              }
+                              setUpdateReqForm({
+                                budget_min: '₹50 Lakhs',
+                                budget_max: '₹1.5 Crores',
+                                preferredArea: v.propertyTitle || 'Kondapur / Gachibowli',
+                                configuration: '3BHK',
+                                dislike_reason: 'Over Budget',
+                                remarks: ''
+                              });
+                              setShowUpdateRequirementModal({ 
+                                open: true, 
+                                customer: { 
+                                  custName: v.customerName || 'Customer', 
+                                  custCode: v.customerNumber || v.mobile || 'SRM-CUS-2026', 
+                                  mobile: v.mobile || v.customerNumber, 
+                                  prefArea: v.propertyTitle || 'Kondapur / Gachibowli',
+                                  budget_min: '₹50 Lakhs',
+                                  budget_max: '₹1.5 Crores',
+                                  reason: 'Updated from Single Site Visit Scheduler',
+                                  visitId: v.visitId || 'SRM-VS-2026-000088',
+                                  costSheetId: v.costSheetId || 'COST-SHEET-2026-000002',
+                                  propertyCode: v.propertyCode || v.propCode || 'SRM-PROP-2026-000426'
+                                } 
+                              });
                             }}
-                            style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px' }}
-                            title="Transfer Customer record and switch to Lead Management workspace"
+                            style={{ background: '#eab308', color: '#0f172a', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px' }}
+                            title="Update buyer preferences & requirements on-the-spot"
                           >
-                            📋 Transfer to Lead Mgmt
+                            ✏️ Update Requirement
                           </button>
                           <button 
                             onClick={() => {
-                              const matchReq = matchingRequestsQueue.find(r => 
-                                r.customerNumber === v.customerNumber || 
-                                r.customerName.toLowerCase() === (v.customerName || '').toLowerCase()
-                              );
-                              if (matchReq) {
-                                setSelectedMatchingId(matchReq.requestId);
-                              }
-                              const cust = customers.find(c => 
-                                c.customer_number === v.customerNumber || 
-                                c.name.toLowerCase() === (v.customerName || '').toLowerCase()
-                              );
-                              if (cust) {
-                                setSelectedCust(cust);
-                              }
-                              setActiveTab('matching_management');
-                              setActiveMatchingSubTab('ai_matching_engine');
-                              alert(`🎯 Customer ${v.customerName} requested more project options post-visit!
+                              const generatedBookingCode = (v.visitId && v.visitId.includes('SRM-VS-')) 
+                                ? v.visitId.replace('SRM-VS-', 'SRM-BKG-') 
+                                : `SRM-BKG-2026-0000${(bookings?.length || 0) + 88}`;
+                              
+                              const newBookingObj = {
+                                id: `bkg-${Date.now()}`,
+                                booking_code: generatedBookingCode,
+                                booking_date: new Date().toISOString().split('T')[0],
+                                customer_name: v.customerName || 'Bishwajit Pandey',
+                                customer_mobile: v.mobile || '9432328947',
+                                customer_number: v.customerNumber || 'SRM-CUS-2026-000188',
+                                project_name: v.propertyTitle || 'TILOTTAMA APPARTMENT',
+                                developer_name: 'Swaramayi Partner Developer',
+                                tower_unit: 'Block A - Unit 302',
+                                agreement_value: '₹51,14,880',
+                                token_amount: 100000,
+                                payment_mode: 'UPI / Online Bank Transfer',
+                                payment_ref: `TXN-SRM-${Math.floor(100000 + Math.random() * 900000)}`,
+                                brokerage_rate: '2.0%',
+                                brokerage_amount: 102297,
+                                approval_status: 'APPROVED_LOCKED',
+                                sales_executive: v.assignedExecutive || 'Ramesh Pawar (Field Exec - Kondapur)'
+                              };
 
-Switched to Matching Management workspace. Maintained identical process pipeline.`);
-                            }} 
-                            style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}
-                            title="If customer wants more project options after visit, switch to Matching Management to present additional properties."
+                              if (setBookings) {
+                                setBookings((prev: any[]) => [newBookingObj, ...(prev || [])]);
+                              }
+                              if (setScheduledVisits) {
+                                setScheduledVisits((prev: any[]) => (prev || []).filter((sv: any) => sv.visitId !== v.visitId && sv.costSheetId !== v.costSheetId));
+                              }
+                              if (setVisitPlans) {
+                                setVisitPlans((prev: any[]) => (prev || []).filter((plan: any) => plan.visitScheduleId !== v.visitId && plan.visitPlanId !== v.visitId));
+                              }
+                              setActiveTab('booking_management');
+                              if (setActiveBookingSubTab) {
+                                setActiveBookingSubTab('all_bookings');
+                              }
+                              alert(`🏢 BOOKING CREATED SUCCESSFULLY!\n\nGenerated Booking Code: ${generatedBookingCode}\nCustomer: ${v.customerName || 'Bishwajit Pandey'}\nProperty: ${v.propertyTitle || 'TILOTTAMA APPARTMENT'}\n\nRecord removed from Visit Management and transferred to Booking Management.`);
+                            }}
+                            style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px' }}
+                            title="Convert visit into Booking Code, remove from Visit Management and transfer to Booking Management"
                           >
-                            🎯 More Projects (Matching) →
+                            🏢 Booking
                           </button>
                         </div>
                       </td>
@@ -777,7 +817,12 @@ Switched to Matching Management workspace. Maintained identical process pipeline
                           </td>
                           <td style={{ padding: '12px' }}>
                             <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{v.propertyTitle}</strong>
-                            <br /><span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>📍 GPS: 17.4612° N, 78.3689° E</span>
+                            <div style={{ marginTop: '2px', marginBottom: '2px' }}>
+                              <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
+                                🏢 Property Code: {v.propertyCode || v.propCode || 'SRM-PROP-2026-000426'}
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>📍 GPS: 17.4612° N, 78.3689° E</span>
                           </td>
                           <td style={{ padding: '12px' }}>
                             {isVerified ? (
@@ -989,22 +1034,6 @@ Switched to Matching Management workspace. Maintained identical process pipeline
                           🔄 Recommend Best Alternative Property
                         </button>
                       )}
-                      <button 
-                        onClick={() => {
-                          setUpdateReqForm({
-                            budget_min: fb.budget_min,
-                            budget_max: fb.budget_max,
-                            preferredArea: fb.prefArea,
-                            configuration: '3BHK',
-                            dislike_reason: fb.reason,
-                            remarks: ''
-                          });
-                          setShowUpdateRequirementModal({ open: true, customer: fb });
-                        }}
-                        style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      >
-                        ✏️ Update Requirement
-                      </button>
                     </div>
                   </td>
                 </tr>

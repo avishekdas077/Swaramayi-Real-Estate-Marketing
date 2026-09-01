@@ -56,7 +56,7 @@ function ScheduleVisitModalContent({
         { id: 'EXE-03', name: 'Sanjay Dutt (Senior Consultant)', value: 'Sanjay Dutt (Senior Consultant)', label: 'Sanjay Dutt (Senior Consultant)' }
       ];
   const [selectedCsIds, setSelectedCsIds] = useState<string[]>(
-    eligibleCostSheets.map((c: any) => c.costSheetId)
+    initialCS ? [initialCS.costSheetId] : (eligibleCostSheets[0] ? [eligibleCostSheets[0].costSheetId] : [])
   );
 
   const [pickupAddress, setPickupAddress] = useState<string>('Kondapur, Hyderabad (Near Metro Gate 2)');
@@ -68,7 +68,8 @@ function ScheduleVisitModalContent({
   const [transportMode, setTransportMode] = useState<string>('🚗 Chauffeur Cab Pick & Drop Needed');
 
   const [orderedStops, setOrderedStops] = useState<any[]>(() => {
-    return eligibleCostSheets.map((cs: any, idx: number) => {
+    const initList = initialCS ? [initialCS] : eligibleCostSheets.slice(0, 1);
+    return initList.map((cs: any, idx: number) => {
       const pCode = cs.propertyCode || cs.propertySnapshot?.propertyCode;
       const matchedProp = properties.find((p: any) => p.property_code === pCode || p.id === pCode || (cs.propertySnapshot?.propertyTitle && p.title.toLowerCase().includes(cs.propertySnapshot.propertyTitle.toLowerCase())));
       return {
@@ -233,10 +234,8 @@ function ScheduleVisitModalContent({
 
     setScheduledVisits((prev: any[]) => [singleVisitSummary, ...prev]);
 
-    setIndividualCostSheets((prev: any[]) => prev.map(sheet => 
-      selectedCsIds.includes(sheet.costSheetId)
-        ? { ...sheet, status: 'CONVERTED_TO_VISIT' }
-        : sheet
+    setIndividualCostSheets((prev: any[]) => prev.filter(sheet => 
+      !selectedCsIds.includes(sheet.costSheetId)
     ));
 
     setCreatedSuccess(newPlan);
@@ -2030,16 +2029,40 @@ export default function App() {
   const [propertySearchQuery, setPropertySearchQuery] = useState<string>('');
   const [activeSelectionRecord, setActiveSelectionRecord] = useState<{ selectionId: string; matchingId: string; customerId: string; propertyIds: string[]; date: string; status: string } | null>(null);
   const [scheduledVisits, setScheduledVisits] = useState<any[]>(() => {
+    const defaultVisits = [
+      {
+        visitId: 'SRM-VS-2026-000089',
+        costSheetId: 'COST-SHEET-2026-000002',
+        customerName: 'Avishek Das',
+        mobile: '7778987679',
+        customerNumber: 'SRM-CUS-2026-000188',
+        propertyTitle: '1 Properties (BARASAT, BANAMALIPUR, BARASAT NEAR ECO HOSPITAL)',
+        propertyCode: 'SRM-PROP-2026-000426',
+        visitDate: '2026-08-22',
+        visitTime: '10:00 AM',
+        assignedExecutive: 'Ramesh Pawar (Field Exec - Kondapur)',
+        status: 'OTP_VERIFIED',
+        transport: 'Chauffeur Cab Pick & Drop Needed',
+        lat: '22.722261',
+        lng: '88.493003'
+      }
+    ];
     try {
       const saved = localStorage.getItem('swaramayi_scheduled_visits_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasAvishek = parsed.some((v: any) => v.customerName === 'Avishek Das' || v.mobile === '7778987679' || v.customerNumber === 'SRM-CUS-2026-000188');
+          if (!hasAvishek) {
+            return [defaultVisits[0], ...parsed];
+          }
+          return parsed;
+        }
       }
     } catch (e) {
       console.error('Error reading scheduled visits from localStorage:', e);
     }
-    return [];
+    return defaultVisits;
   });
 
   useEffect(() => {
@@ -2056,16 +2079,42 @@ export default function App() {
   const [selectedVisitPlanId, setSelectedVisitPlanId] = useState<string>('');
 
   const [visitPlans, setVisitPlans] = useState<any[]>(() => {
+    const defaultPlans = [
+      {
+        planId: 'SRM-VP-2026-000089',
+        visitId: 'SRM-VS-2026-000089',
+        customerName: 'Avishek Das',
+        mobile: '7778987679',
+        customerNumber: 'SRM-CUS-2026-000188',
+        stops: [
+          {
+            stopId: 'SRM-VSTOP-2026-000089',
+            propertyTitle: '1 Properties (BARASAT, BANAMALIPUR, BARASAT NEAR ECO HOSPITAL)',
+            propertyCode: 'SRM-PROP-2026-000426',
+            locality: 'Barasat / Banamalipur',
+            developer: 'Swaramayi Partner Developer',
+            latitude: '22.722261',
+            longitude: '88.493003'
+          }
+        ]
+      }
+    ];
     try {
       const saved = localStorage.getItem('swaramayi_visit_plans_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasAvishek = parsed.some((p: any) => p.customerName === 'Avishek Das' || p.mobile === '7778987679' || p.customerNumber === 'SRM-CUS-2026-000188');
+          if (!hasAvishek) {
+            return [defaultPlans[0], ...parsed];
+          }
+          return parsed;
+        }
       }
     } catch (e) {
       console.error('Error reading visit plans from localStorage:', e);
     }
-    return [];
+    return defaultPlans;
   });
 
   useEffect(() => {
@@ -2157,13 +2206,20 @@ export default function App() {
   const [visitFilterDate, setVisitFilterDate] = useState<string>('ALL');
   const [visitFilterExec, setVisitFilterExec] = useState<string>('ALL');
 
-  // Requirement Update Form State
+  // Requirement Update Form State (Steps 3 to 7 from Lead Qualification Wizard)
   const [updateReqForm, setUpdateReqForm] = useState({
-    budget_min: '₹70 Lakhs',
-    budget_max: '₹95 Lakhs',
-    preferredArea: 'Kondapur / Gachibowli',
+    purpose: '🟢 BUY / OUTRIGHT PURCHASE',
+    propertyCategory: 'Flat / Apartment (New Builder)',
     configuration: '3BHK',
     facing: 'East Facing',
+    possessionCondition: 'Ready to Move',
+    preferredArea: 'Kondapur / Gachibowli',
+    searchRadius: 'Within 5 KM',
+    budget_min: '₹70 Lakhs',
+    budget_max: '₹95 Lakhs',
+    minAreaSqft: '1200 SqFt',
+    maxAreaSqft: '2200 SqFt',
+    purchaseTimeline: 'Immediate (Within 30 Days)',
     floor_pref: '10th Floor or Higher',
     dislike_reason: 'Over Budget by ₹15L & East Facing Preferred',
     remarks: ''
@@ -3751,16 +3807,48 @@ export default function App() {
   const [siteVisits, setSiteVisits] = useState([]);
 
   const [bookings, setBookings] = useState<any[]>(() => {
+    const defaultBookingsSeed = [
+      {
+        id: 'BKG-SEED-1',
+        booking_code: 'SRM-BKG-2026-000088',
+        booking_date: '2026-09-01',
+        customer_name: 'Bishwajit Pandey',
+        customer_mobile: '9330401757',
+        customer_number: 'SRM-CUS-2026-000188',
+        project_name: '1 Properties (BARASAT, BANAMALIPUR, BARASAT NEAR ECO HOSPITAL)',
+        property_code: 'SRM-PROP-2026-000426',
+        developer_name: 'Swaramayi Partner Developer',
+        tower_unit: 'Block A - Unit 302',
+        agreement_value: '₹51,14,880',
+        token_amount: 100000,
+        payment_mode: 'UPI / Online Bank Transfer',
+        payment_ref: 'TXN-SRM-361495',
+        brokerage_rate: '2.0%',
+        brokerage_amount: 102297,
+        approval_status: 'APPROVED_LOCKED'
+      }
+    ];
     try {
       const saved = localStorage.getItem('swaramayi_bookings_v3_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          const filtered = parsed.filter((b: any) => 
+            b.customer_name !== 'Avishek Das' && 
+            b.customer_mobile !== '7778987679' && 
+            b.booking_code !== 'SRM-BKG-2026-000089'
+          );
+          const hasBishwajit = filtered.some((b: any) => b.customer_name === 'Bishwajit Pandey' || b.booking_code === 'SRM-BKG-2026-000088');
+          if (!hasBishwajit) {
+            return [defaultBookingsSeed[0], ...filtered];
+          }
+          return filtered;
+        }
       }
     } catch (e) {
       console.error('Error reading bookings from localStorage:', e);
     }
-    return [];
+    return defaultBookingsSeed;
   });
 
   useEffect(() => {
@@ -8016,6 +8104,11 @@ export default function App() {
               setUpdateReqForm={setUpdateReqForm}
               setShowUpdateRequirementModal={setShowUpdateRequirementModal}
               setShowLiveRouteTrackingModal={setShowLiveRouteTrackingModal}
+              bookings={bookings}
+              setBookings={setBookings}
+              setScheduledVisits={setScheduledVisits}
+              setVisitPlans={setVisitPlans}
+              setActiveBookingSubTab={setActiveBookingSubTab}
             />
           )}
 
@@ -10395,7 +10488,11 @@ export default function App() {
 
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Condition *</label>
-                    <select value={newCustomerForm.condition} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, condition: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '900', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    <select 
+                      value={newCustomerForm.possession_status || newCustomerForm.condition || 'Ready to Move'} 
+                      onChange={(e) => setNewCustomerForm({ ...newCustomerForm, condition: e.target.value, possession_status: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '900', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    >
                       <option value="Ready to Move">Ready to Move</option>
                       <option value="Under Construction">Under Construction</option>
                       <option value="Pre-Launch">New Pre-Launch</option>
@@ -10993,7 +11090,7 @@ export default function App() {
               if (newCustomerForm.configuration) scorePoints++;
               if (newCustomerForm.preferredArea) scorePoints++;
               if (newCustomerForm.budget_max) scorePoints++;
-              if (newCustomerForm.possession_status) scorePoints++;
+              if (newCustomerForm.possession_status || newCustomerForm.condition) scorePoints++;
               if (newCustomerForm.facing) scorePoints++;
               if (newCustomerForm.parking) scorePoints++;
               if (newCustomerForm.assigned_employee_id) scorePoints++;
@@ -11012,7 +11109,7 @@ export default function App() {
                 { key: 'bhk', stepName: 'Step 4', stepNum: 4, label: 'BHK Config', isFilled: !!newCustomerForm.configuration, displayVal: newCustomerForm.configuration },
                 { key: 'locality', stepName: 'Step 5', stepNum: 5, label: 'Preferred Locality', isFilled: !!newCustomerForm.preferredArea, displayVal: newCustomerForm.preferredArea },
                 { key: 'budget', stepName: 'Step 6', stepNum: 6, label: 'Budget Limit', isFilled: !!(newCustomerForm.budget_max || newCustomerForm.budget_min), displayVal: `${newCustomerForm.budget_min || ''} - ${newCustomerForm.budget_max || ''}`.trim() },
-                { key: 'possession', stepName: 'Step 4', stepNum: 4, label: 'Possession Status', isFilled: !!newCustomerForm.possession_status, displayVal: newCustomerForm.possession_status },
+                { key: 'possession', stepName: 'Step 4', stepNum: 4, label: 'Possession Status', isFilled: !!(newCustomerForm.possession_status || newCustomerForm.condition), displayVal: newCustomerForm.possession_status || newCustomerForm.condition },
                 { key: 'facing', stepName: 'Step 5', stepNum: 5, label: 'Vastu Facing', isFilled: !!(newCustomerForm.facing && newCustomerForm.facing !== 'N/A'), displayVal: newCustomerForm.facing },
                 { key: 'parking', stepName: 'Step 7', stepNum: 7, label: 'Parking Facility', isFilled: !!newCustomerForm.parking, displayVal: newCustomerForm.parking },
                 { key: 'assigned', stepName: 'Step 9', stepNum: 9, label: 'Assigned Executive', isFilled: !!newCustomerForm.assigned_employee_id, displayVal: newCustomerForm.assigned_employee_id }
@@ -11256,9 +11353,12 @@ export default function App() {
                         updated_at: new Date().toISOString()
                       };
 
-                      const nextLeads = existingLead 
-                        ? leadsList.map(l => (l.id === existingLead.id || l.lead_number === leadNum || l.customer_number === finalCustomerCode) ? newLeadRecord : l)
-                        : [newLeadRecord, ...leadsList];
+                      const nextLeads = (leadsList || []).filter(l => 
+                        l.lead_number !== leadNum && 
+                        l.customer_number !== finalCustomerCode && 
+                        l.mobile !== mobileStr &&
+                        !(existingLead && l.id === existingLead.id)
+                      );
                       
                       setLeadsList(nextLeads);
                       try {
@@ -15444,91 +15544,355 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: UPDATE CUSTOMER REQUIREMENT ON-THE-SPOT */}
+      {/* MODAL: UPDATE CUSTOMER REQUIREMENT ON-THE-SPOT (STEPS 3 TO 7 OF LEAD QUALIFICATION WIZARD) */}
       {showUpdateRequirementModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '20px' }}>
-          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', width: '600px', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', width: '700px', maxHeight: '90vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+            
+            {/* MODAL HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
               <div>
-                <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900' }}>✏️ SALESPERSON ON-THE-SPOT REQUIREMENT UPDATE</span>
+                <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', letterSpacing: '0.5px' }}>
+                  🚀 FULL LEAD INTAKE REQUIREMENT UPDATE (STEPS 3 TO 7)
+                </span>
                 <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
                   Update Requirement for {showUpdateRequirementModal.customer.custName}
                 </h3>
                 <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-                  {showUpdateRequirementModal.customer.custCode} • Current Budget: {showUpdateRequirementModal.customer.budget_min} - {showUpdateRequirementModal.customer.budget_max}
+                  {showUpdateRequirementModal.customer.custCode} • Current Budget: {showUpdateRequirementModal.customer.budget_min || '₹50 Lakhs'} - {showUpdateRequirementModal.customer.budget_max || '₹1.5 Crores'}
                 </p>
               </div>
               <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowUpdateRequirementModal(null)} />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+              {/* STEP 3: PURPOSE & PROPERTY CATEGORY TYPE */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: '900' }}>📌 STEP 3: Property Purchase Purpose & Category Type</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Transaction Purpose *</label>
+                    <select 
+                      value={updateReqForm.purpose} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, purpose: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    >
+                      <option value="🟢 BUY / OUTRIGHT PURCHASE">🟢 BUY / OUTRIGHT PURCHASE</option>
+                      <option value="🔑 RESIDENTIAL RENT / LEASE">🔑 RESIDENTIAL RENT / LEASE</option>
+                      <option value="🏢 COMMERCIAL LEASE / RENT">🏢 COMMERCIAL LEASE / RENT</option>
+                      <option value="📈 INVESTMENT (Capital Appreciation)">📈 INVESTMENT (Capital Appreciation)</option>
+                      <option value="💰 RENTAL YIELD INVESTOR">💰 RENTAL YIELD INVESTOR</option>
+                    </select>
+                  </div>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>
+                      Property Category Type (Multi-Select Allowed - Click Checkboxes to Select Multiple) *
+                    </label>
+                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '10px', maxHeight: '160px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {[
+                        "🏢 Flat / Apartment (New / Builder)",
+                        "🔄 Flat / Apartment (Resale)",
+                        "🔑 Flat / Apartment (For Rent)",
+                        "🏰 Gated Villa (New / Builder)",
+                        "🔄 Gated Villa (Resale)",
+                        "🔑 Gated Villa (For Rent)",
+                        "🏡 Independent House (Resale)",
+                        "🔑 Independent House (For Rent)",
+                        "🏢 Commercial Space (New / Builder)",
+                        "🔄 Commercial Space (Resale)",
+                        "🔑 Commercial Space (For Lease / Rent)",
+                        "🛌 PG / Co-Living Space (For Rent)",
+                        "📐 Open Plot / Land (New / Builder)",
+                        "📐 Open Plot / Land (Resale)"
+                      ].map(cat => {
+                        const selectedList = (updateReqForm.propertyCategory || '').split(',').map(s => s.trim()).filter(Boolean);
+                        const cleanCatName = (str: string) => str.replace(/^[^\s]+\s*/, '').trim();
+                        const isChecked = selectedList.some(s => s === cat || cleanCatName(s) === cleanCatName(cat));
+                        return (
+                          <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.82rem', color: isChecked ? '#38bdf8' : isLight ? '#0f172a' : '#cbd5e1', fontWeight: isChecked ? '800' : '500', cursor: 'pointer', background: isChecked ? 'rgba(56, 189, 248, 0.14)' : 'transparent', padding: '4px 8px', borderRadius: '4px' }}>
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                let updated: string[];
+                                if (e.target.checked) {
+                                  updated = [...selectedList.filter(item => item !== cat && cleanCatName(item) !== cleanCatName(cat)), cat];
+                                } else {
+                                  updated = selectedList.filter(item => item !== cat && cleanCatName(item) !== cleanCatName(cat));
+                                }
+                                setUpdateReqForm({ ...updateReqForm, propertyCategory: updated.join(', ') });
+                              }}
+                              style={{ accentColor: '#38bdf8', width: '15px', height: '15px' }}
+                            />
+                            <span>{cat}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {updateReqForm.propertyCategory && (
+                      <div style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800', marginTop: '4px' }}>
+                        ✓ Selected Categories: {updateReqForm.propertyCategory}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* STEP 4: BHK CONFIGURATION, FACING & CONDITION */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.78rem', color: '#fbbf24', fontWeight: '900' }}>📐 STEP 4: BHK Configuration, Facing & Property Condition</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>BHK Configuration *</label>
+                    <select 
+                      value={updateReqForm.configuration} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, configuration: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    >
+                      <option value="1BHK">1BHK</option>
+                      <option value="2BHK">2BHK</option>
+                      <option value="3BHK">3BHK</option>
+                      <option value="4BHK">4BHK</option>
+                      <option value="5BHK Villa">5BHK Villa</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Facing Preference</label>
+                    <select 
+                      value={updateReqForm.facing} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, facing: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    >
+                      <option value="East Facing">East Facing (Poorva)</option>
+                      <option value="North-East Facing">North-East Facing (NE)</option>
+                      <option value="North Facing">North Facing (Uttara)</option>
+                      <option value="West Facing">West Facing (Paschima)</option>
+                      <option value="South Facing">South Facing (Dakshina)</option>
+                      <option value="Any Facing Acceptable">Any Facing Acceptable</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Possession Condition</label>
+                    <select 
+                      value={updateReqForm.possessionCondition} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, possessionCondition: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    >
+                      <option value="Ready to Move">Ready to Move</option>
+                      <option value="Under Construction (Within 1 Year)">Under Construction (&lt;1 Year)</option>
+                      <option value="Under Construction (2+ Years)">Under Construction (2+ Years)</option>
+                      <option value="Resale Property">Resale Property</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* STEP 5: LOCATION & RADIUS */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.78rem', color: '#a855f7', fontWeight: '900' }}>📍 STEP 5: Preferred Location Hub & Search Radius</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Revised Preferred Area / Localities *</label>
+                    <input 
+                      type="text"
+                      value={updateReqForm.preferredArea} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, preferredArea: e.target.value })} 
+                      placeholder="e.g. Kondapur, Gachibowli, Madhapur, HTEC City"
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Search Radius</label>
+                    <select 
+                      value={updateReqForm.searchRadius} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, searchRadius: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    >
+                      <option value="Within 3 KM">Within 3 KM</option>
+                      <option value="Within 5 KM">Within 5 KM</option>
+                      <option value="Within 10 KM">Within 10 KM</option>
+                      <option value="Entire City / Metro Zone">Entire City / Metro Zone</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* STEP 6: BUDGET RANGE & AREA SQFT */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: '900' }}>💰 STEP 6: Budget Range & Built-Up SqFt Area</span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Revised Budget Min *</label>
+                    <input 
+                      type="text"
+                      value={updateReqForm.budget_min} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, budget_min: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Revised Budget Max *</label>
+                    <input 
+                      type="text"
+                      value={updateReqForm.budget_max} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, budget_max: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Min Area (SqFt)</label>
+                    <input 
+                      type="text"
+                      value={updateReqForm.minAreaSqft} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, minAreaSqft: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Max Area (SqFt)</label>
+                    <input 
+                      type="text"
+                      value={updateReqForm.maxAreaSqft} 
+                      onChange={(e) => setUpdateReqForm({ ...updateReqForm, maxAreaSqft: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* STEP 7: TIMELINE & POSSESSION */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: '900' }}>⏳ STEP 7: Purchase Timeline & Possession Expectation</span>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Decision & Purchase Timeline *</label>
+                  <select 
+                    value={updateReqForm.purchaseTimeline} 
+                    onChange={(e) => setUpdateReqForm({ ...updateReqForm, purchaseTimeline: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  >
+                    <option value="Immediate (Within 15 Days)">Immediate (Within 15 Days)</option>
+                    <option value="Immediate (Within 30 Days)">Immediate (Within 30 Days)</option>
+                    <option value="Within 3 Months">Within 3 Months</option>
+                    <option value="Within 6 Months">Within 6 Months</option>
+                    <option value="Exploring / Long Term (6+ Months)">Exploring / Long Term (6+ Months)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* OBJECTION REASON & FEEDBACK NOTES */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Revised Budget Min *</label>
-                  <input 
-                    type="text"
-                    value={updateReqForm.budget_min} 
-                    onChange={(e) => setUpdateReqForm({ ...updateReqForm, budget_min: e.target.value })} 
-                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
-                  />
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Primary Objection / Dislike Reason</label>
+                  <select 
+                    value={updateReqForm.dislike_reason} 
+                    onChange={(e) => setUpdateReqForm({ ...updateReqForm, dislike_reason: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#ef4444', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  >
+                    <option value="Over Budget">Over Budget</option>
+                    <option value="Floor Plan / Layout Issue">Floor Plan / Layout Issue</option>
+                    <option value="High Floor / Facing Preference">High Floor / Facing Preference</option>
+                    <option value="Locality Traffic / Distance">Locality Traffic / Distance</option>
+                    <option value="Builder Preference">Builder Preference</option>
+                  </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Revised Budget Max *</label>
-                  <input 
-                    type="text"
-                    value={updateReqForm.budget_max} 
-                    onChange={(e) => setUpdateReqForm({ ...updateReqForm, budget_max: e.target.value })} 
-                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Sales Executive Notes / Visit Feedback</label>
+                  <textarea 
+                    rows={2}
+                    value={updateReqForm.remarks} 
+                    onChange={(e) => setUpdateReqForm({ ...updateReqForm, remarks: e.target.value })} 
+                    placeholder="Enter customer specific feedback during site visit..."
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem' }}
                   />
                 </div>
               </div>
 
-              <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Revised Preferred Area / Locality *</label>
-                <input 
-                  type="text"
-                  value={updateReqForm.preferredArea} 
-                  onChange={(e) => setUpdateReqForm({ ...updateReqForm, preferredArea: e.target.value })} 
-                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Primary Dislike / Objection Reason</label>
-                <select 
-                  value={updateReqForm.dislike_reason} 
-                  onChange={(e) => setUpdateReqForm({ ...updateReqForm, dislike_reason: e.target.value })} 
-                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
-                >
-                  <option value="Over Budget">Over Budget</option>
-                  <option value="Floor Plan / Layout Issue">Floor Plan / Layout Issue</option>
-                  <option value="High Floor / Facing Preference">High Floor / Facing Preference</option>
-                  <option value="Locality Traffic / Distance">Locality Traffic / Distance</option>
-                  <option value="Builder Preference">Builder Preference</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Sales Executive Notes / Customer Feedback</label>
-                <textarea 
-                  rows={2}
-                  value={updateReqForm.remarks} 
-                  onChange={(e) => setUpdateReqForm({ ...updateReqForm, remarks: e.target.value })} 
-                  placeholder="Enter customer specific feedback during site visit..."
-                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                <button onClick={() => setShowUpdateRequirementModal(null)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+              {/* ACTION BUTTONS */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+                <button onClick={() => setShowUpdateRequirementModal(null)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
                 <button 
                   onClick={() => {
-                    alert(`✅ Updated requirements for ${showUpdateRequirementModal.customer.custName}!\n\nNew Budget: ${updateReqForm.budget_min} - ${updateReqForm.budget_max}\nLocality: ${updateReqForm.preferredArea}\n\nUpdated in Customer Master Vault and re-ranked AI Property Matcher.`);
+                    const custInfo = showUpdateRequirementModal.customer || {};
+                    const custName = custInfo.custName || custInfo.customerName || 'Supriya Chattopadhyay';
+                    const custCode = custInfo.custCode || custInfo.customerNumber || 'SRM-CUS-2026-000189';
+                    const custMobile = custInfo.mobile || custInfo.custMobile || '9830597778';
+                    const visitId = custInfo.visitId || 'SRM-VS-2026-000088';
+                    const costSheetId = custInfo.costSheetId || 'COST-SHEET-2026-000002';
+                    const newBudgetStr = `${updateReqForm.budget_min} - ${updateReqForm.budget_max}`;
+
+                    // Generate dedicated Re-Rank Code derived from Visit ID
+                    const rerankCode = visitId.includes('SRM-VS-') ? visitId.replace('SRM-VS-', 'SRM-RRK-') : `SRM-RRK-2026-000${(matchingRequestsQueue?.length || 0) + 88}`;
+                    const targetReqCode = `SRM-REQ-2026-000${(matchingRequestsQueue?.length || 0) + 95}`;
+
+                    // 1. Push dedicated Re-Rank Matching Request into matchingRequestsQueue (without locking to a single propertyCode)
+                    setMatchingRequestsQueue(prev => {
+                      const newMatchingReq = {
+                        requestId: rerankCode,
+                        requirementId: targetReqCode,
+                        requestDate: new Date().toISOString().split('T')[0],
+                        customerName: custName,
+                        customerNumber: custCode,
+                        mobile: custMobile,
+                        customerType: 'RE-RANKED FROM SITE VISIT',
+                        propertyCode: '',
+                        propCode: '',
+                        preferredArea: updateReqForm.preferredArea || 'Barasat / Banamalipur',
+                        configuration: updateReqForm.configuration || '3BHK',
+                        budget: newBudgetStr,
+                        budget_min: updateReqForm.budget_min,
+                        budget_max: updateReqForm.budget_max,
+                        propertyCategory: updateReqForm.propertyCategory || 'Flat / Apartment (New / Builder)',
+                        facing: updateReqForm.facing || 'East Facing (Poorva)',
+                        status: 'RE_RANKED_FROM_VISIT',
+                        matchScore: 92,
+                        assignedExecutive: 'Ramesh Pawar (Field Exec)',
+                        sourceVisitId: visitId,
+                        sourceCostSheetId: costSheetId
+                      };
+                      const filtered = (prev || []).filter(r => r.requestId !== rerankCode && r.customerNumber !== custCode);
+                      return [newMatchingReq, ...filtered];
+                    });
+
+                    // 2. REMOVE visit record from Visit Management so it no longer shows in Visited Projects
+                    setScheduledVisits(prev => (prev || []).filter(v => v.visitId !== visitId && v.costSheetId !== costSheetId));
+                    setVisitPlans(prev => (prev || []).filter(v => v.visitId !== visitId && v.costSheetId !== costSheetId));
+
+                    // 3. Update customer master state
+                    setCustomers(prev => (prev || []).map(c => {
+                      if (c.customer_number === custCode || c.name === custName || c.mobile === custMobile) {
+                        return {
+                          ...c,
+                          budget: newBudgetStr,
+                          budget_min: updateReqForm.budget_min,
+                          budget_max: updateReqForm.budget_max,
+                          preferredArea: updateReqForm.preferredArea,
+                          configuration: updateReqForm.configuration,
+                          facing: updateReqForm.facing,
+                          propertyCategory: updateReqForm.propertyCategory,
+                          notes: `Re-ranked requirement post site visit ${visitId}. Notes: ${updateReqForm.remarks}`
+                        };
+                      }
+                      return c;
+                    }));
+
+                    // 4. Select matching request & switch active workspace to Matching Management -> INBOUND MATCHING REQUESTS SNAPSHOT VAULT
+                    setSelectedMatchingId(rerankCode);
                     setShowUpdateRequirementModal(null);
+                    setActiveTab('matching_management');
+                    setActiveMatchingSubTab('ai_matching_engine');
+
+                    alert(`⚡ RE-RANK CODE GENERATED: ${rerankCode}!\n\n` +
+                      `Customer: ${custName} (${custCode})\n` +
+                      `Original Visit ID: ${visitId} (${costSheetId})\n` +
+                      `New Budget: ${newBudgetStr}\n` +
+                      `Locality: ${updateReqForm.preferredArea}\n\n` +
+                      `✅ Transferred to Matching Management -> INBOUND MATCHING REQUESTS SNAPSHOT VAULT.\n` +
+                      `❌ Removed from Visit Management Visited Projects Register.`);
                   }} 
-                  style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}
+                  style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer', boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)' }}
                 >
-                  💾 Save & Re-Rank Matches
+                  💾 Save & Re-Rank AI Matches
                 </button>
               </div>
             </div>

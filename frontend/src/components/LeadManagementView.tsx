@@ -412,17 +412,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                                 🎯 360°
                               </button>
 
-                              <button
-                                onClick={() => {
-                                  const matchedCust = customers.find(c => c.customer_number === lead.customer_number || c.mobile === lead.mobile);
-                                  if (matchedCust) setSelectedCust(matchedCust);
-                                  setActiveTab('matching_management');
-                                }}
-                                style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem' }}
-                                title="Hand-off to AI Matching Management"
-                              >
-                                ⚡ Match
-                              </button>
+
 
                               <button
                                 onClick={() => setShowTransferLeadModal({ open: true, lead })}

@@ -115,7 +115,18 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
               value={newShareForm.parentId} 
               onChange={(e) => {
                 const id = e.target.value;
-                if (id.includes('CS-2026-000145')) {
+                const found = (individualCostSheets || []).find((c: any) => c.costSheetId === id);
+                if (found) {
+                  setNewShareForm({
+                    ...newShareForm,
+                    parentId: id,
+                    customerName: found.customerSnapshot?.customerName || 'Customer',
+                    customerNumber: found.customerId,
+                    mobile: found.customerSnapshot?.mobile || '',
+                    propertyTitle: found.propertySnapshot?.propertyTitle || found.propertyCode,
+                    finalPrice: found.formattedPriceBreakup?.totalEstimatedCostStr || ''
+                  });
+                } else if (id.includes('CS-2026-000145')) {
                   setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Rohan Deshmukh', customerNumber: 'SRM-CUS-2026-000184', mobile: '+91 98490 11223', propertyTitle: 'Aparna Zenon Premium 3BHK Residence', finalPrice: '₹84 Lakhs' });
                 } else if (id.includes('CS-2026-000146')) {
                   setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Avishek Das', customerNumber: 'SRM-CUS-2026-000187', mobile: '9432328947', propertyTitle: 'Madhyamgram Premium 3BHK Flat', finalPrice: '55 Lakhs' });
@@ -125,6 +136,11 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
               }}
               style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
             >
+              {(individualCostSheets || []).map((cs: any) => (
+                <option key={cs.costSheetId} value={cs.costSheetId}>
+                  {cs.costSheetId} — {cs.customerSnapshot?.customerName} ({cs.propertySnapshot?.propertyTitle || cs.propertyCode}, {cs.formattedPriceBreakup?.totalEstimatedCostStr})
+                </option>
+              ))}
               <option value="SRM-CS-2026-000145">SRM-CS-2026-000145 — Rohan Deshmukh (Aparna Zenon 3BHK, ₹84 Lakhs)</option>
               <option value="SRM-CS-2026-000146">SRM-CS-2026-000146 — Avishek Das (Madhyamgram 3BHK, 55 Lakhs)</option>
               <option value="SRM-CS-2026-000147">SRM-CS-2026-000147 — Sumanth Varma (My Home Tarkshya 3BHK, ₹1.54 Crores)</option>
@@ -271,6 +287,7 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                   <tbody>
                     {individualCostSheets
                       .filter((item: any) => {
+                        if (item.status === 'CONVERTED_TO_VISIT') return false;
                         if (individualCostSheetsStatusFilter !== 'ALL' && item.status !== individualCostSheetsStatusFilter) return false;
                         return matchesSearchQuery(item, searchQuery || individualCostSheetsSearch);
                       })
