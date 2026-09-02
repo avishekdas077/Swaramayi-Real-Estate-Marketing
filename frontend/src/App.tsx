@@ -2029,40 +2029,18 @@ export default function App() {
   const [propertySearchQuery, setPropertySearchQuery] = useState<string>('');
   const [activeSelectionRecord, setActiveSelectionRecord] = useState<{ selectionId: string; matchingId: string; customerId: string; propertyIds: string[]; date: string; status: string } | null>(null);
   const [scheduledVisits, setScheduledVisits] = useState<any[]>(() => {
-    const defaultVisits = [
-      {
-        visitId: 'SRM-VS-2026-000089',
-        costSheetId: 'COST-SHEET-2026-000002',
-        customerName: 'Avishek Das',
-        mobile: '7778987679',
-        customerNumber: 'SRM-CUS-2026-000188',
-        propertyTitle: '1 Properties (BARASAT, BANAMALIPUR, BARASAT NEAR ECO HOSPITAL)',
-        propertyCode: 'SRM-PROP-2026-000426',
-        visitDate: '2026-08-22',
-        visitTime: '10:00 AM',
-        assignedExecutive: 'Ramesh Pawar (Field Exec - Kondapur)',
-        status: 'OTP_VERIFIED',
-        transport: 'Chauffeur Cab Pick & Drop Needed',
-        lat: '22.722261',
-        lng: '88.493003'
-      }
-    ];
     try {
       const saved = localStorage.getItem('swaramayi_scheduled_visits_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const hasAvishek = parsed.some((v: any) => v.customerName === 'Avishek Das' || v.mobile === '7778987679' || v.customerNumber === 'SRM-CUS-2026-000188');
-          if (!hasAvishek) {
-            return [defaultVisits[0], ...parsed];
-          }
-          return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((v: any) => v.customerName !== 'Avishek Das' && v.visitId !== 'SRM-VS-2026-000089');
         }
       }
     } catch (e) {
       console.error('Error reading scheduled visits from localStorage:', e);
     }
-    return defaultVisits;
+    return [];
   });
 
   useEffect(() => {
@@ -2079,42 +2057,18 @@ export default function App() {
   const [selectedVisitPlanId, setSelectedVisitPlanId] = useState<string>('');
 
   const [visitPlans, setVisitPlans] = useState<any[]>(() => {
-    const defaultPlans = [
-      {
-        planId: 'SRM-VP-2026-000089',
-        visitId: 'SRM-VS-2026-000089',
-        customerName: 'Avishek Das',
-        mobile: '7778987679',
-        customerNumber: 'SRM-CUS-2026-000188',
-        stops: [
-          {
-            stopId: 'SRM-VSTOP-2026-000089',
-            propertyTitle: '1 Properties (BARASAT, BANAMALIPUR, BARASAT NEAR ECO HOSPITAL)',
-            propertyCode: 'SRM-PROP-2026-000426',
-            locality: 'Barasat / Banamalipur',
-            developer: 'Swaramayi Partner Developer',
-            latitude: '22.722261',
-            longitude: '88.493003'
-          }
-        ]
-      }
-    ];
     try {
       const saved = localStorage.getItem('swaramayi_visit_plans_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const hasAvishek = parsed.some((p: any) => p.customerName === 'Avishek Das' || p.mobile === '7778987679' || p.customerNumber === 'SRM-CUS-2026-000188');
-          if (!hasAvishek) {
-            return [defaultPlans[0], ...parsed];
-          }
-          return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((p: any) => p.customerName !== 'Avishek Das' && p.planId !== 'SRM-VP-2026-000089' && p.visitId !== 'SRM-VS-2026-000089');
         }
       }
     } catch (e) {
       console.error('Error reading visit plans from localStorage:', e);
     }
-    return defaultPlans;
+    return [];
   });
 
   useEffect(() => {
@@ -3783,6 +3737,8 @@ export default function App() {
       setProjectVisitAgreements([]);
       setBookings([]);
       setInvoices([]);
+      setScheduledVisits([]);
+      setVisitPlans([]);
       setSelectedPropertyIds([]);
       setSelectedCust(null);
       setActiveSelectionRecord(null);
@@ -3794,6 +3750,8 @@ export default function App() {
       localStorage.removeItem('swaramayi_agreements_vault_v5_clean');
       localStorage.removeItem('swaramayi_bookings_v3_clean');
       localStorage.removeItem('swaramayi_invoices_v6');
+      localStorage.removeItem('swaramayi_scheduled_visits_v4_clean');
+      localStorage.removeItem('swaramayi_visit_plans_v4_clean');
       alert('🗑️ All current records inside have been deleted! Workspace is now 100% clean.');
     }
   };
@@ -6774,6 +6732,7 @@ export default function App() {
                   ...scheduledVisits
                 ].filter(v => {
                   if (salespersonFilter !== 'ALL' && v.assignedExecutive !== salespersonFilter && v.salesPersonName !== salespersonFilter) return false;
+                  if (v.customerName === 'Avishek Das' || v.visitId === 'SRM-VS-2026-000089' || v.stopId === 'SRM-VSTOP-2026-000089') return false;
                   return true;
                 });
                 const totalSiteVisits = allVisits.length;
@@ -7161,22 +7120,59 @@ export default function App() {
 
               {/* 3. CUSTOMER REQUIREMENT & SMART PROPERTY MATCHING ENGINE */}
               {(() => {
-                // Compute matching requirements dynamically across live customer state
+                // Dynamic property matching calculator
+                const evaluateMatchScore = (c: any) => {
+                  if (!properties || properties.length === 0) return 0;
+                  let maxScore = 0;
+                  const cPrice = parsePriceToNumeric(c.budget);
+                  const cReq = `${c.configuration || ''} ${c.bhk || ''} ${c.preferredArea || ''} ${c.locality || ''}`.toLowerCase();
+
+                  properties.forEach((p: any) => {
+                    let score = 40;
+                    const pPrice = parsePriceToNumeric(p.final_price || p.base_price);
+                    if (cPrice > 0 && pPrice > 0) {
+                      const diff = Math.abs(cPrice - pPrice) / cPrice;
+                      if (diff <= 0.15) score += 30;
+                      else if (diff <= 0.3) score += 15;
+                    }
+                    const pReq = `${p.property_title || ''} ${p.title || ''} ${p.bhk || ''} ${p.location || ''} ${p.locality || ''}`.toLowerCase();
+                    if (cReq && pReq) {
+                      if ((cReq.includes('3bhk') && pReq.includes('3bhk')) || (cReq.includes('2bhk') && pReq.includes('2bhk')) || (cReq.includes('4bhk') && pReq.includes('4bhk'))) {
+                        score += 20;
+                      }
+                      if (c.preferredArea && pReq.includes(c.preferredArea.toLowerCase())) {
+                        score += 10;
+                      }
+                    }
+                    if (score > maxScore) maxScore = score;
+                  });
+                  return maxScore;
+                };
+
                 const activeReqsCount = customers.length;
-                const match90 = customers.filter((c, idx) => (c.lead_score ? c.lead_score >= 90 : idx % 4 === 0 || c.priority === 'HOT')).length;
-                const match75_89 = customers.filter((c, idx) => (c.lead_score ? (c.lead_score >= 75 && c.lead_score < 90) : idx % 4 === 1)).length;
-                const match60_74 = customers.filter((c, idx) => (c.lead_score ? (c.lead_score >= 60 && c.lead_score < 75) : idx % 4 === 2)).length;
-                const matchNoMatch = customers.filter((c, idx) => (c.lead_score ? c.lead_score < 60 : idx % 4 === 3)).length;
+                const match90 = customers.filter(c => evaluateMatchScore(c) >= 90).length;
+                const match75_89 = customers.filter(c => { const s = evaluateMatchScore(c); return s >= 75 && s < 90; }).length;
+                const match60_74 = customers.filter(c => { const s = evaluateMatchScore(c); return s >= 60 && s < 75; }).length;
+                const matchNoMatch = customers.filter(c => evaluateMatchScore(c) < 60).length;
 
                 const waitingCustomers = customers.filter(c => c.status !== 'CLOSED' && c.status !== 'DEAL_CLOSED');
 
-                // Compute property stock aging dynamically from properties state
+                // Dynamic property stock aging calculation
                 const totalStockCount = properties.length;
-                const freshStock = properties.filter((p, idx) => (p.days_on_market ? p.days_on_market <= 30 : idx % 5 === 0 || p.status === 'AVAILABLE')).length;
-                const activeStock = properties.filter((p, idx) => (p.days_on_market ? (p.days_on_market > 30 && p.days_on_market <= 60) : idx % 5 === 1)).length;
-                const agingStock = properties.filter((p, idx) => (p.days_on_market ? (p.days_on_market > 60 && p.days_on_market <= 90) : idx % 5 === 2)).length;
-                const slowStock = properties.filter((p, idx) => (p.days_on_market ? (p.days_on_market > 90 && p.days_on_market <= 180) : idx % 5 === 3)).length;
-                const deadStock = properties.filter((p, idx) => (p.days_on_market ? p.days_on_market > 180 : idx % 5 === 4)).length;
+                const getStockAgeDays = (p: any) => {
+                  if (typeof p.days_on_market === 'number') return p.days_on_market;
+                  const dateStr = p.created_at || p.added_date || p.createdAt;
+                  if (!dateStr) return 0;
+                  const d = new Date(dateStr);
+                  if (isNaN(d.getTime())) return 0;
+                  return Math.floor(Math.abs(Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+                };
+
+                const freshStock = properties.filter(p => getStockAgeDays(p) <= 30).length;
+                const activeStock = properties.filter(p => { const d = getStockAgeDays(p); return d > 30 && d <= 60; }).length;
+                const agingStock = properties.filter(p => { const d = getStockAgeDays(p); return d > 60 && d <= 90; }).length;
+                const slowStock = properties.filter(p => { const d = getStockAgeDays(p); return d > 90 && d <= 180; }).length;
+                const deadStock = properties.filter(p => getStockAgeDays(p) > 180).length;
 
                 // Compute follow-ups dynamically from live customer records
                 const todayStr = new Date().toISOString().split('T')[0];
@@ -7211,19 +7207,19 @@ export default function App() {
                         </div>
 
                         <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
-                          <div onClick={() => openDrillDown('EXCELLENT 90%+ MATCHES', customers.filter((_, idx) => idx % 4 === 0))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                          <div onClick={() => openDrillDown('EXCELLENT 90%+ MATCHES', customers.filter(c => evaluateMatchScore(c) >= 90))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
                             <span style={{ fontSize: '0.68rem', color: '#4ade80', fontWeight: '800' }}>90%+ MATCH</span>
                             <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#4ade80' }}>{match90}</h4>
                           </div>
-                          <div onClick={() => openDrillDown('GOOD 75-89% MATCHES', customers.filter((_, idx) => idx % 4 === 1))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #38bdf8', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                          <div onClick={() => openDrillDown('GOOD 75-89% MATCHES', customers.filter(c => { const s = evaluateMatchScore(c); return s >= 75 && s < 90; }))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #38bdf8', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
                             <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: '800' }}>75–89% MATCH</span>
                             <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#38bdf8' }}>{match75_89}</h4>
                           </div>
-                          <div onClick={() => openDrillDown('ALTERNATIVE 60-74% MATCHES', customers.filter((_, idx) => idx % 4 === 2))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #fbbf24', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                          <div onClick={() => openDrillDown('ALTERNATIVE 60-74% MATCHES', customers.filter(c => { const s = evaluateMatchScore(c); return s >= 60 && s < 75; }))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #fbbf24', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
                             <span style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: '800' }}>60–74% MATCH</span>
                             <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#fbbf24' }}>{match60_74}</h4>
                           </div>
-                          <div onClick={() => openDrillDown('NO MATCH REQUIREMENTS', customers.filter((_, idx) => idx % 4 === 3))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #ef4444', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
+                          <div onClick={() => openDrillDown('NO MATCH REQUIREMENTS', customers.filter(c => evaluateMatchScore(c) < 60))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #ef4444', padding: '12px', borderRadius: '8px', textAlign: 'center', cursor: 'pointer' }}>
                             <span style={{ fontSize: '0.68rem', color: '#f87171', fontWeight: '800' }}>NO MATCH</span>
                             <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#ef4444' }}>{matchNoMatch}</h4>
                           </div>
@@ -7234,17 +7230,23 @@ export default function App() {
                             🚨 CUSTOMERS WAITING FOR PROPERTY RECOMMENDATION ({waitingCustomers.length})
                           </span>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            {waitingCustomers.slice(0, 3).map((c, i) => (
-                              <div key={c.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isLight ? '#ffffff' : '#1e293b', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem' }}>
-                                <div>
-                                  <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{c.name}</strong> <span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>({c.requirements || `${c.configuration || '3 BHK'} • ${c.locality || 'Kondapur'}`})</span>
-                                  <br /><span style={{ color: '#4ade80', fontWeight: '700' }}>{properties.length} Matched Properties Available</span>
-                                </div>
-                                <button onClick={() => alert(`Sending property matches to ${c.name} (${c.phone})...`)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.72rem' }}>
-                                  Send Properties
-                                </button>
+                            {waitingCustomers.length === 0 ? (
+                              <div style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontStyle: 'italic' }}>
+                                No pending customer requirements waiting for recommendations.
                               </div>
-                            ))}
+                            ) : (
+                              waitingCustomers.slice(0, 3).map((c, i) => (
+                                <div key={c.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isLight ? '#ffffff' : '#1e293b', padding: '8px 12px', borderRadius: '6px', fontSize: '0.78rem' }}>
+                                  <div>
+                                    <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{c.name}</strong> <span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>({c.requirements || `${c.configuration || '3 BHK'} • ${c.locality || 'Location'}`})</span>
+                                    <br /><span style={{ color: '#4ade80', fontWeight: '700' }}>{properties.length} Matched Properties Available</span>
+                                  </div>
+                                  <button onClick={() => alert(`Sending property matches to ${c.name} (${c.mobile || c.phone || 'Customer'})...`)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.72rem' }}>
+                                    Send Properties
+                                  </button>
+                                </div>
+                              ))
+                            )}
                           </div>
                         </div>
                       </div>
@@ -7276,25 +7278,33 @@ export default function App() {
 
                         {/* PRICE DROP & NEW PROPERTY AUTOMATED ALERTS */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                          <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.4)', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '800' }}>🚨 PRICE DROP ALERT → NEW CUSTOMER MATCHES</span>
-                              <p style={{ fontSize: '0.78rem', color: isLight ? '#0f172a' : '#ffffff' }}>Aparna Zenon 3BHK (₹86L &rarr; ₹84L) • Created budget matches!</p>
+                          {properties.length === 0 ? (
+                            <div style={{ background: 'rgba(56, 189, 248, 0.08)', border: '1px solid rgba(56, 189, 248, 0.25)', padding: '12px 14px', borderRadius: '8px', fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                              ℹ️ No active property stock in database. Ingest properties to trigger real-time price drop & automated customer match alerts.
                             </div>
-                            <button onClick={() => alert('Notifying matched budget customers of price drop!')} style={{ background: '#f59e0b', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer' }}>
-                              Notify Customers
-                            </button>
-                          </div>
+                          ) : (
+                            <>
+                              <div style={{ background: 'rgba(234, 179, 8, 0.1)', border: '1px solid rgba(234, 179, 8, 0.4)', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '800' }}>🚨 PRICE DROP ALERT → NEW CUSTOMER MATCHES</span>
+                                  <p style={{ fontSize: '0.78rem', color: isLight ? '#0f172a' : '#ffffff' }}>{properties[0]?.title || properties[0]?.property_title || 'Active Inventory Unit'} • Budget matches active!</p>
+                                </div>
+                                <button onClick={() => alert('Notifying matched budget customers of price drop!')} style={{ background: '#f59e0b', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer' }}>
+                                  Notify Customers
+                                </button>
+                              </div>
 
-                          <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.4)', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div>
-                              <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '800' }}>✨ NEW PROPERTY ADDED → MATCH FOUND</span>
-                              <p style={{ fontSize: '0.78rem', color: isLight ? '#0f172a' : '#ffffff' }}>{properties[0]?.title || 'Property Master'} • Matched with active buyers</p>
-                            </div>
-                            <button onClick={() => alert('Opening matched buyer profiles...')} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer' }}>
-                              View Buyers
-                            </button>
-                          </div>
+                              <div style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.4)', padding: '10px 14px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '800' }}>✨ NEW PROPERTY ADDED → MATCH FOUND</span>
+                                  <p style={{ fontSize: '0.78rem', color: isLight ? '#0f172a' : '#ffffff' }}>{properties[0]?.title || 'Property Master'} • Matched with active buyers</p>
+                                </div>
+                                <button onClick={() => alert('Opening matched buyer profiles...')} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem', cursor: 'pointer' }}>
+                                  View Buyers
+                                </button>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
 
