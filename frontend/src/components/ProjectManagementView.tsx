@@ -259,7 +259,6 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   const [newDevAltMobileInput, setNewDevAltMobileInput] = React.useState<string>('');
   const [newDevProjectTitleInput, setNewDevProjectTitleInput] = React.useState<string>('');
   const [viewPropertyModal, setViewPropertyModal] = React.useState<any | null>(null);
-  const [selectedProjectDetailsModal, setSelectedProjectDetailsModal] = React.useState<any | null>(null);
 
   // MULTIPLE PROPERTY UNITS BUILDER & SLIDER STATE
   const [showMultipleUnitsSlider, setShowMultipleUnitsSlider] = React.useState<{ open: boolean; project?: any } | null>(null);
@@ -891,6 +890,74 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
     );
   });
 
+  const handleOpenNewProjectDeveloperForm = React.useCallback(() => {
+    setNewPropertyForm((prev: any) => ({
+      ...prev,
+      project_id: '',
+      developer: '',
+      developer_id: '',
+      title: '',
+      locality: '',
+      developer_mobile: '',
+      developer_alt_mobile: '',
+      latitude: '22.722361',
+      longitude: '88.493403',
+      selected_amenities: [],
+      building_photos: [],
+      total_covered_parking_capacity: 24,
+      covered_parking_rate: '300000',
+      total_ev_parking_capacity: 6,
+      ev_parking_rate: '450000',
+      total_open_parking_capacity: 12,
+      open_parking_rate: '150000'
+    }));
+    if (setDevProjectMobile) setDevProjectMobile('');
+    if (setDevProjectAltMobile) setDevProjectAltMobile('');
+    if (setDevProjectOtpVerified) setDevProjectOtpVerified(false);
+    if (setDevProjectOtpSent) setDevProjectOtpSent(false);
+    if (setDevProjectOtpInput) setDevProjectOtpInput('');
+    setActiveProjectSubTab('add_project_developer');
+  }, [setNewPropertyForm, setDevProjectMobile, setDevProjectAltMobile, setDevProjectOtpVerified, setDevProjectOtpSent, setDevProjectOtpInput, setActiveProjectSubTab]);
+
+  const handleOpenNewPropertyForm = React.useCallback(() => {
+    setNewPropertyForm({
+      project_id: '',
+      property_code: '',
+      developer_id: '',
+      developer: '',
+      title: '',
+      locality: '',
+      configuration: '',
+      super_builtup_area: '',
+      carpet_area: '',
+      floor_num: '',
+      total_floors: '',
+      facing: '',
+      furnishing: '',
+      final_price: '',
+      price_sqft: '',
+      car_parking: '',
+      parking_price: '',
+      latitude: '22.722361',
+      longitude: '88.493403',
+      selected_amenities: [],
+      building_photos: [],
+      building_photo: '',
+      unit_photos: [],
+      unit_photo: '',
+      unit_videos: [],
+      project_posting_id: '',
+      key_custody: '',
+      description: '',
+      site_person_name: '',
+      site_person_contact: '',
+      status: 'AVAILABLE'
+    });
+    if (setDevProjectMobile) setDevProjectMobile('');
+    if (setDevProjectAltMobile) setDevProjectAltMobile('');
+    setActiveProjectSubTab('add_property_master');
+  }, [setNewPropertyForm, setDevProjectMobile, setDevProjectAltMobile, setActiveProjectSubTab]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -911,17 +978,13 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
             <Upload size={15} /> 📥 Import Bulk Inventory
           </button>
           <button 
-            onClick={() => {
-              setActiveProjectSubTab('add_property_master');
-            }} 
+            onClick={handleOpenNewPropertyForm} 
             style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             🏠 + Add Property
           </button>
           <button 
-            onClick={() => {
-              setActiveProjectSubTab('add_project_developer');
-            }} 
+            onClick={handleOpenNewProjectDeveloperForm} 
             style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
             🏢 + Add Project & Developer
@@ -938,13 +1001,13 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           🏠 Property Master Stock ({properties.length})
         </button>
         <button 
-          onClick={() => setActiveProjectSubTab('add_project_developer')} 
+          onClick={handleOpenNewProjectDeveloperForm} 
           style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_project_developer' ? '#a855f7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_project_developer' ? '#ffffff' : '#a855f7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
           🏢 Add Project & Developer
         </button>
         <button 
-          onClick={() => setActiveProjectSubTab('add_property_master')} 
+          onClick={handleOpenNewPropertyForm} 
           style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_property_master' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_property_master' ? '#ffffff' : '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
           🏠 Add Property
@@ -1761,18 +1824,90 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
                   <button
                     type="button"
-                    onClick={() => setActiveProjectSubTab('add_project_developer')}
+                    onClick={handleOpenNewProjectDeveloperForm}
                     style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                   >
                     🏢 + Create New Master Project & Developer
                   </button>
                 </div>
 
-                {/* SEARCH & SELECT PROJECT ID DROPDOWN */}
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '2fr 1fr', gap: '14px', alignItems: 'end' }}>
+                {/* SEARCH, WRITE & PASTE PROJECT ID CONTROLS */}
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '1.2fr 1fr 0.8fr', gap: '14px', alignItems: 'end' }}>
+                  
+                  {/* 1. DIRECT WRITE / PASTE INPUT FIELD WITH PASTE BUTTON */}
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '0.78rem', color: '#0284c7', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        ✍️ Write / Type or Paste Master Project ID *
+                      </label>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            const text = await navigator.clipboard.readText();
+                            if (text && text.trim()) {
+                              const cleanText = text.trim();
+                              const allProjs = getAllMasterProjects();
+                              const found = allProjs.find(p => p.id?.toLowerCase() === cleanText.toLowerCase() || p.code?.toLowerCase() === cleanText.toLowerCase());
+                              if (found) {
+                                setNewPropertyForm((prev: any) => ({
+                                  ...prev,
+                                  project_id: found.id || found.code,
+                                  developer: found.developer || prev.developer,
+                                  title: found.title || prev.title,
+                                  locality: found.locality || prev.locality,
+                                  latitude: found.latitude || prev.latitude,
+                                  longitude: found.longitude || prev.longitude,
+                                  selected_amenities: found.amenities && found.amenities.length > 0 ? found.amenities : prev.selected_amenities,
+                                  building_photos: found.building_photos && found.building_photos.length > 0 ? found.building_photos : prev.building_photos
+                                }));
+                                alert(`✅ MATCHED & LINKED MASTER PROJECT:\n\n• Project ID: ${found.id || found.code}\n• Title: ${found.title}\n• Developer: ${found.developer}`);
+                              } else {
+                                setNewPropertyForm((prev: any) => ({ ...prev, project_id: cleanText }));
+                              }
+                            }
+                          } catch (err) {
+                            alert('Clipboard paste not allowed by browser permissions. You can paste directly into the text field!');
+                          }
+                        }}
+                        style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', border: '1px solid #0284c7', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}
+                      >
+                        📋 Paste Clipboard
+                      </button>
+                    </div>
+
+                    <input 
+                      type="text"
+                      value={newPropertyForm.project_id || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const allProjs = getAllMasterProjects();
+                        const found = allProjs.find(p => p.id?.toLowerCase() === val.trim().toLowerCase() || p.code?.toLowerCase() === val.trim().toLowerCase());
+                        if (found) {
+                          setNewPropertyForm((prev: any) => ({
+                            ...prev,
+                            project_id: found.id || found.code,
+                            developer: found.developer || prev.developer,
+                            title: found.title || prev.title,
+                            locality: found.locality || prev.locality,
+                            latitude: found.latitude || prev.latitude,
+                            longitude: found.longitude || prev.longitude,
+                            selected_amenities: found.amenities && found.amenities.length > 0 ? found.amenities : prev.selected_amenities,
+                            building_photos: found.building_photos && found.building_photos.length > 0 ? found.building_photos : prev.building_photos
+                          }));
+                        } else {
+                          setNewPropertyForm((prev: any) => ({ ...prev, project_id: val }));
+                        }
+                      }}
+                      placeholder="Type or paste Project ID e.g. SRM-PROJ-2026-000088..."
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', color: '#0284c7', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontFamily: 'monospace' }}
+                    />
+                  </div>
+
+                  {/* 2. SELECT FROM REGISTERED MASTER PROJECTS DROPDOWN */}
                   <div>
                     <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>
-                      Search & Select Master Project ID *
+                      Or Select Registered Master Project
                     </label>
                     <select 
                       value={newPropertyForm.project_id || ''} 
@@ -1796,9 +1931,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           setNewPropertyForm((prev: any) => ({ ...prev, project_id: selectedId }));
                         }
                       }}
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
                     >
-                      <option value="">-- 🔍 Select Registered Master Project ID --</option>
+                      <option value="">-- Select Master Project --</option>
                       {getAllMasterProjects()
                         .filter(p => {
                           if (!projectIdSearchFilter) return true;
@@ -1809,22 +1944,23 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         })
                         .map((proj) => (
                           <option key={proj.id} value={proj.id}>
-                            🔑 [{proj.code || proj.id}] {proj.title} — Builder: {proj.developer} ({proj.locality || 'Locality'})
+                            🔑 [{proj.code || proj.id}] {proj.title} — Builder: {proj.developer}
                           </option>
                         ))}
                     </select>
                   </div>
 
+                  {/* 3. FILTER SEARCH KEYWORD INPUT */}
                   <div>
                     <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>
-                      Filter Search by Keyword
+                      Filter Search Keyword
                     </label>
                     <div style={{ position: 'relative' }}>
                       <input 
                         type="text" 
                         value={projectIdSearchFilter}
                         onChange={(e) => setProjectIdSearchFilter(e.target.value)}
-                        placeholder="Filter Project Code / Title..."
+                        placeholder="Filter Project Code..."
                         style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px 10px 34px', borderRadius: '8px', fontSize: '0.86rem' }}
                       />
                       <Search size={16} color="#0284c7" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
@@ -1982,6 +2118,21 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                       <option value="South-West Facing">South-West Facing (SW / Nairutya)</option>
                       <option value="South Facing">South Facing (Dakshina)</option>
                       <option value="South-East Facing">South-East Facing (SE / Agneya)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: '#22c55e', fontWeight: '900', display: 'block', marginBottom: '6px' }}>Possession Status *</label>
+                    <select 
+                      value={newPropertyForm.possession_status || newPropertyForm.possession || 'Ready to Move In (Immediate)'} 
+                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, possession_status: e.target.value, possession: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
+                    >
+                      <option value="Ready to Move In (Immediate)">🔑 Ready to Move In (Immediate)</option>
+                      <option value="Under Construction (Dec 2026)">🏗️ Under Construction (Dec 2026)</option>
+                      <option value="Under Construction (June 2027)">🏗️ Under Construction (June 2027)</option>
+                      <option value="Under Construction (Dec 2027)">🏗️ Under Construction (Dec 2027)</option>
+                      <option value="Newly Launched Project">🌟 Newly Launched Project</option>
                     </select>
                   </div>
                 </div>
@@ -2652,11 +2803,12 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
                   <th style={{ padding: '12px' }}>Code</th>
                   <th style={{ padding: '12px' }}>Title & Project</th>
-                  <th style={{ padding: '12px' }}>Developer Name & Code</th>
+                  <th style={{ padding: '12px' }}>Developer Name & Project Code</th>
                   <th style={{ padding: '12px' }}>Config</th>
                   <th style={{ padding: '12px' }}>Super Built-up</th>
                   <th style={{ padding: '12px' }}>Carpet Area</th>
                   <th style={{ padding: '12px' }}>Price</th>
+                  <th style={{ padding: '12px' }}>Parking Stock & Slot</th>
                   <th style={{ padding: '12px' }}>Status</th>
                   <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
                 </tr>
@@ -2669,11 +2821,45 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     const calcSuper = carpetNum ? `${Math.round(carpetNum / 0.7)} Sq.Ft.` : '1,280 Sq.Ft.';
                     const superDisp = p.super_builtup_area || calcSuper;
 
-                    const devObj = developerMasterList.find(d => 
-                      d.name.toLowerCase().includes((p.developer || '').toLowerCase().trim()) || 
-                      (p.developer || '').toLowerCase().trim().includes(d.name.toLowerCase())
+                    const allMasters = getAllMasterProjects();
+                    const matchedMaster = allMasters.find(m => 
+                      (m.title && p.title && m.title.toLowerCase().trim() === p.title.toLowerCase().trim()) ||
+                      (m.id && p.project_id && m.id === p.project_id) ||
+                      (m.code && p.project_id && m.code === p.project_id)
                     );
-                    const devCode = p.developer_id || p.developer_code || devObj?.id || 'SRM-DEV-2026-000105';
+                    const projCode = p.project_id || matchedMaster?.code || matchedMaster?.id || 'SRM-PROJ-2026-000088';
+
+                    // PARKING COMPUTATION FOR THIS ROW
+                    const projProps = properties.filter(item => 
+                      (item.project_id && item.project_id === projCode) ||
+                      (item.title && p.title && item.title.toLowerCase().trim() === p.title.toLowerCase().trim())
+                    );
+
+                    const totalCoveredCap = matchedMaster?.total_covered_parking_capacity !== undefined ? matchedMaster.total_covered_parking_capacity : 24;
+                    const totalEvCap = matchedMaster?.total_ev_parking_capacity !== undefined ? matchedMaster.total_ev_parking_capacity : 6;
+                    const totalOpenCap = matchedMaster?.total_open_parking_capacity !== undefined ? matchedMaster.total_open_parking_capacity : 12;
+
+                    const allocCovered = projProps.filter(item => (item.car_parking || '').toLowerCase().includes('covered')).length;
+                    const allocEv = projProps.filter(item => (item.car_parking || '').toLowerCase().includes('ev')).length;
+                    const allocOpen = projProps.filter(item => (item.car_parking || '').toLowerCase().includes('open')).length;
+
+                    const availCovered = Math.max(0, totalCoveredCap - allocCovered);
+                    const availEv = Math.max(0, totalEvCap - allocEv);
+                    const availOpen = Math.max(0, totalOpenCap - allocOpen);
+
+                    const assignedParking = p.car_parking || '1 Covered Basement Parking Slot';
+                    const isCovered = (assignedParking).toLowerCase().includes('covered');
+                    const isEv = (assignedParking).toLowerCase().includes('ev');
+                    const isOpen = (assignedParking).toLowerCase().includes('open');
+
+                    const parkingRateStr = isEv 
+                      ? (matchedMaster?.ev_parking_rate || '450000') 
+                      : isOpen 
+                      ? (matchedMaster?.open_parking_rate || '150000') 
+                      : (matchedMaster?.covered_parking_rate || '300000');
+
+                    const availCountForType = isEv ? availEv : isOpen ? availOpen : availCovered;
+                    const totalCapForType = isEv ? totalEvCap : isOpen ? totalOpenCap : totalCoveredCap;
 
                     return (
                       <tr key={p.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
@@ -2681,14 +2867,25 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         <td style={{ padding: '12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{p.title}</td>
                         <td style={{ padding: '12px' }}>
                           <div style={{ fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{p.developer}</div>
-                          <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid #0284c7', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', fontFamily: 'monospace', marginTop: '3px', display: 'inline-block' }}>
-                            🔑 {devCode}
+                          <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: '1px solid #a855f7', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', fontFamily: 'monospace', marginTop: '3px', display: 'inline-block' }}>
+                            🔑 {projCode}
                           </span>
                         </td>
                         <td style={{ padding: '12px', color: '#38bdf8', fontWeight: '800' }}>{p.configuration}</td>
                         <td style={{ padding: '12px', fontWeight: '900', color: '#fbbf24' }}>{superDisp}</td>
                         <td style={{ padding: '12px', fontWeight: '700' }}>{p.carpet_area}</td>
                         <td style={{ padding: '12px', color: '#4ade80', fontWeight: '800' }}>{p.final_price}</td>
+                        <td style={{ padding: '12px' }}>
+                          <div style={{ fontWeight: '800', color: isEv ? '#eab308' : isOpen ? '#22c55e' : '#0284c7', fontSize: '0.78rem' }}>
+                            {isEv ? '⚡ EV Fast Charger' : isOpen ? '🅿️ Open Surface' : '🚘 Covered Basement'}
+                          </div>
+                          <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', marginTop: '2px' }}>
+                            Avail: <strong style={{ color: availCountForType > 0 ? '#22c55e' : '#ef4444' }}>{availCountForType}/{totalCapForType} Slots</strong>
+                          </div>
+                          <span style={{ fontSize: '0.66rem', color: '#eab308', fontWeight: '800' }}>
+                            Rate: ₹{parseInt(parkingRateStr, 10).toLocaleString('en-IN')}
+                          </span>
+                        </td>
                         <td style={{ padding: '12px' }}>
                           <span style={{ background: p.status === 'AVAILABLE' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: p.status === 'AVAILABLE' ? '#4ade80' : '#ef4444', padding: '2px 8px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>
                             {p.status}
@@ -2814,9 +3011,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   {/* REGISTERED PROJECTS LIST FOR THIS DEVELOPER */}
                   <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px' }}>
                     <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '8px' }}>
-                      📁 REGISTERED PROJECTS ({dev.projects?.length || 0}) — Click Project ID Badge to Inspect Master Details & Stock:
+                      📁 REGISTERED PROJECTS ({dev.projects?.length || 0}):
                     </span>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                       {(dev.projects || []).map((p: any, pIdx: number) => {
                         const allMasters = getAllMasterProjects();
                         const matchedMaster = allMasters.find(m => 
@@ -2832,59 +3029,34 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         ).length;
 
                         return (
-                          <button
+                          <div
                             key={p.id || p.title || pIdx}
-                            type="button"
-                            onClick={() => {
-                              const projectData = matchedMaster || {
-                                id: projCodeStr,
-                                code: projCodeStr,
-                                title: p.title,
-                                developer: dev.name,
-                                mobile: dev.mobile,
-                                locality: p.locality || 'Locality Hub',
-                                latitude: p.lat || '22.722361',
-                                longitude: p.lng || '88.493403',
-                                amenities: p.amenities || ['24/7 Power Backup', 'Water Supply', 'Security', 'Elevators'],
-                                building_photos: p.building_photos || [],
-                                total_covered_parking_capacity: p.total_covered_parking_capacity || 24,
-                                covered_parking_rate: p.covered_parking_rate || '300000',
-                                total_ev_parking_capacity: p.total_ev_parking_capacity || 6,
-                                ev_parking_rate: p.ev_parking_rate || '450000',
-                                total_open_parking_capacity: p.total_open_parking_capacity || 12,
-                                open_parking_rate: p.open_parking_rate || '150000'
-                              };
-                              setSelectedProjectDetailsModal({ ...projectData, devName: dev.name, devMobile: dev.mobile, unitsCount });
-                            }}
                             style={{ 
                               background: isLight ? '#ffffff' : '#1e293b', 
-                              border: '1.5px solid #0284c7', 
-                              borderRadius: '8px', 
-                              padding: '6px 12px', 
-                              cursor: 'pointer', 
+                              border: '1px solid #0284c7', 
+                              borderRadius: '6px', 
+                              padding: '5px 10px', 
                               display: 'flex', 
                               alignItems: 'center', 
-                              gap: '8px', 
-                              boxShadow: '0 2px 6px rgba(2, 132, 199, 0.15)',
-                              transition: 'all 0.15s ease'
+                              gap: '6px', 
+                              boxShadow: '0 1px 4px rgba(2, 132, 199, 0.12)'
                             }}
-                            title="Click to inspect complete Master Project specifications & linked property inventory"
                           >
-                            <span style={{ fontSize: '0.68rem', background: 'rgba(2, 132, 199, 0.18)', color: '#0284c7', border: '1px solid #0284c7', padding: '2px 6px', borderRadius: '4px', fontWeight: '900', fontFamily: 'monospace' }}>
+                            <span style={{ fontSize: '0.66rem', background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', border: '1px solid #0284c7', padding: '1px 5px', borderRadius: '4px', fontWeight: '900', fontFamily: 'monospace' }}>
                               🔑 {projCodeStr}
                             </span>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
                               🏢 {p.title}
                             </span>
                             {p.locality && (
-                              <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '600' }}>
-                                📍 {p.locality}
+                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                ({p.locality})
                               </span>
                             )}
-                            <span style={{ fontSize: '0.66rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '1px 6px', borderRadius: '10px', fontWeight: '800' }}>
+                            <span style={{ fontSize: '0.66rem', background: 'rgba(34, 197, 94, 0.18)', color: '#22c55e', border: '1px solid #22c55e', padding: '1px 6px', borderRadius: '10px', fontWeight: '900' }}>
                               🏠 {unitsCount} Unit{unitsCount === 1 ? '' : 's'}
                             </span>
-                          </button>
+                          </div>
                         );
                       })}
                     </div>
@@ -2902,220 +3074,54 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
         </div>
       )}
 
-      {/* MASTER PROJECT SPECIFICATION & DETAILS MODAL CARD */}
-      {selectedProjectDetailsModal && (() => {
-        const proj = selectedProjectDetailsModal;
-        const linkedUnits = properties.filter(prop => 
-          (prop.project_id && prop.project_id === proj.code) ||
-          (prop.title && proj.title && prop.title.toLowerCase().trim() === proj.title.toLowerCase().trim())
-        );
-        const photos = Array.isArray(proj.building_photos) && proj.building_photos.length > 0
-          ? proj.building_photos
-          : [
-              'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
-              'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80'
-            ];
-
-        return (
-          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '16px' }}>
-            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', borderRadius: '20px', width: '100%', maxWidth: '850px', maxHeight: '92vh', overflowY: 'auto', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              
-              {/* HEADER BADGE & CLOSE */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                <div>
-                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: '0.74rem', background: 'rgba(2, 132, 199, 0.18)', color: '#0284c7', border: '1.5px solid #0284c7', padding: '3px 10px', borderRadius: '6px', fontWeight: '900', fontFamily: 'monospace' }}>
-                      🔑 MASTER PROJECT CODE: {proj.code || proj.id}
-                    </span>
-                    <span style={{ fontSize: '0.74rem', background: 'rgba(34, 197, 94, 0.18)', color: '#22c55e', border: '1px solid #22c55e', padding: '3px 10px', borderRadius: '6px', fontWeight: '900' }}>
-                      🔐 DEVELOPER OTP VERIFIED
-                    </span>
-                  </div>
-                  <h2 style={{ fontSize: '1.35rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
-                    🏢 {proj.title}
-                  </h2>
-                  <span style={{ fontSize: '0.84rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>
-                    📍 Locality Hub: {proj.locality || 'Locality Hub'} • Developer: <strong style={{ color: '#0284c7' }}>{proj.developer || proj.devName}</strong>
-                  </span>
-                </div>
-
-                <button onClick={() => setSelectedProjectDetailsModal(null)} style={{ background: 'none', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer' }}>
-                  <X size={22} />
-                </button>
-              </div>
-
-              {/* GRID INFO STATS */}
-              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
-                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
-                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>GPS MAP LATITUDE</span>
-                  <strong style={{ fontSize: '0.92rem', color: '#4ade80', fontFamily: 'monospace' }}>{proj.latitude || '22.694318'}</strong>
-                </div>
-
-                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
-                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>GPS MAP LONGITUDE</span>
-                  <strong style={{ fontSize: '0.92rem', color: '#4ade80', fontFamily: 'monospace' }}>{proj.longitude || '88.400659'}</strong>
-                </div>
-
-                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
-                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>BUILDER CONTACT</span>
-                  <strong style={{ fontSize: '0.88rem', color: '#0284c7' }}>{proj.mobile || proj.devMobile || '+91 98833 95102'}</strong>
-                </div>
-
-                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
-                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>LINKED PROPERTY UNITS</span>
-                  <strong style={{ fontSize: '0.95rem', color: '#22c55e' }}>{linkedUnits.length} Active Unit{linkedUnits.length === 1 ? '' : 's'}</strong>
-                </div>
-              </div>
-
-              {/* EXTERIOR ELEVATION GALLERY */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #eab308', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <span style={{ fontSize: '0.84rem', color: '#eab308', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  📷 Project Building Exterior Elevation Photos ({photos.length})
-                </span>
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
-                  {photos.map((imgUrl: string, idx: number) => (
-                    <div key={idx} style={{ height: '110px', borderRadius: '8px', overflow: 'hidden', border: idx === 0 ? '2px solid #22c55e' : '1px solid #cbd5e1', position: 'relative' }}>
-                      <img src={imgUrl} alt={`Elevation ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      {idx === 0 && (
-                        <span style={{ position: 'absolute', top: '4px', left: '4px', background: '#22c55e', color: '#ffffff', fontSize: '0.62rem', fontWeight: '900', padding: '2px 4px', borderRadius: '4px' }}>
-                          ⭐ MAIN COVER
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* AMENITIES CHECKLIST */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #a855f7', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <span style={{ fontSize: '0.84rem', color: '#a855f7', fontWeight: '900' }}>
-                  🏊 Project Amenities & Infrastructure Features ({proj.amenities?.length || 19})
-                </span>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {(proj.amenities && proj.amenities.length > 0 ? proj.amenities : [
-                    '24/7 Power Backup', '24-Hour Water Supply', '24/7 Security Patrol', 'CCTV Surveillance',
-                    'High-Speed Elevators', 'Backup Generator', 'Fire Safety System', 'Fitness Gymnasium',
-                    'Swimming Pool', 'Luxury Clubhouse', "Kids Play Area", 'EV Charging Stations'
-                  ]).map((item: string, i: number) => (
-                    <span key={i} style={{ background: 'rgba(168, 85, 247, 0.15)', color: isLight ? '#7e22ce' : '#c084fc', border: '1px solid #a855f7', padding: '3px 8px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '800' }}>
-                      ✓ {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              {/* PARKING STOCK CAPACITY */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #eab308', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <span style={{ fontSize: '0.84rem', color: '#eab308', fontWeight: '900' }}>
-                  🚗 Project Parking Stock Capacity & Default Rates
-                </span>
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '10px' }}>
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', borderRadius: '8px', padding: '10px' }}>
-                    <span style={{ fontSize: '0.74rem', color: '#0284c7', fontWeight: '900', display: 'block' }}>🚘 Covered Basement</span>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
-                      Capacity: {proj.total_covered_parking_capacity || 24} Slots
-                    </div>
-                    <span style={{ fontSize: '0.72rem', color: '#eab308', fontWeight: '800' }}>
-                      Rate: ₹{parseInt(proj.covered_parking_rate || '300000', 10).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #eab308', borderRadius: '8px', padding: '10px' }}>
-                    <span style={{ fontSize: '0.74rem', color: '#eab308', fontWeight: '900', display: 'block' }}>⚡ EV Fast Charger</span>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
-                      Capacity: {proj.total_ev_parking_capacity || 6} Slots
-                    </div>
-                    <span style={{ fontSize: '0.72rem', color: '#eab308', fontWeight: '800' }}>
-                      Rate: ₹{parseInt(proj.ev_parking_rate || '450000', 10).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-
-                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', borderRadius: '8px', padding: '10px' }}>
-                    <span style={{ fontSize: '0.74rem', color: '#22c55e', fontWeight: '900', display: 'block' }}>🅿️ Open Surface</span>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
-                      Capacity: {proj.total_open_parking_capacity || 12} Slots
-                    </div>
-                    <span style={{ fontSize: '0.72rem', color: '#eab308', fontWeight: '800' }}>
-                      Rate: ₹{parseInt(proj.open_parking_rate || '150000', 10).toLocaleString('en-IN')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* FOOTER ACTIONS */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px', flexWrap: 'wrap', gap: '10px' }}>
-                <button 
-                  type="button" 
-                  onClick={() => setSelectedProjectDetailsModal(null)} 
-                  style={{ background: isLight ? '#f1f5f9' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}
-                >
-                  Close Specification Card
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedProjectDetailsModal(null);
-                    setShowDevVaultModal(false);
-                    setNewPropertyForm((prev: any) => ({
-                      ...prev,
-                      project_id: proj.code || proj.id,
-                      developer: proj.developer || proj.devName,
-                      title: proj.title,
-                      locality: proj.locality,
-                      latitude: proj.latitude,
-                      longitude: proj.longitude,
-                      selected_amenities: proj.amenities || [],
-                      building_photos: proj.building_photos || [],
-                      total_covered_parking_capacity: proj.total_covered_parking_capacity,
-                      covered_parking_rate: proj.covered_parking_rate,
-                      total_ev_parking_capacity: proj.total_ev_parking_capacity,
-                      ev_parking_rate: proj.ev_parking_rate,
-                      total_open_parking_capacity: proj.total_open_parking_capacity,
-                      open_parking_rate: proj.open_parking_rate
-                    }));
-                    setActiveProjectSubTab('add_property_master');
-                  }}
-                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)' }}
-                >
-                  🏠 + Create New Property Units Under Project ({proj.code || proj.id})
-                </button>
-              </div>
-
-            </div>
-          </div>
-        );
-      })()}
-
 
 
       {/* COMPREHENSIVE PROPERTY VAULT DETAILS INSPECTION MODAL */}
       {viewPropertyModal && (() => {
-        const modalProjStock = projectParkingStockMap[viewPropertyModal.title] || projectParkingStockMap['TILOTTAMA APPARTMENT'] || {
-          totalCovered: 12,
-          priceCovered: 300000,
-          totalEv: 2,
-          priceEv: 450000,
-          totalOpen: 6,
-          priceOpen: 150000
-        };
-        const modalProjProps = properties.filter(p => (p.title || '').toLowerCase().trim() === (viewPropertyModal.title || '').toLowerCase().trim());
+        const allMasters = getAllMasterProjects();
+        const matchedMaster = allMasters.find(m => 
+          (m.title && viewPropertyModal.title && m.title.toLowerCase().trim() === viewPropertyModal.title.toLowerCase().trim()) ||
+          (m.id && viewPropertyModal.project_id && m.id === viewPropertyModal.project_id) ||
+          (m.code && viewPropertyModal.project_id && m.code === viewPropertyModal.project_id)
+        );
+        const projCode = viewPropertyModal.project_id || matchedMaster?.code || matchedMaster?.id || 'SRM-PROJ-2026-000088';
+
+        const devObj = developerMasterList.find(d => 
+          (d.name && viewPropertyModal.developer && d.name.toLowerCase().trim() === viewPropertyModal.developer.toLowerCase().trim()) ||
+          d.id === viewPropertyModal.developer_id
+        );
+        const devIdCode = devObj?.id || viewPropertyModal.developer_id || 'SRM-DEV-2026-000105';
+
+        const modalProjProps = properties.filter(p => 
+          (p.project_id && p.project_id === projCode) ||
+          (p.title || '').toLowerCase().trim() === (viewPropertyModal.title || '').toLowerCase().trim()
+        );
+
+        const totalCoveredCap = matchedMaster?.total_covered_parking_capacity !== undefined ? matchedMaster.total_covered_parking_capacity : 24;
+        const totalEvCap = matchedMaster?.total_ev_parking_capacity !== undefined ? matchedMaster.total_ev_parking_capacity : 6;
+        const totalOpenCap = matchedMaster?.total_open_parking_capacity !== undefined ? matchedMaster.total_open_parking_capacity : 12;
+
+        const coveredRateStr = matchedMaster?.covered_parking_rate ? parseInt(matchedMaster.covered_parking_rate, 10).toLocaleString('en-IN') : '3,00,000';
+        const evRateStr = matchedMaster?.ev_parking_rate ? parseInt(matchedMaster.ev_parking_rate, 10).toLocaleString('en-IN') : '4,50,000';
+        const openRateStr = matchedMaster?.open_parking_rate ? parseInt(matchedMaster.open_parking_rate, 10).toLocaleString('en-IN') : '1,50,000';
+
         const modalAllocCovered = modalProjProps.filter(p => (p.car_parking || '').toLowerCase().includes('covered')).length;
         const modalAllocEv = modalProjProps.filter(p => (p.car_parking || '').toLowerCase().includes('ev')).length;
         const modalAllocOpen = modalProjProps.filter(p => (p.car_parking || '').toLowerCase().includes('open')).length;
 
-        const modalAvailCovered = Math.max(0, modalProjStock.totalCovered - modalAllocCovered);
-        const modalAvailEv = Math.max(0, modalProjStock.totalEv - modalAllocEv);
-        const modalAvailOpen = Math.max(0, modalProjStock.totalOpen - modalAllocOpen);
+        const modalAvailCovered = Math.max(0, totalCoveredCap - modalAllocCovered);
+        const modalAvailEv = Math.max(0, totalEvCap - modalAllocEv);
+        const modalAvailOpen = Math.max(0, totalOpenCap - modalAllocOpen);
 
-        // 🏢 PROJECT NAME WISE BUILDING ELEVATION PHOTOS (Aggregated for all listings under viewPropertyModal.title)
+        // 🏢 PROJECT NAME WISE BUILDING ELEVATION PHOTOS
         const buildingPhotosList: string[] = Array.from(new Set([
           ...(Array.isArray(viewPropertyModal.building_photos) && viewPropertyModal.building_photos.length > 0 ? viewPropertyModal.building_photos : []),
           ...(viewPropertyModal.building_photo ? [viewPropertyModal.building_photo] : []),
+          ...(matchedMaster?.building_photos || []),
           ...modalProjProps.flatMap((p: any) => Array.isArray(p.building_photos) ? p.building_photos : (p.building_photo ? [p.building_photo] : []))
         ])).filter(Boolean);
 
-        // 📸 PROPERTY CODE WISE UNIT INTERIOR & FLOOR PLAN PHOTOS (Strictly scoped to viewPropertyModal.property_code)
+        // 📸 PROPERTY CODE WISE UNIT INTERIOR & FLOOR PLAN PHOTOS
         const unitPhotosList: string[] = Array.from(new Set([
           ...(Array.isArray(viewPropertyModal.unit_photos) && viewPropertyModal.unit_photos.length > 0 ? viewPropertyModal.unit_photos : []),
           ...(viewPropertyModal.unit_photo ? [viewPropertyModal.unit_photo] : [])
@@ -3125,6 +3131,17 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
         const unitVideosModalList: string[] = Array.from(new Set([
           ...(Array.isArray(viewPropertyModal.unit_videos) && viewPropertyModal.unit_videos.length > 0 ? viewPropertyModal.unit_videos : [])
         ])).filter(Boolean);
+
+        const superBuiltupDisp = viewPropertyModal.super_builtup_area 
+          ? (viewPropertyModal.super_builtup_area.toString().toLowerCase().includes('sq') ? viewPropertyModal.super_builtup_area : `${viewPropertyModal.super_builtup_area} Sq.Ft.`)
+          : '1,283 Sq.Ft.';
+
+        const parkingPriceDisp = viewPropertyModal.parking_price 
+          ? `₹${parseInt(viewPropertyModal.parking_price.toString().replace(/[^0-9]/g, ''), 10).toLocaleString('en-IN')}` 
+          : '₹3,00,000';
+
+        const primaryDevMobile = viewPropertyModal.developer_mobile || devObj?.mobile || devProjectMobile || '9051216631';
+        const altDevMobile = viewPropertyModal.developer_alt_mobile || devObj?.altMobile || devProjectAltMobile || primaryDevMobile;
 
         return (
           <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
@@ -3137,6 +3154,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     <span style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', border: '1px solid #0284c7', padding: '3px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '900', fontFamily: 'monospace' }}>
                       🔑 {viewPropertyModal.property_code}
                     </span>
+                    <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: '1px solid #a855f7', padding: '3px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '900', fontFamily: 'monospace' }}>
+                      🏢 PROJ: {projCode}
+                    </span>
                     <span style={{ background: viewPropertyModal.status === 'AVAILABLE' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: viewPropertyModal.status === 'AVAILABLE' ? '#4ade80' : '#ef4444', padding: '3px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem' }}>
                       ● {viewPropertyModal.status}
                     </span>
@@ -3145,7 +3165,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     {viewPropertyModal.title}
                   </h2>
                   <span style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>
-                    📍 {viewPropertyModal.locality || 'BARASAT, CHAPADALI'}
+                    📍 {viewPropertyModal.locality || 'PANIHATI SODEPUR'}
                   </span>
                 </div>
                 <button onClick={() => setViewPropertyModal(null)} style={{ background: isLight ? '#f1f5f9' : '#0f172a', border: 'none', color: isLight ? '#64748b' : '#94a3b8', padding: '8px', borderRadius: '10px', cursor: 'pointer' }}>
@@ -3164,19 +3184,19 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Developer Name</span>
-                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem' }}>{viewPropertyModal.developer}</strong>
+                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem' }}>{viewPropertyModal.developer || 'Mr. JAYANTA GHOSH'}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Developer ID Code</span>
-                      <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>{viewPropertyModal.developer_id || viewPropertyModal.developer_code || 'SRM-DEV-2026-000105'}</strong>
+                      <strong style={{ color: '#fbbf24', fontFamily: 'monospace' }}>{devIdCode}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Developer Primary Mobile</span>
-                      <strong style={{ color: '#4ade80' }}>📱 {viewPropertyModal.developer_mobile || devProjectMobile || '9883395102'}</strong>
+                      <strong style={{ color: '#4ade80' }}>📱 {primaryDevMobile}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Alternative Phone Number</span>
-                      <strong style={{ color: '#38bdf8' }}>📞 {viewPropertyModal.developer_alt_mobile || devProjectAltMobile || '7044293951'}</strong>
+                      <strong style={{ color: '#38bdf8' }}>📞 {altDevMobile}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>OTP Verification Protocol</span>
@@ -3196,7 +3216,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                       📍 GPS LOCATION & EXACT GEOLOCATION COORDINATES
                     </h4>
                     <a 
-                      href={`https://www.google.com/maps?q=${viewPropertyModal.latitude || '22.722361'},${viewPropertyModal.longitude || '88.493403'}`} 
+                      href={`https://www.google.com/maps?q=${viewPropertyModal.latitude || '22.694318'},${viewPropertyModal.longitude || '88.400659'}`} 
                       target="_blank" 
                       rel="noopener noreferrer"
                       style={{ background: '#0284c7', color: '#ffffff', textDecoration: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -3207,15 +3227,15 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Locality Hub / Sector</span>
-                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.locality || 'BARASAT, CHAPADALI'}</strong>
+                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.locality || 'PANIHATI SODEPUR'}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>GPS Latitude (Exact Map Lat)</span>
-                      <strong style={{ color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.92rem' }}>{viewPropertyModal.latitude || '22.722361'}</strong>
+                      <strong style={{ color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.92rem' }}>{viewPropertyModal.latitude || '22.694318'}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>GPS Longitude (Exact Map Long)</span>
-                      <strong style={{ color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.92rem' }}>{viewPropertyModal.longitude || '88.493403'}</strong>
+                      <strong style={{ color: '#38bdf8', fontFamily: 'monospace', fontSize: '0.92rem' }}>{viewPropertyModal.longitude || '88.400659'}</strong>
                     </div>
                   </div>
                 </div>
@@ -3232,31 +3252,33 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Configuration</span>
-                      <strong style={{ color: '#38bdf8', fontWeight: '900' }}>{viewPropertyModal.configuration || '3BHK'}</strong>
+                      <strong style={{ color: '#38bdf8', fontWeight: '900' }}>{viewPropertyModal.configuration || '2BHK'}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Carpet Area</span>
-                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.carpet_area || '898.1 Sq.Ft.'}</strong>
+                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.carpet_area || '629.25 Sq.Ft.'}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Super Built-up Area</span>
-                      <strong style={{ color: '#fbbf24', fontWeight: '900' }}>{viewPropertyModal.super_builtup_area || '1,283 Sq.Ft.'}</strong>
+                      <strong style={{ color: '#fbbf24', fontWeight: '900' }}>{superBuiltupDisp}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Floor Number (Unit Floor)</span>
-                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.floor_num || viewPropertyModal.floor_number || '2nd Floor'}</strong>
+                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.floor_num || viewPropertyModal.floor_number || '4th Floor out of G+4 Floors'}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Total Floors in Building</span>
-                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.total_floors || 'G+4 Floors'}</strong>
+                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.total_floors || 'G+4 Floors (5 Storey)'}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Facing Direction</span>
-                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.facing || 'East Facing'}</strong>
+                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.facing || 'North Facing'}</strong>
                     </div>
                     <div>
-                      <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Furnishing Status</span>
-                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{viewPropertyModal.furnishing || 'Semi-Furnished'}</strong>
+                      <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Possession Status</span>
+                      <strong style={{ color: '#22c55e', fontWeight: '900' }}>
+                        {viewPropertyModal.possession_status || viewPropertyModal.possession || viewPropertyModal.possession_timeline || '🔑 Ready to Move In (Immediate)'}
+                      </strong>
                     </div>
                   </div>
                 </div>
@@ -3269,7 +3291,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', fontSize: '0.85rem' }}>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Total Inventory Final Price</span>
-                      <strong style={{ color: '#4ade80', fontSize: '1.1rem', fontWeight: '900' }}>{viewPropertyModal.final_price || '₹46,08,000'}</strong>
+                      <strong style={{ color: '#4ade80', fontSize: '1.1rem', fontWeight: '900' }}>{viewPropertyModal.final_price || '₹34,23,000'}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Parking Slot Allocation</span>
@@ -3277,7 +3299,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Parking Price Tag</span>
-                      <strong style={{ color: '#38bdf8', fontWeight: '800' }}>{viewPropertyModal.parking_price ? `₹${viewPropertyModal.parking_price}` : '₹3,00,000'}</strong>
+                      <strong style={{ color: '#38bdf8', fontWeight: '800' }}>{parkingPriceDisp}</strong>
                     </div>
                     <div>
                       <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.75rem', display: 'block', fontWeight: '700' }}>Physical Keys / Custody</span>
@@ -3292,13 +3314,13 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     </span>
                     <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '10px', fontSize: '0.8rem' }}>
                       <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '8px 12px', borderRadius: '6px', border: '1px solid #0284c7' }}>
-                        <span style={{ color: '#38bdf8', fontWeight: '800' }}>🚗 Covered Stock:</span> <strong style={{ color: '#4ade80' }}>{modalAvailCovered} / {modalProjStock.totalCovered} Available</strong> (₹{modalProjStock.priceCovered})
+                        <span style={{ color: '#38bdf8', fontWeight: '800' }}>🚗 Covered Stock:</span> <strong style={{ color: '#4ade80' }}>{modalAvailCovered} / {totalCoveredCap} Available</strong> (₹{coveredRateStr})
                       </div>
                       <div style={{ background: 'rgba(234, 179, 8, 0.1)', padding: '8px 12px', borderRadius: '6px', border: '1px solid #eab308' }}>
-                        <span style={{ color: '#eab308', fontWeight: '800' }}>⚡ EV Stations:</span> <strong style={{ color: '#4ade80' }}>{modalAvailEv} / {modalProjStock.totalEv} Available</strong> (₹{modalProjStock.priceEv})
+                        <span style={{ color: '#eab308', fontWeight: '800' }}>⚡ EV Stations:</span> <strong style={{ color: '#4ade80' }}>{modalAvailEv} / {totalEvCap} Available</strong> (₹{evRateStr})
                       </div>
                       <div style={{ background: 'rgba(34, 197, 94, 0.1)', padding: '8px 12px', borderRadius: '6px', border: '1px solid #22c55e' }}>
-                        <span style={{ color: '#4ade80', fontWeight: '800' }}>🅿️ Open Surface:</span> <strong style={{ color: '#4ade80' }}>{modalAvailOpen} / {modalProjStock.totalOpen} Available</strong> (₹{modalProjStock.priceOpen})
+                        <span style={{ color: '#4ade80', fontWeight: '800' }}>🅿️ Open Surface:</span> <strong style={{ color: '#4ade80' }}>{modalAvailOpen} / {totalOpenCap} Available</strong> (₹{openRateStr})
                       </div>
                     </div>
                   </div>
