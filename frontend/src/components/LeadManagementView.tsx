@@ -77,6 +77,11 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
     );
   }, [leadsList]);
 
+  // LEADS ACTIVE IN LEAD MANAGEMENT VAULT (EXCLUDES LEADS THAT FILLED ALL 9 STEPS & SENT TO MATCHING MANAGEMENT)
+  const activeVaultLeadsList = React.useMemo(() => {
+    return uniqueLeadsList.filter(l => !(l.last_completed_step >= 9 || l.lead_status === 'MATCHING_PENDING' || l.lead_status === 'MATCHING_DONE'));
+  }, [uniqueLeadsList]);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -112,20 +117,20 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
         <>
           <div style={{ display: 'flex', gap: '6px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px', overflowX: 'auto', flexWrap: 'nowrap' }}>
             {[
-              { id: 'all', label: 'All Leads', count: uniqueLeadsList.length, color: '#38bdf8' },
-              { id: 'unassigned', label: 'New & Unassigned', count: uniqueLeadsList.filter(l => !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned').length, color: '#a855f7' },
-              { id: 'my_leads', label: 'My Leads', count: uniqueLeadsList.filter(l => l.assigned_employee_id === 'USR-07' || l.assigned_employee_name?.includes('Priya')).length, color: '#38bdf8' },
-              { id: 'today_followups', label: "Today's Follow-ups", count: uniqueLeadsList.filter(l => l.next_followup && l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#fbbf24', badgeBg: '#eab308' },
-              { id: 'overdue_followups', label: 'Overdue Follow-ups', count: uniqueLeadsList.filter(l => l.next_followup && new Date(l.next_followup) < new Date() && !l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#ef4444', badgeBg: '#ef4444' },
-              { id: 'interested', label: 'Interested Leads', count: uniqueLeadsList.filter(l => ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.lead_status) || ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.call_disposition)).length, color: '#4ade80' },
-              { id: 'not_interested', label: '❌ Not Interested', count: uniqueLeadsList.filter(l => l.lead_status === 'NOT_INTERESTED' || l.call_disposition === 'NOT_INTERESTED').length, color: '#ef4444', badgeBg: '#ef4444' },
-              { id: 'no_response', label: '📵 No Response', count: uniqueLeadsList.filter(l => l.lead_status === 'NO_RESPONSE' || l.call_disposition === 'NO_RESPONSE').length, color: '#eab308', badgeBg: '#eab308' },
-              { id: 'call_back_later', label: '⏳ Call Back Later', count: uniqueLeadsList.filter(l => l.lead_status === 'CALL_BACK_LATER' || l.call_disposition === 'CALL_BACK_LATER').length, color: '#38bdf8', badgeBg: '#0284c7' },
+              { id: 'all', label: 'All Leads', count: activeVaultLeadsList.length, color: '#38bdf8' },
+              { id: 'unassigned', label: 'New & Unassigned', count: activeVaultLeadsList.filter(l => !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned').length, color: '#a855f7' },
+              { id: 'my_leads', label: 'My Leads', count: activeVaultLeadsList.filter(l => l.assigned_employee_id === 'USR-07' || l.assigned_employee_name?.includes('Priya')).length, color: '#38bdf8' },
+              { id: 'today_followups', label: "Today's Follow-ups", count: activeVaultLeadsList.filter(l => l.next_followup && l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#fbbf24', badgeBg: '#eab308' },
+              { id: 'overdue_followups', label: 'Overdue Follow-ups', count: activeVaultLeadsList.filter(l => l.next_followup && new Date(l.next_followup) < new Date() && !l.next_followup.startsWith(new Date().toISOString().split('T')[0])).length, color: '#ef4444', badgeBg: '#ef4444' },
+              { id: 'interested', label: 'Interested Leads', count: activeVaultLeadsList.filter(l => ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.lead_status) || ['INTERESTED', 'CONNECTED_INTERESTED'].includes(l.call_disposition)).length, color: '#4ade80' },
+              { id: 'not_interested', label: '❌ Not Interested', count: activeVaultLeadsList.filter(l => l.lead_status === 'NOT_INTERESTED' || l.call_disposition === 'NOT_INTERESTED').length, color: '#ef4444', badgeBg: '#ef4444' },
+              { id: 'no_response', label: '📵 No Response', count: activeVaultLeadsList.filter(l => l.lead_status === 'NO_RESPONSE' || l.call_disposition === 'NO_RESPONSE').length, color: '#eab308', badgeBg: '#eab308' },
+              { id: 'call_back_later', label: '⏳ Call Back Later', count: activeVaultLeadsList.filter(l => l.lead_status === 'CALL_BACK_LATER' || l.call_disposition === 'CALL_BACK_LATER').length, color: '#38bdf8', badgeBg: '#0284c7' },
               { id: 'matching', label: 'Matching Pending', count: uniqueLeadsList.filter(l => ['MATCHING_PENDING', 'MATCHING_DONE'].includes(l.lead_status)).length, color: '#c084fc' },
-              { id: 'visit', label: 'Visit Leads', count: uniqueLeadsList.filter(l => ['VISIT_PLANNED', 'VISIT_COMPLETED'].includes(l.lead_status)).length, color: '#38bdf8' },
-              { id: 'converted', label: 'Converted Leads', count: uniqueLeadsList.filter(l => ['CONVERTED', 'BOOKING_PROCESS'].includes(l.lead_status)).length, color: '#22c55e' },
-              { id: 'nurture', label: 'Nurture / Recycle', count: uniqueLeadsList.filter(l => l.lead_status === 'NURTURE' || l.lead_status === 'RECYCLE').length, color: isLight ? '#64748b' : '#94a3b8' },
-              { id: 'lost_closed', label: 'Lost / Closed', count: uniqueLeadsList.filter(l => ['LOST', 'CANCELLED'].includes(l.lead_status)).length, color: '#64748b' }
+              { id: 'visit', label: 'Visit Leads', count: activeVaultLeadsList.filter(l => ['VISIT_PLANNED', 'VISIT_COMPLETED'].includes(l.lead_status)).length, color: '#38bdf8' },
+              { id: 'converted', label: 'Converted Leads', count: activeVaultLeadsList.filter(l => ['CONVERTED', 'BOOKING_PROCESS'].includes(l.lead_status)).length, color: '#22c55e' },
+              { id: 'nurture', label: 'Nurture / Recycle', count: activeVaultLeadsList.filter(l => l.lead_status === 'NURTURE' || l.lead_status === 'RECYCLE').length, color: isLight ? '#64748b' : '#94a3b8' },
+              { id: 'lost_closed', label: 'Lost / Closed', count: activeVaultLeadsList.filter(l => ['LOST', 'CANCELLED'].includes(l.lead_status)).length, color: '#64748b' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -201,7 +206,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
           <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '1.05rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
-                📋 Central Lead Master Vault ({uniqueLeadsList.filter(l => {
+                📋 Central Lead Master Vault ({(leadInboxTab === 'matching' ? uniqueLeadsList : activeVaultLeadsList).filter(l => {
                   if (leadInboxTab === 'unassigned') return !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned';
                   if (leadInboxTab === 'my_leads') return l.assigned_employee_id === 'USR-07' || l.assigned_employee_name?.includes('Priya');
                   if (leadInboxTab === 'today_followups') return l.next_followup && l.next_followup.startsWith(new Date().toISOString().split('T')[0]);
@@ -241,7 +246,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {uniqueLeadsList
+                  {(leadInboxTab === 'matching' ? uniqueLeadsList : activeVaultLeadsList)
                     .filter(l => {
                       if (leadInboxTab === 'unassigned') return !l.assigned_employee_id || l.assigned_employee_id === 'Unassigned';
                       if (leadInboxTab === 'my_leads') return l.assigned_employee_id === 'USR-07' || l.assigned_employee_name?.includes('Priya');

@@ -11357,8 +11357,9 @@ export default function App() {
                       const nextLeads = (leadsList || []).filter(l => 
                         l.lead_number !== leadNum && 
                         l.customer_number !== finalCustomerCode && 
-                        l.mobile !== mobileStr &&
-                        !(existingLead && l.id === existingLead.id)
+                        (!mobileStr || (l.mobile && l.mobile.replace(/\D/g, '') !== mobileStr.replace(/\D/g, ''))) &&
+                        (!mobileStr || (l.phone && l.phone.replace(/\D/g, '') !== mobileStr.replace(/\D/g, ''))) &&
+                        !(existingLead && (l.id === existingLead.id || l.lead_number === existingLead.lead_number))
                       );
                       
                       setLeadsList(nextLeads);

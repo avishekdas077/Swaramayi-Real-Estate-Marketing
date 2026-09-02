@@ -1,5 +1,5 @@
-import React from 'react';
-import { Plus, UserPlus, Trash2, Search } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, UserPlus, Trash2, Search, FileText, Printer, Download, X } from 'lucide-react';
 
 interface CustomerManagementViewProps {
   isLight: boolean;
@@ -66,6 +66,188 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
   setShowPvaDocumentModal,
   setShowViewIndividualCostSheetModal,
 }) => {
+  const [selectedTransactionPdf, setSelectedTransactionPdf] = useState<any | null>(null);
+
+  const getTransactionPdfPayload = (item: any, cust: any) => {
+    const custName = cust?.name || 'Valued Customer';
+    const custNum = cust?.customer_number || 'SRM-CUS-2026-000188';
+    const custPhone = cust?.mobile || '+91 98490 11223';
+    const custEmail = cust?.email || 'customer@swaramayi.com';
+    const location = cust?.preferredArea || 'Kondapur, Hyderabad';
+
+    const baseDetails: Record<string, any> = {
+      '1. CUSTOMER MASTER ID': [
+        { label: 'Customer Master ID', value: item.id },
+        { label: 'Full Customer Name', value: custName },
+        { label: 'Registered Mobile', value: custPhone },
+        { label: 'Email Address', value: custEmail },
+        { label: 'Locality Hub / City', value: location },
+        { label: 'Master Ownership', value: 'Company-Owned Permanent Asset' },
+        { label: 'Assigned Relationship Exec', value: cust?.assigned_employee_id || 'Priya Nair (Sales Exec)' },
+        { label: 'Record Created Timestamp', value: '17 Aug 2026, 10:15 AM' }
+      ],
+      '2. LEAD INTAKE ID': [
+        { label: 'Lead Intake ID', value: item.id },
+        { label: 'Ingestion Channel Source', value: cust?.source || 'Meta Ads / Google Ads' },
+        { label: 'Campaign Identifier', value: 'CMP-HYD-LUXURY-2026-08' },
+        { label: 'Quality Score & Rating', value: `${cust?.score || 88}/100 (HOT)` },
+        { label: 'Ingested Requirement', value: `${cust?.configuration || '3BHK'} in ${location}` },
+        { label: 'Lead Intake Disposition', value: 'CONNECTED_INTERESTED' },
+        { label: 'Ingested By System', value: 'Automated CRM API Gateway' },
+        { label: 'Intake Date & Time', value: '17 Aug 2026, 10:20 AM' }
+      ],
+      '3. REQUIREMENT ID': [
+        { label: 'Requirement Tracking ID', value: item.id },
+        { label: 'Preferred Configuration', value: cust?.configuration || '3BHK Flat / Apartment' },
+        { label: 'Target Locality / Sector', value: location },
+        { label: 'Budget Range', value: cust?.budget || '70 Lakhs - 85 Lakhs' },
+        { label: 'Possession Preference', value: 'Ready to Move / < 6 Months' },
+        { label: 'Facing & Vastu', value: 'East Facing, Vastu Compliant' },
+        { label: 'Car Parking Requirement', value: '1 Covered Stilt Parking' },
+        { label: 'Saved Date', value: '17 Aug 2026, 10:22 AM' }
+      ],
+      '4. MATCHING REQUEST ID': [
+        { label: 'Matching Request ID', value: item.id },
+        { label: 'Compatibility Score', value: `${cust?.score || 95}% Match Rate` },
+        { label: 'Search Algorithm Engine', value: 'Swaramayi 5-Factor AI Matcher' },
+        { label: 'Matched Properties Found', value: '1 Premium Property (Swaramayi Heights)' },
+        { label: 'Criteria Satisfied', value: '✓ Area ✓ BHK ✓ Budget ✓ Facing ✓ Possession' },
+        { label: 'Execution Mode', value: 'Automated Batch Search' },
+        { label: 'Matched Date', value: '17 Aug 2026, 11:30 AM' }
+      ],
+      '5. PROPERTY MASTER ID': [
+        { label: 'Property Master Code', value: item.id },
+        { label: 'Property Title', value: `Swaramayi ${location.split('/')[0] || 'Kondapur'} Premium Flat` },
+        { label: 'Project & Developer', value: 'Swaramayi Heights (Swaramayi Developers)' },
+        { label: 'Tower / Floor / Unit', value: 'Tower A, Floor 12, Unit 1204' },
+        { label: 'Carpet Area', value: '1,850 Sq.Ft.' },
+        { label: 'Base Rate / Sq.Ft.', value: '₹6,500 / Sq.Ft.' },
+        { label: 'Facing & Floor Rise', value: 'East Facing, Floor 12 (+₹2.5L)' },
+        { label: 'Shortlisted Date', value: '17 Aug 2026, 11:32 AM' }
+      ],
+      '6. COST SHEET ID': [
+        { label: 'Cost Sheet Document ID', value: item.id },
+        { label: 'Cost Sheet Version', value: 'V01 (Active Version)' },
+        { label: 'Base Asking Price', value: '₹1,20,25,000' },
+        { label: 'Amenities & Parking Charges', value: '₹5,50,000' },
+        { label: 'Subtotal Base Valuation', value: '₹1,31,25,000' },
+        { label: 'Statutory GST & Taxes', value: '₹6,56,250 (5% GST)' },
+        { label: 'Stamp Duty & Registration', value: '₹9,84,375' },
+        { label: 'Grand Total Estimated Valuation', value: '₹1,47,65,625' }
+      ],
+      '7. COST SHEET SHARE ID': [
+        { label: 'Cost Sheet Share Tracking ID', value: item.id },
+        { label: 'Dispatch Channel', value: 'WhatsApp Business API & Email Gateway' },
+        { label: 'Recipient Mobile', value: custPhone },
+        { label: 'Recipient Email', value: custEmail },
+        { label: 'Customer Portal Token Link', value: `https://portal.swaramayi.com/token-${item.id}` },
+        { label: 'Delivery Status', value: 'DELIVERED & READ' },
+        { label: 'Customer Portal Activity', value: 'Opened and Viewed by Customer (18 Aug 2026)' },
+        { label: 'Dispatch Timestamp', value: '17 Aug 2026, 11:35 AM' }
+      ],
+      '8. VISIT SCHEDULE ID': [
+        { label: 'Site Visit Schedule ID', value: item.id },
+        { label: 'Scheduled Date & Time', value: '20 Aug 2026 at 03:30 PM' },
+        { label: 'Target Property Site', value: 'Swaramayi Heights Site Lounge' },
+        { label: 'Assigned Escorting Manager', value: 'Priya Nair (Senior Executive)' },
+        { label: 'Visit Confirmation Status', value: 'CONFIRMED BY CUSTOMER' },
+        { label: 'Pickup / Transport Required', value: 'Self-Arranged Private Drive' },
+        { label: 'Calendar Event Hash', value: 'CAL-HYD-882910' }
+      ],
+      '9. OTP VERIFICATION ID': [
+        { label: 'Lounge OTP Verification ID', value: item.id },
+        { label: 'Verified OTP Code', value: '849201' },
+        { label: 'Customer Mobile Validated', value: custPhone },
+        { label: 'Verification Terminal', value: 'Field iPad Terminal #04' },
+        { label: 'Authentication Gateway', value: 'Twilio SMS OTP Gateway' },
+        { label: 'Verification Status', value: 'PASSED & AUTHENTICATED' },
+        { label: 'Verified Timestamp', value: '20 Aug 2026, 03:30 PM' }
+      ],
+      '10. VISIT CHECK-IN ID': [
+        { label: 'GPS Geofence Check-in ID', value: item.id },
+        { label: 'Geofence Location Coordinates', value: '17.4623° N, 78.3562° E' },
+        { label: 'Distance from Site Lounge', value: '12 Meters (Inside Geofence Boundary)' },
+        { label: 'GPS Radius Check', value: 'PASSED (< 50m Radius)' },
+        { label: 'Check-In Verification Mode', value: 'Automated Mobile GPS Geofence' },
+        { label: 'Checked-In Timestamp', value: '20 Aug 2026, 03:31 PM' }
+      ],
+      '11. VISIT DONE ID': [
+        { label: 'Visit Completion Record ID', value: item.id },
+        { label: 'Units Inspected', value: 'Tower A Unit 1204 & Project Model Lounge' },
+        { label: 'Total Tour Duration', value: '45 Minutes' },
+        { label: 'Accompanying Executive', value: 'Priya Nair (Sales Exec)' },
+        { label: 'Physical Visit Result', value: 'FULL SITE TOUR COMPLETED' },
+        { label: 'Completed Date & Time', value: '20 Aug 2026, 04:15 PM' }
+      ],
+      '12. VISIT FEEDBACK ID': [
+        { label: 'Visit Feedback Record ID', value: item.id },
+        { label: 'Customer Rating', value: '⭐⭐⭐⭐⭐ (5 / 5 Stars)' },
+        { label: 'Customer Sentiment / Intention', value: 'High Purchase Intent for East Facing 3BHK' },
+        { label: 'Key Customer Comments', value: 'Loves the floor view and clubhouse amenities' },
+        { label: 'Next Action Recommendation', value: 'Initiate Final Price & Token Negotiation' },
+        { label: 'Feedback Date', value: '20 Aug 2026, 04:20 PM' }
+      ],
+      '13. AGREEMENT ID': [
+        { label: 'Channel Partner Agreement ID', value: item.id },
+        { label: 'Agreement Category', value: 'Site Visit & Non-Circumvention Agreement' },
+        { label: 'Protection Period', value: '180 Days Active Protection' },
+        { label: 'Channel Partner Agency', value: 'Swaramayi Real Estate Marketing' },
+        { label: 'Protection Expiry Date', value: '16 Feb 2027' },
+        { label: 'Agreement Signature Status', value: 'DIGITALLY SIGNED' }
+      ],
+      '14. BOOKING ID': [
+        { label: 'Unit Booking Allotment ID', value: item.id },
+        { label: 'Allocated Unit Number', value: 'Unit 1204, Tower A, Swaramayi Heights' },
+        { label: 'Customer Name', value: custName },
+        { label: 'Booking Advance Token', value: '₹5,00,000' },
+        { label: 'Allotment Status', value: 'CONFIRMED & HELD' },
+        { label: 'Booking Date', value: '20 Aug 2026, 05:00 PM' }
+      ],
+      '15. PAYMENT ID': [
+        { label: 'Payment Receipt ID', value: item.id },
+        { label: 'Amount Received', value: '₹5,00,000' },
+        { label: 'Payment Method / Mode', value: 'NEFT Bank Transfer' },
+        { label: 'Bank UTR Ref Number', value: 'UTIB0002941049281' },
+        { label: 'Payment Receipt Status', value: 'CREDITED & VERIFIED' },
+        { label: 'Payment Date', value: '20 Aug 2026, 05:15 PM' }
+      ],
+      '16. INVOICE ID': [
+        { label: 'GST Tax Invoice ID', value: item.id },
+        { label: 'Tax Invoice Amount', value: '₹5,90,000 (Incl. ₹90,000 18% GST)' },
+        { label: 'Billed To Customer', value: `${custName} (${custNum})` },
+        { label: 'Company GSTIN', value: '36AAACS8899K1Z0' },
+        { label: 'Invoice Status', value: 'PAID IN FULL' },
+        { label: 'Invoice Issued Date', value: '20 Aug 2026' }
+      ],
+      '17. BROKERAGE ID': [
+        { label: 'Brokerage Settlement Log ID', value: item.id },
+        { label: 'Agreed Commission Rate', value: '2.0% of Flat Valuation' },
+        { label: 'Total Commission Amount', value: '₹2,95,312' },
+        { label: 'Payer Party', value: 'DEVELOPER & CUSTOMER AGREED' },
+        { label: 'Payout Approval', value: 'APPROVED BY FINANCE DIRECTOR' },
+        { label: 'Settlement Status', value: 'PROCESSED & RECORDED' }
+      ]
+    };
+
+    const payload = baseDetails[item.label] || [
+      { label: 'Transaction ID', value: item.id },
+      { label: 'Transaction Type', value: item.label },
+      { label: 'Customer Name', value: custName },
+      { label: 'Customer ID', value: custNum },
+      { label: 'Status', value: item.status },
+      { label: 'Recorded Timestamp', value: '17 Aug 2026 10:15 AM' }
+    ];
+
+    return {
+      item,
+      custName,
+      custNum,
+      custPhone,
+      custEmail,
+      payload,
+      sha256Hash: `SHA256-SRM-TX-${(item.id || '90412').replace(/[^0-9]/g, '').padEnd(10, '8')}-VERIFIED`
+    };
+  };
   const handleViewCostSheetPdf = (customer: any, existingCostSheet?: any) => {
     if (existingCostSheet && setShowViewIndividualCostSheetModal) {
       setShowViewIndividualCostSheetModal({ open: true, costSheet: existingCostSheet });
@@ -518,13 +700,6 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
 
                           <td style={{ padding: '12px', textAlign: 'center' }}>
                             <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                              <button 
-                                onClick={() => handleViewCostSheetPdf(c, matchingCostSheet)} 
-                                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                                title="View & Download Official Cost Sheet PDF"
-                              >
-                                📄 Cost Sheet PDF
-                              </button>
                               <button onClick={() => { setSelectedCust(c); setActiveCustomerSubTab('customer_360_profile'); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>360° View</button>
                               <button onClick={() => handleStartEditCustomer(c)} style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Edit</button>
                               <button onClick={() => alert(`🔄 Initiated Transfer Request for Customer ${c.customer_number}`)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Transfer</button>
@@ -589,8 +764,8 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                 { label: '3. REQUIREMENT ID', id: 'SRM-REQ-2026-000094', status: 'SAVED', color: '#38bdf8' },
                 { label: '4. MATCHING REQUEST ID', id: 'SRM-MAT-2026-000421', status: 'MATCHED', color: '#38bdf8' },
                 { label: '5. PROPERTY MASTER ID', id: 'SRM-PROP-2026-000231', status: 'SHORTLISTED', color: '#38bdf8' },
-                { label: '6. COST SHEET ID', id: 'SRM-CS-2026-000145', status: 'CS-V1 ACTIVE', color: '#fbbf24', isCostSheet: true },
-                { label: '7. COST SHEET SHARE ID', id: 'SRM-CSS-2026-000055', status: 'DELIVERED', color: '#fbbf24', isCostSheet: true },
+                { label: '6. COST SHEET ID', id: 'SRM-CS-2026-000145', status: 'CS-V1 ACTIVE', color: '#fbbf24' },
+                { label: '7. COST SHEET SHARE ID', id: 'SRM-CSS-2026-000055', status: 'DELIVERED', color: '#fbbf24' },
                 { label: '8. VISIT SCHEDULE ID', id: 'SRM-VS-2026-000087', status: 'CONFIRMED', color: '#4ade80' },
                 { label: '9. OTP VERIFICATION ID', id: 'SRM-VOTP-2026-000032', status: '849201 VERIFIED', color: '#4ade80' },
                 { label: '10. VISIT CHECK-IN ID', id: 'SRM-VIN-2026-000044', status: 'CHECKED_IN', color: '#4ade80' },
@@ -602,18 +777,25 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                 { label: '16. INVOICE ID', id: 'SRM-INV-2026-000031', status: 'PAID', color: '#22c55e' },
                 { label: '17. BROKERAGE ID', id: 'SRM-BRO-2026-000011', status: 'PROCESSED', color: '#22c55e' }
               ].map((item, idx) => (
-                <div key={idx} onClick={() => {
-                  if (item.isCostSheet) {
-                    handleViewCostSheetPdf(selectedCust);
-                  } else {
-                    alert(`🔍 Master Transaction Detail Log for ${item.id}:\n\nType: ${item.label}\nCustomer: ${selectedCust.name} (${selectedCust.customer_number})\nStatus: ${item.status}\nCreated: 17 Aug 2026\nAudit Hash: SHA256-VERIFIED-SRM-90412\nTraceability: PERMANENTLY LINKED TO MASTER ID`);
-                  }
-                }} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: item.isCostSheet ? '1px solid #10b981' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), borderRadius: '8px', padding: '10px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '0.62rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block' }}>{item.label}</span>
-                  <h5 style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '900', color: item.isCostSheet ? '#4ade80' : '#38bdf8', marginTop: '2px' }}>{item.id}</h5>
-                  <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: item.color, padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', display: 'inline-block', marginTop: '4px' }}>
-                    ● {item.status} {item.isCostSheet ? '(Click to View PDF)' : ''}
-                  </span>
+                <div key={idx} onClick={() => setSelectedTransactionPdf(getTransactionPdfPayload(item, selectedCust))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <span style={{ fontSize: '0.62rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block' }}>{item.label}</span>
+                    <h5 style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{item.id}</h5>
+                    <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: item.color, padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', display: 'inline-block', marginTop: '4px' }}>
+                      ● {item.status}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedTransactionPdf(getTransactionPdfPayload(item, selectedCust));
+                    }}
+                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '8px', width: 'fit-content' }}
+                    title={`View Official Printable PDF Certificate for ${item.id}`}
+                  >
+                    📄 View PDF
+                  </button>
                 </div>
               ))}
             </div>
@@ -675,51 +857,6 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                     <p style={{ fontSize: '0.75rem', color: isLight ? '#0f172a' : '#ffffff', margin: '2px 0 0 0' }}>Gated Community Villa in Kokapet</p>
                   </div>
                   <span style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>NEGOTIATION PENDING</span>
-                </div>
-              </div>
-            </div>
-
-            {/* CARD 3: COST SHEET PDF & QUOTATION VAULT */}
-            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #10b981', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: windowWidth > 768 ? 'span 2' : 'span 1' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  📄 Customer Cost Sheet PDF Document & Quotation Vault
-                </h4>
-                <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
-                  OFFICIAL QUOTATION READY
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px 18px', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>ACTIVE COST SHEET DOCUMENT</span>
-                  <h5 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
-                    Official Property Cost Sheet — {selectedCust.name} ({selectedCust.customer_number})
-                  </h5>
-                  <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#cbd5e1', margin: '4px 0 0 0' }}>
-                    Itemized property valuation including base price, floor rise, PLC, statutory GST, stamp duty, and payment milestones.
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <button 
-                    onClick={() => handleViewCostSheetPdf(selectedCust)}
-                    style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    📄 Open Cost Sheet PDF
-                  </button>
-                  <button 
-                    onClick={() => handleViewCostSheetPdf(selectedCust)}
-                    style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    🖨️ Print PDF
-                  </button>
-                  <button 
-                    onClick={() => alert(`📲 Cost Sheet PDF link shared to ${selectedCust.name} via WhatsApp (${selectedCust.mobile})!`)}
-                    style={{ background: '#25D366', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    💬 WhatsApp PDF Link
-                  </button>
                 </div>
               </div>
             </div>
@@ -899,6 +1036,129 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                 <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: item.color, marginTop: '4px' }}>{item.weight}</h4>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: PRINTABLE TRANSACTION IDENTIFIER PDF CERTIFICATE MODAL */}
+      {selectedTransactionPdf && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(15, 23, 42, 0.85)' : 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2500, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', width: '94vw', maxWidth: '850px', maxHeight: '94vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', overflowY: 'auto', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
+            
+            {/* ACTION TOOLBAR AT TOP */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155', paddingBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <FileText size={26} color="#38bdf8" />
+                <div>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                    OFFICIAL TRANSACTION CERTIFICATE PDF — {selectedTransactionPdf.item.id}
+                  </h3>
+                  <span style={{ fontSize: '0.73rem', color: '#4ade80', fontWeight: '800' }}>
+                    {selectedTransactionPdf.item.label} • {selectedTransactionPdf.sha256Hash}
+                  </span>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                <button 
+                  onClick={() => window.print()} 
+                  style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Printer size={14} /> Print PDF
+                </button>
+                <button 
+                  onClick={() => {
+                    alert(`📥 Downloading official Transaction Certificate PDF for ${selectedTransactionPdf.item.id}...`);
+                    window.print();
+                  }} 
+                  style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Download size={14} /> Download PDF
+                </button>
+                <button 
+                  onClick={() => alert(`📲 Shared Transaction Certificate ${selectedTransactionPdf.item.id} PDF link to ${selectedTransactionPdf.custName} (${selectedTransactionPdf.custPhone})!`)} 
+                  style={{ background: '#25D366', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
+                >
+                  💬 WhatsApp PDF Link
+                </button>
+                <X size={22} color="#94a3b8" style={{ cursor: 'pointer', marginLeft: '6px' }} onClick={() => setSelectedTransactionPdf(null)} />
+              </div>
+            </div>
+
+            {/* FORMAL ENTERPRISE DOCUMENT CONTAINER (PRINTABLE AREA) */}
+            <div id="printable-transaction-pdf-area" style={{ background: '#ffffff', color: '#0f172a', borderRadius: '12px', padding: '30px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 10px 30px rgba(0,0,0,0.15)', fontSize: '0.86rem' }}>
+              
+              {/* BRANDING & DOCUMENT TITLE HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '3px solid #0284c7', paddingBottom: '16px' }}>
+                <div>
+                  <h1 style={{ fontSize: '1.45rem', fontWeight: '900', color: '#0284c7', margin: 0, letterSpacing: '-0.5px' }}>
+                    SWARAMAYI REAL ESTATE MARKETING
+                  </h1>
+                  <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', display: 'block', marginTop: '2px' }}>
+                    Enterprise CRM Solution • Immutable Journey Transaction Certificate
+                  </span>
+                  <p style={{ fontSize: '0.75rem', color: '#475569', margin: '4px 0 0 0' }}>
+                    Hitec City Sector, Hyderabad, Telangana 500084 • Phone: +91 40 6688 9999
+                  </p>
+                </div>
+
+                <div style={{ textAlign: 'right', background: '#f8fafc', padding: '10px 16px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: '800', textTransform: 'uppercase', display: 'block' }}>TRANSACTION ID</span>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0284c7', fontFamily: 'monospace', margin: 0 }}>
+                    {selectedTransactionPdf.item.id}
+                  </h3>
+                  <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', display: 'inline-block', marginTop: '4px' }}>
+                    ● {selectedTransactionPdf.item.status}
+                  </span>
+                </div>
+              </div>
+
+              {/* METADATA STRIP */}
+              <div style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '12px 16px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px', fontSize: '0.78rem' }}>
+                <div><span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>Customer Name:</span> <strong style={{ color: '#0f172a' }}>{selectedTransactionPdf.custName}</strong></div>
+                <div><span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>Customer ID:</span> <strong style={{ color: '#0284c7', fontFamily: 'monospace' }}>{selectedTransactionPdf.custNum}</strong></div>
+                <div><span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>Transaction Step:</span> <strong style={{ color: '#d97706' }}>{selectedTransactionPdf.item.label}</strong></div>
+                <div><span style={{ color: '#64748b', fontSize: '0.7rem', display: 'block' }}>Audit Hash:</span> <strong style={{ color: '#16a34a', fontFamily: 'monospace', fontSize: '0.7rem' }}>{selectedTransactionPdf.sha256Hash}</strong></div>
+              </div>
+
+              {/* TRANSACTION PAYLOAD DETAILS TABLE */}
+              <div>
+                <h4 style={{ fontSize: '0.92rem', fontWeight: '900', color: '#0369a1', borderBottom: '2px solid #bae6fd', paddingBottom: '6px', marginBottom: '10px' }}>
+                  📋 TRANSACTION SPECIFICATIONS & PAYLOAD DATA LOG
+                </h4>
+                
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem', border: '1px solid #cbd5e1' }}>
+                  <thead>
+                    <tr style={{ background: '#f1f5f9', color: '#334155', textAlign: 'left', borderBottom: '2px solid #cbd5e1' }}>
+                      <th style={{ padding: '10px 14px', width: '38%' }}>Specification Field</th>
+                      <th style={{ padding: '10px 14px' }}>Recorded Transaction Detail Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedTransactionPdf.payload.map((row: any, idx: number) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0', background: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                        <td style={{ padding: '9px 14px', fontWeight: '700', color: '#475569' }}>{row.label}</td>
+                        <td style={{ padding: '9px 14px', fontWeight: '800', color: '#0f172a', fontFamily: row.label.includes('ID') || row.label.includes('Hash') || row.label.includes('UTR') || row.label.includes('Ref') || row.label.includes('Code') ? 'monospace' : 'inherit' }}>{row.value}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* FOOTER & CRYPTOGRAPHIC SEAL */}
+              <div style={{ borderTop: '2px solid #cbd5e1', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem', color: '#64748b' }}>
+                <div>
+                  <strong>Swaramayi Real Estate Marketing Enterprise Audit Engine</strong>
+                  <p style={{ margin: '2px 0 0 0' }}>This is an official computer-generated transaction record certificate. Verified by SHA-256 ledger.</p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <span style={{ color: '#0284c7', fontWeight: '900' }}>✓ DIGITALLY AUTHENTICATED</span>
+                  <p style={{ margin: '2px 0 0 0' }}>Date: {new Date().toLocaleDateString('en-GB')}</p>
+                </div>
+              </div>
+
+            </div>
+
           </div>
         </div>
       )}
