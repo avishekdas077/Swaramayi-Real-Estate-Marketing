@@ -3743,6 +3743,7 @@ export default function App() {
       setScheduledVisits([]);
       setVisitPlans([]);
       setSourcingRequests([]);
+      setDevelopers([]);
       setSelectedPropertyIds([]);
       setSelectedCust(null);
       setActiveSelectionRecord(null);
@@ -3757,6 +3758,7 @@ export default function App() {
       localStorage.removeItem('swaramayi_scheduled_visits_v4_clean');
       localStorage.removeItem('swaramayi_visit_plans_v4_clean');
       localStorage.removeItem('swaramayi_sourcing_requests_v1');
+      localStorage.removeItem('swaramayi_developers_v1');
       alert('🗑️ All current records inside have been deleted! Workspace is now 100% clean.');
     }
   };
@@ -4514,6 +4516,7 @@ export default function App() {
             if (Array.isArray(json.data.cost_sheets)) setIndividualCostSheets(json.data.cost_sheets);
             if (Array.isArray(json.data.pva_agreements)) setProjectVisitAgreements(json.data.pva_agreements);
             if (Array.isArray(json.data.sourcing_requests)) setSourcingRequests(json.data.sourcing_requests);
+            if (Array.isArray(json.data.developers)) setDevelopers(json.data.developers);
           }
         }
       } catch (err) {
@@ -4544,6 +4547,27 @@ export default function App() {
     }
   }, [sourcingRequests]);
 
+  const [developers, setDevelopers] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_developers_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading developers from localStorage:', e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_developers_v1', JSON.stringify(developers));
+    } catch (e) {
+      console.error('Error saving developers to localStorage:', e);
+    }
+  }, [developers]);
+
   // GLOBAL REAL-TIME MONGODB ATLAS & BACKEND AUTO-SYNC EFFECT
   useEffect(() => {
     const syncDataWithMongoDB = async () => {
@@ -4562,7 +4586,8 @@ export default function App() {
           matching_requests: matchingRequestsQueue,
           cost_sheets: individualCostSheets,
           pva_agreements: projectVisitAgreements,
-          sourcing_requests: sourcingRequests
+          sourcing_requests: sourcingRequests,
+          developers: developers
         };
         await fetch('http://localhost:5000/api/v1/crm/sync', {
           method: 'POST',
@@ -4575,7 +4600,7 @@ export default function App() {
     };
     const timer = setTimeout(syncDataWithMongoDB, 2000);
     return () => clearTimeout(timer);
-  }, [users, teams, branches, properties, customers, leadsList, agreements, invoices, bookings, scheduledVisits, matchingRequestsQueue, individualCostSheets, projectVisitAgreements, sourcingRequests]);
+  }, [users, teams, branches, properties, customers, leadsList, agreements, invoices, bookings, scheduledVisits, matchingRequestsQueue, individualCostSheets, projectVisitAgreements, sourcingRequests, developers]);
   const [rawSelectedAgreement, setSelectedAgreement] = useState<any>(null);
   const selectedAgreement = rawSelectedAgreement || agreements[0] || { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' };
 

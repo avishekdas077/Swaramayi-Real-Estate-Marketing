@@ -409,6 +409,7 @@ export async function syncMongoDB(req: AuthRequest, res: Response) {
     if (Array.isArray(payload.matching_requests)) (dbStore.data as any).matching_requests = payload.matching_requests;
     if (Array.isArray(payload.pva_agreements)) (dbStore.data as any).pva_agreements = payload.pva_agreements;
     if (Array.isArray(payload.sourcing_requests)) (dbStore.data as any).sourcing_requests = payload.sourcing_requests;
+    if (Array.isArray(payload.developers)) (dbStore.data as any).developers = payload.developers;
     saveData();
     await syncToMongoDB(payload);
   }

@@ -21,6 +21,7 @@ export const CostSheetSchema = new mongoose.Schema({ id: { type: String, unique:
 export const MatchingRequestSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
 export const ProjectVisitAgreementSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
 export const SourcingRequestSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
+export const DeveloperSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
 
 export const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
 export const PropertyModel = mongoose.models.Property || mongoose.model('Property', PropertySchema);
@@ -38,6 +39,7 @@ export const CostSheetModel = mongoose.models.CostSheet || mongoose.model('CostS
 export const MatchingRequestModel = mongoose.models.MatchingRequest || mongoose.model('MatchingRequest', MatchingRequestSchema);
 export const ProjectVisitAgreementModel = mongoose.models.ProjectVisitAgreement || mongoose.model('ProjectVisitAgreement', ProjectVisitAgreementSchema);
 export const SourcingRequestModel = mongoose.models.SourcingRequest || mongoose.model('SourcingRequest', SourcingRequestSchema);
+export const DeveloperModel = mongoose.models.Developer || mongoose.model('Developer', DeveloperSchema);
 
 // Helper function to sync array of records into a model (handles permanent deletions)
 async function syncCollection(model: mongoose.Model<any>, records: any[]) {
@@ -125,6 +127,7 @@ export async function syncToMongoDB(data: any) {
     if (Array.isArray(data.matching_requests)) await syncCollection(MatchingRequestModel, data.matching_requests);
     if (Array.isArray(data.pva_agreements)) await syncCollection(ProjectVisitAgreementModel, data.pva_agreements);
     if (Array.isArray(data.sourcing_requests)) await syncCollection(SourcingRequestModel, data.sourcing_requests);
+    if (Array.isArray(data.developers)) await syncCollection(DeveloperModel, data.developers);
 
     console.log(`⚡ MongoDB Atlas Live Sync Complete with Permanent Deletion Support`);
   } catch (e: any) {
@@ -155,8 +158,9 @@ export async function loadDataFromMongoDB() {
     const mongoMatchingRequests = await MatchingRequestModel.find({}).lean();
     const mongoPvaAgreements = await ProjectVisitAgreementModel.find({}).lean();
     const mongoSourcingRequests = await SourcingRequestModel.find({}).lean();
+    const mongoDevelopers = await DeveloperModel.find({}).lean();
 
-    console.log(`📥 Loaded existing data from MongoDB Atlas: ${mongoUsers.length} users, ${mongoTeams.length} teams, ${mongoBranches.length} branches, ${mongoProperties.length} properties, ${mongoCustomers.length} customers, ${mongoSourcingRequests.length} sourcing requests`);
+    console.log(`📥 Loaded existing data from MongoDB Atlas: ${mongoUsers.length} users, ${mongoTeams.length} teams, ${mongoBranches.length} branches, ${mongoProperties.length} properties, ${mongoCustomers.length} customers, ${mongoDevelopers.length} developers`);
 
     return {
       users: mongoUsers.length > 0 ? mongoUsers : null,
@@ -174,7 +178,8 @@ export async function loadDataFromMongoDB() {
       cost_sheets: mongoCostSheets,
       matching_requests: mongoMatchingRequests,
       pva_agreements: mongoPvaAgreements,
-      sourcing_requests: mongoSourcingRequests
+      sourcing_requests: mongoSourcingRequests,
+      developers: mongoDevelopers
     };
   } catch (e: any) {
     console.warn('MongoDB Data Loading Warning:', e.message);

@@ -113,78 +113,19 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
     return { lat: defaultLat || '22.722361', lng: defaultLng || '88.493403' };
   };
 
-  const DEFAULT_DEVELOPERS = [
-    {
-      id: 'SRM-DEV-2026-000101',
-      name: 'My Home Constructions',
-      mobile: '+91 98490 88776',
-      email: 'contact@myhomeconstructions.com',
-      projects: [
-        { id: 'PRJ-101', title: 'My Home Bhooja', locality: 'HITEC City Sector', lat: '17.440081', lng: '78.377625' },
-        { id: 'PRJ-102', title: 'My Home Sayuk', locality: 'Tellapur Hub', lat: '17.462100', lng: '78.291200' },
-        { id: 'PRJ-103', title: 'My Home Tarkshya', locality: 'Kondapur Hub', lat: '17.465400', lng: '78.361200' }
-      ]
-    },
-    {
-      id: 'SRM-DEV-2026-000102',
-      name: 'Dhriti Builders & Developers',
-      mobile: '+91 98491 55432',
-      email: 'sales@dhritibuilders.com',
-      projects: [
-        { id: 'PRJ-201', title: 'Dhriti Apartments', locality: 'Kondapur Hub', lat: '17.468000', lng: '78.358000' },
-        { id: 'PRJ-202', title: 'Dhriti Heights', locality: 'Gachibowli', lat: '17.442000', lng: '78.349000' }
-      ]
-    },
-    {
-      id: 'SRM-DEV-2026-000103',
-      name: 'Aparna Constructions',
-      mobile: '+91 98492 11009',
-      email: 'info@aparnaconstructions.com',
-      projects: [
-        { id: 'PRJ-301', title: 'Aparna Zenon', locality: 'Kondapur Hub', lat: '17.468200', lng: '78.354100' },
-        { id: 'PRJ-302', title: 'Aparna Sarovar Zicon', locality: 'Nallagandla', lat: '17.478900', lng: '78.318000' }
-      ]
-    },
-    {
-      id: 'SRM-DEV-2026-000104',
-      name: 'Jayabheri Properties',
-      mobile: '+91 98493 77812',
-      email: 'contact@jayabheri.com',
-      projects: [
-        { id: 'PRJ-401', title: 'Jayabheri The Peak', locality: 'Financial District', lat: '17.419800', lng: '78.341200' }
-      ]
-    },
-    {
-      id: 'SRM-DEV-2026-000105',
-      name: 'LITTON SEN',
-      mobile: '9883395102',
-      altMobile: '7044293951',
-      email: 'litton.sen@tilottama.com',
-      projects: [
-        { id: 'PRJ-501', title: 'TILOTTAMA APPARTMENT', locality: 'BARASAT, CHAPADALI', lat: '22.722361', lng: '88.493403' }
-      ]
-    }
-  ];
+  const DEFAULT_DEVELOPERS: any[] = [];
 
   const [developerMasterList, setDeveloperMasterList] = React.useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('swaramayi_developers_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const merged = [...parsed];
-          DEFAULT_DEVELOPERS.forEach(d => {
-            if (!merged.some(m => m.id === d.id || m.name.toLowerCase().trim() === d.name.toLowerCase().trim())) {
-              merged.push(d);
-            }
-          });
-          return merged;
-        }
+        if (Array.isArray(parsed)) return parsed;
       }
-      return DEFAULT_DEVELOPERS;
     } catch {
-      return DEFAULT_DEVELOPERS;
+      console.error('Error reading developers from localStorage');
     }
+    return [];
   });
 
   // COLLECT ALL REGISTERED MASTER PROJECTS FROM DEVELOPER VAULT & EXISTING PROPERTIES
@@ -2991,22 +2932,42 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
             {/* DEVELOPERS MASTER LIST TABLE */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {developerMasterList.map((dev) => (
-                <div key={dev.id} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                    <div>
-                      <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', fontFamily: 'monospace', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                        🆔 {dev.id}
-                      </span>
-                      <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>
-                        🏢 {dev.name}
-                      </h4>
+              {developerMasterList.length === 0 ? (
+                <div style={{ padding: '30px', textAlign: 'center', color: isLight ? '#64748b' : '#94a3b8', fontStyle: 'italic', background: isLight ? '#f8fafc' : '#0f172a', borderRadius: '12px', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                  🏢 No registered developers in vault. Fill out the form above to register your first Developer ID & Master Project!
+                </div>
+              ) : (
+                developerMasterList.map((dev) => (
+                  <div key={dev.id} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', fontFamily: 'monospace', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                          🆔 {dev.id}
+                        </span>
+                        <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>
+                          🏢 {dev.name}
+                        </h4>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'right' }}>
+                        <div>📱 Phone (for OTP): <strong style={{ color: '#4ade80' }}>{dev.mobile}</strong></div>
+                        <div>📧 Email: {dev.email}</div>
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Developer ${dev.id} (${dev.name})?`)) {
+                                const nextList = developerMasterList.filter((d: any) => d.id !== dev.id);
+                                setDeveloperMasterList(nextList);
+                                alert(`🗑️ Developer ${dev.name} permanently deleted.`);
+                              }
+                            }}
+                            style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.73rem', cursor: 'pointer', marginTop: '6px' }}
+                            title="Super Admin Only: Delete developer profile"
+                          >
+                            🗑️ Delete Developer
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'right' }}>
-                      <div>📱 Phone (for OTP): <strong style={{ color: '#4ade80' }}>{dev.mobile}</strong></div>
-                      <div>📧 Email: {dev.email}</div>
-                    </div>
-                  </div>
 
                   {/* REGISTERED PROJECTS LIST FOR THIS DEVELOPER */}
                   <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px' }}>
@@ -3062,7 +3023,8 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     </div>
                   </div>
                 </div>
-              ))}
+              ))
+            )}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
