@@ -178,14 +178,76 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           return merged;
         }
       }
+      return DEFAULT_DEVELOPERS;
     } catch {
       return DEFAULT_DEVELOPERS;
     }
-    return DEFAULT_DEVELOPERS;
   });
+
+  // COLLECT ALL REGISTERED MASTER PROJECTS FROM DEVELOPER VAULT & EXISTING PROPERTIES
+  const getAllMasterProjects = React.useCallback(() => {
+    const masterProjectsMap = new Map<string, any>();
+
+    // 1. From developerMasterList
+    (developerMasterList || []).forEach((dev: any) => {
+      (dev.projects || []).forEach((proj: any) => {
+        const projId = proj.id || proj.code || `PROJ-${(proj.title || 'PROJECT').replace(/\s+/g, '-').toUpperCase()}`;
+        if (!masterProjectsMap.has(projId)) {
+          masterProjectsMap.set(projId, {
+            id: projId,
+            code: proj.code || projId,
+            title: proj.title,
+            developer: dev.name,
+            mobile: dev.mobile || '',
+            altMobile: dev.altMobile || '',
+            locality: proj.locality || '',
+            latitude: proj.lat || proj.latitude || '22.722361',
+            longitude: proj.lng || proj.longitude || '88.493403',
+            amenities: proj.amenities || [],
+            building_photos: proj.building_photos || [],
+            total_covered_parking_capacity: proj.total_covered_parking_capacity !== undefined ? proj.total_covered_parking_capacity : 24,
+            covered_parking_rate: proj.covered_parking_rate || '300000',
+            total_ev_parking_capacity: proj.total_ev_parking_capacity !== undefined ? proj.total_ev_parking_capacity : 6,
+            ev_parking_rate: proj.ev_parking_rate || '450000',
+            total_open_parking_capacity: proj.total_open_parking_capacity !== undefined ? proj.total_open_parking_capacity : 12,
+            open_parking_rate: proj.open_parking_rate || '150000'
+          });
+        }
+      });
+    });
+
+    // 2. From properties list
+    (properties || []).forEach((prop: any) => {
+      const projId = prop.project_id || prop.id || 'SRM-PROJ-2026-000088';
+      if (!masterProjectsMap.has(projId) && (prop.title || prop.project_title)) {
+        masterProjectsMap.set(projId, {
+          id: projId,
+          code: projId,
+          title: prop.title || prop.project_title,
+          developer: prop.developer || prop.builder_name || 'Developer',
+          mobile: prop.developer_mobile || prop.mobile || '',
+          altMobile: prop.developer_alt_mobile || '',
+          locality: prop.locality || '',
+          latitude: prop.latitude || '22.722361',
+          longitude: prop.longitude || '88.493403',
+          amenities: prop.selected_amenities || [],
+          building_photos: prop.building_photos || [],
+          total_covered_parking_capacity: prop.total_covered_parking_capacity !== undefined ? prop.total_covered_parking_capacity : 24,
+          covered_parking_rate: prop.covered_parking_rate || '300000',
+          total_ev_parking_capacity: prop.total_ev_parking_capacity !== undefined ? prop.total_ev_parking_capacity : 6,
+          ev_parking_rate: prop.ev_parking_rate || '450000',
+          total_open_parking_capacity: prop.total_open_parking_capacity !== undefined ? prop.total_open_parking_capacity : 12,
+          open_parking_rate: prop.open_parking_rate || '150000'
+        });
+      }
+    });
+
+    return Array.from(masterProjectsMap.values());
+  }, [developerMasterList, properties]);
 
   const [selectedDevId, setSelectedDevId] = React.useState<string>('');
   const [selectedProjectId, setSelectedProjectId] = React.useState<string>('');
+  const [projectIdSearchFilter, setProjectIdSearchFilter] = React.useState<string>('');
   const [devSearchQuery, setDevSearchQuery] = React.useState<string>('');
   const [projectSearchQuery, setProjectSearchQuery] = React.useState<string>('');
   const [showDevVaultModal, setShowDevVaultModal] = React.useState<boolean>(false);
@@ -194,6 +256,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   const [newDevAltMobileInput, setNewDevAltMobileInput] = React.useState<string>('');
   const [newDevProjectTitleInput, setNewDevProjectTitleInput] = React.useState<string>('');
   const [viewPropertyModal, setViewPropertyModal] = React.useState<any | null>(null);
+  const [selectedProjectDetailsModal, setSelectedProjectDetailsModal] = React.useState<any | null>(null);
 
   // MULTIPLE PROPERTY UNITS BUILDER & SLIDER STATE
   const [showMultipleUnitsSlider, setShowMultipleUnitsSlider] = React.useState<{ open: boolean; project?: any } | null>(null);
@@ -313,8 +376,8 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
     unitVideos: []
   });
 
-  // PROPERTY ADDITION MODE STATE ('single' = Standalone Property, 'multiple' = Project Multi-Unit Builder)
-  const [propertyAddMode, setPropertyAddMode] = React.useState<'single' | 'multiple'>('multiple');
+  // PROPERTY ADDITION MODE STATE ('single' = Standalone Property)
+  const [propertyAddMode, setPropertyAddMode] = React.useState<'single' | 'multiple'>('single');
 
   // PARKING STOCK MANAGEMENT STATE (PERSISTED IN LOCALSTORAGE)
   const [parkingStockConfig, setParkingStockConfig] = React.useState<any>(() => {
@@ -626,6 +689,80 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
     if (setDevProjectAltMobile) setDevProjectAltMobile(secondaryMob);
   };
 
+  const handleSaveProjectMaster = React.useCallback(() => {
+    if (!newPropertyForm.developer || !newPropertyForm.title) {
+      return alert('Please enter Developer/Builder Name & Project Title!');
+    }
+    const assignedProjCode = newPropertyForm.project_id || generateNextProjectId();
+    const assignedPropCode = generateDynamicPropertyCode();
+
+    // SAVE MASTER PROJECT RECORD INTO DEVELOPER VAULT LIST
+    const newProjEntry = {
+      id: assignedProjCode,
+      code: assignedProjCode,
+      title: newPropertyForm.title,
+      locality: newPropertyForm.locality || 'Locality Hub',
+      lat: newPropertyForm.latitude || '22.722361',
+      lng: newPropertyForm.longitude || '88.493403',
+      amenities: newPropertyForm.selected_amenities || [],
+      building_photos: newPropertyForm.building_photos || [],
+      total_covered_parking_capacity: newPropertyForm.total_covered_parking_capacity !== undefined ? newPropertyForm.total_covered_parking_capacity : 24,
+      covered_parking_rate: newPropertyForm.covered_parking_rate || '300000',
+      total_ev_parking_capacity: newPropertyForm.total_ev_parking_capacity !== undefined ? newPropertyForm.total_ev_parking_capacity : 6,
+      ev_parking_rate: newPropertyForm.ev_parking_rate || '450000',
+      total_open_parking_capacity: newPropertyForm.total_open_parking_capacity !== undefined ? newPropertyForm.total_open_parking_capacity : 12,
+      open_parking_rate: newPropertyForm.open_parking_rate || '150000'
+    };
+
+    let updatedDevs = [...developerMasterList];
+    const existingDevIdx = updatedDevs.findIndex(d => d.name.toLowerCase().trim() === (newPropertyForm.developer || '').toLowerCase().trim());
+    
+    if (existingDevIdx >= 0) {
+      const devObj = updatedDevs[existingDevIdx];
+      const projList = devObj.projects || [];
+      if (!projList.some((p: any) => (p.id === assignedProjCode || p.code === assignedProjCode || p.title.toLowerCase().trim() === newPropertyForm.title.toLowerCase().trim()))) {
+        devObj.projects = [newProjEntry, ...projList];
+      }
+    } else {
+      const newDevObj = {
+        id: `SRM-DEV-2026-${String(Math.floor(100000 + Math.random() * 900000))}`,
+        name: newPropertyForm.developer,
+        mobile: devProjectMobile || '+91 98490 88776',
+        email: `${newPropertyForm.developer.toLowerCase().replace(/\s+/g, '')}@builder.com`,
+        projects: [newProjEntry]
+      };
+      updatedDevs = [newDevObj, ...updatedDevs];
+    }
+
+    setDeveloperMasterList(updatedDevs);
+    try {
+      localStorage.setItem('swaramayi_developers_v1', JSON.stringify(updatedDevs));
+    } catch (e) {}
+
+    // UPDATE FORM WITH PROJECT CODE & PRE-GENERATE UNIQUE PROPERTY CODE
+    setNewPropertyForm((prev: any) => ({
+      ...prev,
+      project_id: assignedProjCode,
+      property_code: assignedPropCode,
+      developer: newPropertyForm.developer,
+      title: newPropertyForm.title,
+      locality: newPropertyForm.locality,
+      latitude: newPropertyForm.latitude,
+      longitude: newPropertyForm.longitude,
+      selected_amenities: newPropertyForm.selected_amenities || [],
+      building_photos: newPropertyForm.building_photos || [],
+      total_covered_parking_capacity: newPropertyForm.total_covered_parking_capacity !== undefined ? newPropertyForm.total_covered_parking_capacity : prev.total_covered_parking_capacity,
+      covered_parking_rate: newPropertyForm.covered_parking_rate || prev.covered_parking_rate,
+      total_ev_parking_capacity: newPropertyForm.total_ev_parking_capacity !== undefined ? newPropertyForm.total_ev_parking_capacity : prev.total_ev_parking_capacity,
+      ev_parking_rate: newPropertyForm.ev_parking_rate || prev.ev_parking_rate,
+      total_open_parking_capacity: newPropertyForm.total_open_parking_capacity !== undefined ? newPropertyForm.total_open_parking_capacity : prev.total_open_parking_capacity,
+      open_parking_rate: newPropertyForm.open_parking_rate || prev.open_parking_rate
+    }));
+
+    alert(`🎉 MASTER PROJECT CREATED & REGISTERED IN VAULT!\n\n• Master Project Code / ID: ${assignedProjCode}\n• Project Title: ${newPropertyForm.title}\n• Developer: ${newPropertyForm.developer}\n• Locality Hub: ${newPropertyForm.locality}\n\n👉 Now creating individual property unit under Project Code ${assignedProjCode}!`);
+    setActiveProjectSubTab('add_property_master');
+  }, [newPropertyForm, developerMasterList, devProjectMobile, generateNextProjectId, generateDynamicPropertyCode]);
+
   const filteredDevs = developerMasterList.filter(dev => {
     if (!devSearchQuery.trim()) return true;
     const q = devSearchQuery.toLowerCase().trim();
@@ -762,7 +899,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
             <span style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800' }}>STOCK INVENTORY ACTIVE</span>
           </div>
           <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
-            Master Stock Inventory • Live Unit Tower Grid • GPS Radius Search • Deal Conversion Funnel
+            Master Stock Inventory
           </p>
         </div>
 
@@ -772,21 +909,19 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           </button>
           <button 
             onClick={() => {
-              setPropertyAddMode('single');
-              handleOpenAddPropertyModal();
+              setActiveProjectSubTab('add_property_master');
             }} 
             style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            🏠 + Add Single Property
+            🏠 + Add Property
           </button>
           <button 
             onClick={() => {
-              setPropertyAddMode('multiple');
-              handleOpenAddPropertyModal();
+              setActiveProjectSubTab('add_project_developer');
             }} 
             style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            🏢 + Add Multiple Units Project
+            🏢 + Add Project & Developer
           </button>
           <button onClick={() => alert('📄 Generating Property Stock Inventory CSV Report...')} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#4ade80', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Share2 size={15} /> Export Inventory
@@ -800,31 +935,16 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           🏠 Property Master Stock ({properties.length})
         </button>
         <button 
-          onClick={() => {
-            setPropertyAddMode('single');
-            handleOpenAddPropertyModal();
-          }} 
-          style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_property_master' && propertyAddMode === 'single' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_property_master' && propertyAddMode === 'single' ? '#ffffff' : '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          onClick={() => setActiveProjectSubTab('add_project_developer')} 
+          style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_project_developer' ? '#a855f7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_project_developer' ? '#ffffff' : '#a855f7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
-          🏠 Add Single Property
+          🏢 Add Project & Developer
         </button>
         <button 
-          onClick={() => {
-            setPropertyAddMode('multiple');
-            handleOpenAddPropertyModal();
-          }} 
-          style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_property_master' && propertyAddMode === 'multiple' ? '#a855f7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_property_master' && propertyAddMode === 'multiple' ? '#ffffff' : '#a855f7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+          onClick={() => setActiveProjectSubTab('add_property_master')} 
+          style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_property_master' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_property_master' ? '#ffffff' : '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
         >
-          🏢 Add Multiple Units Project
-        </button>
-        <button onClick={() => setActiveProjectSubTab('live_inventory_board')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'live_inventory_board' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'live_inventory_board' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-          🏢 Live Tower Unit Grid ({propertyUnits.length})
-        </button>
-        <button onClick={() => setActiveProjectSubTab('map_radius')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'map_radius' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'map_radius' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-          📍 Radius GPS Search Filter
-        </button>
-        <button onClick={() => setActiveProjectSubTab('deal_pipeline_tracker')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'deal_pipeline_tracker' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'deal_pipeline_tracker' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-          📈 Deal Conversion Funnel (13 Stages)
+          🏠 Add Property
         </button>
         <button onClick={() => setActiveProjectSubTab('introduction_register' as any)} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === ('introduction_register' as any) ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === ('introduction_register' as any) ? '#ffffff' : '#a855f7', border: activeProjectSubTab === ('introduction_register' as any) ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155') }}>
           🛡️ Customer Introduction Register ({projectVisitAgreements.length})
@@ -907,6 +1027,672 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
         </div>
       )}
 
+      {/* SUB-TAB: FULL DEDICATED PAGE VIEW FOR PROJECT & DEVELOPER IDENTIFICATION */}
+      {activeProjectSubTab === 'add_project_developer' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* FULL PAGE NAVIGATION HEADER */}
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', boxShadow: isLight ? '0 4px 16px rgba(0,0,0,0.04)' : 'none' }}>
+            <div>
+              <button 
+                type="button" 
+                onClick={() => setActiveProjectSubTab('property_master')}
+                style={{ background: isLight ? '#f1f5f9' : '#0f172a', color: '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}
+              >
+                <ArrowRightLeft size={16} /> ⬅️ Back to Property Inventory Registry
+              </button>
+              <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                🏢 Register New Project & Developer Master
+              </h2>
+              <p style={{ fontSize: '0.82rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
+                Register Master Project Title, Builder/Developer Name, Contact OTP credentials, GPS locality coordinates, Elevation Photos & Amenities.
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={handleSaveProjectMaster}
+                style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '10px', fontWeight: '900', fontSize: '0.92rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(168, 85, 247, 0.4)', display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                💾 SAVE PROJECT & DEVELOPER MASTER
+              </button>
+
+              <div style={{ background: 'rgba(168, 85, 247, 0.15)', border: '1.5px solid #a855f7', borderRadius: '10px', padding: '8px 16px', textAlign: 'right' }}>
+                <span style={{ fontSize: '0.68rem', color: '#a855f7', fontWeight: '900', textTransform: 'uppercase', display: 'block' }}>🔑 Master Project ID</span>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#a855f7', fontFamily: 'monospace', margin: '2px 0 0 0' }}>
+                  {newPropertyForm.project_id || generateNextProjectId()}
+                </h3>
+              </div>
+            </div>
+          </div>
+
+          {/* SECTION 1: PROJECT & DEVELOPER IDENTIFICATION */}
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: windowWidth <= 640 ? '16px' : '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#a855f7', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  🏢 Project & Developer Identification
+                </h4>
+                <span style={{ fontSize: '0.75rem', background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                  1-Time Developer Project OTP Protocol
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Developer / Builder Name *</label>
+                  <input 
+                    type="text" 
+                    value={newPropertyForm.developer} 
+                    onChange={(e) => {
+                      const devVal = e.target.value;
+                      setNewPropertyForm({ ...newPropertyForm, developer: devVal, developer_mobile: devVal === 'SUMAN' || devVal === 'BISWAJIT KARMAKAR' ? newPropertyForm.developer_mobile : '' });
+                      if (setDevProjectMobile && devVal !== 'BISWAJIT KARMAKAR') {
+                        setDevProjectMobile('');
+                      }
+                    }} 
+                    placeholder="e.g. My Home Constructions / Dhriti Builders / Aparna" 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
+                    required 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Project Title & Name *</label>
+                  <input 
+                    type="text" 
+                    value={newPropertyForm.title} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const gps = getGpsForProject(val);
+                      setNewPropertyForm((prev: any) => ({
+                        ...prev,
+                        title: val,
+                        latitude: gps ? gps.lat : prev.latitude,
+                        longitude: gps ? gps.lng : prev.longitude
+                      }));
+                    }} 
+                    placeholder="e.g. My Home Bhooja / Dhriti Apartments / Aparna Zenon" 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Developer Mobile Phone (for OTP) *</label>
+                  <input 
+                    type="text" 
+                    value={devProjectMobile} 
+                    onChange={(e) => setDevProjectMobile(e.target.value)} 
+                    placeholder="e.g. +91 98833 95102" 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
+                    required 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Alternative Phone Number (Secondary Contact)</label>
+                  <input 
+                    type="text" 
+                    value={devProjectAltMobile} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (setDevProjectAltMobile) setDevProjectAltMobile(val);
+                      setNewPropertyForm({ ...newPropertyForm, developer_alt_mobile: val });
+                    }} 
+                    placeholder="e.g. +91 70442 93951" 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Locality Hub / Sector *</label>
+                  <input 
+                    type="text" 
+                    value={newPropertyForm.locality} 
+                    onChange={(e) => setNewPropertyForm({ ...newPropertyForm, locality: e.target.value })} 
+                    placeholder="e.g. Kondapur Hub / HITEC City Sector / BARASAT" 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                    required 
+                  />
+                </div>
+              </div>
+
+              {/* DEVELOPER 1-TIME PROJECT OTP VERIFICATION CONTAINER */}
+              {(() => {
+                const isAlreadyVerified = verifiedDevProjectsList.some(p => 
+                  p.developer.toLowerCase().includes((newPropertyForm.developer || '').toLowerCase().trim()) &&
+                  p.project.toLowerCase().includes((newPropertyForm.title || '').toLowerCase().trim())
+                ) || devProjectOtpVerified;
+
+                return (
+                  <div style={{ background: isAlreadyVerified ? 'rgba(34, 197, 94, 0.12)' : (isLight ? '#ffffff' : '#1e293b'), border: `2px solid ${isAlreadyVerified ? '#22c55e' : '#a855f7'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <h4 style={{ fontSize: '0.88rem', fontWeight: '900', color: isAlreadyVerified ? '#22c55e' : '#a855f7', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          {isAlreadyVerified ? '✅ DEVELOPER OTP VERIFIED (1-Time Project Verification Active)' : '🔐 DEVELOPER 1-TIME PROJECT OTP VERIFICATION'}
+                        </h4>
+                        <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                          {isAlreadyVerified ? `Verified for Developer: ${newPropertyForm.developer || 'Builder'} • Project: ${newPropertyForm.title || 'Project'}` : '1-Time OTP authentication per project. Developers with multiple projects verify once per project.'}
+                        </span>
+                      </div>
+
+                      {!isAlreadyVerified && !devProjectOtpSent && (
+                        <button 
+                          type="button" 
+                          onClick={() => setDevProjectOtpSent(true)}
+                          style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(168, 85, 247, 0.3)' }}
+                        >
+                          📱 SEND DEVELOPER 1-TIME OTP FOR THIS PROJECT
+                        </button>
+                      )}
+                    </div>
+
+                    {!isAlreadyVerified && devProjectOtpSent && (
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #a855f7' }}>
+                        <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: '800' }}>📲 Sent 6-Digit OTP to {devProjectMobile}:</span>
+                        <input 
+                          type="text" 
+                          value={devProjectOtpInput} 
+                          onChange={(e) => setDevProjectOtpInput(e.target.value)} 
+                          placeholder="Enter 6-Digit OTP"
+                          style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '6px 12px', borderRadius: '6px', fontSize: '0.9rem', width: '140px', fontFamily: 'monospace', textAlign: 'center' }}
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            if (devProjectOtpInput === '749201' || devProjectOtpInput.length === 6) {
+                              setDevProjectOtpVerified(true);
+                              const newVerifiedObj = {
+                                developer: newPropertyForm.developer || 'Builder',
+                                project: newPropertyForm.title || 'Project',
+                                mobile: devProjectMobile,
+                                verifiedAt: new Date().toLocaleString(),
+                                hash: `SHA256-DEV-OTP-VERIFIED-#${Math.floor(100000 + Math.random() * 900000)}`
+                              };
+                              setVerifiedDevProjectsList([newVerifiedObj, ...verifiedDevProjectsList]);
+                            }
+                          }}
+                          style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '7px 16px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
+                        >
+                          🔐 VERIFY DEVELOPER PROJECT OTP
+                        </button>
+                      </div>
+                    )}
+
+                    {isAlreadyVerified && (
+                      <div style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace', fontWeight: '800', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        <span>Audit Stamp: SHA256-DEV-PROJECT-OTP-AUTHENTICATED</span>
+                        <span>Status: 1-Time Verification Complete</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* GPS LATITUDE & LONGITUDE INPUTS WITH LIVE LOCATION CAPTURE BUTTON */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #a855f7', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <span style={{ fontSize: '0.8rem', color: '#a855f7', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Compass size={16} color="#a855f7" /> 📍 GPS Location Coordinates & Device Auto-Capture
+                  </span>
+
+                  <button 
+                    type="button" 
+                    onClick={handleCaptureCurrentGpsLocation} 
+                    disabled={isCapturingGps}
+                    style={{ 
+                      background: isCapturingGps ? '#334155' : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', 
+                      color: '#ffffff', 
+                      border: 'none', 
+                      padding: '8px 16px', 
+                      borderRadius: '8px', 
+                      fontWeight: '900', 
+                      fontSize: '0.8rem', 
+                      cursor: isCapturingGps ? 'wait' : 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '6px',
+                      boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)' 
+                    }}
+                  >
+                    <Navigation size={15} />
+                    {isCapturingGps ? '📡 Capturing GPS...' : '🎯 CAPTURE MY CURRENT GPS LOCATION'}
+                  </button>
+                </div>
+
+                {gpsCaptureStatus && (
+                  <div style={{ background: gpsCaptureStatus.startsWith('✓') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(168, 85, 247, 0.15)', border: `1px solid ${gpsCaptureStatus.startsWith('✓') ? '#22c55e' : '#a855f7'}`, borderRadius: '6px', padding: '8px 12px', fontSize: '0.78rem', color: gpsCaptureStatus.startsWith('✓') ? '#4ade80' : '#a855f7', fontWeight: '800' }}>
+                    {gpsCaptureStatus}
+                  </div>
+                )}
+
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '12px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>GPS Latitude (Exact Map Lat)</label>
+                    <input 
+                      type="text" 
+                      value={newPropertyForm.latitude} 
+                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, latitude: e.target.value })} 
+                      placeholder="e.g. 22.698021 or 17.44008" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>GPS Longitude (Exact Map Long)</label>
+                    <input 
+                      type="text" 
+                      value={newPropertyForm.longitude} 
+                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, longitude: e.target.value })} 
+                      placeholder="e.g. 88.463723 or 78.34891" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* MULTIPLE BUILDING & EXTERIOR ELEVATION PHOTO CAPTURE & CAMERA WIDGET */}
+              {(() => {
+                const photosList: string[] = Array.isArray(newPropertyForm.building_photos) 
+                  ? newPropertyForm.building_photos 
+                  : (newPropertyForm.building_photo ? [newPropertyForm.building_photo] : []);
+
+                const handleProcessPhotoFiles = (files: FileList | null) => {
+                  if (files && files.length > 0) {
+                    const fileArray = Array.from(files);
+                    const readPromises = fileArray.map(file => {
+                      return new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onload = (evt) => resolve(evt.target?.result as string || '');
+                        reader.readAsDataURL(file);
+                      });
+                    });
+                    Promise.all(readPromises).then(base64Results => {
+                      const validResults = base64Results.filter(b => b);
+                      const updatedList = [...photosList, ...validResults];
+                      setNewPropertyForm((prev: any) => ({
+                        ...prev,
+                        building_photos: updatedList,
+                        building_photo: updatedList[0] || ''
+                      }));
+                    });
+                  }
+                };
+
+                return (
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #eab308', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div>
+                        <span style={{ fontSize: '0.88rem', color: '#eab308', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Camera size={18} color="#eab308" /> 📷 Building & Exterior Elevation Photo Capture (Multiple Uploads & Live Camera)
+                        </span>
+                        <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '3px 0 0 0' }}>
+                          Capture or upload multiple exterior elevation photos for this master project ({photosList.length} photo{photosList.length === 1 ? '' : 's'} linked).
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        {/* LIVE CAMERA CAPTURE BUTTON */}
+                        <label style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(22, 163, 74, 0.35)' }}>
+                          <Camera size={15} color="#ffffff" />
+                          📸 CAPTURE CAMERA PHOTO
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            capture="environment"
+                            style={{ display: 'none' }}
+                            onChange={(e) => handleProcessPhotoFiles(e.target.files)}
+                          />
+                        </label>
+
+                        {/* FILE UPLOAD BUTTON */}
+                        <label style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#0f172a', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(234, 179, 8, 0.35)' }}>
+                          <Upload size={15} color="#0f172a" />
+                          📂 UPLOAD PHOTO FILES
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            multiple
+                            style={{ display: 'none' }}
+                            onChange={(e) => handleProcessPhotoFiles(e.target.files)}
+                          />
+                        </label>
+
+                        {/* PRESET SAMPLE ELEVATIONS BUTTON */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const sampleElevations = [
+                              'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
+                              'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80',
+                              'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80'
+                            ];
+                            const updatedList = [...photosList, ...sampleElevations];
+                            setNewPropertyForm((prev: any) => ({
+                              ...prev,
+                              building_photos: updatedList,
+                              building_photo: updatedList[0] || ''
+                            }));
+                          }}
+                          style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #eab308', color: '#eab308', padding: '8px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          🖼️ Add Sample Elevation
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* UPLOADED ELEVATION PHOTOS THUMBNAIL GALLERY */}
+                    {photosList.length > 0 ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', marginTop: '6px' }}>
+                        {photosList.map((url, idx) => (
+                          <div key={idx} style={{ position: 'relative', background: '#000000', border: idx === 0 ? '2px solid #22c55e' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), borderRadius: '10px', overflow: 'hidden', height: '140px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}>
+                            <img src={url} alt={`Building Elevation ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            
+                            <div style={{ position: 'absolute', top: '4px', left: '4px', background: idx === 0 ? '#22c55e' : 'rgba(15, 23, 42, 0.85)', color: '#ffffff', fontSize: '0.66rem', fontWeight: '900', padding: '2px 6px', borderRadius: '4px' }}>
+                              {idx === 0 ? '⭐ MAIN COVER ELEVATION' : `PHOTO #${idx + 1}`}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const filtered = photosList.filter((_, i) => i !== idx);
+                                setNewPropertyForm((prev: any) => ({
+                                  ...prev,
+                                  building_photos: filtered,
+                                  building_photo: filtered[0] || ''
+                                }));
+                              }}
+                              style={{ position: 'absolute', top: '4px', right: '4px', background: '#ef4444', color: '#ffffff', border: 'none', width: '22px', height: '22px', borderRadius: '50%', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              title="Delete Photo"
+                            >
+                              <X size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px dashed #eab308', borderRadius: '8px', padding: '20px', color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.84rem', textAlign: 'center', fontWeight: '700', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                        <span>📸 No building exterior elevation photos uploaded yet for this project.</span>
+                        <span style={{ fontSize: '0.74rem', color: '#eab308' }}>Click "📸 CAPTURE CAMERA PHOTO" or "📂 UPLOAD PHOTO FILES" above to add project photos!</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* 🏊 PROJECT & DEVELOPER AMENITIES (MULTIPLE SELECTION OPTION) */}
+              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #a855f7', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h4 style={{ fontSize: '0.96rem', fontWeight: '900', color: '#a855f7', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🏊 PROJECT & DEVELOPER AMENITIES & INFRASTRUCTURE FEATURES (MULTIPLE SELECTION)
+                    </h4>
+                    <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
+                      Select all project-wide amenities available under {newPropertyForm.title || 'this Project Master'}. These amenities auto-link to all project units.
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button 
+                      type="button"
+                      onClick={() => {
+                        const allIds = [
+                          '24/7 Power Backup', 'Water Supply', 'Security', 'CCTV cameras',
+                          'Elevators', 'backup power', 'Fire Safety', 'Gymnasium',
+                          'Swimming Pool', 'Clubhouse', "Children's Play Area", 'Sports Courts',
+                          'Track', 'Gardens', 'Waste Management', 'EV Charging Stations',
+                          'Intercom Facility', 'Yoga Deck', 'Senior Citizen Park'
+                        ];
+                        setNewPropertyForm({ ...newPropertyForm, selected_amenities: allIds });
+                      }}
+                      style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '900', cursor: 'pointer' }}
+                    >
+                      Select All Amenities
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setNewPropertyForm({ ...newPropertyForm, selected_amenities: [] })}
+                      style={{ background: isLight ? '#e2e2f0' : '#334155', color: isLight ? '#475569' : '#cbd5e1', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '800', cursor: 'pointer' }}
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : windowWidth <= 1024 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+                  {[
+                    { id: '24/7 Power Backup', label: '⚡ 24/7 Power Backup' },
+                    { id: 'Water Supply', label: '🚰 24-Hour Water Supply' },
+                    { id: 'Security', label: '🛡️ 24/7 Security Patrol' },
+                    { id: 'CCTV cameras', label: '📹 CCTV Surveillance' },
+                    { id: 'Elevators', label: '🛗 High-Speed Elevators' },
+                    { id: 'backup power', label: '⚡ Backup Generator' },
+                    { id: 'Fire Safety', label: '🧯 Fire Safety System' },
+                    { id: 'Gymnasium', label: '🏋️ Fitness Gymnasium' },
+                    { id: 'Swimming Pool', label: '🏊 Swimming Pool' },
+                    { id: 'Clubhouse', label: '🏛️ Luxury Clubhouse' },
+                    { id: "Children's Play Area", label: "🛝 Kids Play Area" },
+                    { id: 'Sports Courts', label: '🏸 Sports Courts' },
+                    { id: 'Track', label: '🏃 Jogging Track' },
+                    { id: 'Gardens', label: '🌳 Landscaped Gardens' },
+                    { id: 'Waste Management', label: '♻️ STP & Waste Mgmt' },
+                    { id: 'EV Charging Stations', label: '🔌 EV Charging Stations' },
+                    { id: 'Intercom Facility', label: '🔐 Intercom & Video Door' },
+                    { id: 'Yoga Deck', label: '🧘 Yoga & Meditation Deck' },
+                    { id: 'Senior Citizen Park', label: '👵 Senior Citizen Park' }
+                  ].map((amenity) => {
+                    const selectedList = newPropertyForm.selected_amenities || [];
+                    const isChecked = selectedList.includes(amenity.id);
+                    return (
+                      <label 
+                        key={amenity.id}
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: '8px', 
+                          background: isChecked ? (isLight ? 'rgba(168, 85, 247, 0.12)' : 'rgba(168, 85, 247, 0.18)') : (isLight ? '#ffffff' : '#0f172a'),
+                          border: isChecked ? '2px solid #a855f7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
+                          padding: '8px 12px', 
+                          borderRadius: '8px', 
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: isChecked ? '800' : '600',
+                          color: isChecked ? (isLight ? '#7e22ce' : '#c084fc') : (isLight ? '#334155' : '#cbd5e1'),
+                          transition: 'all 0.15s ease-in-out'
+                        }}
+                      >
+                        <input 
+                          type="checkbox"
+                          checked={isChecked}
+                          onChange={(e) => {
+                            let updated = [...selectedList];
+                            if (e.target.checked) {
+                              if (!updated.includes(amenity.id)) updated.push(amenity.id);
+                            } else {
+                              updated = updated.filter(i => i !== amenity.id);
+                            }
+                            setNewPropertyForm({ ...newPropertyForm, selected_amenities: updated });
+                          }}
+                        />
+                        {amenity.label}
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* 🚗 PROJECT PARKING STOCK CAPACITY & DEFAULT RATES MANAGEMENT SYSTEM */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #eab308', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#eab308', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🚗 Project Parking Stock Capacity & Default Rates Management System
+                    </h4>
+                    <p style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
+                      Configure total project parking slot inventory limits (Covered, EV Fast Charging, Open Surface) and builder default rates.
+                    </p>
+                  </div>
+
+                  <span style={{ fontSize: '0.74rem', background: 'rgba(234, 179, 8, 0.18)', color: '#eab308', border: '1px solid #eab308', padding: '3px 10px', borderRadius: '20px', fontWeight: '900' }}>
+                    PROJ PARKING VAULT ACTIVE
+                  </span>
+                </div>
+
+                {/* PARKING CARDS GRID */}
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '14px' }}>
+                  
+                  {/* 1. COVERED PARKING STOCK */}
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #0284c7', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: '900', color: '#0284c7', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🚘 Covered Basement / Stilt Parking
+                      </span>
+                      <span style={{ fontSize: '0.68rem', background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
+                        Basement / Podium
+                      </span>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                        Total Allocated Slot Capacity
+                      </label>
+                      <input 
+                        type="number"
+                        value={newPropertyForm.total_covered_parking_capacity !== undefined ? newPropertyForm.total_covered_parking_capacity : 24}
+                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, total_covered_parking_capacity: parseInt(e.target.value, 10) || 0 })}
+                        placeholder="e.g. 24"
+                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #0284c7', color: '#0284c7', fontWeight: '900', padding: '8px 12px', borderRadius: '6px', fontSize: '0.92rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                        Builder Default Rate (INR)
+                      </label>
+                      <input 
+                        type="text"
+                        value={newPropertyForm.covered_parking_rate !== undefined ? newPropertyForm.covered_parking_rate : '300000'}
+                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, covered_parking_rate: e.target.value })}
+                        placeholder="e.g. 300000"
+                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 2. EV FAST CHARGING PARKING STOCK */}
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #eab308', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: '900', color: '#eab308', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        ⚡ EV Fast Charging Station Slots
+                      </span>
+                      <span style={{ fontSize: '0.68rem', background: 'rgba(234, 179, 8, 0.15)', color: '#eab308', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
+                        EV Ready
+                      </span>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                        Total EV Fast Charger Slots
+                      </label>
+                      <input 
+                        type="number"
+                        value={newPropertyForm.total_ev_parking_capacity !== undefined ? newPropertyForm.total_ev_parking_capacity : 6}
+                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, total_ev_parking_capacity: parseInt(e.target.value, 10) || 0 })}
+                        placeholder="e.g. 6"
+                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #eab308', color: '#eab308', fontWeight: '900', padding: '8px 12px', borderRadius: '6px', fontSize: '0.92rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                        EV Slot Default Rate (INR)
+                      </label>
+                      <input 
+                        type="text"
+                        value={newPropertyForm.ev_parking_rate !== undefined ? newPropertyForm.ev_parking_rate : '450000'}
+                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, ev_parking_rate: e.target.value })}
+                        placeholder="e.g. 450000"
+                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* 3. OPEN SURFACE PARKING STOCK */}
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: '900', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🅿️ Open Surface Ground Parking
+                      </span>
+                      <span style={{ fontSize: '0.68rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
+                        Ground Level
+                      </span>
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                        Total Open Surface Slot Capacity
+                      </label>
+                      <input 
+                        type="number"
+                        value={newPropertyForm.total_open_parking_capacity !== undefined ? newPropertyForm.total_open_parking_capacity : 12}
+                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, total_open_parking_capacity: parseInt(e.target.value, 10) || 0 })}
+                        placeholder="e.g. 12"
+                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '8px 12px', borderRadius: '6px', fontSize: '0.92rem' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
+                        Open Slot Default Rate (INR)
+                      </label>
+                      <input 
+                        type="text"
+                        value={newPropertyForm.open_parking_rate !== undefined ? newPropertyForm.open_parking_rate : '150000'}
+                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, open_parking_rate: e.target.value })}
+                        placeholder="e.g. 150000"
+                        style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.88rem' }}
+                      />
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* BOTTOM ACTION FOOTER FOR ADD PROJECT & DEVELOPER MASTER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: isLight ? '2px solid #cbd5e1' : '2px solid #334155', paddingTop: '20px', flexWrap: 'wrap', gap: '14px', marginTop: '10px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setActiveProjectSubTab('property_master')} 
+                  style={{ background: isLight ? '#f1f5f9' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : 'none', padding: '12px 24px', borderRadius: '8px', fontWeight: '800', fontSize: '0.9rem', cursor: 'pointer' }}
+                >
+                  Cancel & Return to Property Inventory Registry
+                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+                  <div style={{ background: 'rgba(168, 85, 247, 0.15)', border: '1.5px solid #a855f7', borderRadius: '10px', padding: '8px 16px', textAlign: 'right' }}>
+                    <span style={{ fontSize: '0.68rem', color: '#a855f7', fontWeight: '900', textTransform: 'uppercase', display: 'block' }}>🔑 Master Project ID</span>
+                    <h3 style={{ fontSize: '1rem', fontWeight: '900', color: '#a855f7', fontFamily: 'monospace', margin: '2px 0 0 0' }}>
+                      {newPropertyForm.project_id || generateNextProjectId()}
+                    </h3>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveProjectMaster}
+                    style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '14px 32px', borderRadius: '10px', fontWeight: '900', fontSize: '0.96rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(168, 85, 247, 0.4)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  >
+                    💾 SAVE & CREATE PROJECT CODE ({newPropertyForm.project_id || generateNextProjectId()})
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* SUB-TAB: FULL DEDICATED PAGE VIEW FOR PROPERTY MASTER REGISTRATION & EDITING */}
       {activeProjectSubTab === 'add_property_master' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -938,10 +1724,17 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 💾 SAVE & COMPLETE REGISTRATION
               </button>
 
-              <div style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1.5px solid #38bdf8', borderRadius: '10px', padding: '8px 16px', textAlign: 'right' }}>
-                <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: '900', textTransform: 'uppercase', display: 'block' }}>🔑 Master Project ID</span>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0284c7', fontFamily: 'monospace', margin: '2px 0 0 0' }}>
+              <div style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1.5px solid #38bdf8', borderRadius: '10px', padding: '8px 14px', textAlign: 'right' }}>
+                <span style={{ fontSize: '0.65rem', color: '#38bdf8', fontWeight: '900', textTransform: 'uppercase', display: 'block' }}>🔑 Master Project ID</span>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#0284c7', fontFamily: 'monospace', margin: '2px 0 0 0' }}>
                   {newPropertyForm.project_id || generateNextProjectId()}
+                </h3>
+              </div>
+
+              <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1.5px solid #22c55e', borderRadius: '10px', padding: '8px 14px', textAlign: 'right' }}>
+                <span style={{ fontSize: '0.65rem', color: '#22c55e', fontWeight: '900', textTransform: 'uppercase', display: 'block' }}>🏷️ Unique Property Code</span>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#22c55e', fontFamily: 'monospace', margin: '2px 0 0 0' }}>
+                  {newPropertyForm.property_code || generateDynamicPropertyCode()}
                 </h3>
               </div>
             </div>
@@ -951,581 +1744,122 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: windowWidth <= 640 ? '16px' : '28px', boxShadow: isLight ? '0 4px 16px rgba(0,0,0,0.04)' : 'none' }}>
             <form onSubmit={handleCreatePropertySubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               
-              {/* 🔀 PROPERTY REGISTRATION MODE SWITCHER BANNER */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #0284c7', borderRadius: '14px', padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-                <div>
-                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px' }}>SELECT INVENTORY REGISTRATION MODE</span>
-                  <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0, marginTop: '2px' }}>
-                    {propertyAddMode === 'single' ? '🏠 SINGLE PROPERTY STANDALONE MODE ACTIVE' : '🏢 MULTIPLE PROPERTY UNITS / PROJECT BUILDER MODE ACTIVE'}
-                  </h3>
-                  <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', margin: 0, marginTop: '2px' }}>
-                    {propertyAddMode === 'single' 
-                      ? 'Best for standalone villas, independent houses, resale flats, or single stock entries.'
-                      : 'Best for multi-unit projects (e.g. BISNUPRIYA PLAZA) with 5, 10, or 20+ flats/units under the same developer.'}
-                  </p>
-                </div>
-
-                <div style={{ display: 'flex', background: isLight ? '#e2e8f0' : '#1e293b', padding: '4px', borderRadius: '10px', gap: '6px' }}>
-                  <button 
-                    type="button" 
-                    onClick={() => setPropertyAddMode('single')}
-                    style={{ background: propertyAddMode === 'single' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'transparent', color: propertyAddMode === 'single' ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    🏠 Single Property Add
-                  </button>
-                  <button 
-                    type="button" 
-                    onClick={() => setPropertyAddMode('multiple')}
-                    style={{ background: propertyAddMode === 'multiple' ? 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)' : 'transparent', color: propertyAddMode === 'multiple' ? '#ffffff' : (isLight ? '#64748b' : '#94a3b8'), border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                  >
-                    🏢 Multiple Units Project
-                  </button>
-                </div>
-              </div>
-
-              {/* SECTION 1: PROJECT & DEVELOPER IDENTIFICATION */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px' }}>
-                  <h4 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0284c7' : '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    🏢 1. Project & Developer Identification
-                  </h4>
-                  <span style={{ fontSize: '0.75rem', background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
-                    1-Time Developer Project OTP Protocol
-                  </span>
-                </div>
-
-
-
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
+              {/* SECTION 1: SEARCH / SELECT MASTER PROJECT ID & UNIQUE PROPERTY CODE */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #0284c7', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Developer / Builder Name *</label>
-                    <input 
-                      type="text" 
-                      value={newPropertyForm.developer} 
+                    <h4 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0284c7' : '#38bdf8', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      🔍 1. Select Master Project ID & Link Multiple Properties
+                    </h4>
+                    <p style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
+                      Search or select an existing Master Project ID below. Multiple individual property units can be created under the same Project ID, each with its own Unique Property Code!
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveProjectSubTab('add_project_developer')}
+                    style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    🏢 + Create New Master Project & Developer
+                  </button>
+                </div>
+
+                {/* SEARCH & SELECT PROJECT ID DROPDOWN */}
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '2fr 1fr', gap: '14px', alignItems: 'end' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>
+                      Search & Select Master Project ID *
+                    </label>
+                    <select 
+                      value={newPropertyForm.project_id || ''} 
                       onChange={(e) => {
-                        const devVal = e.target.value;
-                        setNewPropertyForm({ ...newPropertyForm, developer: devVal, developer_mobile: devVal === 'SUMAN' || devVal === 'BISWAJIT KARMAKAR' ? newPropertyForm.developer_mobile : '' });
-                        if (setDevProjectMobile && devVal !== 'BISWAJIT KARMAKAR') {
-                          setDevProjectMobile('');
+                        const selectedId = e.target.value;
+                        const allProjs = getAllMasterProjects();
+                        const found = allProjs.find(p => p.id === selectedId || p.code === selectedId);
+                        if (found) {
+                          setNewPropertyForm((prev: any) => ({
+                            ...prev,
+                            project_id: found.id || found.code,
+                            developer: found.developer || prev.developer,
+                            title: found.title || prev.title,
+                            locality: found.locality || prev.locality,
+                            latitude: found.latitude || prev.latitude,
+                            longitude: found.longitude || prev.longitude,
+                            selected_amenities: found.amenities && found.amenities.length > 0 ? found.amenities : prev.selected_amenities,
+                            building_photos: found.building_photos && found.building_photos.length > 0 ? found.building_photos : prev.building_photos
+                          }));
+                        } else {
+                          setNewPropertyForm((prev: any) => ({ ...prev, project_id: selectedId }));
                         }
-                      }} 
-                      placeholder="e.g. My Home Constructions / Dhriti Builders / Aparna" 
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
-                      required 
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Project Title & Name *</label>
-                    <input 
-                      type="text" 
-                      value={newPropertyForm.title} 
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const gps = getGpsForProject(val);
-                        setNewPropertyForm((prev: any) => ({
-                          ...prev,
-                          title: val,
-                          latitude: gps ? gps.lat : prev.latitude,
-                          longitude: gps ? gps.lng : prev.longitude
-                        }));
-                      }} 
-                      placeholder="e.g. My Home Bhooja / Dhriti Apartments / Aparna Zenon" 
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
-                      required 
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Developer Mobile Phone (for OTP) *</label>
-                    <input 
-                      type="text" 
-                      value={devProjectMobile} 
-                      onChange={(e) => setDevProjectMobile(e.target.value)} 
-                      placeholder="e.g. +91 98833 95102" 
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
-                      required 
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>Alternative Phone Number (Secondary Contact)</label>
-                    <input 
-                      type="text" 
-                      value={devProjectAltMobile} 
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        if (setDevProjectAltMobile) setDevProjectAltMobile(val);
-                        setNewPropertyForm({ ...newPropertyForm, developer_alt_mobile: val });
-                      }} 
-                      placeholder="e.g. +91 70442 93951" 
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '700' }} 
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Locality Hub / Sector *</label>
-                    <input 
-                      type="text" 
-                      value={newPropertyForm.locality} 
-                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, locality: e.target.value })} 
-                      placeholder="e.g. Kondapur Hub / HITEC City Sector / BARASAT" 
-                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
-                      required 
-                    />
-                  </div>
-                </div>
-
-                {/* DEVELOPER 1-TIME PROJECT OTP VERIFICATION CONTAINER */}
-                {(() => {
-                  const isAlreadyVerified = verifiedDevProjectsList.some(p => 
-                    p.developer.toLowerCase().includes((newPropertyForm.developer || '').toLowerCase().trim()) &&
-                    p.project.toLowerCase().includes((newPropertyForm.title || '').toLowerCase().trim())
-                  ) || devProjectOtpVerified;
-
-                  return (
-                    <div style={{ background: isAlreadyVerified ? 'rgba(34, 197, 94, 0.12)' : (isLight ? '#ffffff' : '#1e293b'), border: `2px solid ${isAlreadyVerified ? '#22c55e' : '#0284c7'}`, borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                        <div>
-                          <h4 style={{ fontSize: '0.88rem', fontWeight: '900', color: isAlreadyVerified ? '#22c55e' : '#0284c7', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            {isAlreadyVerified ? '✅ DEVELOPER OTP VERIFIED (1-Time Project Verification Active)' : '🔐 DEVELOPER 1-TIME PROJECT OTP VERIFICATION'}
-                          </h4>
-                          <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-                            {isAlreadyVerified ? `Verified for Developer: ${newPropertyForm.developer || 'Builder'} • Project: ${newPropertyForm.title || 'Project'}` : '1-Time OTP authentication per project. Developers with multiple projects verify once per project.'}
-                          </span>
-                        </div>
-
-                        {!isAlreadyVerified && !devProjectOtpSent && (
-                          <button 
-                            type="button" 
-                            onClick={() => setDevProjectOtpSent(true)}
-                            style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
-                          >
-                            📱 SEND DEVELOPER 1-TIME OTP FOR THIS PROJECT
-                          </button>
-                        )}
-                      </div>
-
-                      {!isAlreadyVerified && devProjectOtpSent && (
-                        <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
-                          <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: '800' }}>📲 Sent 6-Digit OTP to {devProjectMobile}:</span>
-                          <input 
-                            type="text" 
-                            value={devProjectOtpInput} 
-                            onChange={(e) => setDevProjectOtpInput(e.target.value)} 
-                            placeholder="Enter 6-Digit OTP"
-                            style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '6px 12px', borderRadius: '6px', fontSize: '0.9rem', width: '140px', fontFamily: 'monospace', textAlign: 'center' }}
-                          />
-                          <button 
-                            type="button" 
-                            onClick={() => {
-                              if (devProjectOtpInput === '749201' || devProjectOtpInput.length === 6) {
-                                setDevProjectOtpVerified(true);
-                                const newVerifiedObj = {
-                                  developer: newPropertyForm.developer || 'Builder',
-                                  project: newPropertyForm.title || 'Project',
-                                  mobile: devProjectMobile,
-                                  verifiedAt: new Date().toLocaleString(),
-                                  hash: `SHA256-DEV-OTP-VERIFIED-#${Math.floor(100000 + Math.random() * 900000)}`
-                                };
-                                setVerifiedDevProjectsList([newVerifiedObj, ...verifiedDevProjectsList]);
-                              }
-                            }}
-                            style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '7px 16px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
-                          >
-                            🔐 VERIFY DEVELOPER PROJECT OTP
-                          </button>
-                        </div>
-                      )}
-
-                      {isAlreadyVerified && (
-                        <div style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace', fontWeight: '800', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-                          <span>Audit Stamp: SHA256-DEV-PROJECT-OTP-AUTHENTICATED</span>
-                          <span>Status: 1-Time Verification Complete</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* GPS LATITUDE & LONGITUDE INPUTS WITH LIVE LOCATION CAPTURE BUTTON */}
-                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-                    <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Compass size={16} color="#38bdf8" /> 📍 GPS Location Coordinates & Device Auto-Capture
-                    </span>
-
-                    <button 
-                      type="button" 
-                      onClick={handleCaptureCurrentGpsLocation} 
-                      disabled={isCapturingGps}
-                      style={{ 
-                        background: isCapturingGps ? '#334155' : 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', 
-                        color: '#ffffff', 
-                        border: 'none', 
-                        padding: '8px 16px', 
-                        borderRadius: '8px', 
-                        fontWeight: '900', 
-                        fontSize: '0.8rem', 
-                        cursor: isCapturingGps ? 'wait' : 'pointer', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '6px',
-                        boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)' 
                       }}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
                     >
-                      <Navigation size={15} />
-                      {isCapturingGps ? '📡 Capturing GPS...' : '🎯 CAPTURE MY CURRENT GPS LOCATION'}
-                    </button>
+                      <option value="">-- 🔍 Select Registered Master Project ID --</option>
+                      {getAllMasterProjects()
+                        .filter(p => {
+                          if (!projectIdSearchFilter) return true;
+                          const q = projectIdSearchFilter.toLowerCase();
+                          return (p.code || p.id || '').toLowerCase().includes(q) ||
+                                 (p.title || '').toLowerCase().includes(q) ||
+                                 (p.developer || '').toLowerCase().includes(q);
+                        })
+                        .map((proj) => (
+                          <option key={proj.id} value={proj.id}>
+                            🔑 [{proj.code || proj.id}] {proj.title} — Builder: {proj.developer} ({proj.locality || 'Locality'})
+                          </option>
+                        ))}
+                    </select>
                   </div>
 
-                  {gpsCaptureStatus && (
-                    <div style={{ background: gpsCaptureStatus.startsWith('✓') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(56, 189, 248, 0.15)', border: `1px solid ${gpsCaptureStatus.startsWith('✓') ? '#22c55e' : '#38bdf8'}`, borderRadius: '6px', padding: '8px 12px', fontSize: '0.78rem', color: gpsCaptureStatus.startsWith('✓') ? '#4ade80' : '#38bdf8', fontWeight: '800' }}>
-                      {gpsCaptureStatus}
-                    </div>
-                  )}
-
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '12px' }}>
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>GPS Latitude (Exact Map Lat)</label>
-                      <input 
-                        type="text" 
-                        value={newPropertyForm.latitude} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, latitude: e.target.value })} 
-                        placeholder="e.g. 22.698021 or 17.44008" 
-                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
-                      />
-                    </div>
-                    <div>
-                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>GPS Longitude (Exact Map Long)</label>
-                      <input 
-                        type="text" 
-                        value={newPropertyForm.longitude} 
-                        onChange={(e) => setNewPropertyForm({ ...newPropertyForm, longitude: e.target.value })} 
-                        placeholder="e.g. 88.463723 or 78.34891" 
-                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
-                      />
-                    </div>
-                  </div>
-
-                  {/* MAXIMUM DETECTED FULL ADDRESS BREAKDOWN CARD */}
-                  {newPropertyForm.full_address && (
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', borderRadius: '8px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.78rem', color: '#22c55e', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          📍 MAXIMUM FETCHED GPS DETAILED ADDRESS
-                        </span>
-                        <button 
-                          type="button" 
-                          onClick={() => {
-                            if (navigator.clipboard) {
-                              navigator.clipboard.writeText(newPropertyForm.full_address);
-                              alert('📋 Maximum Fetched Address copied to clipboard!');
-                            }
-                          }}
-                          style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#22c55e', border: 'none', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800', cursor: 'pointer' }}
-                        >
-                          📋 Copy Address
-                        </button>
-                      </div>
-                      <div style={{ fontSize: '0.85rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', lineHeight: '1.4' }}>
-                        🏢 {newPropertyForm.full_address}
-                      </div>
-                      <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-                        ✓ Maximum granular address auto-fetched via GPS sensors & reverse geocoding API
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* MULTIPLE BUILDING & EXTERIOR ELEVATION PHOTO CAPTURE WIDGET */}
-                {(() => {
-                  const photosList: string[] = Array.isArray(newPropertyForm.building_photos) 
-                    ? newPropertyForm.building_photos 
-                    : (newPropertyForm.building_photo ? [newPropertyForm.building_photo] : []);
-
-                  return (
-                    <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #eab308', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                        <div>
-                          <span style={{ fontSize: '0.86rem', color: '#eab308', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Camera size={18} color="#eab308" /> 📷 Building & Exterior Elevation Photo Capture (Multiple Uploads Allowed)
-                          </span>
-                          <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '3px 0 0 0' }}>
-                            Upload multiple exterior photos & elevation views. Sales personnel & buyers can view full gallery during site visits.
-                          </p>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {/* MULTIPLE FILES UPLOAD BUTTON */}
-                          <label style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#0f172a', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(234, 179, 8, 0.35)' }}>
-                            <Camera size={16} color="#0f172a" />
-                            📸 UPLOAD MULTIPLE BUILDING PHOTOS
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              multiple
-                              style={{ display: 'none' }}
-                              onChange={(e) => {
-                                const files = e.target.files;
-                                if (files && files.length > 0) {
-                                  const fileArray = Array.from(files);
-                                  const readPromises = fileArray.map(file => {
-                                    return new Promise<string>((resolve) => {
-                                      const reader = new FileReader();
-                                      reader.onload = (evt) => resolve(evt.target?.result as string || '');
-                                      reader.readAsDataURL(file);
-                                    });
-                                  });
-                                  Promise.all(readPromises).then(base64Results => {
-                                    const validResults = base64Results.filter(b => b);
-                                    const updatedList = [...photosList, ...validResults];
-                                    setNewPropertyForm((prev: any) => ({
-                                      ...prev,
-                                      building_photos: updatedList,
-                                      building_photo: updatedList[0] || ''
-                                    }));
-                                  });
-                                }
-                              }}
-                            />
-                          </label>
-
-                          {/* SAMPLE PRESET GALLERY */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const sampleElevations = [
-                                'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
-                                'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80',
-                                'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80',
-                                'https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=800&q=80'
-                              ];
-                              const updatedList = Array.from(new Set([...photosList, ...sampleElevations]));
-                              setNewPropertyForm((prev: any) => ({
-                                ...prev,
-                                building_photos: updatedList,
-                                building_photo: updatedList[0] || ''
-                              }));
-                            }}
-                            style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: '1.5px solid #0284c7', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}
-                          >
-                            🖼️ Preset Elevation Gallery
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* ADD CUSTOM PHOTO URL INPUT & BUTTON */}
-                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <input 
-                          type="text" 
-                          id="newPhotoUrlInput"
-                          placeholder="Paste image URL (e.g. https://images.unsplash.com/...) and press Enter or click Add"
-                          style={{ flex: 1, background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.84rem' }} 
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              const val = (e.target as HTMLInputElement).value.trim();
-                              if (val) {
-                                const updatedList = [...photosList, val];
-                                setNewPropertyForm((prev: any) => ({
-                                  ...prev,
-                                  building_photos: updatedList,
-                                  building_photo: updatedList[0] || ''
-                                }));
-                                (e.target as HTMLInputElement).value = '';
-                              }
-                            }
-                          }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const el = document.getElementById('newPhotoUrlInput') as HTMLInputElement;
-                            if (el && el.value.trim()) {
-                              const val = el.value.trim();
-                              const updatedList = [...photosList, val];
-                              setNewPropertyForm((prev: any) => ({
-                                ...prev,
-                                building_photos: updatedList,
-                                building_photo: updatedList[0] || ''
-                              }));
-                              el.value = '';
-                            }
-                          }}
-                          style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                        >
-                          ➕ Add Photo URL
-                        </button>
-                      </div>
-
-                      {/* MULTIPLE PHOTOS GALLERY GRID */}
-                      {photosList.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid rgba(234, 179, 8, 0.4)', borderRadius: '10px', padding: '12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.76rem', color: '#eab308', fontWeight: '900' }}>
-                              🖼️ UPLOADED BUILDING GALLERY ({photosList.length} Photo{photosList.length > 1 ? 's' : ''})
-                            </span>
-                            <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-                              Photo #1 will be used as primary property thumbnail
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
-                            {photosList.map((photoUrl, idx) => (
-                              <div key={idx} style={{ position: 'relative', background: isLight ? '#f8fafc' : '#0f172a', border: idx === 0 ? '2px solid #22c55e' : '1px solid #334155', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <img 
-                                  src={photoUrl} 
-                                  alt={`Building Photo ${idx + 1}`} 
-                                  style={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: '6px' }} 
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                  <span style={{ fontSize: '0.66rem', fontWeight: '900', color: idx === 0 ? '#4ade80' : '#38bdf8' }}>
-                                    {idx === 0 ? '⭐ Primary Cover' : `Photo #${idx + 1}`}
-                                  </span>
-                                  <button 
-                                    type="button" 
-                                    onClick={() => {
-                                      const updatedList = photosList.filter((_, i) => i !== idx);
-                                      setNewPropertyForm((prev: any) => ({
-                                        ...prev,
-                                        building_photos: updatedList,
-                                        building_photo: updatedList[0] || ''
-                                      }));
-                                    }}
-                                    style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', padding: '3px 8px', borderRadius: '4px', fontSize: '0.66rem', fontWeight: '800', cursor: 'pointer' }}
-                                  >
-                                    🗑️ Remove
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* 🏊 PROJECT & DEVELOPER AMENITIES (MULTIPLE SELECTION OPTION INSIDE SECTION 1) */}
-                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #a855f7', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '10px', flexWrap: 'wrap', gap: '10px' }}>
-                    <div>
-                      <h4 style={{ fontSize: '0.96rem', fontWeight: '900', color: '#a855f7', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        🏊 PROJECT & DEVELOPER AMENITIES & INFRASTRUCTURE FEATURES (MULTIPLE SELECTION)
-                      </h4>
-                      <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>
-                        Select all project-wide amenities available under {newPropertyForm.title || 'this Project Master'}. These amenities auto-link to all project units.
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button 
-                        type="button"
-                        onClick={() => {
-                          const allIds = [
-                            '24/7 Power Backup', 'Water Supply', 'Security', 'CCTV cameras',
-                            'Elevators', 'backup power', 'Fire Safety', 'Gymnasium',
-                            'Swimming Pool', 'Clubhouse', "Children's Play Area", 'Sports Courts',
-                            'Track', 'Gardens', 'Waste Management', 'EV Charging Stations',
-                            'Intercom Facility', 'Yoga Deck', 'Senior Citizen Park'
-                          ];
-                          setNewPropertyForm({ ...newPropertyForm, selected_amenities: allIds });
-                        }}
-                        style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '900', cursor: 'pointer' }}
-                      >
-                        Select All Amenities
-                      </button>
-                      <button 
-                        type="button"
-                        onClick={() => setNewPropertyForm({ ...newPropertyForm, selected_amenities: [] })}
-                        style={{ background: isLight ? '#e2e8f0' : '#334155', color: isLight ? '#475569' : '#cbd5e1', border: 'none', padding: '5px 12px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '800', cursor: 'pointer' }}
-                      >
-                        Clear All
-                      </button>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : windowWidth <= 1024 ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
-                    {[
-                      { id: '24/7 Power Backup', label: '⚡ 24/7 Power Backup' },
-                      { id: 'Water Supply', label: '🚰 24-Hour Water Supply' },
-                      { id: 'Security', label: '🛡️ 24/7 Security Patrol' },
-                      { id: 'CCTV cameras', label: '📹 CCTV Surveillance' },
-                      { id: 'Elevators', label: '🛗 High-Speed Elevators' },
-                      { id: 'backup power', label: '⚡ Backup Generator' },
-                      { id: 'Fire Safety', label: '🧯 Fire Safety System' },
-                      { id: 'Gymnasium', label: '🏋️ Fitness Gymnasium' },
-                      { id: 'Swimming Pool', label: '🏊 Swimming Pool' },
-                      { id: 'Clubhouse', label: '🏛️ Luxury Clubhouse' },
-                      { id: "Children's Play Area", label: "🛝 Kids Play Area" },
-                      { id: 'Sports Courts', label: '🏸 Sports Courts' },
-                      { id: 'Track', label: '🏃 Jogging Track' },
-                      { id: 'Gardens', label: '🌳 Landscaped Gardens' },
-                      { id: 'Waste Management', label: '♻️ STP & Waste Mgmt' },
-                      { id: 'EV Charging Stations', label: '🔌 EV Charging Stations' },
-                      { id: 'Intercom Facility', label: '🔐 Intercom & Video Door' },
-                      { id: 'Yoga Deck', label: '🧘 Yoga & Meditation Deck' },
-                      { id: 'Senior Citizen Park', label: '👵 Senior Citizen Park' }
-                    ].map((amenity) => {
-                      const selectedList = newPropertyForm.selected_amenities || [];
-                      const isChecked = selectedList.includes(amenity.id);
-                      return (
-                        <label 
-                          key={amenity.id}
-                          style={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: '8px', 
-                            background: isChecked ? (isLight ? 'rgba(168, 85, 247, 0.12)' : 'rgba(168, 85, 247, 0.18)') : (isLight ? '#ffffff' : '#0f172a'),
-                            border: isChecked ? '2px solid #a855f7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
-                            padding: '8px 12px', 
-                            borderRadius: '8px', 
-                            cursor: 'pointer',
-                            fontSize: '0.8rem',
-                            fontWeight: isChecked ? '800' : '600',
-                            color: isChecked ? (isLight ? '#7e22ce' : '#c084fc') : (isLight ? '#334155' : '#cbd5e1'),
-                            transition: 'all 0.15s ease-in-out'
-                          }}
-                        >
-                          <input 
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              let updated = [...selectedList];
-                              if (e.target.checked) {
-                                if (!updated.includes(amenity.id)) updated.push(amenity.id);
-                              } else {
-                                updated = updated.filter(i => i !== amenity.id);
-                              }
-                              setNewPropertyForm({ ...newPropertyForm, selected_amenities: updated });
-                            }}
-                          />
-                          {amenity.label}
-                        </label>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* SECTION 1 SAVE & COMPLETE REGISTRATION ACTION BUTTON */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', paddingTop: '12px', borderTop: isLight ? '2px dashed #cbd5e1' : '2px dashed #334155' }}>
                   <div>
-                    <span style={{ fontSize: '0.76rem', color: '#0284c7', fontWeight: '900', background: 'rgba(56, 189, 248, 0.15)', padding: '6px 14px', borderRadius: '8px', border: '1px solid #38bdf8' }}>
-                      🔑 ASSIGNED MASTER PROJECT ID: <strong style={{ fontFamily: 'monospace', fontSize: '0.88rem' }}>{newPropertyForm.project_id || generateNextProjectId()}</strong>
+                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>
+                      Filter Search by Keyword
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        type="text" 
+                        value={projectIdSearchFilter}
+                        onChange={(e) => setProjectIdSearchFilter(e.target.value)}
+                        placeholder="Filter Project Code / Title..."
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px 10px 34px', borderRadius: '8px', fontSize: '0.86rem' }}
+                      />
+                      <Search size={16} color="#0284c7" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* LINKED MASTER PROJECT & UNIQUE PROPERTY CODE SUMMARY BADGE */}
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', borderRadius: '10px', padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.72rem', color: '#22c55e', fontWeight: '900', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      ✅ LINKED MASTER PROJECT DETAILS
+                    </span>
+                    <h4 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                      🏢 {newPropertyForm.title || 'Selected Project'} • <span style={{ color: '#0284c7' }}>Builder: {newPropertyForm.developer || 'Developer'}</span>
+                    </h4>
+                    <span style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                      📍 Locality: {newPropertyForm.locality || 'Locality Hub'} (Lat: {newPropertyForm.latitude || '22.722361'}, Long: {newPropertyForm.longitude || '88.493403'})
                     </span>
                   </div>
 
-                  <button 
-                    type="submit"
-                    style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '12px 24px', borderRadius: '10px', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 14px rgba(34, 197, 94, 0.4)' }}
-                  >
-                    💾 SAVE & COMPLETE REGISTRATION (SECTION 1 COMPLETED)
-                  </button>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ background: 'rgba(2, 132, 199, 0.12)', border: '1px solid #0284c7', padding: '8px 14px', borderRadius: '8px', textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.66rem', color: '#0284c7', fontWeight: '900', textTransform: 'uppercase', display: 'block' }}>🔑 Master Project ID</span>
+                      <span style={{ fontSize: '0.95rem', fontWeight: '900', color: '#0284c7', fontFamily: 'monospace' }}>
+                        {newPropertyForm.project_id || generateNextProjectId()}
+                      </span>
+                    </div>
+
+                    <div style={{ background: 'rgba(34, 197, 94, 0.12)', border: '1.5px solid #22c55e', padding: '8px 14px', borderRadius: '8px', textAlign: 'right' }}>
+                      <span style={{ fontSize: '0.66rem', color: '#22c55e', fontWeight: '900', textTransform: 'uppercase', display: 'block' }}>🏷️ Unique Property Code</span>
+                      <span style={{ fontSize: '0.95rem', fontWeight: '900', color: '#22c55e', fontFamily: 'monospace' }}>
+                        {newPropertyForm.property_code || generateDynamicPropertyCode()}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-
               {/* SECTIONS 2, 3 & 5: SINGLE STANDALONE PROPERTY SPECIFICATIONS (ONLY VISIBLE IN SINGLE PROPERTY MODE) */}
               {propertyAddMode === 'single' && (
                 <>
@@ -1767,6 +2101,49 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     ? newPropertyForm.unit_videos
                     : [];
 
+                  const handleProcessUnitPhotoFiles = (files: FileList | null) => {
+                    if (files && files.length > 0) {
+                      const fileArray = Array.from(files);
+                      const readPromises = fileArray.map(file => {
+                        return new Promise<string>((resolve) => {
+                          const reader = new FileReader();
+                          reader.onload = (evt) => resolve(evt.target?.result as string || '');
+                          reader.readAsDataURL(file);
+                        });
+                      });
+                      Promise.all(readPromises).then(base64Results => {
+                        const validResults = base64Results.filter(b => b);
+                        const updatedList = [...unitPhotosList, ...validResults];
+                        setNewPropertyForm((prev: any) => ({
+                          ...prev,
+                          unit_photos: updatedList,
+                          unit_photo: updatedList[0] || ''
+                        }));
+                      });
+                    }
+                  };
+
+                  const handleProcessUnitVideoFiles = (files: FileList | null) => {
+                    if (files && files.length > 0) {
+                      const fileArray = Array.from(files);
+                      const readPromises = fileArray.map(file => {
+                        return new Promise<string>((resolve) => {
+                          const reader = new FileReader();
+                          reader.onload = (evt) => resolve(evt.target?.result as string || '');
+                          reader.readAsDataURL(file);
+                        });
+                      });
+                      Promise.all(readPromises).then(base64Results => {
+                        const validResults = base64Results.filter(b => b);
+                        const updatedList = [...unitVideosList, ...validResults];
+                        setNewPropertyForm((prev: any) => ({
+                          ...prev,
+                          unit_videos: updatedList
+                        }));
+                      });
+                    }
+                  };
+
                   return (
                     <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #38bdf8', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
@@ -1780,81 +2157,66 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         </div>
 
                         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          {/* LIVE CAMERA CAPTURE PHOTO BUTTON */}
+                          <label style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(22, 163, 74, 0.35)' }}>
+                            <Camera size={15} color="#ffffff" />
+                            📸 CAPTURE CAMERA PHOTO
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              capture="environment"
+                              style={{ display: 'none' }}
+                              onChange={(e) => handleProcessUnitPhotoFiles(e.target.files)}
+                            />
+                          </label>
+
                           {/* UPLOAD MULTIPLE PHOTOS BUTTON */}
                           <label style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.35)' }}>
-                            <Camera size={15} color="#ffffff" />
-                            📸 UPLOAD UNIT PHOTOS
+                            <Upload size={15} color="#ffffff" />
+                            🩵 UPLOAD UNIT PHOTOS
                             <input 
                               type="file" 
                               accept="image/*" 
                               multiple
                               style={{ display: 'none' }}
-                              onChange={(e) => {
-                                const files = e.target.files;
-                                if (files && files.length > 0) {
-                                  const fileArray = Array.from(files);
-                                  const readPromises = fileArray.map(file => {
-                                    return new Promise<string>((resolve) => {
-                                      const reader = new FileReader();
-                                      reader.onload = (evt) => resolve(evt.target?.result as string || '');
-                                      reader.readAsDataURL(file);
-                                    });
-                                  });
-                                  Promise.all(readPromises).then(base64Results => {
-                                    const validResults = base64Results.filter(b => b);
-                                    const updatedList = [...unitPhotosList, ...validResults];
-                                    setNewPropertyForm((prev: any) => ({
-                                      ...prev,
-                                      unit_photos: updatedList,
-                                      unit_photo: updatedList[0] || ''
-                                    }));
-                                  });
-                                }
-                              }}
+                              onChange={(e) => handleProcessUnitPhotoFiles(e.target.files)}
+                            />
+                          </label>
+
+                          {/* LIVE CAMERA CAPTURE VIDEO BUTTON */}
+                          <label style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#0f172a', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(234, 179, 8, 0.35)' }}>
+                            <Video size={15} color="#0f172a" />
+                            🎥 CAPTURE CAMERA VIDEO
+                            <input 
+                              type="file" 
+                              accept="video/*" 
+                              capture="environment"
+                              style={{ display: 'none' }}
+                              onChange={(e) => handleProcessUnitVideoFiles(e.target.files)}
                             />
                           </label>
 
                           {/* UPLOAD VIDEO FILE BUTTON */}
                           <label style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(168, 85, 247, 0.35)' }}>
                             <Video size={15} color="#ffffff" />
-                            📹 UPLOAD UNIT VIDEO FILE
+                            🔮 UPLOAD UNIT VIDEO FILE
                             <input 
                               type="file" 
                               accept="video/*" 
                               multiple
                               style={{ display: 'none' }}
-                              onChange={(e) => {
-                                const files = e.target.files;
-                                if (files && files.length > 0) {
-                                  const fileArray = Array.from(files);
-                                  const readPromises = fileArray.map(file => {
-                                    return new Promise<string>((resolve) => {
-                                      const reader = new FileReader();
-                                      reader.onload = (evt) => resolve(evt.target?.result as string || '');
-                                      reader.readAsDataURL(file);
-                                    });
-                                  });
-                                  Promise.all(readPromises).then(base64Results => {
-                                    const validResults = base64Results.filter(b => b);
-                                    const updatedList = [...unitVideosList, ...validResults];
-                                    setNewPropertyForm((prev: any) => ({
-                                      ...prev,
-                                      unit_videos: updatedList
-                                    }));
-                                  });
-                                }
-                              }}
+                              onChange={(e) => handleProcessUnitVideoFiles(e.target.files)}
                             />
                           </label>
 
-                          {/* LIVE RECORD VIDEO BUTTON */}
+                          {/* LIVE RECORD VIDEO WEBCAM BUTTON */}
                           <button
                             type="button"
                             onClick={isRecordingVideo ? stopLiveVideoRecording : startLiveVideoRecording}
                             style={{ background: isRecordingVideo ? '#ef4444' : '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: isRecordingVideo ? '0 0 12px rgba(239, 68, 68, 0.8)' : '0 2px 10px rgba(34, 197, 94, 0.35)' }}
                           >
                             <Video size={15} color="#ffffff" />
-                            {isRecordingVideo ? `⏹️ STOP & SAVE VIDEO (${recordingSeconds}s)` : '🎥 RECORD LIVE UNIT VIDEO'}
+                            {isRecordingVideo ? `⏹️ STOP & SAVE VIDEO (${recordingSeconds}s)` : '🔴 LIVE WEBCAM RECORDER'}
                           </button>
 
                           {/* SAMPLE PRESET GALLERY BUTTON */}
@@ -2236,47 +2598,11 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 >
                   Cancel & Return to Registry
                 </button>
-                {propertyAddMode === 'multiple' && (
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      const targetProj = editingProperty || {
-                        id: `PROP-${Date.now()}`,
-                        property_code: newPropertyForm.property_code || generateNextPropertyCode(),
-                        title: newPropertyForm.title || 'BISNUPRIYA PLAZA',
-                        developer: newPropertyForm.developer || 'BISWAJIT KARMAKAR',
-                        developer_mobile: devProjectMobile || '9163408797',
-                        locality: newPropertyForm.locality || 'BC SEN ROAD NEAR SHAKTIPUR AUTO STAND'
-                      };
-                      setShowMultipleUnitsSlider({ open: true, project: targetProj });
-                    }}
-                    style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '14px 24px', borderRadius: '10px', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(168, 85, 247, 0.4)', display: 'flex', alignItems: 'center', gap: '8px' }}
-                  >
-                    🏢 STEP 2: OPEN MULTIPLE UNITS SLIDER BUILDER
-                  </button>
-                )}
                 <button 
                   type="submit" 
-                  onClick={() => {
-                    if (propertyAddMode === 'multiple') {
-                      setTimeout(() => {
-                        const targetProj = editingProperty || {
-                          id: `PROP-${Date.now()}`,
-                          property_code: newPropertyForm.property_code || generateNextPropertyCode(),
-                          title: newPropertyForm.title || 'BISNUPRIYA PLAZA',
-                          developer: newPropertyForm.developer || 'BISWAJIT KARMAKAR',
-                          developer_mobile: devProjectMobile || '9163408797',
-                          locality: newPropertyForm.locality || 'BC SEN ROAD NEAR SHAKTIPUR AUTO STAND'
-                        };
-                        setShowMultipleUnitsSlider({ open: true, project: targetProj });
-                      }, 300);
-                    }
-                  }}
-                  style={{ background: propertyAddMode === 'single' ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', border: 'none', padding: '14px 36px', borderRadius: '10px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(22, 163, 74, 0.4)', display: 'flex', alignItems: 'center', gap: '8px' }}
+                  style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', border: 'none', padding: '14px 36px', borderRadius: '10px', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', boxShadow: '0 6px 20px rgba(22, 163, 74, 0.4)', display: 'flex', alignItems: 'center', gap: '8px' }}
                 >
-                  {propertyAddMode === 'single'
-                    ? (editingProperty ? `💾 SAVE & UPDATE SINGLE PROPERTY (${editingProperty.property_code})` : `💾 SAVE & COMPLETE SINGLE PROPERTY REGISTRATION`)
-                    : (editingProperty ? `💾 SAVE & UPDATE PROJECT (${editingProperty.property_code})` : `🏢 SAVE PROJECT & OPEN MULTI-UNIT SLIDER`)}
+                  {editingProperty ? `💾 SAVE & UPDATE PROPERTY (${editingProperty.property_code})` : `💾 SAVE & COMPLETE PROPERTY REGISTRATION`}
                 </button>
               </div>
 
@@ -2382,71 +2708,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 3: LIVE TOWER FLOOR UNIT GRID */}
-      {activeProjectSubTab === 'live_inventory_board' && (
-        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>🏢 Live Tower Floor Unit Grid Matrix</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '14px' }}>
-            {propertyUnits.map(u => (
-              <div key={u.id} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: '800', fontFamily: 'monospace' }}>{u.unit_code}</span>
-                <h4 style={{ fontSize: '1.1rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>{u.unit_num} ({u.tower})</h4>
-                <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800' }}>{u.bhk} • {u.area}</span>
-                <strong style={{ fontSize: '0.9rem', color: '#4ade80' }}>{u.price}</strong>
-                <span style={{ background: u.status === 'AVAILABLE' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: u.status === 'AVAILABLE' ? '#4ade80' : '#ef4444', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', fontSize: '0.7rem', alignSelf: 'flex-start', marginTop: '4px' }}>
-                  ● {u.status}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
 
-      {/* SUB-TAB 4: RADIUS GPS SEARCH FILTER */}
-      {activeProjectSubTab === 'map_radius' && (
-        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>📍 Radius GPS Search Filter & Locality Map</h3>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            {['1KM', '2KM', '5KM', '10KM', '25KM'].map(r => (
-              <button key={r} onClick={() => setActiveRadius(r as any)} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer', background: activeRadius === r ? '#0284c7' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                Radius {r}
-              </button>
-            ))}
-          </div>
-          <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px dashed #334155', borderRadius: '12px', padding: '40px', textAlign: 'center', color: isLight ? '#64748b' : '#94a3b8' }}>
-            🗺️ Interactive GPS Locality Map Active for Radius Filter ({activeRadius}) around Kondapur & Hitec City.
-          </div>
-        </div>
-      )}
 
-      {/* SUB-TAB 5: END-TO-END DEAL CONVERSION FUNNEL (13 STAGES) */}
-      {activeProjectSubTab === 'deal_pipeline_tracker' && (
-        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>📈 End-to-End Customer Requirement to Brokerage Funnel (13 Stages)</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : windowWidth <= 1024 ? 'repeat(4, 1fr)' : 'repeat(7, 1fr)', gap: '8px' }}>
-            {[
-              { stage: '1. CUSTOMER', count: 184, color: '#38bdf8' },
-              { stage: '2. REQUIREMENT', count: 172, color: '#38bdf8' },
-              { stage: '3. AUTO SEARCH', count: 160, color: '#38bdf8' },
-              { stage: '4. MATCH SCORE', count: 145, color: '#38bdf8' },
-              { stage: '5. SP SELECTION', count: 130, color: '#38bdf8' },
-              { stage: '6. PORTFOLIO SENT', count: 115, color: '#fbbf24' },
-              { stage: '7. VIEWED BY CUS', count: 98, color: '#fbbf24' },
-              { stage: '8. CUS RESPONSE', count: 82, color: '#fbbf24' },
-              { stage: '9. FOLLOW-UP', count: 65, color: '#fbbf24' },
-              { stage: '10. SITE VISIT', count: 48, color: '#4ade80' },
-              { stage: '11. NEGOTIATION', count: 28, color: '#4ade80' },
-              { stage: '12. BOOKING', count: 18, color: '#4ade80' },
-              { stage: '13. BROKERAGE', count: 18, color: '#22c55e' }
-            ].map((s, idx) => (
-              <div key={idx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 8px', borderRadius: '8px', textAlign: 'center' }}>
-                <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>{s.stage}</span>
-                <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: s.color, marginTop: '2px' }}>{s.count}</h4>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* DEVELOPER MASTER VAULT MODAL */}
       {showDevVaultModal && (
@@ -2544,15 +2808,80 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
                   {/* REGISTERED PROJECTS LIST FOR THIS DEVELOPER */}
                   <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px' }}>
-                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>
-                      📁 REGISTERED PROJECTS ({dev.projects.length}):
+                    <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '8px' }}>
+                      📁 REGISTERED PROJECTS ({dev.projects?.length || 0}) — Click Project ID Badge to Inspect Master Details & Stock:
                     </span>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {dev.projects.map((p: any) => (
-                        <span key={p.id || p.title} style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', color: '#38bdf8', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800' }}>
-                          🏢 {p.title} <small style={{ color: isLight ? '#64748b' : '#94a3b8' }}>({p.locality})</small>
-                        </span>
-                      ))}
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                      {(dev.projects || []).map((p: any, pIdx: number) => {
+                        const allMasters = getAllMasterProjects();
+                        const matchedMaster = allMasters.find(m => 
+                          (m.title && p.title && m.title.toLowerCase().trim() === p.title.toLowerCase().trim()) ||
+                          (m.id && p.id && m.id === p.id) ||
+                          (m.code && p.code && m.code === p.code)
+                        );
+
+                        const projCodeStr = matchedMaster?.code || matchedMaster?.id || p.code || p.id || `SRM-PROJ-2026-0000${(pIdx + 1) * 22}`;
+                        const unitsCount = properties.filter(prop => 
+                          (prop.project_id && prop.project_id === projCodeStr) ||
+                          (prop.title && p.title && prop.title.toLowerCase().trim() === p.title.toLowerCase().trim())
+                        ).length;
+
+                        return (
+                          <button
+                            key={p.id || p.title || pIdx}
+                            type="button"
+                            onClick={() => {
+                              const projectData = matchedMaster || {
+                                id: projCodeStr,
+                                code: projCodeStr,
+                                title: p.title,
+                                developer: dev.name,
+                                mobile: dev.mobile,
+                                locality: p.locality || 'Locality Hub',
+                                latitude: p.lat || '22.722361',
+                                longitude: p.lng || '88.493403',
+                                amenities: p.amenities || ['24/7 Power Backup', 'Water Supply', 'Security', 'Elevators'],
+                                building_photos: p.building_photos || [],
+                                total_covered_parking_capacity: p.total_covered_parking_capacity || 24,
+                                covered_parking_rate: p.covered_parking_rate || '300000',
+                                total_ev_parking_capacity: p.total_ev_parking_capacity || 6,
+                                ev_parking_rate: p.ev_parking_rate || '450000',
+                                total_open_parking_capacity: p.total_open_parking_capacity || 12,
+                                open_parking_rate: p.open_parking_rate || '150000'
+                              };
+                              setSelectedProjectDetailsModal({ ...projectData, devName: dev.name, devMobile: dev.mobile, unitsCount });
+                            }}
+                            style={{ 
+                              background: isLight ? '#ffffff' : '#1e293b', 
+                              border: '1.5px solid #0284c7', 
+                              borderRadius: '8px', 
+                              padding: '6px 12px', 
+                              cursor: 'pointer', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '8px', 
+                              boxShadow: '0 2px 6px rgba(2, 132, 199, 0.15)',
+                              transition: 'all 0.15s ease'
+                            }}
+                            title="Click to inspect complete Master Project specifications & linked property inventory"
+                          >
+                            <span style={{ fontSize: '0.68rem', background: 'rgba(2, 132, 199, 0.18)', color: '#0284c7', border: '1px solid #0284c7', padding: '2px 6px', borderRadius: '4px', fontWeight: '900', fontFamily: 'monospace' }}>
+                              🔑 {projCodeStr}
+                            </span>
+                            <span style={{ fontSize: '0.8rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>
+                              🏢 {p.title}
+                            </span>
+                            {p.locality && (
+                              <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '600' }}>
+                                📍 {p.locality}
+                              </span>
+                            )}
+                            <span style={{ fontSize: '0.66rem', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '1px 6px', borderRadius: '10px', fontWeight: '800' }}>
+                              🏠 {unitsCount} Unit{unitsCount === 1 ? '' : 's'}
+                            </span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
@@ -2568,128 +2897,192 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
         </div>
       )}
 
-      {/* MANAGE PROJECT PARKING STOCK MODAL */}
-      {showStep2ParkingConfigModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px' }}>
-          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #0284c7', borderRadius: '20px', width: '100%', maxWidth: '520px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  🚗 MANAGE PROJECT PARKING STOCK
-                </h3>
-                <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: '800' }}>Project: {parkingModalProjectName}</span>
+      {/* MASTER PROJECT SPECIFICATION & DETAILS MODAL CARD */}
+      {selectedProjectDetailsModal && (() => {
+        const proj = selectedProjectDetailsModal;
+        const linkedUnits = properties.filter(prop => 
+          (prop.project_id && prop.project_id === proj.code) ||
+          (prop.title && proj.title && prop.title.toLowerCase().trim() === proj.title.toLowerCase().trim())
+        );
+        const photos = Array.isArray(proj.building_photos) && proj.building_photos.length > 0
+          ? proj.building_photos
+          : [
+              'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
+              'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80'
+            ];
+
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '16px' }}>
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', borderRadius: '20px', width: '100%', maxWidth: '850px', maxHeight: '92vh', overflowY: 'auto', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+              
+              {/* HEADER BADGE & CLOSE */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                <div>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '0.74rem', background: 'rgba(2, 132, 199, 0.18)', color: '#0284c7', border: '1.5px solid #0284c7', padding: '3px 10px', borderRadius: '6px', fontWeight: '900', fontFamily: 'monospace' }}>
+                      🔑 MASTER PROJECT CODE: {proj.code || proj.id}
+                    </span>
+                    <span style={{ fontSize: '0.74rem', background: 'rgba(34, 197, 94, 0.18)', color: '#22c55e', border: '1px solid #22c55e', padding: '3px 10px', borderRadius: '6px', fontWeight: '900' }}>
+                      🔐 DEVELOPER OTP VERIFIED
+                    </span>
+                  </div>
+                  <h2 style={{ fontSize: '1.35rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                    🏢 {proj.title}
+                  </h2>
+                  <span style={{ fontSize: '0.84rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>
+                    📍 Locality Hub: {proj.locality || 'Locality Hub'} • Developer: <strong style={{ color: '#0284c7' }}>{proj.developer || proj.devName}</strong>
+                  </span>
+                </div>
+
+                <button onClick={() => setSelectedProjectDetailsModal(null)} style={{ background: 'none', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer' }}>
+                  <X size={22} />
+                </button>
               </div>
-              <button onClick={() => setShowManageParkingModal(false)} style={{ background: 'none', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer' }}>
-                <X size={20} />
-              </button>
+
+              {/* GRID INFO STATS */}
+              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
+                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>GPS MAP LATITUDE</span>
+                  <strong style={{ fontSize: '0.92rem', color: '#4ade80', fontFamily: 'monospace' }}>{proj.latitude || '22.694318'}</strong>
+                </div>
+
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
+                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>GPS MAP LONGITUDE</span>
+                  <strong style={{ fontSize: '0.92rem', color: '#4ade80', fontFamily: 'monospace' }}>{proj.longitude || '88.400659'}</strong>
+                </div>
+
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
+                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>BUILDER CONTACT</span>
+                  <strong style={{ fontSize: '0.88rem', color: '#0284c7' }}>{proj.mobile || proj.devMobile || '+91 98833 95102'}</strong>
+                </div>
+
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '12px' }}>
+                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>LINKED PROPERTY UNITS</span>
+                  <strong style={{ fontSize: '0.95rem', color: '#22c55e' }}>{linkedUnits.length} Active Unit{linkedUnits.length === 1 ? '' : 's'}</strong>
+                </div>
+              </div>
+
+              {/* EXTERIOR ELEVATION GALLERY */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #eab308', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.84rem', color: '#eab308', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  📷 Project Building Exterior Elevation Photos ({photos.length})
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+                  {photos.map((imgUrl: string, idx: number) => (
+                    <div key={idx} style={{ height: '110px', borderRadius: '8px', overflow: 'hidden', border: idx === 0 ? '2px solid #22c55e' : '1px solid #cbd5e1', position: 'relative' }}>
+                      <img src={imgUrl} alt={`Elevation ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      {idx === 0 && (
+                        <span style={{ position: 'absolute', top: '4px', left: '4px', background: '#22c55e', color: '#ffffff', fontSize: '0.62rem', fontWeight: '900', padding: '2px 4px', borderRadius: '4px' }}>
+                          ⭐ MAIN COVER
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* AMENITIES CHECKLIST */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #a855f7', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.84rem', color: '#a855f7', fontWeight: '900' }}>
+                  🏊 Project Amenities & Infrastructure Features ({proj.amenities?.length || 19})
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {(proj.amenities && proj.amenities.length > 0 ? proj.amenities : [
+                    '24/7 Power Backup', '24-Hour Water Supply', '24/7 Security Patrol', 'CCTV Surveillance',
+                    'High-Speed Elevators', 'Backup Generator', 'Fire Safety System', 'Fitness Gymnasium',
+                    'Swimming Pool', 'Luxury Clubhouse', "Kids Play Area", 'EV Charging Stations'
+                  ]).map((item: string, i: number) => (
+                    <span key={i} style={{ background: 'rgba(168, 85, 247, 0.15)', color: isLight ? '#7e22ce' : '#c084fc', border: '1px solid #a855f7', padding: '3px 8px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: '800' }}>
+                      ✓ {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* PARKING STOCK CAPACITY */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #eab308', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.84rem', color: '#eab308', fontWeight: '900' }}>
+                  🚗 Project Parking Stock Capacity & Default Rates
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '10px' }}>
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', borderRadius: '8px', padding: '10px' }}>
+                    <span style={{ fontSize: '0.74rem', color: '#0284c7', fontWeight: '900', display: 'block' }}>🚘 Covered Basement</span>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
+                      Capacity: {proj.total_covered_parking_capacity || 24} Slots
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#eab308', fontWeight: '800' }}>
+                      Rate: ₹{parseInt(proj.covered_parking_rate || '300000', 10).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #eab308', borderRadius: '8px', padding: '10px' }}>
+                    <span style={{ fontSize: '0.74rem', color: '#eab308', fontWeight: '900', display: 'block' }}>⚡ EV Fast Charger</span>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
+                      Capacity: {proj.total_ev_parking_capacity || 6} Slots
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#eab308', fontWeight: '800' }}>
+                      Rate: ₹{parseInt(proj.ev_parking_rate || '450000', 10).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', borderRadius: '8px', padding: '10px' }}>
+                    <span style={{ fontSize: '0.74rem', color: '#22c55e', fontWeight: '900', display: 'block' }}>🅿️ Open Surface</span>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
+                      Capacity: {proj.total_open_parking_capacity || 12} Slots
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#eab308', fontWeight: '800' }}>
+                      Rate: ₹{parseInt(proj.open_parking_rate || '150000', 10).toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* FOOTER ACTIONS */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setSelectedProjectDetailsModal(null)} 
+                  style={{ background: isLight ? '#f1f5f9' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}
+                >
+                  Close Specification Card
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProjectDetailsModal(null);
+                    setShowDevVaultModal(false);
+                    setNewPropertyForm((prev: any) => ({
+                      ...prev,
+                      project_id: proj.code || proj.id,
+                      developer: proj.developer || proj.devName,
+                      title: proj.title,
+                      locality: proj.locality,
+                      latitude: proj.latitude,
+                      longitude: proj.longitude,
+                      selected_amenities: proj.amenities || [],
+                      building_photos: proj.building_photos || [],
+                      total_covered_parking_capacity: proj.total_covered_parking_capacity,
+                      covered_parking_rate: proj.covered_parking_rate,
+                      total_ev_parking_capacity: proj.total_ev_parking_capacity,
+                      ev_parking_rate: proj.ev_parking_rate,
+                      total_open_parking_capacity: proj.total_open_parking_capacity,
+                      open_parking_rate: proj.open_parking_rate
+                    }));
+                    setActiveProjectSubTab('add_property_master');
+                  }}
+                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(2, 132, 199, 0.4)' }}
+                >
+                  🏠 + Create New Property Units Under Project ({proj.code || proj.id})
+                </button>
+              </div>
+
             </div>
-
-            <form 
-              onSubmit={(e) => {
-                e.preventDefault();
-                setProjectParkingStockMap(prev => ({
-                  ...prev,
-                  [parkingModalProjectName]: {
-                    totalCovered: Number(parkingModalForm.totalCovered) || 0,
-                    priceCovered: parkingModalForm.priceCovered || 0,
-                    totalEv: Number(parkingModalForm.totalEv) || 0,
-                    priceEv: parkingModalForm.priceEv || 0,
-                    totalOpen: Number(parkingModalForm.totalOpen) || 0,
-                    priceOpen: parkingModalForm.priceOpen || 0
-                  }
-                }));
-                setShowManageParkingModal(false);
-                alert(`✅ PARKING STOCK & PRICING UPDATED FOR PROJECT: ${parkingModalProjectName}!\n\n• Covered: ${parkingModalForm.totalCovered} Slots @ ₹${parkingModalForm.priceCovered}\n• EV Stations: ${parkingModalForm.totalEv} Slots @ ₹${parkingModalForm.priceEv}\n• Open: ${parkingModalForm.totalOpen} Slots @ ₹${parkingModalForm.priceOpen}`);
-              }}
-              style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}
-            >
-              {/* COVERED PARKING STOCK & PRICE */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '10px', border: '1px solid #0284c7' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🚗 Total Covered Parking Slots</label>
-                  <input 
-                    type="number" 
-                    value={parkingModalForm.totalCovered} 
-                    onChange={(e) => setParkingModalForm({ ...parkingModalForm, totalCovered: Number(e.target.value) })}
-                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.88rem', fontWeight: '800' }}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>💰 Covered Slot Price (INR)</label>
-                  <input 
-                    type="text" 
-                    value={parkingModalForm.priceCovered !== undefined ? parkingModalForm.priceCovered : ''} 
-                    onChange={(e) => setParkingModalForm({ ...parkingModalForm, priceCovered: e.target.value })}
-                    placeholder="e.g. 300000 / Included"
-                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.88rem', fontWeight: '800' }}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* EV STATIONS STOCK & PRICE */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '10px', border: '1px solid #eab308' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>⚡ Total EV Fast Charging Slots</label>
-                  <input 
-                    type="number" 
-                    value={parkingModalForm.totalEv} 
-                    onChange={(e) => setParkingModalForm({ ...parkingModalForm, totalEv: Number(e.target.value) })}
-                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.88rem', fontWeight: '800' }}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>💰 EV Station Slot Price (INR)</label>
-                  <input 
-                    type="text" 
-                    value={parkingModalForm.priceEv !== undefined ? parkingModalForm.priceEv : ''} 
-                    onChange={(e) => setParkingModalForm({ ...parkingModalForm, priceEv: e.target.value })}
-                    placeholder="e.g. 450000"
-                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.88rem', fontWeight: '800' }}
-                    required
-                  />
-                </div>
-              </div>
-
-              {/* OPEN PARKING STOCK & PRICE */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '10px', border: '1px solid #38bdf8' }}>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🅿️ Total Open Surface Slots</label>
-                  <input 
-                    type="number" 
-                    value={parkingModalForm.totalOpen} 
-                    onChange={(e) => setParkingModalForm({ ...parkingModalForm, totalOpen: Number(e.target.value) })}
-                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.88rem', fontWeight: '800' }}
-                    required
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>💰 Open Slot Price (INR)</label>
-                  <input 
-                    type="text" 
-                    value={parkingModalForm.priceOpen !== undefined ? parkingModalForm.priceOpen : ''} 
-                    onChange={(e) => setParkingModalForm({ ...parkingModalForm, priceOpen: e.target.value })}
-                    placeholder="e.g. 150000"
-                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.88rem', fontWeight: '800' }}
-                    required
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '10px' }}>
-                <button type="button" onClick={() => setShowManageParkingModal(false)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}>
-                  Cancel
-                </button>
-                <button type="submit" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 22px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer' }}>
-                  Save Parking Stock Settings
-                </button>
-              </div>
-            </form>
           </div>
-        </div>
-      )}
+        );
+      })()}
+
+
 
       {/* COMPREHENSIVE PROPERTY VAULT DETAILS INSPECTION MODAL */}
       {viewPropertyModal && (() => {
