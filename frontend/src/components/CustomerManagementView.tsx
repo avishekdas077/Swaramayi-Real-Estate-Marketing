@@ -31,6 +31,7 @@ interface CustomerManagementViewProps {
   maskPhone: (phone: string) => string;
   handleStartEditCustomer: (cust: any) => void;
   setShowPvaDocumentModal: (val: any) => void;
+  setShowViewIndividualCostSheetModal?: (val: any) => void;
 }
 
 export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
@@ -63,7 +64,89 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
   maskPhone,
   handleStartEditCustomer,
   setShowPvaDocumentModal,
+  setShowViewIndividualCostSheetModal,
 }) => {
+  const handleViewCostSheetPdf = (customer: any, existingCostSheet?: any) => {
+    if (existingCostSheet && setShowViewIndividualCostSheetModal) {
+      setShowViewIndividualCostSheetModal({ open: true, costSheet: existingCostSheet });
+      return;
+    }
+
+    const found = (individualCostSheets || []).find((cs: any) =>
+      (cs.customerSnapshot?.customerName && customer?.name && cs.customerSnapshot.customerName.toLowerCase() === customer.name.toLowerCase()) ||
+      (cs.customerId && customer?.customer_number && cs.customerId.toLowerCase() === customer.customer_number.toLowerCase()) ||
+      (cs.customerSnapshot?.mobile && customer?.mobile && cs.customerSnapshot.mobile.replace(/\D/g, '') === customer.mobile.replace(/\D/g, ''))
+    );
+
+    if (found && setShowViewIndividualCostSheetModal) {
+      setShowViewIndividualCostSheetModal({ open: true, costSheet: found });
+      return;
+    }
+
+    const custId = customer?.customer_number || customer?.id || 'SRM-CUS-2026-000184';
+    const numPart = (customer?.id || customer?.customer_number || '184').toString().replace(/\D/g, '').slice(-6).padStart(6, '0');
+    const csCode = `COST-SHEET-2026-${numPart || '000184'}`;
+
+    const fallbackSheet = {
+      costSheetId: csCode,
+      version: 'V01',
+      status: 'ACTIVE_SENT',
+      customerId: custId,
+      matchId: `MATCH-2026-${numPart || '000184'}`,
+      createdAt: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+      createdBy: customer?.assigned_employee_id || 'Priya Nair (Sales Exec)',
+      customerSnapshot: {
+        customerId: custId,
+        customerName: customer?.name || 'Valued Customer',
+        mobile: customer?.mobile || '+91 98490 11223',
+        email: customer?.email || 'customer@swaramayi.com',
+        preferredLocation: customer?.preferredArea || 'Kondapur / Gachibowli',
+        budget: customer?.budget || '70 Lakhs - 85 Lakhs',
+        preferredBhk: customer?.configuration || '3BHK',
+        purpose: 'End Use'
+      },
+      propertySnapshot: {
+        propertyCode: 'SRM-PROP-2026-000231',
+        propertyTitle: `Swaramayi ${customer?.preferredArea || 'Kondapur'} Premium Flat`,
+        projectName: `Swaramayi Heights (${customer?.preferredArea || 'Kondapur'})`,
+        developerName: 'Swaramayi Developers Pvt Ltd',
+        tower: 'Tower A',
+        floor: '12th Floor',
+        unitNumber: '1204',
+        carpetArea: '1,850 Sq.Ft.',
+        facing: 'East Facing',
+        possessionStatus: 'Ready to Move',
+        latitude: '17.4623° N',
+        longitude: '78.3562° E'
+      },
+      matchSnapshot: {
+        matchScore: customer?.score || 95,
+        matchFactors: ['✓ Preferred Location Match', '✓ Budget Range Satisfied', '✓ BHK Configuration Met', '✓ Ready to Move']
+      },
+      formattedPriceBreakup: {
+        ratePerSqftStr: '₹6,500 / Sq.Ft.',
+        basePriceStr: '₹1,20,25,000',
+        floorRiseStr: '₹2,50,000',
+        plcStr: '₹1,50,000',
+        parkingStr: '₹3,00,000',
+        clubStr: '₹2,00,000',
+        maintenanceStr: '₹75,000',
+        infrastructureStr: '₹1,00,000',
+        legalStr: '₹25,000',
+        subtotalStr: '₹1,31,25,000',
+        discountStr: 'N/A',
+        gstStr: '₹6,56,250',
+        stampDutyStr: '₹9,18,750',
+        registrationStr: '₹65,625',
+        totalEstimatedCostStr: '₹1,47,65,625'
+      }
+    };
+
+    if (setShowViewIndividualCostSheetModal) {
+      setShowViewIndividualCostSheetModal({ open: true, costSheet: fallbackSheet });
+    }
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -404,8 +487,13 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                               </div>
 
                               {/* 2. COST SHEET STAGE */}
-                              <div style={{ background: matchingCostSheet ? 'rgba(34, 197, 94, 0.15)' : (isLight ? '#f8fafc' : '#0f172a'), border: `1px solid ${matchingCostSheet ? '#22c55e' : '#cbd5e1'}`, borderRadius: '4px', padding: '3px 8px', color: matchingCostSheet ? '#4ade80' : (isLight ? '#64748b' : '#94a3b8'), fontWeight: '800' }}>
-                                📄 Cost Sheet: {matchingCostSheet ? `Shared (${matchingCostSheet.costSheetId || 'SRM-CS-01'})` : 'Ready to Share'}
+                              <div 
+                                onClick={() => handleViewCostSheetPdf(c, matchingCostSheet)}
+                                style={{ background: matchingCostSheet ? 'rgba(34, 197, 94, 0.15)' : (isLight ? '#f8fafc' : '#0f172a'), border: `1px solid ${matchingCostSheet ? '#22c55e' : '#0284c7'}`, borderRadius: '4px', padding: '3px 8px', color: matchingCostSheet ? '#4ade80' : '#38bdf8', fontWeight: '800', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                                title="Click to View / Print Cost Sheet PDF"
+                              >
+                                <span>📄 Cost Sheet: {matchingCostSheet ? `Shared (${matchingCostSheet.costSheetId || 'SRM-CS-01'})` : 'Ready to Share'}</span>
+                                <span style={{ background: '#0284c7', color: '#ffffff', padding: '1px 5px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '900', marginLeft: '6px' }}>📄 PDF</span>
                               </div>
 
                               {/* 3. VISIT STAGE */}
@@ -429,7 +517,14 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                           </td>
 
                           <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                              <button 
+                                onClick={() => handleViewCostSheetPdf(c, matchingCostSheet)} 
+                                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                title="View & Download Official Cost Sheet PDF"
+                              >
+                                📄 Cost Sheet PDF
+                              </button>
                               <button onClick={() => { setSelectedCust(c); setActiveCustomerSubTab('customer_360_profile'); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>360° View</button>
                               <button onClick={() => handleStartEditCustomer(c)} style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Edit</button>
                               <button onClick={() => alert(`🔄 Initiated Transfer Request for Customer ${c.customer_number}`)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Transfer</button>
@@ -460,7 +555,13 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
               <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>Assigned Executive: <strong>Priya Nair (Sales Exec)</strong> | Team Leader: <strong>Rahul Sharma</strong></p>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <button 
+                onClick={() => handleViewCostSheetPdf(selectedCust)}
+                style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}
+              >
+                📄 View Cost Sheet PDF
+              </button>
               <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', padding: '8px 16px', borderRadius: '10px', fontWeight: '900', fontSize: '0.9rem' }}>🔥 PRIORITY: HOT ({selectedCust.score || 88}/100)</span>
             </div>
           </div>
@@ -488,8 +589,8 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                 { label: '3. REQUIREMENT ID', id: 'SRM-REQ-2026-000094', status: 'SAVED', color: '#38bdf8' },
                 { label: '4. MATCHING REQUEST ID', id: 'SRM-MAT-2026-000421', status: 'MATCHED', color: '#38bdf8' },
                 { label: '5. PROPERTY MASTER ID', id: 'SRM-PROP-2026-000231', status: 'SHORTLISTED', color: '#38bdf8' },
-                { label: '6. COST SHEET ID', id: 'SRM-CS-2026-000145', status: 'CS-V1 ACTIVE', color: '#fbbf24' },
-                { label: '7. COST SHEET SHARE ID', id: 'SRM-CSS-2026-000055', status: 'DELIVERED', color: '#fbbf24' },
+                { label: '6. COST SHEET ID', id: 'SRM-CS-2026-000145', status: 'CS-V1 ACTIVE', color: '#fbbf24', isCostSheet: true },
+                { label: '7. COST SHEET SHARE ID', id: 'SRM-CSS-2026-000055', status: 'DELIVERED', color: '#fbbf24', isCostSheet: true },
                 { label: '8. VISIT SCHEDULE ID', id: 'SRM-VS-2026-000087', status: 'CONFIRMED', color: '#4ade80' },
                 { label: '9. OTP VERIFICATION ID', id: 'SRM-VOTP-2026-000032', status: '849201 VERIFIED', color: '#4ade80' },
                 { label: '10. VISIT CHECK-IN ID', id: 'SRM-VIN-2026-000044', status: 'CHECKED_IN', color: '#4ade80' },
@@ -501,18 +602,17 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                 { label: '16. INVOICE ID', id: 'SRM-INV-2026-000031', status: 'PAID', color: '#22c55e' },
                 { label: '17. BROKERAGE ID', id: 'SRM-BRO-2026-000011', status: 'PROCESSED', color: '#22c55e' }
               ].map((item, idx) => (
-                <div key={idx} onClick={() => alert(`🔍 Master Transaction Detail Log for ${item.id}:
-
-Type: ${item.label}
-Customer: ${selectedCust.name} (${selectedCust.customer_number})
-Status: ${item.status}
-Created: 17 Aug 2026
-Audit Hash: SHA256-VERIFIED-SRM-90412
-Traceability: PERMANENTLY LINKED TO MASTER ID`)} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '10px', cursor: 'pointer' }}>
+                <div key={idx} onClick={() => {
+                  if (item.isCostSheet) {
+                    handleViewCostSheetPdf(selectedCust);
+                  } else {
+                    alert(`🔍 Master Transaction Detail Log for ${item.id}:\n\nType: ${item.label}\nCustomer: ${selectedCust.name} (${selectedCust.customer_number})\nStatus: ${item.status}\nCreated: 17 Aug 2026\nAudit Hash: SHA256-VERIFIED-SRM-90412\nTraceability: PERMANENTLY LINKED TO MASTER ID`);
+                  }
+                }} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: item.isCostSheet ? '1px solid #10b981' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'), borderRadius: '8px', padding: '10px', cursor: 'pointer' }}>
                   <span style={{ fontSize: '0.62rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block' }}>{item.label}</span>
-                  <h5 style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{item.id}</h5>
+                  <h5 style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '900', color: item.isCostSheet ? '#4ade80' : '#38bdf8', marginTop: '2px' }}>{item.id}</h5>
                   <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: item.color, padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', display: 'inline-block', marginTop: '4px' }}>
-                    ● {item.status}
+                    ● {item.status} {item.isCostSheet ? '(Click to View PDF)' : ''}
                   </span>
                 </div>
               ))}
@@ -575,6 +675,51 @@ Traceability: PERMANENTLY LINKED TO MASTER ID`)} style={{ background: isLight ? 
                     <p style={{ fontSize: '0.75rem', color: isLight ? '#0f172a' : '#ffffff', margin: '2px 0 0 0' }}>Gated Community Villa in Kokapet</p>
                   </div>
                   <span style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>NEGOTIATION PENDING</span>
+                </div>
+              </div>
+            </div>
+
+            {/* CARD 3: COST SHEET PDF & QUOTATION VAULT */}
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #10b981', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', gridColumn: windowWidth > 768 ? 'span 2' : 'span 1' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#10b981', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📄 Customer Cost Sheet PDF Document & Quotation Vault
+                </h4>
+                <span style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#10b981', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+                  OFFICIAL QUOTATION READY
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px 18px', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>ACTIVE COST SHEET DOCUMENT</span>
+                  <h5 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
+                    Official Property Cost Sheet — {selectedCust.name} ({selectedCust.customer_number})
+                  </h5>
+                  <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#cbd5e1', margin: '4px 0 0 0' }}>
+                    Itemized property valuation including base price, floor rise, PLC, statutory GST, stamp duty, and payment milestones.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => handleViewCostSheetPdf(selectedCust)}
+                    style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    📄 Open Cost Sheet PDF
+                  </button>
+                  <button 
+                    onClick={() => handleViewCostSheetPdf(selectedCust)}
+                    style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    🖨️ Print PDF
+                  </button>
+                  <button 
+                    onClick={() => alert(`📲 Cost Sheet PDF link shared to ${selectedCust.name} via WhatsApp (${selectedCust.mobile})!`)}
+                    style={{ background: '#25D366', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    💬 WhatsApp PDF Link
+                  </button>
                 </div>
               </div>
             </div>

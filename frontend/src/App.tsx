@@ -7976,6 +7976,7 @@ export default function App() {
               maskPhone={maskPhone}
               handleStartEditCustomer={handleStartEditCustomer}
               setShowPvaDocumentModal={setShowPvaDocumentModal}
+              setShowViewIndividualCostSheetModal={setShowViewIndividualCostSheetModal}
             />
           )}
 
