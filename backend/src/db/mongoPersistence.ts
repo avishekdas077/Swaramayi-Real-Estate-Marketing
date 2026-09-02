@@ -43,14 +43,11 @@ export const DeveloperModel = mongoose.models.Developer || mongoose.model('Devel
 
 // Helper function to sync array of records into a model (handles permanent deletions)
 async function syncCollection(model: mongoose.Model<any>, records: any[]) {
-  if (!records || !Array.isArray(records)) return;
+  if (!records || !Array.isArray(records) || records.length === 0) {
+    return;
+  }
 
   try {
-    if (records.length === 0) {
-      await model.deleteMany({});
-      return;
-    }
-
     // Extract valid record identifiers
     const validIds = records.map(r => r.id).filter(Boolean);
     const validCustNums = records.map(r => r.customer_number).filter(Boolean);

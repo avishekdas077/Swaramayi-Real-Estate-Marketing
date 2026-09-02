@@ -31,6 +31,8 @@ interface LeadManagementViewProps {
   setIsMobileSidebarOpen: (val: boolean) => void;
   handleOpenResumeQualification?: (lead: any) => void;
   handleOpenLeadModal?: () => void;
+  isSuperAdmin?: boolean;
+  setLeadsList?: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
@@ -40,6 +42,8 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
   setLeadViewMode,
   setShowLeadModal,
   leadsList = [],
+  setLeadsList,
+  isSuperAdmin = false,
   leadInboxTab,
   setLeadInboxTab,
   searchQuery,
@@ -426,6 +430,22 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                               >
                                 🔄 Transfer
                               </button>
+
+                              {isSuperAdmin && setLeadsList && (
+                                <button
+                                  onClick={() => {
+                                    if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Lead ${lead.lead_number || lead.id} for ${lead.customer_name || 'Customer'}?`)) {
+                                      const nextList = leadsList.filter((l: any) => l.id !== lead.id && l.lead_number !== lead.lead_number);
+                                      setLeadsList(nextList);
+                                      alert(`🗑️ Lead ${lead.lead_number || lead.id} permanently deleted.`);
+                                    }
+                                  }}
+                                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem' }}
+                                  title="Super Admin Only: Permanently delete lead record"
+                                >
+                                  🗑️ Delete
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

@@ -2012,73 +2012,20 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_matching_queue_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) {
+          const clean = parsed.filter((r: any) => 
+            r.requestId !== 'SRM-MAT-2026-000421' && 
+            r.requestId !== 'SRM-MAT-2026-000422' && 
+            r.customerName !== 'BISHWAJIT PANDEY' && 
+            r.customerName !== 'SUMANTH VARMA'
+          );
+          return clean;
+        }
       }
     } catch (e) {
       console.error('Error reading matching queue from localStorage:', e);
     }
-    return [
-      {
-        requestId: 'SRM-MAT-2026-000421',
-        id: 'SRM-MAT-2026-000421',
-        date: '02 Sep 2026',
-        customerName: 'BISHWAJIT PANDEY',
-        customerNumber: 'SRM-CUS-2026-000184',
-        leadId: 'SRM-LEAD-2026-001245',
-        requirementId: 'REQ-CUS-001',
-        mobile: '+91 98490 12345',
-        purpose: 'Self / End Use',
-        propertyType: 'Flat / Apartment',
-        configuration: '3BHK',
-        budget: '₹35,00,000 - ₹50,00,000',
-        budget_min: 3500000,
-        budget_max: 5000000,
-        preferredArea: 'Barasat, Kolkata',
-        secondaryAreas: 'Barasat, Chapadali',
-        radiusKm: 10,
-        possessionStatus: 'Ready to Move',
-        carpetArea: '450 - 750 Sq.Ft.',
-        facing: 'East / South Facing',
-        parking: 'Covered Basement',
-        amenities: 'Elevator, Power Backup, Security',
-        completenessScore: 92,
-        priority: 'HOT',
-        leadScore: 85,
-        assignedExecutive: 'Rajesh Varma (Super Admin)',
-        status: 'PENDING',
-        version: 'SNAPSHOT V1'
-      },
-      {
-        requestId: 'SRM-MAT-2026-000422',
-        id: 'SRM-MAT-2026-000422',
-        date: '02 Sep 2026',
-        customerName: 'SUMANTH VARMA',
-        customerNumber: 'SRM-CUS-2026-000185',
-        leadId: 'SRM-LEAD-2026-001246',
-        requirementId: 'REQ-CUS-002',
-        mobile: '+91 98765 43210',
-        purpose: 'Self / End Use',
-        propertyType: 'Flat / Apartment',
-        configuration: '2BHK',
-        budget: '₹25,00,000 - ₹38,00,000',
-        budget_min: 2500000,
-        budget_max: 3800000,
-        preferredArea: 'Barasat, Kolkata',
-        secondaryAreas: 'Jessore Road',
-        radiusKm: 10,
-        possessionStatus: 'Ready to Move',
-        carpetArea: '600 - 800 Sq.Ft.',
-        facing: 'East Facing',
-        parking: 'Covered Basement',
-        amenities: 'Elevator, Security',
-        completenessScore: 88,
-        priority: 'WARM',
-        leadScore: 75,
-        assignedExecutive: 'Abinash Roy (Admin)',
-        status: 'PENDING',
-        version: 'SNAPSHOT V1'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
@@ -3168,27 +3115,14 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_notifications_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((n: any) => n.id !== 'NOTIF-SEED-1' && n.customer_name !== 'Bishwajit Pandey');
+        }
       }
     } catch (e) {
       console.error('Error reading notifications from localStorage:', e);
     }
-    return [
-      {
-        id: 'NOTIF-SEED-1',
-        type: 'CALL_ALERT',
-        title: '⏳ Call Alert: Scheduled Callback Due',
-        customer_name: 'Bishwajit Pandey',
-        mobile: '9330401757',
-        lead_number: 'SRM-LD-2026-000101',
-        scheduled_date: new Date().toISOString().split('T')[0],
-        scheduled_time: '11:00',
-        message: 'Customer was busy on initial call; requested callback at 11:00 AM',
-        priority: 'HIGH',
-        is_read: false,
-        created_at: new Date().toLocaleString()
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
@@ -3200,26 +3134,26 @@ export default function App() {
   }, [systemNotifications]);
 
   const uniqueNotifications = useMemo(() => {
-    const list: any[] = [...systemNotifications];
+    const list: any[] = (systemNotifications || []).filter((n: any) => n.id !== 'NOTIF-SEED-1' && n.customer_name !== 'Bishwajit Pandey');
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // Add dynamic call alerts from customers with next_followup or HOT priority
+    // Add dynamic call alerts from customers ONLY if they have a scheduled next_followup date that is due (Today or Overdue)
     (customers || []).forEach(c => {
-      if (c.next_followup || c.priority === 'HOT' || c.priority === 'HIGH') {
+      if (c.next_followup && (c.next_followup <= todayStr || c.followup_status === 'PENDING')) {
         const id = `NOTIF-CUS-${c.id || c.customer_number}`;
         if (!list.some(n => n.id === id || (c.customer_number && n.customer_number === c.customer_number))) {
-          const isOverdue = c.next_followup && c.next_followup < todayStr;
+          const isOverdue = c.next_followup < todayStr;
           list.push({
             id,
             type: 'CALL_ALERT',
-            title: isOverdue ? '⚠️ OVERDUE Call Alert: Follow-up Pending' : '📞 Call Alert: Scheduled Follow-up',
+            title: isOverdue ? '⚠️ OVERDUE Call Alert: Follow-up Pending' : '📞 Call Alert: Scheduled Follow-up Due Today',
             customer_name: c.full_name || c.name || 'Registered Customer',
             customer_number: c.customer_number,
             mobile: c.mobile || c.alternate_mobile || '',
-            scheduled_date: c.next_followup || todayStr,
+            scheduled_date: c.next_followup,
             scheduled_time: c.next_followup_time || '11:00 AM',
-            message: `${c.configuration || '3BHK'} requirement in ${c.preferred_location || c.city || 'Kolkata'} ${c.budget_max ? `- Budget: ₹${(c.budget_max).toLocaleString('en-IN')}` : ''}`,
-            priority: c.priority === 'HOT' || isOverdue ? 'HIGH' : 'MEDIUM',
+            message: `${c.configuration || 'Requirement'} in ${c.preferred_location || c.city || 'Hyderabad'} ${c.budget_max ? `- Budget: ₹${(c.budget_max).toLocaleString('en-IN')}` : ''}`,
+            priority: isOverdue ? 'HIGH' : 'MEDIUM',
             is_read: false,
             created_at: c.created_at || new Date().toLocaleString()
           });
@@ -3227,25 +3161,29 @@ export default function App() {
       }
     });
 
-    // Add dynamic call alerts from scheduledVisits
+    // Add dynamic call alerts from scheduledVisits ONLY if scheduled date is due (Today or Overdue) and status is PENDING/SCHEDULED
     (scheduledVisits || []).forEach(v => {
-      const id = `NOTIF-SV-${v.id || v.visitId || Math.random()}`;
-      if (!list.some(n => n.id === id || (v.site_visit_code && n.site_visit_code === v.site_visit_code))) {
-        list.push({
-          id,
-          type: 'SITE_VISIT',
-          title: '🚗 Site Visit Call Alert: Visit Confirmation',
-          customer_name: v.customerName || v.customer_name || 'Site Visitor',
-          customer_number: v.customerNumber || v.customer_number || '',
-          mobile: v.mobile || v.customerMobile || '',
-          site_visit_code: v.site_visit_code || v.visitId,
-          scheduled_date: v.scheduledDate || v.visit_date || todayStr,
-          scheduled_time: v.scheduledTime || '11:00 AM',
-          message: `Site visit scheduled for ${v.propertyTitle || v.project_name || 'Property'}`,
-          priority: 'HIGH',
-          is_read: false,
-          created_at: v.created_at || new Date().toLocaleString()
-        });
+      const vDate = v.scheduledDate || v.visit_date || v.date;
+      const vStatus = (v.status || '').toUpperCase();
+      if (vDate && vDate <= todayStr && vStatus !== 'COMPLETED' && vStatus !== 'CANCELLED') {
+        const id = `NOTIF-SV-${v.id || v.visitId || Math.random()}`;
+        if (!list.some(n => n.id === id || (v.site_visit_code && n.site_visit_code === v.site_visit_code))) {
+          list.push({
+            id,
+            type: 'SITE_VISIT',
+            title: '🚗 Site Visit Call Alert: Visit Confirmation Due',
+            customer_name: v.customerName || v.customer_name || 'Site Visitor',
+            customer_number: v.customerNumber || v.customer_number || '',
+            mobile: v.mobile || v.customerMobile || '',
+            site_visit_code: v.site_visit_code || v.visitId,
+            scheduled_date: vDate,
+            scheduled_time: v.scheduledTime || '11:00 AM',
+            message: `Site visit scheduled for ${v.propertyTitle || v.project_name || 'Property'}`,
+            priority: 'HIGH',
+            is_read: false,
+            created_at: v.created_at || new Date().toLocaleString()
+          });
+        }
       }
     });
 
@@ -4880,12 +4818,7 @@ export default function App() {
               setLeadsList(mData.leads);
             }
             if (Array.isArray(mData.matching_requests) && mData.matching_requests.length > 0) {
-              setMatchingRequestsQueue(prev => {
-                const map = new Map<string, any>();
-                prev.forEach((r: any) => map.set(r.requestId || r.id, r));
-                mData.matching_requests.forEach((r: any) => map.set(r.requestId || r.id, r));
-                return Array.from(map.values());
-              });
+              setMatchingRequestsQueue(mData.matching_requests);
             }
             if (Array.isArray(mData.developers) && mData.developers.length > 0) {
               try {
@@ -4915,7 +4848,7 @@ export default function App() {
     if (isMongoLoadedRef.current) {
       syncAllToMongoDB();
     }
-  }, [properties, customers, leadsList, bookings, invoices, agreements, developers]);
+  }, [properties, customers, leadsList, bookings, invoices, agreements, developers, matchingRequestsQueue]);
   const [rawSelectedAgreement, setSelectedAgreement] = useState<any>(null);
   const selectedAgreement = rawSelectedAgreement || agreements[0] || { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' };
 
@@ -8214,6 +8147,8 @@ export default function App() {
               setIsMobileSidebarOpen={setIsMobileSidebarOpen}
               handleOpenResumeQualification={handleOpenResumeQualification}
               handleOpenLeadModal={handleOpenLeadModal}
+              isSuperAdmin={isSuperAdmin}
+              setLeadsList={setLeadsList}
             />
           )}
 
