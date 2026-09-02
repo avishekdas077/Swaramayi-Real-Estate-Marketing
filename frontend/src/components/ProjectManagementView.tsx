@@ -128,6 +128,58 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
     return [];
   });
 
+  // AUTOMATIC CLEANUP EFFECT: Ensure every project in developerMasterList has a UNIQUE project code
+  React.useEffect(() => {
+    if (!developerMasterList || developerMasterList.length === 0) return;
+
+    let modified = false;
+    const year = new Date().getFullYear();
+    const seenCodes = new Set<string>();
+    let maxSeq = 87;
+
+    // Scan max sequence number
+    developerMasterList.forEach((dev: any) => {
+      (dev.projects || []).forEach((proj: any) => {
+        const pCode = proj.code || proj.id || '';
+        const match = pCode.match(/SRM-PROJ-\d+-(\d+)/i);
+        if (match) {
+          const seq = parseInt(match[1], 10);
+          if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+        }
+      });
+    });
+
+    const cleanedDevs = developerMasterList.map((dev: any) => {
+      const cleanProjects = (dev.projects || []).map((proj: any) => {
+        let code = proj.code || proj.id;
+        if (!code || seenCodes.has(code)) {
+          maxSeq++;
+          code = `SRM-PROJ-${year}-${String(maxSeq).padStart(6, '0')}`;
+          modified = true;
+        }
+        seenCodes.add(code);
+        return {
+          ...proj,
+          id: code,
+          code: code
+        };
+      });
+      return {
+        ...dev,
+        projects: cleanProjects
+      };
+    });
+
+    if (modified) {
+      setDeveloperMasterList(cleanedDevs);
+      try {
+        localStorage.setItem('swaramayi_developers_v1', JSON.stringify(cleanedDevs));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
   // COLLECT ALL REGISTERED MASTER PROJECTS FROM DEVELOPER VAULT & EXISTING PROPERTIES
   const getAllMasterProjects = React.useCallback(() => {
     const masterProjectsMap = new Map<string, any>();
@@ -135,13 +187,14 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
     // 1. From developerMasterList
     (developerMasterList || []).forEach((dev: any) => {
       (dev.projects || []).forEach((proj: any) => {
-        const projId = proj.id || proj.code || `PROJ-${(proj.title || 'PROJECT').replace(/\s+/g, '-').toUpperCase()}`;
+        const projId = proj.code || proj.id || `PROJ-${(proj.title || 'PROJECT').replace(/\s+/g, '-').toUpperCase()}`;
         if (!masterProjectsMap.has(projId)) {
           masterProjectsMap.set(projId, {
             id: projId,
             code: proj.code || projId,
             title: proj.title,
             developer: dev.name,
+            developer_id: dev.id,
             mobile: dev.mobile || '',
             altMobile: dev.altMobile || '',
             locality: proj.locality || '',
@@ -162,13 +215,14 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
     // 2. From properties list
     (properties || []).forEach((prop: any) => {
-      const projId = prop.project_id || prop.id || 'SRM-PROJ-2026-000088';
-      if (!masterProjectsMap.has(projId) && (prop.title || prop.project_title)) {
+      const projId = prop.project_id || prop.code || prop.id;
+      if (projId && !masterProjectsMap.has(projId) && (prop.title || prop.project_title)) {
         masterProjectsMap.set(projId, {
           id: projId,
           code: projId,
           title: prop.title || prop.project_title,
           developer: prop.developer || prop.builder_name || 'Developer',
+          developer_id: prop.developer_id || '',
           mobile: prop.developer_mobile || prop.mobile || '',
           altMobile: prop.developer_alt_mobile || '',
           locality: prop.locality || '',
@@ -339,19 +393,55 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
   const [showStep2ParkingConfigModal, setShowStep2ParkingConfigModal] = React.useState<boolean>(false);
 
-  // AUTOMATED PROJECT ID GENERATOR (SRM-PROJ-2026-000088)
+  // AUTOMATED PROJECT ID GENERATOR (SRM-PROJ-2026-000088, SRM-PROJ-2026-000089...)
   const generateNextProjectId = React.useCallback(() => {
     const year = new Date().getFullYear();
-    let maxId = 87;
+    let maxSeq = 87;
+
+    // Scan properties
     (properties || []).forEach((p: any) => {
-      const match = (p.project_id || p.id || '').match(/SRM-PROJ-\d+-(\d+)/i) || (p.project_id || '').match(/PROJ-\d+-(\d+)/i);
+      const pCode = p.project_id || p.code || p.id || '';
+      const match = pCode.match(/SRM-PROJ-\d+-(\d+)/i) || pCode.match(/PROJ-\d+-(\d+)/i);
       if (match) {
         const num = parseInt(match[1], 10);
-        if (!isNaN(num) && num > maxId) maxId = num;
+        if (!isNaN(num) && num > maxSeq) maxSeq = num;
       }
     });
-    return `SRM-PROJ-${year}-${String(maxId + 1).padStart(6, '0')}`;
-  }, [properties]);
+
+    // Scan developerMasterList
+    (developerMasterList || []).forEach((dev: any) => {
+      (dev.projects || []).forEach((proj: any) => {
+        const pCode = proj.code || proj.id || '';
+        const match = pCode.match(/SRM-PROJ-\d+-(\d+)/i) || pCode.match(/PROJ-\d+-(\d+)/i);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (!isNaN(num) && num > maxSeq) maxSeq = num;
+        }
+      });
+    });
+
+    // Collect all existing codes to guarantee 100% uniqueness
+    const existingCodes = new Set<string>();
+    (properties || []).forEach((p: any) => {
+      if (p.project_id) existingCodes.add(p.project_id);
+      if (p.code) existingCodes.add(p.code);
+    });
+    (developerMasterList || []).forEach((dev: any) => {
+      (dev.projects || []).forEach((proj: any) => {
+        if (proj.code) existingCodes.add(proj.code);
+        if (proj.id) existingCodes.add(proj.id);
+      });
+    });
+
+    let nextNum = maxSeq + 1;
+    let candidate = `SRM-PROJ-${year}-${String(nextNum).padStart(6, '0')}`;
+    while (existingCodes.has(candidate)) {
+      nextNum++;
+      candidate = `SRM-PROJ-${year}-${String(nextNum).padStart(6, '0')}`;
+    }
+
+    return candidate;
+  }, [properties, developerMasterList]);
 
   // AUTOMATED SEQUENTIAL INDIVIDUAL PROPERTY CODE GENERATOR FOR EVERY ADDITION (SRM-PROP-2026-000428, SRM-PROP-2026-000429...)
   const generateDynamicPropertyCode = React.useCallback((offset = 0) => {
@@ -2983,9 +3073,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           (m.code && p.code && m.code === p.code)
                         );
 
-                        const projCodeStr = matchedMaster?.code || matchedMaster?.id || p.code || p.id || `SRM-PROJ-2026-0000${(pIdx + 1) * 22}`;
+                        const projCodeStr = p.code || p.id || matchedMaster?.code || matchedMaster?.id || `SRM-PROJ-2026-0000${(pIdx + 1) * 22}`;
                         const unitsCount = properties.filter(prop => 
-                          (prop.project_id && prop.project_id === projCodeStr) ||
+                          (prop.project_id && (prop.project_id === projCodeStr || prop.project_id === p.code || prop.project_id === p.id)) ||
                           (prop.title && p.title && prop.title.toLowerCase().trim() === p.title.toLowerCase().trim())
                         ).length;
 
