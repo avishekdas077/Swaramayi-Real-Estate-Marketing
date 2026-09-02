@@ -11,6 +11,9 @@ interface PropertySourcingRequestsViewProps {
   leadsList: any[];
   customers: any[];
   properties: any[];
+  sourcingRequests?: any[];
+  setSourcingRequests?: React.Dispatch<React.SetStateAction<any[]>>;
+  isSuperAdmin?: boolean;
   openIdDetailsModal: (id: string, type: string) => void;
   maskPhone: (phone: string) => string;
   setActiveTab: (tab: string) => void;
@@ -22,76 +25,29 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
   leadsList = [],
   customers = [],
   properties = [],
+  sourcingRequests: sourcingRequestsProps,
+  setSourcingRequests: setSourcingRequestsProps,
+  isSuperAdmin = false,
   openIdDetailsModal,
   maskPhone,
   setActiveTab
 }) => {
-  // Sourcing Requests Queue with LocalStorage Persistence
-  const [sourcingRequests, setSourcingRequests] = useState<any[]>(() => {
+  // Sourcing Requests Queue with LocalStorage Persistence & Dynamic Fallback
+  const [internalSourcingRequests, setInternalSourcingRequests] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('swaramayi_sourcing_requests_v1');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
     } catch (err) {
       console.error('Error loading sourcing requests', err);
     }
-    // Default Initial Data
-    return [
-      {
-        id: 'SRM-SRC-2026-000101',
-        customer_name: 'Bishwajit Pandey',
-        customer_number: 'SRM-CUS-2026-000188',
-        mobile: '+91 98305 97778',
-        preferred_locality: 'Kondapur / Gachibowli',
-        property_type: 'Flat / Apartment',
-        configuration: '3BHK',
-        budget_min: '₹70 Lakhs',
-        budget_max: '₹95 Lakhs',
-        possession_status: 'Ready to Move',
-        facing: 'East Facing',
-        assigned_executive: 'Punita Roy (Sales Exec)',
-        status: 'PENDING_SOURCING',
-        priority: 'HOT',
-        notes: 'Client specifically needs 3BHK East Facing near Kondapur main road under 90L. Current inventory has no direct match.',
-        created_at: new Date(Date.now() - 24 * 3600000).toISOString()
-      },
-      {
-        id: 'SRM-SRC-2026-000102',
-        customer_name: 'Supriya Chattopadhyay',
-        customer_number: 'SRM-CUS-2026-000189',
-        mobile: '+91 98305 97778',
-        preferred_locality: 'Madhyamgram Hub',
-        property_type: 'Flat / Apartment',
-        configuration: '2BHK',
-        budget_min: '₹50 Lakhs',
-        budget_max: '₹55 Lakhs',
-        possession_status: 'Ready to Move',
-        facing: 'South / East Facing',
-        assigned_executive: 'Punita Roy (Sales Exec)',
-        status: 'BUILDER_CONTACTED',
-        priority: 'HOT',
-        notes: 'Contacted Star Builder representative for 2BHK flat option. Awaiting site clearance.',
-        created_at: new Date(Date.now() - 12 * 3600000).toISOString()
-      },
-      {
-        id: 'SRM-SRC-2026-000103',
-        customer_name: 'Rajesh Sharma',
-        customer_number: 'SRM-CUS-2026-000190',
-        mobile: '+91 98490 12345',
-        preferred_locality: 'HITEC City Sector',
-        property_type: 'Commercial Office Space',
-        configuration: '1,500 Sq.Ft.',
-        budget_min: '₹1.50 Crore',
-        budget_max: '₹2.00 Crore',
-        possession_status: 'Immediate',
-        facing: 'North Facing',
-        assigned_executive: 'Priya Nair (Sales Exec)',
-        status: 'INVENTORY_MATCHED',
-        priority: 'WARM',
-        notes: 'Matched with Cyber Towers Commercial Floor Unit 402. Cost sheet generated.',
-        created_at: new Date(Date.now() - 48 * 3600000).toISOString()
-      }
-    ];
+    return [];
   });
+
+  const sourcingRequests = sourcingRequestsProps || internalSourcingRequests;
+  const setSourcingRequests = setSourcingRequestsProps || setInternalSourcingRequests;
 
   // Filter & Search States
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
@@ -493,6 +449,21 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
                           >
                             <Sparkles size={13} /> Scan Stock
                           </button>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={() => {
+                                if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Sourcing Request ${req.id} for ${req.customer_name}?`)) {
+                                  const nextList = sourcingRequests.filter((r: any) => r.id !== req.id);
+                                  setSourcingRequests(nextList);
+                                  alert(`🗑️ Sourcing Request ${req.id} permanently deleted.`);
+                                }
+                              }}
+                              style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.73rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              title="Super Admin Only: Permanently delete this sourcing request"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

@@ -1844,6 +1844,9 @@ export default function App() {
       }
     }
   }, [currentRole]);
+
+  const isSuperAdmin = currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER' || currentRole?.includes('SUPER_ADMIN') || currentRole?.includes('OWNER');
+
   const [currentPath, setCurrentPath] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       return window.location.pathname;
@@ -3739,6 +3742,7 @@ export default function App() {
       setInvoices([]);
       setScheduledVisits([]);
       setVisitPlans([]);
+      setSourcingRequests([]);
       setSelectedPropertyIds([]);
       setSelectedCust(null);
       setActiveSelectionRecord(null);
@@ -3752,6 +3756,7 @@ export default function App() {
       localStorage.removeItem('swaramayi_invoices_v6');
       localStorage.removeItem('swaramayi_scheduled_visits_v4_clean');
       localStorage.removeItem('swaramayi_visit_plans_v4_clean');
+      localStorage.removeItem('swaramayi_sourcing_requests_v1');
       alert('🗑️ All current records inside have been deleted! Workspace is now 100% clean.');
     }
   };
@@ -4508,6 +4513,7 @@ export default function App() {
             if (Array.isArray(json.data.matching_requests)) setMatchingRequestsQueue(json.data.matching_requests);
             if (Array.isArray(json.data.cost_sheets)) setIndividualCostSheets(json.data.cost_sheets);
             if (Array.isArray(json.data.pva_agreements)) setProjectVisitAgreements(json.data.pva_agreements);
+            if (Array.isArray(json.data.sourcing_requests)) setSourcingRequests(json.data.sourcing_requests);
           }
         }
       } catch (err) {
@@ -4516,6 +4522,27 @@ export default function App() {
     };
     fetchMongoDBData();
   }, []);
+
+  const [sourcingRequests, setSourcingRequests] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_sourcing_requests_v1');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Error loading sourcing requests', e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_sourcing_requests_v1', JSON.stringify(sourcingRequests));
+    } catch (e) {
+      console.error('Error saving sourcing requests', e);
+    }
+  }, [sourcingRequests]);
 
   // GLOBAL REAL-TIME MONGODB ATLAS & BACKEND AUTO-SYNC EFFECT
   useEffect(() => {
@@ -4534,7 +4561,8 @@ export default function App() {
           site_visits: scheduledVisits,
           matching_requests: matchingRequestsQueue,
           cost_sheets: individualCostSheets,
-          pva_agreements: projectVisitAgreements
+          pva_agreements: projectVisitAgreements,
+          sourcing_requests: sourcingRequests
         };
         await fetch('http://localhost:5000/api/v1/crm/sync', {
           method: 'POST',
@@ -4547,7 +4575,7 @@ export default function App() {
     };
     const timer = setTimeout(syncDataWithMongoDB, 2000);
     return () => clearTimeout(timer);
-  }, [users, teams, branches, properties, customers, leadsList, agreements, invoices, bookings, scheduledVisits, matchingRequestsQueue, individualCostSheets, projectVisitAgreements]);
+  }, [users, teams, branches, properties, customers, leadsList, agreements, invoices, bookings, scheduledVisits, matchingRequestsQueue, individualCostSheets, projectVisitAgreements, sourcingRequests]);
   const [rawSelectedAgreement, setSelectedAgreement] = useState<any>(null);
   const selectedAgreement = rawSelectedAgreement || agreements[0] || { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' };
 
@@ -7936,6 +7964,9 @@ export default function App() {
               leadsList={leadsList}
               customers={customers}
               properties={properties}
+              sourcingRequests={sourcingRequests}
+              setSourcingRequests={setSourcingRequests}
+              isSuperAdmin={isSuperAdmin}
               openIdDetailsModal={openIdDetailsModal}
               maskPhone={maskPhone}
               setActiveTab={setActiveTab}
