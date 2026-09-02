@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, Navigation, MapPin, Trash2 } from 'lucide-react';
 
 interface VisitManagementViewProps {
+  currentRole?: string;
   isLight: boolean;
   windowWidth: number;
   activeVisitSubTab: string;
@@ -52,6 +53,7 @@ interface VisitManagementViewProps {
 }
 
 export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
+  currentRole,
   isLight,
   windowWidth,
   activeVisitSubTab,
@@ -100,6 +102,8 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
   setVisitPlans,
   setActiveBookingSubTab,
 }) => {
+  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
@@ -373,6 +377,25 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                               >
                                 💬 WA
                               </button>
+                              {isSuperAdmin && (
+                                <button 
+                                  onClick={() => {
+                                    if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Visit Route Plan ${plan.visitPlanId || plan.visitScheduleId} for ${plan.customerName || 'Customer'}?`)) {
+                                      if (setVisitPlans) {
+                                        setVisitPlans((prev: any[]) => (prev || []).filter((p: any) => p.visitPlanId !== plan.visitPlanId && p.visitScheduleId !== plan.visitPlanId));
+                                      }
+                                      if (setScheduledVisits) {
+                                        setScheduledVisits((prev: any[]) => (prev || []).filter((sv: any) => sv.visitId !== plan.visitPlanId && sv.costSheetId !== plan.visitPlanId));
+                                      }
+                                      alert(`🗑️ Visit Route Plan ${plan.visitPlanId || plan.visitScheduleId} deleted permanently by Super Admin.`);
+                                    }
+                                  }}
+                                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem' }}
+                                  title="Super Admin Only: Permanently delete this visit route plan"
+                                >
+                                  🗑️ DELETE
+                                </button>
+                              )}
                             </div>
                           </td>
 
@@ -736,6 +759,26 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                           >
                             🏢 Booking
                           </button>
+
+                          {isSuperAdmin && (
+                            <button 
+                              onClick={() => {
+                                if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Scheduled Visit record ${v.visitId || v.costSheetId || 'this visit'} for ${v.customerName || 'Customer'}?`)) {
+                                  if (setScheduledVisits) {
+                                    setScheduledVisits((prev: any[]) => (prev || []).filter((sv: any) => sv.visitId !== v.visitId && sv.costSheetId !== v.costSheetId && sv.id !== v.id));
+                                  }
+                                  if (setVisitPlans) {
+                                    setVisitPlans((prev: any[]) => (prev || []).filter((plan: any) => plan.visitScheduleId !== v.visitId && plan.visitPlanId !== v.visitId && plan.id !== v.id));
+                                  }
+                                  alert(`🗑️ Scheduled Visit record ${v.visitId || v.costSheetId || ''} deleted permanently by Super Admin.`);
+                                }
+                              }}
+                              style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px' }}
+                              title="Super Admin Only: Permanently delete this scheduled site visit record"
+                            >
+                              🗑️ Delete
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

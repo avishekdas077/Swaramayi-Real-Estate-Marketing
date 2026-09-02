@@ -768,13 +768,19 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
             </div>
 
             <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}>
-              {selectedPropertyIds.map((code, idx) => (
-                <div key={idx} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem' }}>
-                  <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{code}</span>
-                  <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>{properties.find(p => p.property_code === code)?.title || code}</span>
-                  <X size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => setSelectedPropertyIds(selectedPropertyIds.filter(id => id !== code))} />
-                </div>
-              ))}
+              {selectedPropertyIds.length === 0 ? (
+                <span style={{ fontSize: '0.82rem', color: isLight ? '#64748b' : '#94a3b8', fontStyle: 'italic', padding: '6px 0' }}>
+                  No properties selected yet. Select property checkboxes above or click "Add/Select Property" to add properties to workspace.
+                </span>
+              ) : (
+                selectedPropertyIds.map((code, idx) => (
+                  <div key={idx} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.8rem' }}>
+                    <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{code}</span>
+                    <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>{properties.find(p => p.property_code === code)?.title || code}</span>
+                    <X size={14} color="#ef4444" style={{ cursor: 'pointer' }} onClick={() => setSelectedPropertyIds(selectedPropertyIds.filter(id => id !== code))} />
+                  </div>
+                ))
+              )}
             </div>
 
             {/* SELECTION ACTION BUTTON - ONE PROPERTY = ONE COST SHEET */}

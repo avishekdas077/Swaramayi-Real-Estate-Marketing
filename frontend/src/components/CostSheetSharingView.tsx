@@ -2,6 +2,7 @@ import React from 'react';
 import { Share2, Plus, Trash2, Printer, Search, Eye } from 'lucide-react';
 
 interface CostSheetSharingViewProps {
+  currentRole?: string;
   isLight: boolean;
   windowWidth: number;
   setShowCreateShareModal: (val: boolean) => void;
@@ -29,6 +30,7 @@ interface CostSheetSharingViewProps {
 }
 
 export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
+  currentRole,
   isLight,
   windowWidth,
   setShowCreateShareModal,
@@ -54,6 +56,8 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
   setActiveTab,
   setActiveVisitSubTab,
 }) => {
+  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       
@@ -77,9 +81,11 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
           >
             <Plus size={16} color="#0f172a" /> + Create Share against ID
           </button>
-          <button onClick={handleDeleteAllCurrentInside} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Trash2 size={15} color="#ffffff" /> 🗑️ Delete All Current Inside
-          </button>
+          {isSuperAdmin && (
+            <button onClick={handleDeleteAllCurrentInside} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Trash2 size={15} color="#ffffff" /> 🗑️ Delete All Current Inside
+            </button>
+          )}
           <button onClick={() => alert('📲 Dispatched WhatsApp Cost Sheet Batch to selected active customers!')} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Share2 size={15} /> Batch WhatsApp Share
           </button>
@@ -373,6 +379,22 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                               >
                                 🚘 Visit Schedule
                               </button>
+                              {isSuperAdmin && (
+                                <button 
+                                  onClick={() => {
+                                    if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Cost Sheet record ${item.costSheetId} for ${item.customerSnapshot?.customerName || 'Customer'}?`)) {
+                                      if (setIndividualCostSheets) {
+                                        setIndividualCostSheets((prev: any[]) => (prev || []).filter((c: any) => c.costSheetId !== item.costSheetId));
+                                      }
+                                      alert(`🗑️ Cost Sheet ${item.costSheetId} deleted permanently from vault.`);
+                                    }
+                                  }} 
+                                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}
+                                  title="Permanently delete this cost sheet record"
+                                >
+                                  🗑️ Delete
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>

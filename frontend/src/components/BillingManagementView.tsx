@@ -32,6 +32,7 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
   users = [],
   branches = [],
 }) => {
+  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
   const getCurrentUserBranch = () => {
     const matchedUser = (users || []).find((u: any) => u.role === currentRole) || (users || []).find((u: any) => u.id === 'USR-01') || (users || [])[0];
     if (matchedUser && matchedUser.branch_name) {
@@ -433,6 +434,23 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                         >
                           <Link size={13} /> Payment Link
                         </button>
+
+                        {isSuperAdmin && (
+                          <button 
+                            onClick={() => {
+                              if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Invoice record ${i.invoice_number || i.id} for ${i.customer_name || i.developer_name || 'Client'}?`)) {
+                                if (setInvoices) {
+                                  setInvoices(invoices.filter((item: any) => item.id !== i.id && item.invoice_number !== i.invoice_number));
+                                }
+                                alert(`🗑️ Invoice record ${i.invoice_number || i.id} deleted permanently.`);
+                              }
+                            }}
+                            style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Permanently delete invoice record"
+                          >
+                            🗑️ Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

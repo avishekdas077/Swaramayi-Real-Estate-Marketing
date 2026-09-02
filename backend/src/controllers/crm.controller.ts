@@ -403,12 +403,17 @@ export async function syncMongoDB(req: AuthRequest, res: Response) {
     if (Array.isArray(payload.teams)) dbStore.data.teams = payload.teams;
     if (Array.isArray(payload.branches)) dbStore.data.branches = payload.branches;
     if (Array.isArray(payload.invoices)) dbStore.data.invoices = payload.invoices;
+    if (Array.isArray(payload.bookings)) dbStore.data.bookings = payload.bookings;
+    if (Array.isArray(payload.site_visits)) dbStore.data.site_visits = payload.site_visits;
+    if (Array.isArray(payload.cost_sheets)) (dbStore.data as any).cost_sheets = payload.cost_sheets;
+    if (Array.isArray(payload.matching_requests)) (dbStore.data as any).matching_requests = payload.matching_requests;
+    if (Array.isArray(payload.pva_agreements)) (dbStore.data as any).pva_agreements = payload.pva_agreements;
     saveData();
     await syncToMongoDB(payload);
   }
   return res.json({
     status: 'SUCCESS',
-    message: 'Data successfully synced with MongoDB Atlas Cluster',
+    message: 'Data successfully synced with MongoDB Atlas Cluster & Database Store',
     synced_at: new Date().toISOString()
   });
 }

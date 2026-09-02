@@ -2,24 +2,29 @@ import React from 'react';
 import { BookmarkCheck } from 'lucide-react';
 
 interface BookingManagementViewProps {
+  currentRole?: string;
   isLight: boolean;
   windowWidth: number;
   activeBookingSubTab: string;
   setActiveBookingSubTab: (tab: any) => void;
   bookings: any[];
+  setBookings?: React.Dispatch<React.SetStateAction<any[]>>;
   setShowNewBookingModal: (val: boolean) => void;
   setShowAllotmentModal: (val: any) => void;
 }
 
 export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
+  currentRole,
   isLight,
   windowWidth,
   activeBookingSubTab,
   setActiveBookingSubTab,
   bookings = [],
+  setBookings,
   setShowNewBookingModal,
   setShowAllotmentModal,
 }) => {
+  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -159,13 +164,29 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
                     </td>
 
                     <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
                         <button 
                           onClick={() => setShowAllotmentModal({ open: true, booking: b })} 
                           style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
                           📄 Allotment PDF
                         </button>
+                        {isSuperAdmin && (
+                          <button 
+                            onClick={() => {
+                              if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Booking record ${b.booking_code || b.id} for ${b.customer_name || 'Customer'}?`)) {
+                                if (setBookings) {
+                                  setBookings((prev: any[]) => (prev || []).filter((item: any) => item.id !== b.id && item.booking_code !== b.booking_code));
+                                }
+                                alert(`🗑️ Booking record ${b.booking_code || b.id} deleted permanently.`);
+                              }
+                            }}
+                            style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Permanently delete booking record"
+                          >
+                            🗑️ Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

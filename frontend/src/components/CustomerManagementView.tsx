@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Plus, UserPlus, Trash2, Search, FileText, Printer, Download, X } from 'lucide-react';
 
 interface CustomerManagementViewProps {
+  currentRole?: string;
   isLight: boolean;
   windowWidth: number;
   setShowCreateShareModal: (val: boolean) => void;
@@ -10,6 +11,7 @@ interface CustomerManagementViewProps {
   activeCustomerSubTab: string;
   setActiveCustomerSubTab: (tab: any) => void;
   customers: any[];
+  setCustomers?: React.Dispatch<React.SetStateAction<any[]>>;
   selectedCust: any;
   setSelectedCust: (cust: any) => void;
   custSearchQuery: string;
@@ -23,18 +25,24 @@ interface CustomerManagementViewProps {
   filterPriority: string;
   setFilterPriority: (val: string) => void;
   leadsList: any[];
+  setLeadsList?: React.Dispatch<React.SetStateAction<any[]>>;
   individualCostSheets: any[];
   projectVisitAgreements: any[];
   agreements: any[];
   bookings: any[];
+  invoices?: any[];
+  matchingRequestsQueue?: any[];
   openIdDetailsModal: (id: string, type: string) => void;
   maskPhone: (phone: string) => string;
   handleStartEditCustomer: (cust: any) => void;
   setShowPvaDocumentModal: (val: any) => void;
   setShowViewIndividualCostSheetModal?: (val: any) => void;
+  scheduledVisits?: any[];
+  properties?: any[];
 }
 
 export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
+  currentRole,
   isLight,
   windowWidth,
   setShowCreateShareModal,
@@ -43,6 +51,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
   activeCustomerSubTab,
   setActiveCustomerSubTab,
   customers = [],
+  setCustomers,
   selectedCust = {},
   setSelectedCust,
   custSearchQuery,
@@ -56,17 +65,178 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
   filterPriority,
   setFilterPriority,
   leadsList = [],
+  setLeadsList,
   individualCostSheets = [],
   projectVisitAgreements = [],
   agreements = [],
   bookings = [],
+  invoices = [],
+  matchingRequestsQueue = [],
+  scheduledVisits = [],
+  properties = [],
   openIdDetailsModal,
   maskPhone,
   handleStartEditCustomer,
   setShowPvaDocumentModal,
   setShowViewIndividualCostSheetModal,
 }) => {
+  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
   const [selectedTransactionPdf, setSelectedTransactionPdf] = useState<any | null>(null);
+
+  const getCustomerTransactionChainItems = (cust: any) => {
+    const custNum = cust?.customer_number || cust?.customer_id || '';
+    const custName = cust?.name || cust?.customer_name || '';
+    const custMobile = cust?.mobile || cust?.phone || '';
+    const cleanMobile = custMobile.replace(/[^0-9]/g, '');
+
+    // Find linked records dynamically
+    const matchingLead = (leadsList || []).find((l: any) =>
+      (l.customer_number && l.customer_number === custNum) ||
+      (l.mobile && cleanMobile && l.mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
+      (l.customer_name && custName && l.customer_name.toLowerCase() === custName.toLowerCase())
+    );
+
+    const linkedMatches = (matchingRequestsQueue || []).filter((m: any) =>
+      (m.customerId && m.customerId === custNum) ||
+      (m.customerNumber && m.customerNumber === custNum) ||
+      (m.customerName && custName && m.customerName.toLowerCase() === custName.toLowerCase())
+    );
+
+    const linkedCostSheets = (individualCostSheets || []).filter((cs: any) =>
+      (cs.customerId && cs.customerId === custNum) ||
+      (cs.customerNumber && cs.customerNumber === custNum) ||
+      (cs.customerSnapshot?.mobile && cleanMobile && cs.customerSnapshot.mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
+      (cs.customerSnapshot?.customerName && custName && cs.customerSnapshot.customerName.toLowerCase() === custName.toLowerCase())
+    );
+
+    const linkedVisits = (scheduledVisits || []).filter((v: any) =>
+      (v.customerNumber && v.customerNumber === custNum) ||
+      (v.mobile && cleanMobile && v.mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
+      (v.customerName && custName && v.customerName.toLowerCase() === custName.toLowerCase())
+    );
+
+    const linkedAgreements = (projectVisitAgreements || []).filter((pva: any) =>
+      (pva.customerNumber && pva.customerNumber === custNum) ||
+      (pva.mobile && cleanMobile && pva.mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
+      (pva.customerName && custName && pva.customerName.toLowerCase() === custName.toLowerCase())
+    );
+
+    const linkedBookings = (bookings || []).filter((b: any) =>
+      (b.customer_number && b.customer_number === custNum) ||
+      (b.customer_mobile && cleanMobile && b.customer_mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
+      (b.customer_name && custName && b.customer_name.toLowerCase() === custName.toLowerCase())
+    );
+
+    const linkedInvoices = (invoices || []).filter((inv: any) =>
+      (inv.customer_number && inv.customer_number === custNum) ||
+      (inv.party_name && custName && inv.party_name.toLowerCase() === custName.toLowerCase())
+    );
+
+    // Dynamic Lists for Items 5 through 13
+    const propList = linkedCostSheets.length > 0 
+      ? linkedCostSheets.map((cs: any, i: number) => ({ id: cs.propertyCode || cs.propertyId || `SRM-PROP-2026-00042${i + 1}`, name: cs.propertySnapshot?.projectName || cs.propertySnapshot?.propertyTitle || 'Matched Property Unit', status: 'SHORTLISTED' }))
+      : linkedVisits.length > 0
+      ? linkedVisits.map((v: any, i: number) => ({ id: v.propertyCode || `SRM-PROP-2026-00042${i + 1}`, name: v.propertyTitle || 'Visited Property', status: 'VISITED' }))
+      : [];
+
+    const csList = linkedCostSheets.map((cs: any) => ({
+      id: cs.costSheetId,
+      name: cs.propertySnapshot?.projectName || cs.propertySnapshot?.propertyTitle || 'Property Unit',
+      status: cs.version ? `${cs.version} ACTIVE` : 'CS-V1 ACTIVE'
+    }));
+
+    const cssList = csList.map((cs: any) => ({
+      id: `SRM-CSS-${cs.id}`,
+      name: `Share Log for ${cs.id} (${cs.name})`,
+      status: 'DELIVERED'
+    }));
+
+    const vsList = linkedVisits.map((v: any) => ({
+      id: v.visitId || v.costSheetId,
+      name: v.propertyTitle || 'Site Visit',
+      status: v.status || 'CONFIRMED'
+    }));
+
+    const otpList = linkedVisits.filter((v: any) => v.otpVerified || v.status === 'COMPLETED').map((v: any, i: number) => ({
+      id: `SRM-VOTP-${v.visitId || i+1}`,
+      name: `OTP Verified for ${v.propertyTitle || 'Site Visit'}`,
+      status: `${v.otpHashRef || 'VERIFIED'}`
+    }));
+
+    const vinList = linkedVisits.filter((v: any) => v.checkedIn || v.status === 'COMPLETED').map((v: any, i: number) => ({
+      id: `SRM-VIN-${v.visitId || i+1}`,
+      name: `Check-in ${v.propertyTitle || 'Site Visit'}`,
+      status: 'CHECKED_IN'
+    }));
+
+    const vdList = linkedVisits.filter((v: any) => v.status === 'COMPLETED').map((v: any, i: number) => ({
+      id: `SRM-VD-${v.visitId || i+1}`,
+      name: `Visit Completed ${v.propertyTitle || 'Site Visit'}`,
+      status: 'COMPLETED'
+    }));
+
+    const vfbList = linkedVisits.filter((v: any) => v.feedback || v.status === 'COMPLETED').map((v: any, i: number) => ({
+      id: `SRM-VFB-${v.visitId || i+1}`,
+      name: `Feedback Logged (${v.propertyTitle || 'Site Visit'})`,
+      status: v.feedbackRating || '5-STAR HIGH'
+    }));
+
+    const agrList = linkedAgreements.map((pva: any) => ({
+      id: pva.projectVisitAgreementId || pva.pvaId || pva.id,
+      name: pva.projectTitle || pva.projectName || 'PVA Protection Agreement',
+      status: 'EXECUTED SIGNED'
+    }));
+
+    const bkgList = linkedBookings.map((b: any) => ({
+      id: b.booking_code || b.id,
+      name: b.project_name || 'Booked Property',
+      status: b.status || 'CONFIRMED'
+    }));
+
+    const payList = linkedBookings.map((b: any) => ({
+      id: `SRM-PAY-${(b.booking_code || b.id).slice(-6)}`,
+      name: `Token Payment for ${b.booking_code || b.id}`,
+      status: 'RECEIVED'
+    }));
+
+    const invList = linkedInvoices.map((inv: any) => ({
+      id: inv.invoice_number || inv.id,
+      name: inv.project_name || 'Commission Invoice',
+      status: inv.status || 'PAID'
+    }));
+
+    const broList = (linkedBookings.length > 0 ? linkedBookings : linkedAgreements).map((b: any) => ({
+      id: `SRM-BRO-${(b.booking_code || b.projectVisitAgreementId || b.id).slice(-6)}`,
+      name: `Brokerage Claim for ${b.booking_code || b.projectVisitAgreementId || 'Contract'}`,
+      status: 'PROCESSED'
+    }));
+
+    // Dynamic Lead / Requirement / Matching IDs
+    const leadId = matchingLead?.lead_number || (custNum ? `SRM-LEAD-${custNum.replace(/[^0-9]/g, '').slice(-6)}` : 'N/A');
+    const reqId = cust?.configuration || cust?.preferredArea ? `SRM-REQ-${custNum.replace(/[^0-9]/g, '').slice(-6) || '000094'}` : 'N/A';
+    const matId = linkedMatches.length > 0 ? linkedMatches[0].id || linkedMatches[0].matchId : (propList.length > 0 ? `SRM-MAT-${custNum.replace(/[^0-9]/g, '').slice(-6) || '000421'}` : 'N/A');
+
+    return [
+      { label: '1. CUSTOMER MASTER ID', id: custNum || 'N/A', status: 'PERMANENT', color: '#38bdf8', items: [{ id: custNum || 'N/A', status: 'PERMANENT' }] },
+      { label: '2. LEAD INTAKE ID', id: leadId, status: leadId !== 'N/A' ? 'VERIFIED' : 'N/A', color: '#38bdf8', items: [{ id: leadId, status: leadId !== 'N/A' ? 'VERIFIED' : 'N/A' }] },
+      { label: '3. REQUIREMENT ID', id: reqId, status: reqId !== 'N/A' ? 'SAVED' : 'N/A', color: '#38bdf8', items: [{ id: reqId, status: reqId !== 'N/A' ? 'SAVED' : 'N/A' }] },
+      { label: '4. MATCHING REQUEST ID', id: matId, status: matId !== 'N/A' ? 'MATCHED' : 'NOT MATCHED YET', color: '#38bdf8', items: [{ id: matId, status: matId !== 'N/A' ? 'MATCHED' : 'N/A' }] },
+      { label: '5. PROPERTY MASTER ID', id: propList.length > 0 ? `${propList.length} PROPERTIES` : '0 RECORDS', status: propList.length > 0 ? `${propList.length} SHORTLISTED` : '0 SHORTLISTED', color: '#38bdf8', items: propList },
+      { label: '6. COST SHEET ID', id: csList.length > 0 ? `${csList.length} COST SHEETS` : '0 RECORDS', status: csList.length > 0 ? `${csList.length} ACTIVE` : '0 ACTIVE', color: '#fbbf24', items: csList },
+      { label: '7. COST SHEET SHARE ID', id: cssList.length > 0 ? `${cssList.length} DISPATCHES` : '0 RECORDS', status: cssList.length > 0 ? `${cssList.length} DELIVERED` : '0 DELIVERED', color: '#fbbf24', items: cssList },
+      { label: '8. VISIT SCHEDULE ID', id: vsList.length > 0 ? `${vsList.length} VISITS` : '0 RECORDS', status: vsList.length > 0 ? `${vsList.length} CONFIRMED` : '0 VISITS', color: '#4ade80', items: vsList },
+      { label: '9. OTP VERIFICATION ID', id: otpList.length > 0 ? `${otpList.length} VERIFIED OTPS` : '0 RECORDS', status: otpList.length > 0 ? 'VERIFIED' : 'NOT VERIFIED YET', color: '#4ade80', items: otpList },
+      { label: '10. VISIT CHECK-IN ID', id: vinList.length > 0 ? `${vinList.length} CHECK-INS` : '0 RECORDS', status: vinList.length > 0 ? 'CHECKED_IN' : 'NOT CHECKED IN YET', color: '#4ade80', items: vinList },
+      { label: '11. VISIT DONE ID', id: vdList.length > 0 ? `${vdList.length} VISITS DONE` : '0 RECORDS', status: vdList.length > 0 ? 'COMPLETED' : 'NOT COMPLETED YET', color: '#4ade80', items: vdList },
+      { label: '12. VISIT FEEDBACK ID', id: vfbList.length > 0 ? `${vfbList.length} FEEDBACKS` : '0 RECORDS', status: vfbList.length > 0 ? '5-STAR HIGH' : 'NO FEEDBACK LOGGED', color: '#4ade80', items: vfbList },
+      { label: '13. AGREEMENT ID', id: agrList.length > 0 ? `${agrList.length} AGREEMENTS` : '0 RECORDS', status: agrList.length > 0 ? 'DRAFT SIGNED' : 'NO AGREEMENT YET', color: '#fbbf24', items: agrList },
+      { label: '14. BOOKING ID', id: bkgList.length > 0 ? bkgList[0].id : '0 RECORDS', status: bkgList.length > 0 ? 'CONFIRMED' : 'NO BOOKING YET', color: '#22c55e', items: bkgList.length > 0 ? bkgList : [{ id: 'NO BOOKING RECORD', status: 'N/A' }] },
+      { label: '15. PAYMENT ID', id: payList.length > 0 ? payList[0].id : '0 RECORDS', status: payList.length > 0 ? 'RECEIVED' : 'NO PAYMENT YET', color: '#22c55e', items: payList.length > 0 ? payList : [{ id: 'NO PAYMENT RECORD', status: 'N/A' }] },
+      { label: '16. INVOICE ID', id: invList.length > 0 ? invList[0].id : '0 RECORDS', status: invList.length > 0 ? 'PAID' : 'NO INVOICE YET', color: '#22c55e', items: invList.length > 0 ? invList : [{ id: 'NO INVOICE RECORD', status: 'N/A' }] },
+      { label: '17. BROKERAGE ID', id: broList.length > 0 ? broList[0].id : '0 RECORDS', status: broList.length > 0 ? 'PROCESSED' : 'NOT PROCESSED YET', color: '#22c55e', items: broList.length > 0 ? broList : [{ id: 'NO BROKERAGE RECORD', status: 'N/A' }] }
+    ];
+  };
 
   const getTransactionPdfPayload = (item: any, cust: any) => {
     const custName = cust?.name || 'Valued Customer';
@@ -343,9 +513,11 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
           <button onClick={handleOpenAddCustomerModal} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <UserPlus size={15} /> + Add Customer Master
           </button>
-          <button onClick={handleDeleteAllCurrentInside} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Trash2 size={15} color="#ffffff" /> 🗑️ Delete All Current Inside
-          </button>
+          {isSuperAdmin && (
+            <button onClick={handleDeleteAllCurrentInside} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Trash2 size={15} color="#ffffff" /> 🗑️ Delete All Current Inside
+            </button>
+          )}
           <button onClick={() => alert('🔍 Running Automated Customer Duplicate Scanner... Clean!')} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Search size={15} /> Duplicate Scanner
           </button>
@@ -665,7 +837,7 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '0.75rem' }}>
                               {/* 1. MATCHING STAGE */}
                               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '4px', padding: '3px 8px', color: '#38bdf8', fontWeight: '800' }}>
-                                🎯 Matching Stage: 95% Match ({c.preferredArea || 'Kondapur'})
+                                🎯 Matching Stage: {c.preferredArea ? `Preference: ${c.preferredArea}` : 'Ingested Lead'}
                               </div>
 
                               {/* 2. COST SHEET STAGE */}
@@ -674,19 +846,19 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                                 style={{ background: matchingCostSheet ? 'rgba(34, 197, 94, 0.15)' : (isLight ? '#f8fafc' : '#0f172a'), border: `1px solid ${matchingCostSheet ? '#22c55e' : '#0284c7'}`, borderRadius: '4px', padding: '3px 8px', color: matchingCostSheet ? '#4ade80' : '#38bdf8', fontWeight: '800', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
                                 title="Click to View / Print Cost Sheet PDF"
                               >
-                                <span>📄 Cost Sheet: {matchingCostSheet ? `Shared (${matchingCostSheet.costSheetId || 'SRM-CS-01'})` : 'Ready to Share'}</span>
+                                <span>📄 Cost Sheet: {matchingCostSheet ? `Shared (${matchingCostSheet.costSheetId})` : 'Ready to Share'}</span>
                                 <span style={{ background: '#0284c7', color: '#ffffff', padding: '1px 5px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '900', marginLeft: '6px' }}>📄 PDF</span>
                               </div>
 
                               {/* 3. VISIT STAGE */}
                               <div style={{ background: matchingPva ? 'rgba(34, 197, 94, 0.15)' : (isLight ? '#f8fafc' : '#0f172a'), border: `1px solid ${matchingPva ? '#22c55e' : '#cbd5e1'}`, borderRadius: '4px', padding: '3px 8px', color: matchingPva ? '#4ade80' : (isLight ? '#64748b' : '#94a3b8'), fontWeight: '800' }}>
-                                🚗 Site Visit: {matchingPva ? `PVA OTP Verified (${matchingPva.projectVisitAgreementId})` : 'Visit Scheduled'}
+                                🚗 Site Visit: {matchingPva ? `PVA OTP Verified (${matchingPva.projectVisitAgreementId})` : 'Visit Pending'}
                               </div>
 
                               {/* 4. AGREEMENT & BOOKING STAGE */}
                               {(matchingAgreement || matchingBooking) && (
                                 <div style={{ background: 'rgba(234, 179, 8, 0.15)', border: '1px solid #f59e0b', borderRadius: '4px', padding: '3px 8px', color: '#fbbf24', fontWeight: '900' }}>
-                                  📜 Contract / Booking: {matchingAgreement ? matchingAgreement.agreement_code : 'SRM-BKG-2026-000201'}
+                                  📜 Contract / Booking: {matchingBooking ? `Booking (${matchingBooking.booking_code})` : matchingAgreement ? `PVA (${matchingAgreement.agreement_code})` : 'Active'}
                                 </div>
                               )}
                             </div>
@@ -703,6 +875,25 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                               <button onClick={() => { setSelectedCust(c); setActiveCustomerSubTab('customer_360_profile'); }} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>360° View</button>
                               <button onClick={() => handleStartEditCustomer(c)} style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Edit</button>
                               <button onClick={() => alert(`🔄 Initiated Transfer Request for Customer ${c.customer_number}`)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Transfer</button>
+                              {isSuperAdmin && (
+                                <button 
+                                  onClick={() => {
+                                    if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete customer record ${c.customer_number || c.id} (${c.name})?`)) {
+                                      if (setCustomers) {
+                                        setCustomers((prev: any[]) => (prev || []).filter((cust: any) => cust.id !== c.id && cust.customer_number !== c.customer_number));
+                                      }
+                                      if (setLeadsList) {
+                                        setLeadsList((prev: any[]) => (prev || []).filter((l: any) => l.id !== c.id && l.customer_number !== c.customer_number && l.customer_id !== c.id));
+                                      }
+                                      alert(`🗑️ Customer record ${c.customer_number || c.name} deleted permanently.`);
+                                    }
+                                  }}
+                                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}
+                                  title="Permanently delete customer record"
+                                >
+                                  🗑️ Delete
+                                </button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -758,46 +949,54 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
-              {[
-                { label: '1. CUSTOMER MASTER ID', id: selectedCust.customer_number || 'SRM-CUS-2026-000184', status: 'PERMANENT', color: '#38bdf8' },
-                { label: '2. LEAD INTAKE ID', id: 'SRM-LEAD-2026-000184', status: 'VERIFIED', color: '#38bdf8' },
-                { label: '3. REQUIREMENT ID', id: 'SRM-REQ-2026-000094', status: 'SAVED', color: '#38bdf8' },
-                { label: '4. MATCHING REQUEST ID', id: 'SRM-MAT-2026-000421', status: 'MATCHED', color: '#38bdf8' },
-                { label: '5. PROPERTY MASTER ID', id: 'SRM-PROP-2026-000231', status: 'SHORTLISTED', color: '#38bdf8' },
-                { label: '6. COST SHEET ID', id: 'SRM-CS-2026-000145', status: 'CS-V1 ACTIVE', color: '#fbbf24' },
-                { label: '7. COST SHEET SHARE ID', id: 'SRM-CSS-2026-000055', status: 'DELIVERED', color: '#fbbf24' },
-                { label: '8. VISIT SCHEDULE ID', id: 'SRM-VS-2026-000087', status: 'CONFIRMED', color: '#4ade80' },
-                { label: '9. OTP VERIFICATION ID', id: 'SRM-VOTP-2026-000032', status: '849201 VERIFIED', color: '#4ade80' },
-                { label: '10. VISIT CHECK-IN ID', id: 'SRM-VIN-2026-000044', status: 'CHECKED_IN', color: '#4ade80' },
-                { label: '11. VISIT DONE ID', id: 'SRM-VD-2026-000052', status: 'COMPLETED', color: '#4ade80' },
-                { label: '12. VISIT FEEDBACK ID', id: 'SRM-VFB-2026-000028', status: '5-STAR HIGH', color: '#4ade80' },
-                { label: '13. AGREEMENT ID', id: 'SRM-AGR-2026-000009', status: 'DRAFT SIGNED', color: '#fbbf24' },
-                { label: '14. BOOKING ID', id: 'SRM-BKG-2026-000012', status: 'CONFIRMED', color: '#22c55e' },
-                { label: '15. PAYMENT ID', id: 'SRM-PAY-2026-000018', status: 'RECEIVED', color: '#22c55e' },
-                { label: '16. INVOICE ID', id: 'SRM-INV-2026-000031', status: 'PAID', color: '#22c55e' },
-                { label: '17. BROKERAGE ID', id: 'SRM-BRO-2026-000011', status: 'PROCESSED', color: '#22c55e' }
-              ].map((item, idx) => (
-                <div key={idx} onClick={() => setSelectedTransactionPdf(getTransactionPdfPayload(item, selectedCust))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                  <div>
-                    <span style={{ fontSize: '0.62rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block' }}>{item.label}</span>
-                    <h5 style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{item.id}</h5>
-                    <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: item.color, padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', display: 'inline-block', marginTop: '4px' }}>
-                      ● {item.status}
-                    </span>
-                  </div>
+              {getCustomerTransactionChainItems(selectedCust).map((item, idx) => {
+                const hasMultiple = item.items && item.items.length > 1;
+                return (
+                  <div key={idx} onClick={() => setSelectedTransactionPdf(getTransactionPdfPayload(item, selectedCust))} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '10px', cursor: 'pointer', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.62rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>{item.label}</span>
+                        {hasMultiple && (
+                          <span style={{ background: '#0284c7', color: '#ffffff', fontSize: '0.58rem', fontWeight: '900', padding: '1px 5px', borderRadius: '4px' }}>
+                            {item.items.length} RECORDS
+                          </span>
+                        )}
+                      </div>
 
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedTransactionPdf(getTransactionPdfPayload(item, selectedCust));
-                    }}
-                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '8px', width: 'fit-content' }}
-                    title={`View Official Printable PDF Certificate for ${item.id}`}
-                  >
-                    📄 View PDF
-                  </button>
-                </div>
-              ))}
+                      {hasMultiple ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '6px' }}>
+                          {item.items.slice(0, 3).map((sub: any, sIdx: number) => (
+                            <div key={sIdx} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '3px 6px', borderRadius: '4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontFamily: 'monospace', fontSize: '0.72rem', fontWeight: '900', color: '#38bdf8' }}>{sub.id}</span>
+                              {sub.name && <span style={{ fontSize: '0.62rem', color: isLight ? '#64748b' : '#94a3b8', maxWidth: '90px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sub.name}</span>}
+                            </div>
+                          ))}
+                          {item.items.length > 3 && (
+                            <span style={{ fontSize: '0.62rem', color: '#fbbf24', fontWeight: '800' }}>+ {item.items.length - 3} more records</span>
+                          )}
+                        </div>
+                      ) : (
+                        <h5 style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{item.id}</h5>
+                      )}
+
+                      <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: item.color, padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', display: 'inline-block', marginTop: '6px' }}>
+                        ● {item.status}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedTransactionPdf(getTransactionPdfPayload(item, selectedCust));
+                      }}
+                      style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '8px', width: 'fit-content' }}
+                      title={`View Official Printable PDF Certificate for ${item.label}`}
+                    >
+                      📄 View PDF {hasMultiple ? `(${item.items.length} Items)` : ''}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

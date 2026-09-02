@@ -1908,7 +1908,7 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString());
 
   // Bulk Selection States
-  const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>(['SRM-PROP-2026-000421', 'SRM-PROP-2026-000423', 'SRM-PROP-2026-000425']);
+  const [selectedPropertyIds, setSelectedPropertyIds] = useState<string[]>([]);
   const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
 
   // Interactive Drill-Down Modal State
@@ -3779,10 +3779,21 @@ export default function App() {
       setMatchingRequestsQueue([]);
       setCostSheetShares([]);
       setIndividualCostSheets([]);
+      setAgreements([]);
+      setProjectVisitAgreements([]);
+      setBookings([]);
+      setInvoices([]);
       setSelectedPropertyIds([]);
       setSelectedCust(null);
       setActiveSelectionRecord(null);
+      localStorage.removeItem('swaramayi_indiv_cost_sheets_v5_clean');
       localStorage.removeItem('swaramayi_indiv_cost_sheets_v4');
+      localStorage.removeItem('swaramayi_matching_queue_v4_clean');
+      localStorage.removeItem('swaramayi_leads_v5_clean');
+      localStorage.removeItem('swaramayi_project_visit_agreements_v2_clean');
+      localStorage.removeItem('swaramayi_agreements_vault_v5_clean');
+      localStorage.removeItem('swaramayi_bookings_v3_clean');
+      localStorage.removeItem('swaramayi_invoices_v6');
       alert('🗑️ All current records inside have been deleted! Workspace is now 100% clean.');
     }
   };
@@ -3807,7 +3818,16 @@ export default function App() {
   const [siteVisits, setSiteVisits] = useState([]);
 
   const [bookings, setBookings] = useState<any[]>(() => {
-    const defaultBookingsSeed = [
+    try {
+      const saved = localStorage.getItem('swaramayi_bookings_v3_clean');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading bookings from localStorage:', e);
+    }
+    return [
       {
         id: 'BKG-SEED-1',
         booking_code: 'SRM-BKG-2026-000088',
@@ -3828,27 +3848,6 @@ export default function App() {
         approval_status: 'APPROVED_LOCKED'
       }
     ];
-    try {
-      const saved = localStorage.getItem('swaramayi_bookings_v3_clean');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const filtered = parsed.filter((b: any) => 
-            b.customer_name !== 'Avishek Das' && 
-            b.customer_mobile !== '7778987679' && 
-            b.booking_code !== 'SRM-BKG-2026-000089'
-          );
-          const hasBishwajit = filtered.some((b: any) => b.customer_name === 'Bishwajit Pandey' || b.booking_code === 'SRM-BKG-2026-000088');
-          if (!hasBishwajit) {
-            return [defaultBookingsSeed[0], ...filtered];
-          }
-          return filtered;
-        }
-      }
-    } catch (e) {
-      console.error('Error reading bookings from localStorage:', e);
-    }
-    return defaultBookingsSeed;
   });
 
   useEffect(() => {
@@ -4514,7 +4513,7 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_invoices_v6');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading invoices from localStorage:', e);
@@ -4637,30 +4636,19 @@ export default function App() {
         if (res.ok) {
           const json = await res.json();
           if (json.status === 'SUCCESS' && json.data) {
-            if (Array.isArray(json.data.users) && json.data.users.length > 0) {
-              setUsers(json.data.users);
-            }
-            if (Array.isArray(json.data.teams) && json.data.teams.length > 0) {
-              setTeams(json.data.teams);
-            }
-            if (Array.isArray(json.data.branches) && json.data.branches.length > 0) {
-              setBranches(json.data.branches);
-            }
-            if (Array.isArray(json.data.properties)) {
-              setProperties(json.data.properties);
-            }
-            if (Array.isArray(json.data.customers)) {
-              setCustomers(json.data.customers);
-            }
-            if (Array.isArray(json.data.leads)) {
-              setLeadsList(json.data.leads);
-            }
-            if (Array.isArray(json.data.agreements)) {
-              setAgreements(json.data.agreements);
-            }
-            if (Array.isArray(json.data.invoices) && json.data.invoices.length > 0) {
-              setInvoices(json.data.invoices);
-            }
+            if (Array.isArray(json.data.users) && json.data.users.length > 0) setUsers(json.data.users);
+            if (Array.isArray(json.data.teams) && json.data.teams.length > 0) setTeams(json.data.teams);
+            if (Array.isArray(json.data.branches) && json.data.branches.length > 0) setBranches(json.data.branches);
+            if (Array.isArray(json.data.properties)) setProperties(json.data.properties);
+            if (Array.isArray(json.data.customers)) setCustomers(json.data.customers);
+            if (Array.isArray(json.data.leads)) setLeadsList(json.data.leads);
+            if (Array.isArray(json.data.agreements)) setAgreements(json.data.agreements);
+            if (Array.isArray(json.data.invoices)) setInvoices(json.data.invoices);
+            if (Array.isArray(json.data.bookings)) setBookings(json.data.bookings);
+            if (Array.isArray(json.data.site_visits)) setScheduledVisits(json.data.site_visits);
+            if (Array.isArray(json.data.matching_requests)) setMatchingRequestsQueue(json.data.matching_requests);
+            if (Array.isArray(json.data.cost_sheets)) setIndividualCostSheets(json.data.cost_sheets);
+            if (Array.isArray(json.data.pva_agreements)) setProjectVisitAgreements(json.data.pva_agreements);
           }
         }
       } catch (err) {
@@ -4670,7 +4658,7 @@ export default function App() {
     fetchMongoDBData();
   }, []);
 
-  // GLOBAL REAL-TIME MONGODB ATLAS AUTO-SYNC EFFECT
+  // GLOBAL REAL-TIME MONGODB ATLAS & BACKEND AUTO-SYNC EFFECT
   useEffect(() => {
     const syncDataWithMongoDB = async () => {
       try {
@@ -4682,7 +4670,12 @@ export default function App() {
           customers,
           leads: leadsList,
           agreements,
-          invoices
+          invoices,
+          bookings,
+          site_visits: scheduledVisits,
+          matching_requests: matchingRequestsQueue,
+          cost_sheets: individualCostSheets,
+          pva_agreements: projectVisitAgreements
         };
         await fetch('http://localhost:5000/api/v1/crm/sync', {
           method: 'POST',
@@ -4695,7 +4688,7 @@ export default function App() {
     };
     const timer = setTimeout(syncDataWithMongoDB, 2000);
     return () => clearTimeout(timer);
-  }, [users, teams, branches, properties, customers, leadsList, agreements, invoices]);
+  }, [users, teams, branches, properties, customers, leadsList, agreements, invoices, bookings, scheduledVisits, matchingRequestsQueue, individualCostSheets, projectVisitAgreements]);
   const [rawSelectedAgreement, setSelectedAgreement] = useState<any>(null);
   const selectedAgreement = rawSelectedAgreement || agreements[0] || { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' };
 
@@ -7864,6 +7857,7 @@ export default function App() {
           {/* CATEGORY 3: PROJECT & PROPERTY INVENTORY MANAGEMENT */}
           {activeTab === 'project_management' && (
             <ProjectManagementView
+              currentRole={currentRole}
               isLight={isLight}
               windowWidth={windowWidth}
               activeProjectSubTab={activeProjectSubTab}
@@ -7947,6 +7941,7 @@ export default function App() {
           {/* CATEGORY 3: CUSTOMER MANAGEMENT */}
           {activeTab === 'customer_management' && (
             <CustomerManagementView
+              currentRole={currentRole}
               isLight={isLight}
               windowWidth={windowWidth}
               setShowCreateShareModal={setShowCreateShareModal}
@@ -7955,6 +7950,7 @@ export default function App() {
               activeCustomerSubTab={activeCustomerSubTab}
               setActiveCustomerSubTab={setActiveCustomerSubTab}
               customers={customers}
+              setCustomers={setCustomers}
               selectedCust={selectedCust}
               setSelectedCust={setSelectedCust}
               custSearchQuery={custSearchQuery}
@@ -7968,15 +7964,20 @@ export default function App() {
               filterPriority={filterPriority}
               setFilterPriority={setFilterPriority}
               leadsList={leadsList}
+              setLeadsList={setLeadsList}
               individualCostSheets={individualCostSheets}
               projectVisitAgreements={projectVisitAgreements}
               agreements={agreements}
               bookings={bookings}
+              invoices={invoices}
+              matchingRequestsQueue={matchingRequestsQueue}
               openIdDetailsModal={openIdDetailsModal}
               maskPhone={maskPhone}
               handleStartEditCustomer={handleStartEditCustomer}
               setShowPvaDocumentModal={setShowPvaDocumentModal}
               setShowViewIndividualCostSheetModal={setShowViewIndividualCostSheetModal}
+              scheduledVisits={scheduledVisits}
+              properties={properties}
             />
           )}
 
@@ -8033,6 +8034,7 @@ export default function App() {
           {/* CATEGORY: COST SHEET SHARING MANAGEMENT */}
           {activeTab === 'cost_sheet_share' && (
             <CostSheetSharingView
+              currentRole={currentRole}
               isLight={isLight}
               windowWidth={windowWidth}
               setShowCreateShareModal={setShowCreateShareModal}
@@ -8063,6 +8065,7 @@ export default function App() {
           {/* CATEGORY: VISIT MANAGEMENT */}
           {activeTab === 'visit_management' && (
             <VisitManagementView
+              currentRole={currentRole}
               isLight={isLight}
               windowWidth={windowWidth}
               activeVisitSubTab={activeVisitSubTab}
@@ -8149,6 +8152,7 @@ export default function App() {
           {/* CATEGORY 7: AGREEMENT MANAGEMENT (RESTORED CONTRACT MODAL & TABLE) */}
           {activeTab === 'agreement_management' && (
             <AgreementManagementView
+              currentRole={currentRole}
               isLight={isLight}
               agreementCategory={agreementCategory}
               setAgreementCategory={setAgreementCategory}
@@ -8156,7 +8160,9 @@ export default function App() {
               setShowPvaVerificationModal={setShowPvaVerificationModal}
               setShowCreateDevAgreementModal={setShowCreateDevAgreementModal}
               agreements={agreements}
+              setAgreements={setAgreements}
               projectVisitAgreements={projectVisitAgreements}
+              setProjectVisitAgreements={setProjectVisitAgreements}
               searchQuery={searchQuery}
               matchesSearchQuery={matchesSearchQuery}
               setShowDeveloperIntroductionReportModal={setShowDeveloperIntroductionReportModal}
@@ -8169,11 +8175,13 @@ export default function App() {
           {/* CATEGORY 8: BOOKING MANAGEMENT MODULE */}
           {activeTab === 'booking_management' && (
             <BookingManagementView
+              currentRole={currentRole}
               isLight={isLight}
               windowWidth={windowWidth}
               activeBookingSubTab={activeBookingSubTab}
               setActiveBookingSubTab={setActiveBookingSubTab}
               bookings={bookings}
+              setBookings={setBookings}
               setShowNewBookingModal={setShowNewBookingModal}
               setShowAllotmentModal={setShowAllotmentModal}
             />
@@ -8182,6 +8190,7 @@ export default function App() {
           {/* DEDICATED LOCATION MAP CATEGORY */}
           {activeTab === 'map_management' && (
             <LocationMapView
+              currentRole={currentRole}
               isLight={isLight}
               selectedLocality={selectedLocality}
               setSelectedLocality={setSelectedLocality}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Upload, Building2, Share2, ArrowRightLeft, Compass, Navigation, Camera, Video, Search, X } from 'lucide-react';
 
 interface ProjectManagementViewProps {
+  currentRole?: string;
   isLight: boolean;
   windowWidth: number;
   activeProjectSubTab: string;
@@ -47,6 +48,7 @@ interface ProjectManagementViewProps {
 }
 
 export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
+  currentRole,
   isLight,
   windowWidth,
   activeProjectSubTab,
@@ -89,6 +91,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   detectLocalityFromCoords,
   setPropertyUnits,
 }) => {
+  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
   // DEVELOPER MASTER ID REGISTRY STATE & PERSISTENCE
   const PROJECT_GPS_MAP: Record<string, { lat: string; lng: string }> = {
     'TILOTTAMA APPARTMENT': { lat: '22.722361', lng: '88.493403' },
@@ -2696,7 +2699,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                             <button onClick={() => setShowMultipleUnitsSlider({ open: true, project: p })} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }} title="Open Multiple Property Units Builder Slider for this project">🏢 Units Slider</button>
                             <button onClick={() => setViewPropertyModal(p)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>👁️ View</button>
                             <button onClick={() => handleStartEditProperty(p)} style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Edit</button>
-                            <button onClick={() => handleDeleteProperty(p.id, p.property_code)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Delete</button>
+                            {isSuperAdmin && (
+                              <button onClick={() => handleDeleteProperty(p.id, p.property_code)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Delete</button>
+                            )}
                           </div>
                         </td>
                       </tr>

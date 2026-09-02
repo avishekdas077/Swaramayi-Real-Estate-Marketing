@@ -2,6 +2,7 @@ import React from 'react';
 import { ShieldCheck, Building, UserCheck, AlertTriangle, Printer } from 'lucide-react';
 
 interface AgreementManagementViewProps {
+  currentRole?: string;
   isLight: boolean;
   agreementCategory: string;
   setAgreementCategory: (cat: string) => void;
@@ -9,7 +10,9 @@ interface AgreementManagementViewProps {
   setShowPvaVerificationModal: (val: any) => void;
   setShowCreateDevAgreementModal: (val: boolean) => void;
   agreements: any[];
+  setAgreements?: React.Dispatch<React.SetStateAction<any[]>>;
   projectVisitAgreements: any[];
+  setProjectVisitAgreements?: React.Dispatch<React.SetStateAction<any[]>>;
   searchQuery: string;
   matchesSearchQuery: (item: any, query: string) => boolean;
   setShowDeveloperIntroductionReportModal: (val: boolean) => void;
@@ -19,6 +22,7 @@ interface AgreementManagementViewProps {
 }
 
 export const AgreementManagementView: React.FC<AgreementManagementViewProps> = ({
+  currentRole,
   isLight,
   agreementCategory,
   setAgreementCategory,
@@ -26,7 +30,9 @@ export const AgreementManagementView: React.FC<AgreementManagementViewProps> = (
   setShowPvaVerificationModal,
   setShowCreateDevAgreementModal,
   agreements = [],
+  setAgreements,
   projectVisitAgreements = [],
+  setProjectVisitAgreements,
   searchQuery,
   matchesSearchQuery,
   setShowDeveloperIntroductionReportModal,
@@ -34,6 +40,7 @@ export const AgreementManagementView: React.FC<AgreementManagementViewProps> = (
   setSelectedAgreement,
   setShowFullContractModal,
 }) => {
+  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
@@ -199,21 +206,43 @@ export const AgreementManagementView: React.FC<AgreementManagementViewProps> = (
                         )}
                       </td>
                       <td style={{ padding: '12px', textAlign: 'center' }}>
-                        {a.pvaData ? (
-                          <button 
-                            onClick={() => setShowPvaDocumentModal({ open: true, pva: a.pvaData })} 
-                            style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}
-                          >
-                            <Printer size={14} /> View Contract PDF
-                          </button>
-                        ) : (
-                          <button 
-                            onClick={() => { setSelectedAgreement(a); setShowFullContractModal(true); }} 
-                            style={{ background: agreementCategory === 'developer' ? '#16a34a' : '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', margin: '0 auto' }}
-                          >
-                            <Printer size={14} /> View Contract PDF
-                          </button>
-                        )}
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                          {a.pvaData ? (
+                            <button 
+                              onClick={() => setShowPvaDocumentModal({ open: true, pva: a.pvaData })} 
+                              style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <Printer size={14} /> View Contract PDF
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => { setSelectedAgreement(a); setShowFullContractModal(true); }} 
+                              style={{ background: agreementCategory === 'developer' ? '#16a34a' : '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            >
+                              <Printer size={14} /> View Contract PDF
+                            </button>
+                          )}
+
+                          {isSuperAdmin && (
+                            <button 
+                              onClick={() => {
+                                if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Agreement record ${a.agreement_code || a.id} for ${a.party_name || 'Customer'}?`)) {
+                                  if (a.pvaData && setProjectVisitAgreements) {
+                                    setProjectVisitAgreements((prev: any[]) => (prev || []).filter((pva: any) => (pva.projectVisitAgreementId || pva.id) !== a.id));
+                                  }
+                                  if (setAgreements) {
+                                    setAgreements((prev: any[]) => (prev || []).filter((ag: any) => ag.id !== a.id && ag.agreement_code !== a.agreement_code));
+                                  }
+                                  alert(`🗑️ Agreement record ${a.agreement_code || a.id} deleted permanently.`);
+                                }
+                              }}
+                              style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              title="Permanently delete this agreement record"
+                            >
+                              🗑️ Delete
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ));

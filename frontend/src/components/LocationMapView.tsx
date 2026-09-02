@@ -2,6 +2,7 @@ import React from 'react';
 import { Compass } from 'lucide-react';
 
 interface LocationMapViewProps {
+  currentRole?: string;
   isLight: boolean;
   selectedLocality: string;
   setSelectedLocality: (loc: string) => void;
@@ -16,6 +17,7 @@ interface LocationMapViewProps {
 }
 
 export const LocationMapView: React.FC<LocationMapViewProps> = ({
+  currentRole,
   isLight,
   selectedLocality,
   setSelectedLocality,
@@ -28,6 +30,8 @@ export const LocationMapView: React.FC<LocationMapViewProps> = ({
   handleDeleteProperty,
   InteractiveLeafletMap,
 }) => {
+  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       
@@ -176,7 +180,9 @@ export const LocationMapView: React.FC<LocationMapViewProps> = ({
 
           <div style={{ display: 'flex', gap: '8px', paddingTop: '10px' }}>
             <button onClick={() => handleStartEditProperty(selectedProperty)} style={{ flex: 1, background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}>Edit Record</button>
-            <button onClick={() => handleDeleteProperty(selectedProperty?.id, selectedProperty?.property_code)} style={{ flex: 1, background: '#ef4444', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}>Delete</button>
+            {isSuperAdmin && (
+              <button onClick={() => handleDeleteProperty(selectedProperty?.id, selectedProperty?.property_code)} style={{ flex: 1, background: '#ef4444', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '6px', fontWeight: '700', fontSize: '0.8rem', cursor: 'pointer' }}>Delete</button>
+            )}
           </div>
         </div>
 

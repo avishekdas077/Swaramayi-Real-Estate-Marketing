@@ -73,6 +73,8 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
   handleDeleteTeam,
   handleOpenSecurityAuditModal
 }) => {
+  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
   const [internalSearchQuery, setInternalSearchQuery] = React.useState('');
   const [internalFilterCategory, setInternalFilterCategory] = React.useState('ALL');
   const [localApprovals, setLocalApprovals] = React.useState<any[]>([]);
@@ -678,7 +680,7 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
                         <Edit3 size={13} /> Edit
                       </button>
 
-                      {role.key !== 'SUPER_ADMIN' && role.key !== 'OWNER' && (
+                      {isSuperAdmin && role.key !== 'SUPER_ADMIN' && role.key !== 'OWNER' && (
                         <button
                           onClick={() => handleDeleteRole(role.key, role.name)}
                           style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -845,7 +847,7 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
                           >
                             <Edit3 size={13} />
                           </button>
-                          {u.role !== 'SUPER_ADMIN' && u.id !== 'USR-01' && (
+                          {isSuperAdmin && u.role !== 'SUPER_ADMIN' && u.id !== 'USR-01' && (
                             <button
                               onClick={() => handleDeleteUser(u.id)}
                               style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem' }}
@@ -888,21 +890,23 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
                     >
                       <Edit3 size={14} /> Edit Branch
                     </button>
-                    <button
-                      onClick={() => {
-                        if (handleDeleteBranch) {
-                          handleDeleteBranch(b.id, b.branch_name);
-                        } else {
-                          if (window.confirm(`Are you sure you want to delete Branch "${b.branch_name}"?`)) {
-                            alert(`🗑️ Branch "${b.branch_name}" deleted successfully.`);
+                    {isSuperAdmin && (
+                      <button
+                        onClick={() => {
+                          if (handleDeleteBranch) {
+                            handleDeleteBranch(b.id, b.branch_name);
+                          } else {
+                            if (window.confirm(`Are you sure you want to delete Branch "${b.branch_name}"?`)) {
+                              alert(`🗑️ Branch "${b.branch_name}" deleted successfully.`);
+                            }
                           }
-                        }
-                      }}
-                      style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                      title="Delete Branch"
-                    >
-                      <Trash2 size={14} /> Delete
-                    </button>
+                        }}
+                        style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                        title="Delete Branch"
+                      >
+                        <Trash2 size={14} /> Delete
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -964,21 +968,23 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
                   >
                     <Edit3 size={14} /> Edit Team
                   </button>
-                  <button
-                    onClick={() => {
-                      if (handleDeleteTeam) {
-                        handleDeleteTeam(t.id, t.team_name);
-                      } else {
-                        if (window.confirm(`Are you sure you want to delete Team Squad "${t.team_name}"?`)) {
-                          alert(`🗑️ Team "${t.team_name}" removed successfully.`);
+                  {isSuperAdmin && (
+                    <button
+                      onClick={() => {
+                        if (handleDeleteTeam) {
+                          handleDeleteTeam(t.id, t.team_name);
+                        } else {
+                          if (window.confirm(`Are you sure you want to delete Team Squad "${t.team_name}"?`)) {
+                            alert(`🗑️ Team "${t.team_name}" removed successfully.`);
+                          }
                         }
-                      }
-                    }}
-                    style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    title="Delete Team Squad"
-                  >
-                    <Trash2 size={14} /> Delete
-                  </button>
+                      }}
+                      style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      title="Delete Team Squad"
+                    >
+                      <Trash2 size={14} /> Delete
+                    </button>
+                  )}
                 </div>
               </div>
 

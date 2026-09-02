@@ -17,6 +17,10 @@ export const FollowupSchema = new mongoose.Schema({ id: { type: String, unique: 
 export const TeamSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
 export const BranchSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
 
+export const CostSheetSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
+export const MatchingRequestSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
+export const ProjectVisitAgreementSchema = new mongoose.Schema({ id: { type: String, unique: true } }, options);
+
 export const UserModel = mongoose.models.User || mongoose.model('User', UserSchema);
 export const PropertyModel = mongoose.models.Property || mongoose.model('Property', PropertySchema);
 export const CustomerModel = mongoose.models.Customer || mongoose.model('Customer', CustomerSchema);
@@ -29,6 +33,9 @@ export const BrokerageModel = mongoose.models.Brokerage || mongoose.model('Broke
 export const FollowupModel = mongoose.models.Followup || mongoose.model('Followup', FollowupSchema);
 export const TeamModel = mongoose.models.Team || mongoose.model('Team', TeamSchema);
 export const BranchModel = mongoose.models.Branch || mongoose.model('Branch', BranchSchema);
+export const CostSheetModel = mongoose.models.CostSheet || mongoose.model('CostSheet', CostSheetSchema);
+export const MatchingRequestModel = mongoose.models.MatchingRequest || mongoose.model('MatchingRequest', MatchingRequestSchema);
+export const ProjectVisitAgreementModel = mongoose.models.ProjectVisitAgreement || mongoose.model('ProjectVisitAgreement', ProjectVisitAgreementSchema);
 
 // Helper function to upsert array of records into a model
 async function upsertCollection(model: mongoose.Model<any>, records: any[]) {
@@ -69,8 +76,11 @@ export async function syncToMongoDB(data: any) {
     if (data.followups && data.followups.length > 0) await upsertCollection(FollowupModel, data.followups);
     if (data.teams && data.teams.length > 0) await upsertCollection(TeamModel, data.teams);
     if (data.branches && data.branches.length > 0) await upsertCollection(BranchModel, data.branches);
+    if (data.cost_sheets && data.cost_sheets.length > 0) await upsertCollection(CostSheetModel, data.cost_sheets);
+    if (data.matching_requests && data.matching_requests.length > 0) await upsertCollection(MatchingRequestModel, data.matching_requests);
+    if (data.pva_agreements && data.pva_agreements.length > 0) await upsertCollection(ProjectVisitAgreementModel, data.pva_agreements);
 
-    console.log(`⚡ MongoDB Atlas Live Sync Complete (Users, Teams, Branches, Properties, Customers, Leads, Agreements)`);
+    console.log(`⚡ MongoDB Atlas Live Sync Complete (Users, Teams, Branches, Properties, Customers, Leads, Agreements, CostSheets, Bookings, Invoices)`);
   } catch (e: any) {
     console.error('MongoDB Live Sync Error:', e.message);
   }
@@ -95,6 +105,9 @@ export async function loadDataFromMongoDB() {
     const mongoFollowups = await FollowupModel.find({}).lean();
     const mongoTeams = await TeamModel.find({}).lean();
     const mongoBranches = await BranchModel.find({}).lean();
+    const mongoCostSheets = await CostSheetModel.find({}).lean();
+    const mongoMatchingRequests = await MatchingRequestModel.find({}).lean();
+    const mongoPvaAgreements = await ProjectVisitAgreementModel.find({}).lean();
 
     console.log(`📥 Loaded existing data from MongoDB Atlas: ${mongoUsers.length} users, ${mongoTeams.length} teams, ${mongoBranches.length} branches, ${mongoProperties.length} properties, ${mongoCustomers.length} customers`);
 
@@ -110,7 +123,10 @@ export async function loadDataFromMongoDB() {
       brokerage_records: mongoBrokerage,
       followups: mongoFollowups,
       teams: mongoTeams.length > 0 ? mongoTeams : null,
-      branches: mongoBranches.length > 0 ? mongoBranches : null
+      branches: mongoBranches.length > 0 ? mongoBranches : null,
+      cost_sheets: mongoCostSheets,
+      matching_requests: mongoMatchingRequests,
+      pva_agreements: mongoPvaAgreements
     };
   } catch (e: any) {
     console.warn('MongoDB Data Loading Warning:', e.message);
