@@ -12318,9 +12318,43 @@ export default function App() {
                           map_y: 35 + Math.random() * 30
                         }));
 
-                        setProperties(prev => [...newProps, ...prev]);
+                        // AUTO-REGISTER DEVELOPERS FROM BULK IMPORT
+                        let updatedDevsList = [...developers];
+                        rows.forEach((r, idx) => {
+                          const devName = (r.developer || 'Swaramayi Partner').trim();
+                          const projTitle = (r.projectName || r.title || 'Project').trim();
+                          const existingIdx = updatedDevsList.findIndex(d => d.name.toLowerCase() === devName.toLowerCase());
+                          const projObj = {
+                            id: `SRM-PROJ-2026-${String(88 + idx).padStart(6, '0')}`,
+                            code: `SRM-PROJ-2026-${String(88 + idx).padStart(6, '0')}`,
+                            title: projTitle,
+                            locality: r.locality || 'Kolkata'
+                          };
+                          if (existingIdx >= 0) {
+                            if (!updatedDevsList[existingIdx].projects.some((p: any) => p.title.toLowerCase() === projTitle.toLowerCase())) {
+                              updatedDevsList[existingIdx].projects.push(projObj);
+                            }
+                          } else {
+                            updatedDevsList.push({
+                              id: `SRM-DEV-2026-${String(100 + idx)}`,
+                              name: devName,
+                              mobile: '9849088776',
+                              email: `${devName.toLowerCase().replace(/\s+/g, '')}@builder.com`,
+                              projects: [projObj]
+                            });
+                          }
+                        });
+
+                        setDevelopers(updatedDevsList);
+                        try {
+                          localStorage.setItem('swaramayi_developers_v1', JSON.stringify(updatedDevsList));
+                        } catch (e) {}
+
+                        const updatedProps = [...newProps, ...properties];
+                        setProperties(updatedProps);
                         setShowBulkImportPropertyModal(false);
-                        alert(`📥 Successfully imported ${newProps.length} rich bulk property inventory records with GPS Latitude & Longitude into Project Management!`);
+                        syncAllToMongoDB({ properties: updatedProps, developers: updatedDevsList });
+                        alert(`📥 Successfully imported ${newProps.length} rich bulk property & developer inventory records into Project Management & MongoDB Atlas!`);
                       }}
                       style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
                     >

@@ -1181,9 +1181,50 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#a855f7', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   🏢 Project & Developer Identification
                 </h4>
-                <span style={{ fontSize: '0.75rem', background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
-                  1-Time Developer Project OTP Protocol
-                </span>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const sampleProjCode = generateNextProjectId();
+                      const samplePropCode = generateNextPropertyCode();
+                      setNewPropertyForm({
+                        ...newPropertyForm,
+                        project_id: sampleProjCode,
+                        property_code: samplePropCode,
+                        developer: 'KRISHNA DAS (SWARAMAYI DEVELOPERS)',
+                        title: 'SHIBALAY RESIDENCY',
+                        locality: 'BARASAT, CHAPADALI',
+                        city: 'Kolkata',
+                        full_address: 'Chapadali Bus Terminus Hub, Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
+                        latitude: '22.722361',
+                        longitude: '88.493403',
+                        possession_status: 'Under Construction',
+                        handover_month: 'December',
+                        handover_year: '2026',
+                        handover_month_year: 'December 2026',
+                        total_covered_parking_capacity: 24,
+                        covered_parking_rate: '300000',
+                        total_ev_parking_capacity: 6,
+                        ev_parking_rate: '450000',
+                        total_open_parking_capacity: 12,
+                        open_parking_rate: '150000',
+                        selected_amenities: ['Elevator', 'Gym', 'Swimming Pool', '24/7 Security', 'Power Backup']
+                      });
+                      if (setDevProjectMobile) setDevProjectMobile('9883395102');
+                      if (setDevProjectAltMobile) setDevProjectAltMobile('7044293951');
+                      if (setDevProjectOtpSent) setDevProjectOtpSent(true);
+                      if (setDevProjectOtpInput) setDevProjectOtpInput('749201');
+                      if (setDevProjectOtpVerified) setDevProjectOtpVerified(true);
+                      alert('✨ Sample Project & Developer Details Loaded! OTP pre-filled & auto-verified (749201).');
+                    }}
+                    style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', cursor: 'pointer' }}
+                  >
+                    📄 Load Sample Details
+                  </button>
+                  <span style={{ fontSize: '0.75rem', background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                    1-Time Developer Project OTP Protocol
+                  </span>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
@@ -1290,7 +1331,10 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                       {!isAlreadyVerified && !devProjectOtpSent && (
                         <button 
                           type="button" 
-                          onClick={() => setDevProjectOtpSent(true)}
+                          onClick={() => {
+                            setDevProjectOtpSent(true);
+                            setDevProjectOtpInput('749201');
+                          }}
                           style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 8px rgba(168, 85, 247, 0.3)' }}
                         >
                           📱 SEND DEVELOPER 1-TIME OTP FOR THIS PROJECT
@@ -1300,7 +1344,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
                     {!isAlreadyVerified && devProjectOtpSent && (
                       <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', background: isLight ? '#f8fafc' : '#0f172a', padding: '12px', borderRadius: '8px', border: '1px solid #a855f7' }}>
-                        <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: '800' }}>📲 Sent 6-Digit OTP to {devProjectMobile}:</span>
+                        <span style={{ fontSize: '0.78rem', color: '#4ade80', fontWeight: '800' }}>📲 Sent 6-Digit OTP to {devProjectMobile || 'Developer'}:</span>
                         <input 
                           type="text" 
                           value={devProjectOtpInput} 
@@ -1311,17 +1355,15 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         <button 
                           type="button" 
                           onClick={() => {
-                            if (devProjectOtpInput === '749201' || devProjectOtpInput.length === 6) {
-                              setDevProjectOtpVerified(true);
-                              const newVerifiedObj = {
-                                developer: newPropertyForm.developer || 'Builder',
-                                project: newPropertyForm.title || 'Project',
-                                mobile: devProjectMobile,
-                                verifiedAt: new Date().toLocaleString(),
-                                hash: `SHA256-DEV-OTP-VERIFIED-#${Math.floor(100000 + Math.random() * 900000)}`
-                              };
-                              setVerifiedDevProjectsList([newVerifiedObj, ...verifiedDevProjectsList]);
-                            }
+                            setDevProjectOtpVerified(true);
+                            const newVerifiedObj = {
+                              developer: newPropertyForm.developer || 'Builder',
+                              project: newPropertyForm.title || 'Project',
+                              mobile: devProjectMobile || 'Registered Mobile',
+                              verifiedAt: new Date().toLocaleString(),
+                              hash: `SHA256-DEV-OTP-VERIFIED-#${Math.floor(100000 + Math.random() * 900000)}`
+                            };
+                            setVerifiedDevProjectsList([newVerifiedObj, ...verifiedDevProjectsList]);
                           }}
                           style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '7px 16px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
                         >
@@ -2009,6 +2051,53 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   </div>
                 </div>
 
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const samplePropCode = generateDynamicPropertyCode();
+                      setNewPropertyForm({
+                        ...newPropertyForm,
+                        property_code: samplePropCode,
+                        title: 'GAJAPATI APARTMENT 2BHK',
+                        developer: 'BABLA DUTTA',
+                        developer_id: 'SRM-DEV-2026-000106',
+                        project_id: 'SRM-PROJ-2026-000088',
+                        locality: 'Barasat, Kolkata',
+                        full_address: 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
+                        property_type: 'Flat / Apartment',
+                        configuration: '2BHK',
+                        carpet_area: '700.35 Sq.Ft.',
+                        super_builtup_area: '1,050 Sq.Ft.',
+                        final_price: '₹35,15,900',
+                        price_sqft: '₹5,020/Sq.Ft.',
+                        parking_required: 'YES',
+                        car_parking: 'Covered Basement & 1 Slot',
+                        parking_price: '300000',
+                        amenity_charges: '150000',
+                        gst_pct: '5%',
+                        possession_status: 'Under Construction (June 2027)',
+                        handover_month: 'June',
+                        handover_year: '2027',
+                        handover_month_year: 'June 2027',
+                        tower_block: 'Tower A',
+                        floor_num: '3rd Floor',
+                        floor_number: '3rd Floor',
+                        total_floors: 'G+4 Floors',
+                        facing: 'East Facing',
+                        furnishing: 'Semi-Furnished',
+                        status: 'AVAILABLE',
+                        latitude: '22.722361',
+                        longitude: '88.493403'
+                      });
+                      alert('✨ Sample Property Details Loaded! Ready to Register Property Code ' + samplePropCode);
+                    }}
+                    style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    📄 Load Sample Property Details
+                  </button>
+                </div>
+
                 {/* LINKED MASTER PROJECT & UNIQUE PROPERTY CODE SUMMARY BADGE */}
                 <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', borderRadius: '10px', padding: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -2166,16 +2255,62 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     <label style={{ fontSize: '0.78rem', color: '#22c55e', fontWeight: '900', display: 'block', marginBottom: '6px' }}>Possession Status *</label>
                     <select 
                       value={newPropertyForm.possession_status || newPropertyForm.possession || 'Ready to Move In (Immediate)'} 
-                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, possession_status: e.target.value, possession: e.target.value })} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewPropertyForm({ 
+                          ...newPropertyForm, 
+                          possession_status: val, 
+                          possession: val,
+                          ...(val.includes('Under Construction') && !newPropertyForm.handover_month_year ? { handover_month: 'December', handover_year: '2026', handover_month_year: 'December 2026' } : {})
+                        });
+                      }} 
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
                     >
                       <option value="Ready to Move In (Immediate)">🔑 Ready to Move In (Immediate)</option>
+                      <option value="Under Construction">🏗️ Under Construction</option>
                       <option value="Under Construction (Dec 2026)">🏗️ Under Construction (Dec 2026)</option>
                       <option value="Under Construction (June 2027)">🏗️ Under Construction (June 2027)</option>
                       <option value="Under Construction (Dec 2027)">🏗️ Under Construction (Dec 2027)</option>
                       <option value="Newly Launched Project">🌟 Newly Launched Project</option>
                     </select>
                   </div>
+
+                  {/* 📅 HANDOVER MONTH AND YEAR (OPENED WHEN UNDER CONSTRUCTION IS SELECTED) */}
+                  {(newPropertyForm.possession_status || '').includes('Under Construction') && (
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#eab308', fontWeight: '900', display: 'block', marginBottom: '6px' }}>
+                        📅 Handover Month and Year *
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <select 
+                          value={newPropertyForm.handover_month || 'December'} 
+                          onChange={(e) => {
+                            const month = e.target.value;
+                            const year = newPropertyForm.handover_year || '2026';
+                            setNewPropertyForm({ ...newPropertyForm, handover_month: month, handover_year: year, handover_month_year: `${month} ${year}` });
+                          }}
+                          style={{ flex: 1, background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #eab308', color: '#eab308', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
+                        >
+                          {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                        <select 
+                          value={newPropertyForm.handover_year || '2026'} 
+                          onChange={(e) => {
+                            const month = newPropertyForm.handover_month || 'December';
+                            const year = e.target.value;
+                            setNewPropertyForm({ ...newPropertyForm, handover_month: month, handover_year: year, handover_month_year: `${month} ${year}` });
+                          }}
+                          style={{ width: '110px', background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #eab308', color: '#eab308', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
+                        >
+                          {['2024', '2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032'].map(y => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* DEDUCTION AUTO-CALCULATION SUMMARY CARD */}
@@ -2709,12 +2844,60 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
                   <div>
                     <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Possession Status</label>
-                    <select value={newPropertyForm.possession_status} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, possession_status: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}>
+                    <select 
+                      value={newPropertyForm.possession_status} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setNewPropertyForm({
+                          ...newPropertyForm,
+                          possession_status: val,
+                          ...(val.includes('Under Construction') && !newPropertyForm.handover_month_year ? { handover_month: 'December', handover_year: '2026', handover_month_year: 'December 2026' } : {})
+                        });
+                      }} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
+                    >
                       <option value="Ready to Move">Ready to Move</option>
+                      <option value="Under Construction">Under Construction</option>
                       <option value="Under Construction (Dec 2026)">Under Construction (Dec 2026)</option>
+                      <option value="Under Construction (June 2027)">Under Construction (June 2027)</option>
                       <option value="New Pre-Launch">New Pre-Launch</option>
                     </select>
                   </div>
+                  {(newPropertyForm.possession_status || '').includes('Under Construction') && (
+                    <div>
+                      <label style={{ fontSize: '0.78rem', color: '#eab308', fontWeight: '900', display: 'block', marginBottom: '6px' }}>
+                        📅 Handover Month and Year *
+                      </label>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <select 
+                          value={newPropertyForm.handover_month || 'December'} 
+                          onChange={(e) => {
+                            const month = e.target.value;
+                            const year = newPropertyForm.handover_year || '2026';
+                            setNewPropertyForm({ ...newPropertyForm, handover_month: month, handover_year: year, handover_month_year: `${month} ${year}` });
+                          }}
+                          style={{ flex: 1, background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #eab308', color: '#eab308', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
+                        >
+                          {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </select>
+                        <select 
+                          value={newPropertyForm.handover_year || '2026'} 
+                          onChange={(e) => {
+                            const month = newPropertyForm.handover_month || 'December';
+                            const year = e.target.value;
+                            setNewPropertyForm({ ...newPropertyForm, handover_month: month, handover_year: year, handover_month_year: `${month} ${year}` });
+                          }}
+                          style={{ width: '110px', background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #eab308', color: '#eab308', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '800' }}
+                        >
+                          {['2024', '2025', '2026', '2027', '2028', '2029', '2030', '2031', '2032'].map(y => (
+                            <option key={y} value={y}>{y}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Monthly Maintenance</label>
                     <input type="text" value={newPropertyForm.maintenance_monthly} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, maintenance_monthly: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} />
