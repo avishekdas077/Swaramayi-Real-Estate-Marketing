@@ -3200,16 +3200,66 @@ export default function App() {
   }, [systemNotifications]);
 
   const uniqueNotifications = useMemo(() => {
+    const list: any[] = [...systemNotifications];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Add dynamic call alerts from customers with next_followup or HOT priority
+    (customers || []).forEach(c => {
+      if (c.next_followup || c.priority === 'HOT' || c.priority === 'HIGH') {
+        const id = `NOTIF-CUS-${c.id || c.customer_number}`;
+        if (!list.some(n => n.id === id || (c.customer_number && n.customer_number === c.customer_number))) {
+          const isOverdue = c.next_followup && c.next_followup < todayStr;
+          list.push({
+            id,
+            type: 'CALL_ALERT',
+            title: isOverdue ? '⚠️ OVERDUE Call Alert: Follow-up Pending' : '📞 Call Alert: Scheduled Follow-up',
+            customer_name: c.full_name || c.name || 'Registered Customer',
+            customer_number: c.customer_number,
+            mobile: c.mobile || c.alternate_mobile || '',
+            scheduled_date: c.next_followup || todayStr,
+            scheduled_time: c.next_followup_time || '11:00 AM',
+            message: `${c.configuration || '3BHK'} requirement in ${c.preferred_location || c.city || 'Kolkata'} ${c.budget_max ? `- Budget: ₹${(c.budget_max).toLocaleString('en-IN')}` : ''}`,
+            priority: c.priority === 'HOT' || isOverdue ? 'HIGH' : 'MEDIUM',
+            is_read: false,
+            created_at: c.created_at || new Date().toLocaleString()
+          });
+        }
+      }
+    });
+
+    // Add dynamic call alerts from scheduledVisits
+    (scheduledVisits || []).forEach(v => {
+      const id = `NOTIF-SV-${v.id || v.visitId || Math.random()}`;
+      if (!list.some(n => n.id === id || (v.site_visit_code && n.site_visit_code === v.site_visit_code))) {
+        list.push({
+          id,
+          type: 'SITE_VISIT',
+          title: '🚗 Site Visit Call Alert: Visit Confirmation',
+          customer_name: v.customerName || v.customer_name || 'Site Visitor',
+          customer_number: v.customerNumber || v.customer_number || '',
+          mobile: v.mobile || v.customerMobile || '',
+          site_visit_code: v.site_visit_code || v.visitId,
+          scheduled_date: v.scheduledDate || v.visit_date || todayStr,
+          scheduled_time: v.scheduledTime || '11:00 AM',
+          message: `Site visit scheduled for ${v.propertyTitle || v.project_name || 'Property'}`,
+          priority: 'HIGH',
+          is_read: false,
+          created_at: v.created_at || new Date().toLocaleString()
+        });
+      }
+    });
+
+    // Deduplicate by customer_number, mobile, or id
     return Array.from(
-      systemNotifications.reduce((map, item) => {
-        const key = item.customer_number || (item.mobile ? item.mobile.replace(/[^0-9]/g, '') : item.id);
+      list.reduce((map, item) => {
+        const key = item.id || item.customer_number || (item.mobile ? item.mobile.replace(/[^0-9]/g, '') : item.title);
         if (!map.has(key)) {
           map.set(key, item);
         }
         return map;
       }, new Map()).values()
     );
-  }, [systemNotifications]);
+  }, [systemNotifications, customers, scheduledVisits]);
 
   // Master Cost Sheet Shares State (WITH LOCALSTORAGE PERSISTENCE)
   const [costSheetShares, setCostSheetShares] = useState<any[]>(() => {
@@ -6679,9 +6729,9 @@ export default function App() {
                 style={{
                   width: isMobile ? '100%' : 'auto',
                   justifyContent: 'center',
-                  background: systemNotifications.filter(n => !n.is_read).length > 0 ? 'rgba(239, 68, 68, 0.2)' : (isLight ? '#f1f5f9' : '#1e293b'),
-                  color: systemNotifications.filter(n => !n.is_read).length > 0 ? '#ef4444' : (isLight ? '#0284c7' : '#38bdf8'),
-                  border: systemNotifications.filter(n => !n.is_read).length > 0 ? '1px solid #ef4444' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
+                  background: uniqueNotifications.filter(n => !n.is_read).length > 0 ? 'rgba(239, 68, 68, 0.2)' : (isLight ? '#f1f5f9' : '#1e293b'),
+                  color: uniqueNotifications.filter(n => !n.is_read).length > 0 ? '#ef4444' : (isLight ? '#0284c7' : '#38bdf8'),
+                  border: uniqueNotifications.filter(n => !n.is_read).length > 0 ? '1px solid #ef4444' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
                   padding: isMobile ? '8px 10px' : '8px 12px',
                   borderRadius: '6px',
                   fontWeight: '800',
