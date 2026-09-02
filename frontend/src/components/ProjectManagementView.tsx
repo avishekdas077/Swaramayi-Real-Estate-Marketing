@@ -772,6 +772,16 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
       localStorage.setItem('swaramayi_developers_v1', JSON.stringify(updatedDevs));
     } catch (e) {}
 
+    // ALSO IMMEDIATELY SYNC RECORD TO MONGODB ATLAS CLUSTER
+    try {
+      const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+      fetch(`http://${host}:5000/api/v1/crm/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ developers: updatedDevs, properties: properties })
+      }).catch(err => console.warn('MongoDB Sync Warning:', err));
+    } catch (e) {}
+
     // UPDATE FORM WITH PROJECT CODE & PRE-GENERATE UNIQUE PROPERTY CODE
     setNewPropertyForm((prev: any) => ({
       ...prev,

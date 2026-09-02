@@ -1688,6 +1688,7 @@ function InteractiveLeafletMap({
 }
 
 export default function App() {
+  const isMongoLoadedRef = useRef<boolean>(false);
   // 13 Main Navigation Categories
   const [activeTab, setActiveTab] = useState<
     'main_dashboard' | 'lead_management' | 'customer_management' | 'matching_management' | 'cost_sheet_share' | 'visit_management' | 'project_management' | 'agreement_management' | 'booking_management' | 'billing_management' | 'map_management' | 'role_management' | 'profile'
@@ -2011,12 +2012,73 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_matching_queue_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
       console.error('Error reading matching queue from localStorage:', e);
     }
-    return [];
+    return [
+      {
+        requestId: 'SRM-MAT-2026-000421',
+        id: 'SRM-MAT-2026-000421',
+        date: '02 Sep 2026',
+        customerName: 'BISHWAJIT PANDEY',
+        customerNumber: 'SRM-CUS-2026-000184',
+        leadId: 'SRM-LEAD-2026-001245',
+        requirementId: 'REQ-CUS-001',
+        mobile: '+91 98490 12345',
+        purpose: 'Self / End Use',
+        propertyType: 'Flat / Apartment',
+        configuration: '3BHK',
+        budget: '₹35,00,000 - ₹50,00,000',
+        budget_min: 3500000,
+        budget_max: 5000000,
+        preferredArea: 'Barasat, Kolkata',
+        secondaryAreas: 'Barasat, Chapadali',
+        radiusKm: 10,
+        possessionStatus: 'Ready to Move',
+        carpetArea: '450 - 750 Sq.Ft.',
+        facing: 'East / South Facing',
+        parking: 'Covered Basement',
+        amenities: 'Elevator, Power Backup, Security',
+        completenessScore: 92,
+        priority: 'HOT',
+        leadScore: 85,
+        assignedExecutive: 'Rajesh Varma (Super Admin)',
+        status: 'PENDING',
+        version: 'SNAPSHOT V1'
+      },
+      {
+        requestId: 'SRM-MAT-2026-000422',
+        id: 'SRM-MAT-2026-000422',
+        date: '02 Sep 2026',
+        customerName: 'SUMANTH VARMA',
+        customerNumber: 'SRM-CUS-2026-000185',
+        leadId: 'SRM-LEAD-2026-001246',
+        requirementId: 'REQ-CUS-002',
+        mobile: '+91 98765 43210',
+        purpose: 'Self / End Use',
+        propertyType: 'Flat / Apartment',
+        configuration: '2BHK',
+        budget: '₹25,00,000 - ₹38,00,000',
+        budget_min: 2500000,
+        budget_max: 3800000,
+        preferredArea: 'Barasat, Kolkata',
+        secondaryAreas: 'Jessore Road',
+        radiusKm: 10,
+        possessionStatus: 'Ready to Move',
+        carpetArea: '600 - 800 Sq.Ft.',
+        facing: 'East Facing',
+        parking: 'Covered Basement',
+        amenities: 'Elevator, Security',
+        completenessScore: 88,
+        priority: 'WARM',
+        leadScore: 75,
+        assignedExecutive: 'Abinash Roy (Admin)',
+        status: 'PENDING',
+        version: 'SNAPSHOT V1'
+      }
+    ];
   });
 
   useEffect(() => {
@@ -2816,12 +2878,91 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_properties_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
       console.error('Error reading properties from localStorage:', e);
     }
-    return [];
+    return [
+      {
+        id: 'PROP-001',
+        property_code: 'SRM-PROP-2026-000425',
+        title: 'SHIBALAY',
+        developer: 'KRISHNA DAS',
+        developer_id: 'SRM-DEV-2026-000105',
+        project_id: 'SRM-DEV-2026-000105',
+        configuration: '3BHK',
+        super_builtup_area: 'P10',
+        carpet_area: '497.6 Sq.Ft.',
+        final_price: '₹22,76,200',
+        price_sqft: '₹4,574/Sq.Ft.',
+        car_parking: 'Covered Basement & 1 Slot',
+        status: 'AVAILABLE',
+        locality: 'BARASAT, CHAPADALI',
+        full_address: 'Chapadali Bus Terminus Hub, Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
+        latitude: '22.722361',
+        longitude: '88.493403',
+        property_type: 'Flat / Apartment',
+        tower_block: 'Tower A',
+        floor_num: '2nd Floor',
+        total_floors: 'G+4 Floors',
+        facing: 'South Facing',
+        furnishing: 'Semi-Furnished',
+        possession_status: 'Ready to Move'
+      },
+      {
+        id: 'PROP-002',
+        property_code: 'SRM-PROP-2026-000426',
+        title: 'GAJAPATI APARTMENT',
+        developer: 'BABLA DUTTA',
+        developer_id: 'SRM-DEV-2026-000106',
+        project_id: 'SRM-PROJ-2026-000088',
+        configuration: '2BHK',
+        super_builtup_area: 'P71',
+        carpet_area: '700.35 Sq.Ft.',
+        final_price: '₹35,15,900',
+        price_sqft: '₹5,020/Sq.Ft.',
+        car_parking: 'Covered Basement & 1 Slot',
+        status: 'AVAILABLE',
+        locality: 'Barasat, Kolkata',
+        full_address: 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
+        latitude: '22.722361',
+        longitude: '88.493403',
+        property_type: 'Flat / Apartment',
+        tower_block: 'Tower A',
+        floor_num: '3rd Floor',
+        total_floors: 'G+4 Floors',
+        facing: 'East Facing',
+        furnishing: 'Semi-Furnished',
+        possession_status: 'Ready to Move'
+      },
+      {
+        id: 'PROP-003',
+        property_code: 'SRM-PROP-2026-000427',
+        title: 'DHRITI APARTMENT',
+        developer: 'NANIGOPAL DAS',
+        developer_id: 'SRM-DEV-2026-000107',
+        project_id: 'SRM-PROJ-2026-000089',
+        configuration: '2BHK',
+        super_builtup_area: 'P65',
+        carpet_area: '718.25 Sq.Ft.',
+        final_price: '₹36,21,400',
+        price_sqft: '₹5,042/Sq.Ft.',
+        car_parking: 'Covered Basement & 1 Slot',
+        status: 'AVAILABLE',
+        locality: 'Barasat, Kolkata',
+        full_address: 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
+        latitude: '22.722361',
+        longitude: '88.493403',
+        property_type: 'Flat / Apartment',
+        tower_block: 'Tower A',
+        floor_num: '2nd Floor',
+        total_floors: 'G+4 Floors',
+        facing: 'North Facing',
+        furnishing: 'Semi-Furnished',
+        possession_status: 'Ready to Move'
+      }
+    ];
   });
 
   useEffect(() => {
@@ -2859,12 +3000,63 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_customers_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch (e) {
       console.error('Error reading customers from localStorage:', e);
     }
-    return [];
+    return [
+      {
+        id: 'CUS-001',
+        customer_number: 'SRM-CUS-2026-000184',
+        full_name: 'BISHWAJIT PANDEY',
+        name: 'BISHWAJIT PANDEY',
+        mobile: '+91 98490 12345',
+        alternate_mobile: '+91 70442 93951',
+        email: 'bishwajit.pandey@gmail.com',
+        city: 'Kolkata',
+        address: 'Chapadali, Barasat, North 24 Parganas',
+        preferred_location: 'Barasat, Kolkata',
+        property_type: 'Flat / Apartment',
+        configuration: '3BHK',
+        budget_min: 3500000,
+        budget_max: 5000000,
+        purchase_timeline: 'Immediate (< 30 Days)',
+        loan_required: true,
+        investment_purpose: 'Self / End Use',
+        customer_status: 'NEW',
+        status: 'NEW',
+        priority: 'HOT',
+        quality_score: 85,
+        created_at: new Date().toISOString(),
+        is_deleted: false
+      },
+      {
+        id: 'CUS-002',
+        customer_number: 'SRM-CUS-2026-000185',
+        full_name: 'SUMANTH VARMA',
+        name: 'SUMANTH VARMA',
+        mobile: '+91 98765 43210',
+        alternate_mobile: '+91 98833 95102',
+        email: 'sumanth.varma@gmail.com',
+        city: 'Kolkata',
+        address: 'Jessore Road, Barasat',
+        preferred_location: 'Barasat, Kolkata',
+        property_type: 'Flat / Apartment',
+        configuration: '2BHK',
+        budget_min: 2500000,
+        budget_max: 3800000,
+        purchase_timeline: '1-3 Months',
+        loan_required: true,
+        investment_purpose: 'Self / End Use',
+        customer_status: 'QUALIFIED',
+        status: 'QUALIFIED',
+        priority: 'WARM',
+        quality_score: 75,
+        created_at: new Date().toISOString(),
+        is_deleted: false
+      }
+    ];
   });
 
   useEffect(() => {
@@ -2898,7 +3090,9 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_leads_v5_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          return parsed.filter((l: any) => l.lead_number !== 'SRM-LEAD-2026-001245' && l.lead_number !== 'SRM-LEAD-2026-001246' && l.customer_name !== 'BISHWAJIT PANDEY' && l.customer_name !== 'SUMANTH VARMA');
+        }
       }
     } catch (e) {
       console.error('Error reading leads from localStorage:', e);
@@ -3890,6 +4084,7 @@ export default function App() {
     return Array.from(execMap.values());
   }, [users, customers, leadsList, bookings, scheduledVisits]);
 
+
   // Helper: Auto-Hydrate Previous Customer Details into Wizard
   const handleAutoHydrateCustomerDetails = (foundRecord: any) => {
     if (!foundRecord) return;
@@ -4568,39 +4763,109 @@ export default function App() {
     }
   }, [developers]);
 
-  // GLOBAL REAL-TIME MONGODB ATLAS & BACKEND AUTO-SYNC EFFECT
-  useEffect(() => {
-    const syncDataWithMongoDB = async () => {
+  // CENTRAL MONGODB ATLAS LIVE SYNC ENGINE
+  const syncAllToMongoDB = React.useCallback(async (overrideData?: any) => {
+    try {
+      const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+      const apiUrl = `http://${host}:5000/api/v1/crm/sync`;
+
+      let devList: any[] = [];
       try {
-        const payload = {
-          users,
-          teams,
-          branches,
-          properties,
-          customers,
-          leads: leadsList,
-          agreements,
-          invoices,
-          bookings,
-          site_visits: scheduledVisits,
-          matching_requests: matchingRequestsQueue,
-          cost_sheets: individualCostSheets,
-          pva_agreements: projectVisitAgreements,
-          sourcing_requests: sourcingRequests,
-          developers: developers
-        };
-        await fetch('http://localhost:5000/api/v1/crm/sync', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-      } catch (err) {
-        // Fallback silently if server offline
+        const savedDevs = localStorage.getItem('swaramayi_developers_v1');
+        if (savedDevs) devList = JSON.parse(savedDevs);
+      } catch (e) {}
+
+      const payload = {
+        properties: overrideData?.properties || properties,
+        developers: overrideData?.developers || devList,
+        customers: overrideData?.customers || customers,
+        leads: overrideData?.leads || leadsList,
+        bookings: overrideData?.bookings || bookings,
+        invoices: overrideData?.invoices || invoices,
+        agreements: overrideData?.agreements || agreements,
+        cost_sheets: overrideData?.cost_sheets || individualCostSheets,
+        matching_requests: overrideData?.matching_requests || matchingRequestsQueue,
+        site_visits: overrideData?.site_visits || scheduledVisits
+      };
+
+      await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      console.log('⚡ All CRM master data successfully synced to MongoDB Atlas Cluster!');
+    } catch (err) {
+      console.warn('MongoDB Live Sync Warning:', err);
+    }
+  }, [properties, customers, leadsList, bookings, invoices, agreements, individualCostSheets, matchingRequestsQueue, scheduledVisits]);
+
+  // Load live records from MongoDB Atlas Cluster on launch
+  useEffect(() => {
+    const loadFromMongoDB = async () => {
+      try {
+        const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+        const apiUrl = `http://${host}:5000/api/v1/crm/sync`;
+        const res = await fetch(apiUrl);
+        if (res.ok) {
+          const result = await res.json();
+          if (result.status === 'SUCCESS' && result.data) {
+            const mData = result.data;
+            if (Array.isArray(mData.properties) && mData.properties.length > 0) {
+              setProperties(prev => {
+                const map = new Map<string, any>();
+                prev.forEach((p: any) => map.set(p.id || p.property_code, p));
+                mData.properties.forEach((p: any) => map.set(p.id || p.property_code, p));
+                return Array.from(map.values());
+              });
+            }
+            if (Array.isArray(mData.customers) && mData.customers.length > 0) {
+              setCustomers(prev => {
+                const map = new Map<string, any>();
+                prev.forEach((c: any) => map.set(c.id || c.customer_number, c));
+                mData.customers.forEach((c: any) => map.set(c.id || c.customer_number, c));
+                return Array.from(map.values());
+              });
+            }
+            if (Array.isArray(mData.leads)) {
+              setLeadsList(mData.leads);
+            }
+            if (Array.isArray(mData.matching_requests) && mData.matching_requests.length > 0) {
+              setMatchingRequestsQueue(prev => {
+                const map = new Map<string, any>();
+                prev.forEach((r: any) => map.set(r.requestId || r.id, r));
+                mData.matching_requests.forEach((r: any) => map.set(r.requestId || r.id, r));
+                return Array.from(map.values());
+              });
+            }
+            if (Array.isArray(mData.developers) && mData.developers.length > 0) {
+              try {
+                const localDevsStr = localStorage.getItem('swaramayi_developers_v1');
+                const localDevs = localDevsStr ? JSON.parse(localDevsStr) : [];
+                const map = new Map<string, any>();
+                localDevs.forEach((d: any) => map.set(d.id || d.name, d));
+                mData.developers.forEach((d: any) => map.set(d.id || d.name, d));
+                const cleanDevs = Array.from(map.values());
+                setDevelopers(cleanDevs);
+                localStorage.setItem('swaramayi_developers_v1', JSON.stringify(cleanDevs));
+              } catch (e) {}
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('MongoDB Load Error:', e);
+      } finally {
+        isMongoLoadedRef.current = true;
       }
     };
-    const timer = setTimeout(syncDataWithMongoDB, 2000);
-    return () => clearTimeout(timer);
-  }, [users, teams, branches, properties, customers, leadsList, agreements, invoices, bookings, scheduledVisits, matchingRequestsQueue, individualCostSheets, projectVisitAgreements, sourcingRequests, developers]);
+    loadFromMongoDB();
+  }, []);
+
+  // Sync to MongoDB Atlas whenever core states change (ONLY AFTER initial load completes)
+  useEffect(() => {
+    if (isMongoLoadedRef.current) {
+      syncAllToMongoDB();
+    }
+  }, [properties, customers, leadsList, bookings, invoices, agreements, developers]);
   const [rawSelectedAgreement, setSelectedAgreement] = useState<any>(null);
   const selectedAgreement = rawSelectedAgreement || agreements[0] || { id: 'AGR-01', agreement_code: 'SRM-AGR-CUS-2026-000301', agreement_type: 'CUSTOMER_SITE_VISIT', title: 'Customer Site Visit Agreement', party_name: 'Rohan Deshmukh', party_contact: '+91 98490 12345', property_details: 'SRM-PROP-2026-000421 (Aparna Zenon 3BHK)', signed_status: 'EXECUTED_SIGNED', signature_hash: 'OTP-VERIFIED-#482901-DIGITAL-SIG', signed_at: '16 Aug 2026 11:35 AM' };
 
