@@ -37,23 +37,66 @@ export const CostSheetModel = mongoose.models.CostSheet || mongoose.model('CostS
 export const MatchingRequestModel = mongoose.models.MatchingRequest || mongoose.model('MatchingRequest', MatchingRequestSchema);
 export const ProjectVisitAgreementModel = mongoose.models.ProjectVisitAgreement || mongoose.model('ProjectVisitAgreement', ProjectVisitAgreementSchema);
 
-// Helper function to upsert array of records into a model
-async function upsertCollection(model: mongoose.Model<any>, records: any[]) {
-  if (!records || !Array.isArray(records) || records.length === 0) return;
-  const ops = records.map(rec => {
-    const filter = rec.id ? { id: rec.id } : (rec.agreement_code ? { agreement_code: rec.agreement_code } : (rec.property_code ? { property_code: rec.property_code } : (rec.team_name ? { team_name: rec.team_name } : (rec.branch_name ? { branch_name: rec.branch_name } : rec))));
-    return {
-      updateOne: {
-        filter,
-        update: { $set: rec },
-        upsert: true
-      }
-    };
-  });
+// Helper function to sync array of records into a model (handles permanent deletions)
+async function syncCollection(model: mongoose.Model<any>, records: any[]) {
+  if (!records || !Array.isArray(records)) return;
+
   try {
-    await model.bulkWrite(ops);
+    if (records.length === 0) {
+      await model.deleteMany({});
+      return;
+    }
+
+    // Extract valid record identifiers
+    const validIds = records.map(r => r.id).filter(Boolean);
+    const validCustNums = records.map(r => r.customer_number).filter(Boolean);
+    const validBookingCodes = records.map(r => r.booking_code).filter(Boolean);
+    const validInvoiceNums = records.map(r => r.invoice_number).filter(Boolean);
+    const validAgreementCodes = records.map(r => r.agreement_code).filter(Boolean);
+    const validPvaIds = records.map(r => r.projectVisitAgreementId || r.pvaId).filter(Boolean);
+    const validCostSheetIds = records.map(r => r.costSheetId).filter(Boolean);
+
+    // Delete records from MongoDB Atlas that were permanently deleted in CRM
+    const deleteConditions: any[] = [];
+    if (validIds.length > 0) deleteConditions.push({ id: { $nin: validIds } });
+    if (validCustNums.length > 0) deleteConditions.push({ customer_number: { $nin: validCustNums } });
+    if (validBookingCodes.length > 0) deleteConditions.push({ booking_code: { $nin: validBookingCodes } });
+    if (validInvoiceNums.length > 0) deleteConditions.push({ invoice_number: { $nin: validInvoiceNums } });
+    if (validAgreementCodes.length > 0) deleteConditions.push({ agreement_code: { $nin: validAgreementCodes } });
+    if (validPvaIds.length > 0) deleteConditions.push({ projectVisitAgreementId: { $nin: validPvaIds }, pvaId: { $nin: validPvaIds } });
+    if (validCostSheetIds.length > 0) deleteConditions.push({ costSheetId: { $nin: validCostSheetIds } });
+
+    if (deleteConditions.length > 0) {
+      await model.deleteMany({ $and: deleteConditions });
+    }
+
+    // Upsert remaining active records
+    const ops = records.map(rec => {
+      const filter = rec.id 
+        ? { id: rec.id } 
+        : (rec.customer_number ? { customer_number: rec.customer_number } 
+        : (rec.booking_code ? { booking_code: rec.booking_code } 
+        : (rec.invoice_number ? { invoice_number: rec.invoice_number } 
+        : (rec.agreement_code ? { agreement_code: rec.agreement_code } 
+        : (rec.costSheetId ? { costSheetId: rec.costSheetId } 
+        : (rec.projectVisitAgreementId ? { projectVisitAgreementId: rec.projectVisitAgreementId } 
+        : (rec.team_name ? { team_name: rec.team_name } 
+        : (rec.branch_name ? { branch_name: rec.branch_name } : rec))))))));
+      
+      return {
+        updateOne: {
+          filter,
+          update: { $set: rec },
+          upsert: true
+        }
+      };
+    });
+
+    if (ops.length > 0) {
+      await model.bulkWrite(ops);
+    }
   } catch (err: any) {
-    console.warn(`MongoDB Bulk Write Note [${model.modelName}]:`, err.message);
+    console.warn(`MongoDB Sync Note [${model.modelName}]:`, err.message);
   }
 }
 
@@ -64,23 +107,23 @@ export async function syncToMongoDB(data: any) {
   }
 
   try {
-    if (data.users && data.users.length > 0) await upsertCollection(UserModel, data.users);
-    if (data.properties && data.properties.length > 0) await upsertCollection(PropertyModel, data.properties);
-    if (data.customers && data.customers.length > 0) await upsertCollection(CustomerModel, data.customers);
-    if (data.leads && data.leads.length > 0) await upsertCollection(LeadModel, data.leads);
-    if (data.bookings && data.bookings.length > 0) await upsertCollection(BookingModel, data.bookings);
-    if (data.invoices && data.invoices.length > 0) await upsertCollection(InvoiceModel, data.invoices);
-    if (data.agreements && data.agreements.length > 0) await upsertCollection(AgreementModel, data.agreements);
-    if (data.site_visits && data.site_visits.length > 0) await upsertCollection(SiteVisitModel, data.site_visits);
-    if (data.brokerage_records && data.brokerage_records.length > 0) await upsertCollection(BrokerageModel, data.brokerage_records);
-    if (data.followups && data.followups.length > 0) await upsertCollection(FollowupModel, data.followups);
-    if (data.teams && data.teams.length > 0) await upsertCollection(TeamModel, data.teams);
-    if (data.branches && data.branches.length > 0) await upsertCollection(BranchModel, data.branches);
-    if (data.cost_sheets && data.cost_sheets.length > 0) await upsertCollection(CostSheetModel, data.cost_sheets);
-    if (data.matching_requests && data.matching_requests.length > 0) await upsertCollection(MatchingRequestModel, data.matching_requests);
-    if (data.pva_agreements && data.pva_agreements.length > 0) await upsertCollection(ProjectVisitAgreementModel, data.pva_agreements);
+    if (Array.isArray(data.users)) await syncCollection(UserModel, data.users);
+    if (Array.isArray(data.properties)) await syncCollection(PropertyModel, data.properties);
+    if (Array.isArray(data.customers)) await syncCollection(CustomerModel, data.customers);
+    if (Array.isArray(data.leads)) await syncCollection(LeadModel, data.leads);
+    if (Array.isArray(data.bookings)) await syncCollection(BookingModel, data.bookings);
+    if (Array.isArray(data.invoices)) await syncCollection(InvoiceModel, data.invoices);
+    if (Array.isArray(data.agreements)) await syncCollection(AgreementModel, data.agreements);
+    if (Array.isArray(data.site_visits)) await syncCollection(SiteVisitModel, data.site_visits);
+    if (Array.isArray(data.brokerage_records)) await syncCollection(BrokerageModel, data.brokerage_records);
+    if (Array.isArray(data.followups)) await syncCollection(FollowupModel, data.followups);
+    if (Array.isArray(data.teams)) await syncCollection(TeamModel, data.teams);
+    if (Array.isArray(data.branches)) await syncCollection(BranchModel, data.branches);
+    if (Array.isArray(data.cost_sheets)) await syncCollection(CostSheetModel, data.cost_sheets);
+    if (Array.isArray(data.matching_requests)) await syncCollection(MatchingRequestModel, data.matching_requests);
+    if (Array.isArray(data.pva_agreements)) await syncCollection(ProjectVisitAgreementModel, data.pva_agreements);
 
-    console.log(`⚡ MongoDB Atlas Live Sync Complete (Users, Teams, Branches, Properties, Customers, Leads, Agreements, CostSheets, Bookings, Invoices)`);
+    console.log(`⚡ MongoDB Atlas Live Sync Complete with Permanent Deletion Support`);
   } catch (e: any) {
     console.error('MongoDB Live Sync Error:', e.message);
   }
