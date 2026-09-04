@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CreditCard, Plus, Printer, Calendar, Link, CheckCircle2, Clock, Share2, Copy, Send, DollarSign, X } from 'lucide-react';
+import { CreditCard, Plus, Printer, Calendar, Link, CheckCircle2, Clock, Share2, Copy, Send, DollarSign, X, Edit3 } from 'lucide-react';
 
 interface BillingManagementViewProps {
   isLight: boolean;
@@ -15,6 +15,8 @@ interface BillingManagementViewProps {
   currentRole?: string;
   users?: any[];
   branches?: any[];
+  properties?: any[];
+  customers?: any[];
 }
 
 export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
@@ -31,6 +33,8 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
   currentRole,
   users = [],
   branches = [],
+  properties = [],
+  customers = [],
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
   const getCurrentUserBranch = () => {
@@ -60,6 +64,44 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
   const [paymentStatusInput, setPaymentStatusInput] = useState<'PAID_SETTLED' | 'UNPAID_PENDING'>('PAID_SETTLED');
   const [paymentRefInput, setPaymentRefInput] = useState<string>('');
   const [copyToast, setCopyToast] = useState<boolean>(false);
+
+  // EDIT INVOICE MODAL STATE
+  const [showEditInvoiceModal, setShowEditInvoiceModal] = useState<any | null>(null);
+  const [editInvoiceForm, setEditInvoiceForm] = useState<any>({});
+
+  const handleSaveEditInvoice = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!editInvoiceForm || !setInvoices) return;
+
+    const taxVal = Number(editInvoiceForm.taxable_value || 0);
+    const applyGst = editInvoiceForm.apply_gst !== false;
+    const cgstRate = Number(editInvoiceForm.cgst_rate !== undefined ? editInvoiceForm.cgst_rate : 9);
+    const sgstRate = Number(editInvoiceForm.sgst_rate !== undefined ? editInvoiceForm.sgst_rate : 9);
+    const cgst = applyGst ? Math.round(taxVal * (cgstRate / 100)) : 0;
+    const sgst = applyGst ? Math.round(taxVal * (sgstRate / 100)) : 0;
+    const total = taxVal + cgst + sgst;
+
+    const updatedInvoice = {
+      ...editInvoiceForm,
+      taxable_value: taxVal,
+      cgst_rate: cgstRate,
+      sgst_rate: sgstRate,
+      cgst_amount: cgst,
+      sgst_amount: sgst,
+      total_invoice_amount: total
+    };
+
+    const updatedInvoices = invoices.map((inv: any) => {
+      if (inv.id === editInvoiceForm.id || (inv.invoice_number && inv.invoice_number === editInvoiceForm.invoice_number)) {
+        return updatedInvoice;
+      }
+      return inv;
+    });
+
+    setInvoices(updatedInvoices);
+    setShowEditInvoiceModal(null);
+    alert(`🎉 Invoice ${editInvoiceForm.invoice_number || editInvoiceForm.id} updated successfully!`);
+  };
 
   const isDateInPeriod = (dateStr: string) => {
     if (!dateStr || datePeriodFilter === 'ALL') return true;
@@ -423,6 +465,108 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                           style={{ background: billingInvoiceCategory === 'DEVELOPER' ? '#16a34a' : '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
                           <Printer size={13} /> Print GST PDF
+                        </button>
+
+                        <button 
+                          onClick={() => {
+                            const isDev = (i.invoice_category || billingInvoiceCategory) === 'DEVELOPER';
+                            const matchedCust = (customers || []).find((c: any) => 
+                              (i.customer_number && (c.customer_number === i.customer_number || c.id === i.customer_number || c.customerNumber === i.customer_number)) ||
+                              (i.customer_name && (c.name?.toLowerCase() === i.customer_name.toLowerCase() || c.customer_name?.toLowerCase() === i.customer_name.toLowerCase() || c.customerName?.toLowerCase() === i.customer_name.toLowerCase())) ||
+                              (i.customer_mobile && (c.mobile === i.customer_mobile || c.phone === i.customer_mobile))
+                            );
+                            const propCodeLookup = i.property_code || i.propertyCode || 'SRM-PROP-2026-000426';
+                            const matchedProp = (properties || []).find((p: any) => 
+                              p.property_code === propCodeLookup || p.id === propCodeLookup || p.propertyCode === propCodeLookup || (p.title && i.property_title && (p.title.toLowerCase().includes(i.property_title.toLowerCase()) || i.property_title.toLowerCase().includes(p.title.toLowerCase())))
+                            );
+
+                            const custName = i.customer_name || matchedCust?.name || matchedCust?.customer_name || matchedCust?.customerName || 'SUMANTH VARMA';
+                            const custNum = i.customer_number || matchedCust?.customer_number || matchedCust?.customerNumber || matchedCust?.id || 'SRM-CUS-2026-000185';
+                            const custMobile = i.customer_mobile || matchedCust?.mobile || matchedCust?.phone || '+91 98765 43210';
+                            const custEmail = (i.customer_email && !i.customer_email.includes('customcr') && i.customer_email !== 'customer@gmail.com')
+                              ? i.customer_email
+                              : (matchedCust?.email || `${custName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@gmail.com`);
+
+                            const propLocality = (i.property_locality && i.property_locality !== 'Kondapur, Hyderabad')
+                              ? i.property_locality
+                              : (matchedProp?.locality || matchedProp?.location || 'Barasat, Kolkata');
+                            const custAddress = (i.customer_address && !i.customer_address.includes('Jubilee Hills'))
+                              ? i.customer_address
+                              : (matchedCust?.address || matchedCust?.full_address || matchedProp?.full_address || `${propLocality}, West Bengal - 700124`);
+                            const placeOfSupply = (i.place_of_supply && i.place_of_supply !== '36 - Telangana')
+                              ? i.place_of_supply
+                              : (matchedCust?.place_of_supply || (propLocality.toLowerCase().includes('kolkata') || propLocality.toLowerCase().includes('barasat') || (i.property_title && i.property_title.toLowerCase().includes('kolkata')) ? '19 - West Bengal' : '19 - West Bengal'));
+                            const propConfig = (i.property_configuration && i.property_configuration !== '3 BHK Luxury Apartment')
+                              ? i.property_configuration
+                              : (matchedProp?.configuration || matchedProp?.type || '2BHK');
+                            const devGstin = (i.developer_gstin && i.developer_gstin !== '36AAACA1234F1Z5')
+                              ? i.developer_gstin
+                              : (matchedProp?.developer_gstin || '19AAACD4567E1Z2');
+
+                            const agreeVal = Number(i.agreement_value || (i.flat_price ? Number(i.flat_price) + Number(i.parking_price || 0) : i.taxable_value ? Math.round(Number(i.taxable_value) / 0.02) : (matchedProp?.final_price || 2800000)));
+                            const flatVal = Number(i.flat_price || Math.round(agreeVal * 0.95));
+                            const parkVal = Number(i.parking_price !== undefined ? i.parking_price : Math.round(agreeVal * 0.05));
+                            const brokPct = Number(i.brokerage_percent || 2.0);
+                            const taxVal = Number(i.taxable_value || Math.round(agreeVal * (brokPct / 100)));
+                            const applyGst = i.apply_gst !== false;
+                            const cgstRate = Number(i.cgst_rate !== undefined ? i.cgst_rate : 9);
+                            const sgstRate = Number(i.sgst_rate !== undefined ? i.sgst_rate : 9);
+                            const gstRate = Number(i.gst_rate !== undefined ? i.gst_rate : (cgstRate + sgstRate));
+
+                            setEditInvoiceForm({
+                              ...i,
+                              invoice_category: i.invoice_category || (billingInvoiceCategory === 'DEVELOPER' ? 'DEVELOPER' : 'CUSTOMER'),
+                              branch_name: i.branch_name || 'Head Office (Kolkata)',
+                              created_date: i.created_date || new Date().toISOString().split('T')[0],
+                              property_code: i.property_code || matchedProp?.property_code || 'SRM-PROP-2026-000426',
+                              property_title: i.property_title || matchedProp?.title || 'GAJAPATI APARTMENT',
+                              developer_name: i.developer_name || matchedProp?.developer || 'Dhriti Builders & Developers',
+                              developer_gstin: devGstin,
+                              developer_rera_id: i.developer_rera_id || matchedProp?.rera_id || 'WBRERA/P/NOR/2024/000842',
+                              developer_contact_person: i.developer_contact_person || 'Mr. R. K. Sen (VP Sales)',
+                              developer_mobile: i.developer_mobile || '+91 98300 12345',
+                              developer_email: i.developer_email || 'billing@dhritibuilders.com',
+                              developer_address: i.developer_address || matchedProp?.developer_address || 'Dhriti Towers, Jessore Road, Barasat, Kolkata - 700124',
+                              developer_place_of_supply: i.developer_place_of_supply || '19 - West Bengal',
+                              property_locality: propLocality,
+                              property_configuration: propConfig,
+                              customer_number: custNum,
+                              customer_name: custName,
+                              customer_mobile: custMobile,
+                              customer_email: custEmail,
+                              place_of_supply: placeOfSupply,
+                              customer_gstin_pan: i.customer_gstin_pan || matchedCust?.gstin || matchedCust?.pan || '',
+                              customer_address: custAddress,
+                              particulars: i.particulars || (isDev ? '2.0% Channel Partner Success Fee / Brokerage' : 'Property Consultation & Processing Charges'),
+                              flat_price: String(flatVal),
+                              parking_price: String(parkVal),
+                              agreement_value: String(agreeVal),
+                              brokerage_percent: String(brokPct),
+                              taxable_value: String(taxVal),
+                              apply_gst: applyGst,
+                              gst_rate: String(gstRate),
+                              cgst_rate: String(cgstRate),
+                              sgst_rate: String(sgstRate),
+                              bank_name: i.bank_name || 'HDFC Bank',
+                              bank_account_number: i.bank_account_number || '50200018942109',
+                              bank_ifsc_code: i.bank_ifsc_code || 'HDFC0000128',
+                              bank_upi_id: i.bank_upi_id || 'swaramayi@hdfcbank',
+                              company_address: i.company_address || 'Swaramayi Corporate Office, Jessore Road, Barasat, Kolkata - 700124, West Bengal',
+                              company_rera_no: i.company_rera_no || 'WBRERA/A/KOL/2024/000128',
+                              company_email: i.company_email || 'billing@swaramayi.com',
+                              company_mobile: i.company_mobile || '+91 98300 98765',
+                              company_website: i.company_website || 'https://www.swaramayi.com',
+                              payment_status: i.payment_status || 'PAID_SETTLED',
+                              payment_mode: i.payment_mode || 'ONLINE',
+                              payment_ref: i.payment_ref || '',
+                              sales_executive: i.sales_executive || matchedCust?.assignedExecutive || 'Rajesh Varma'
+                            });
+                            setShowEditInvoiceModal(i);
+                          }}
+                          style={{ background: '#f59e0b', color: '#0f172a', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '900', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 8px rgba(245, 158, 11, 0.3)' }}
+                          title="Edit invoice details, particulars, amounts and payment status"
+                        >
+                          <Edit3 size={13} /> Edit
                         </button>
 
                         <button 
@@ -939,6 +1083,998 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                 </button>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: FULL COMPREHENSIVE EDIT TAX INVOICE MODAL (MATCHING CREATE INVOICE 3-PAGE FORM) */}
+      {showEditInvoiceModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px', overflowY: 'auto' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #f59e0b', borderRadius: '16px', width: '100%', maxWidth: '850px', maxHeight: '92vh', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.6)' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📄 Edit Tax Invoice ({editInvoiceForm.invoice_category === 'DEVELOPER' ? 'B2B Developer Billing' : 'B2C Customer Billing'})
+                </h3>
+                <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                  Generate / Edit Tax Invoice based on Flat + Parking Price Agreement Value with editable GST tax rates.
+                </p>
+              </div>
+              <button onClick={() => setShowEditInvoiceModal(null)} style={{ background: 'none', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer' }}><X size={20} /></button>
+            </div>
+
+            {/* FORM BODY */}
+            <form onSubmit={handleSaveEditInvoice} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              {/* TOP ROW: INVOICE CATEGORY & ISSUING BRANCH */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Invoice Category *</label>
+                  <select 
+                    value={editInvoiceForm.invoice_category || 'CUSTOMER'} 
+                    onChange={(e) => {
+                      const newCat = e.target.value;
+                      const agreeVal = Number(editInvoiceForm.agreement_value || 8400000);
+                      const brokPct = Number(editInvoiceForm.brokerage_percent || 2.0);
+                      const compTaxable = Math.round(agreeVal * (brokPct / 100));
+                      setEditInvoiceForm({ 
+                        ...editInvoiceForm, 
+                        invoice_category: newCat,
+                        particulars: newCat === 'DEVELOPER' ? '2.0% Channel Partner Success Fee / Brokerage' : 'Property Consultation & Processing Charges',
+                        taxable_value: String(compTaxable)
+                      });
+                    }} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #38bdf8', color: '#38bdf8', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
+                  >
+                    <option value="CUSTOMER">👤 B2C CUSTOMER INVOICE (Consultancy / Booking Advance)</option>
+                    <option value="DEVELOPER">🏢 B2B DEVELOPER INVOICE (2.0% Channel Partner Brokerage)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Issuing Branch *</label>
+                  <select 
+                    value={editInvoiceForm.branch_name || 'Head Office (Kolkata)'} 
+                    onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, branch_name: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '2px solid #38bdf8', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
+                  >
+                    {branches && branches.length > 0 ? (
+                      branches.map((b: any, idx: number) => (
+                        <option key={idx} value={b.branch_name}>{b.branch_name} ({b.city})</option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Head Office (Kolkata)">Head Office (Kolkata)</option>
+                        <option value="Kolkata Branch">Kolkata Branch</option>
+                        <option value="Hyderabad Corporate HQ">Hyderabad Corporate HQ</option>
+                      </>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Invoice Date *</label>
+                  <input 
+                    type="date" 
+                    value={editInvoiceForm.created_date || ''} 
+                    onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, created_date: e.target.value })}
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* CARD 1: PROPERTY MASTER & STOCK INVENTORY DETAILS */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #22c55e', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🏠 PROPERTY MASTER & STOCK INVENTORY DETAILS
+                  </span>
+                  <span style={{ fontSize: '0.7rem', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                    Auto-Fetch Enabled by Property Code
+                  </span>
+                </div>
+
+                {/* QUICK SELECT STOCK INVENTORY DROPDOWN */}
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    ⚡ Auto-Fetch from Stock Inventory Vault (Select Property Code / Title):
+                  </label>
+                  <select
+                    value={editInvoiceForm.property_code || ''}
+                    onChange={(e) => {
+                      const pCode = e.target.value;
+                      const prop = (properties || []).find(p => p.property_code === pCode || p.id === pCode);
+                      if (prop) {
+                        const numPrice = typeof prop.final_price === 'number' ? prop.final_price : (parseInt(String(prop.final_price).replace(/[^0-9]/g, '')) || 8400000);
+                        const computedFlatPrice = Math.round(numPrice * 0.95);
+                        const computedParkPrice = Math.round(numPrice * 0.05);
+                        const computedAgreementVal = computedFlatPrice + computedParkPrice;
+                        const isDev = editInvoiceForm.invoice_category === 'DEVELOPER';
+                        const brokPct = Number(editInvoiceForm.brokerage_percent || 2.0);
+                        const computedTaxableVal = Math.round(computedAgreementVal * (brokPct / 100));
+
+                        setEditInvoiceForm({
+                          ...editInvoiceForm,
+                          property_code: prop.property_code,
+                          property_title: prop.title || `${prop.property_code} Residence`,
+                          developer_name: prop.developer || prop.builder || 'Aparna Constructions',
+                          developer_gstin: prop.developer_gstin || '36AAACA1234F1Z5',
+                          property_locality: prop.locality || 'Kondapur, Hyderabad',
+                          property_configuration: prop.configuration || '3 BHK Luxury Apartment',
+                          flat_price: String(computedFlatPrice),
+                          parking_price: String(computedParkPrice),
+                          agreement_value: String(computedAgreementVal),
+                          taxable_value: String(computedTaxableVal),
+                          particulars: isDev 
+                            ? `2.0% Channel Partner Success Fee / Brokerage for ${prop.title} [Code: ${prop.property_code}]` 
+                            : `Property Consultation & Processing Charges for ${prop.title} [Code: ${prop.property_code}]`
+                        });
+                      }
+                    }}
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', color: '#4ade80', padding: '7px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }}
+                  >
+                    <option value="">-- Choose Stock Inventory Tracking Code --</option>
+                    {(properties || []).map((p: any, idx: number) => (
+                      <option key={idx} value={p.property_code}>
+                        🏢 {p.property_code} — {p.title} ({p.locality}) | Price: {p.final_price}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* GRID ROW 1: PROPERTY CODE (LIVE MATCH), TITLE, DEVELOPER */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      🏷️ Property Code / Inventory ID *
+                    </label>
+                    <input 
+                      type="text" 
+                      value={editInvoiceForm.property_code || ''} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const matched = (properties || []).find(p => 
+                          p.property_code?.toLowerCase() === val.toLowerCase() || 
+                          p.id?.toLowerCase() === val.toLowerCase()
+                        );
+                        if (matched) {
+                          const numPrice = typeof matched.final_price === 'number' ? matched.final_price : (parseInt(String(matched.final_price).replace(/[^0-9]/g, '')) || 8400000);
+                          const fPrice = Math.round(numPrice * 0.95);
+                          const pPrice = Math.round(numPrice * 0.05);
+                          const compAgree = fPrice + pPrice;
+                          const brokPct = Number(editInvoiceForm.brokerage_percent || 2.0);
+                          const compTaxable = Math.round(compAgree * (brokPct / 100));
+                          setEditInvoiceForm({
+                            ...editInvoiceForm,
+                            property_code: val,
+                            property_title: matched.title || `${val} Residence`,
+                            developer_name: matched.developer || matched.builder || 'Aparna Constructions',
+                            developer_gstin: matched.developer_gstin || '36AAACA1234F1Z5',
+                            property_locality: matched.locality || 'Kondapur, Hyderabad',
+                            property_configuration: matched.configuration || '3 BHK Luxury Apartment',
+                            flat_price: String(fPrice),
+                            parking_price: String(pPrice),
+                            agreement_value: String(compAgree),
+                            taxable_value: String(compTaxable)
+                          });
+                        } else {
+                          setEditInvoiceForm({ ...editInvoiceForm, property_code: val });
+                        }
+                      }} 
+                      placeholder="SRM-PROP-2026-000421" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', color: '#4ade80', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: '800' }} 
+                      required 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Property Title & Unit Details *</label>
+                    <input type="text" value={editInvoiceForm.property_title || ''} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, property_title: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} required />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer / Builder Name *</label>
+                    <input type="text" value={editInvoiceForm.developer_name || ''} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} required />
+                  </div>
+                </div>
+
+                {/* GRID ROW 2: LOCALITY, CONFIGURATION, DEVELOPER GSTIN */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Locality / Sector</label>
+                    <input type="text" value={editInvoiceForm.property_locality || 'Kondapur, Hyderabad'} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, property_locality: e.target.value })} placeholder="Kondapur, Hyderabad" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>BHK & Unit Configuration</label>
+                    <input type="text" value={editInvoiceForm.property_configuration || '3 BHK Luxury Apartment'} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, property_configuration: e.target.value })} placeholder="3 BHK Luxury Apartment" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer GSTIN</label>
+                    <input type="text" value={editInvoiceForm.developer_gstin || ''} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_gstin: e.target.value })} placeholder="36AAACA1234F1Z5" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 2: CUSTOMER / BUYER DETAILS (SHOWN FOR BOTH B2C CUSTOMER AND B2B DEVELOPER AS LINKED BUYER) */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {editInvoiceForm.invoice_category === 'DEVELOPER' ? '👤 LINKED CUSTOMER / BUYER MASTER DETAILS' : '👤 B2C CUSTOMER MASTER DETAILS & BILLING INFO'}
+                  </span>
+                  <span style={{ fontSize: '0.7rem', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                    Auto-fill Enabled by Customer ID
+                  </span>
+                </div>
+
+                {/* QUICK SELECT EXISTING CUSTOMER DROPDOWN */}
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>⚡ Auto-Fill from Customer Master Vault (Select Customer ID / Name):</label>
+                  <select
+                    value={editInvoiceForm.customer_number || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (!val) return;
+                      const selected = (customers || []).find((c: any) => c.customer_number === val || c.name === val || c.id === val || c.customerNumber === val);
+                      if (selected) {
+                        setEditInvoiceForm({
+                          ...editInvoiceForm,
+                          customer_name: selected.name || selected.customer_name || selected.customerName || editInvoiceForm.customer_name,
+                          customer_number: selected.customer_number || selected.customerNumber || selected.id || 'SRM-CUS-2026-000185',
+                          customer_mobile: selected.mobile || selected.phone || editInvoiceForm.customer_mobile,
+                          customer_email: selected.email || `${(selected.name || 'customer').toLowerCase().replace(/[^a-z0-9]/g, '.')}@gmail.com`,
+                          customer_address: selected.address || selected.full_address || (selected.preferredArea ? `Jessore Road, ${selected.preferredArea}, West Bengal - 700124` : 'Jessore Road, Barasat, Kolkata, West Bengal - 700124'),
+                          place_of_supply: selected.state || selected.place_of_supply || (selected.preferredArea?.includes('Kolkata') || selected.preferredArea?.includes('Barasat') ? '19 - West Bengal' : '19 - West Bengal'),
+                          customer_gstin_pan: selected.gstin || selected.pan || '19ABCDE1234F1Z5'
+                        });
+                      }
+                    }}
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: '#38bdf8', padding: '7px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }}
+                  >
+                    <option value="">-- Choose Customer to Auto-Populate Details --</option>
+                    {(customers || []).map((c: any, idx: number) => (
+                      <option key={idx} value={c.customer_number || c.customerNumber || c.name}>
+                        🆔 {c.customer_number || c.customerNumber || 'SRM-CUS-2026-000185'} — {c.name || c.customer_name || c.customerName} ({c.mobile || c.phone})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* GRID ROW 1: ID (LIVE MATCH), NAME, MOBILE */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🆔 Customer ID / Number *</label>
+                    <input 
+                      type="text" 
+                      value={editInvoiceForm.customer_number || ''} 
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const matched = (customers || []).find((c: any) => 
+                          c.customer_number?.toLowerCase() === val.toLowerCase() || 
+                          c.customerNumber?.toLowerCase() === val.toLowerCase() ||
+                          c.id?.toLowerCase() === val.toLowerCase()
+                        );
+                        if (matched) {
+                          setEditInvoiceForm({
+                            ...editInvoiceForm,
+                            customer_number: val,
+                            customer_name: matched.name || matched.customer_name || matched.customerName || editInvoiceForm.customer_name,
+                            customer_mobile: matched.mobile || matched.phone || editInvoiceForm.customer_mobile,
+                            customer_email: matched.email || `${(matched.name || 'customer').toLowerCase().replace(/[^a-z0-9]/g, '.')}@gmail.com`,
+                            customer_address: matched.address || matched.full_address || (matched.preferredArea ? `Jessore Road, ${matched.preferredArea}, West Bengal - 700124` : 'Jessore Road, Barasat, Kolkata, West Bengal - 700124'),
+                            place_of_supply: matched.state || matched.place_of_supply || (matched.preferredArea?.includes('Kolkata') || matched.preferredArea?.includes('Barasat') ? '19 - West Bengal' : '19 - West Bengal'),
+                            customer_gstin_pan: matched.gstin || matched.pan || '19ABCDE1234F1Z5'
+                          });
+                        } else {
+                          setEditInvoiceForm({ ...editInvoiceForm, customer_number: val });
+                        }
+                      }} 
+                      placeholder="SRM-CUS-2026-000185" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', color: '#38bdf8', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: '800' }} 
+                      required 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
+                    <input type="text" value={editInvoiceForm.customer_name || ''} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, customer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} required />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Mobile *</label>
+                    <input type="text" value={editInvoiceForm.customer_mobile || ''} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, customer_mobile: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} required />
+                  </div>
+                </div>
+
+                {/* GRID ROW 2: EMAIL, STATE/POS, GSTIN/PAN */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Email *</label>
+                    <input type="email" value={editInvoiceForm.customer_email || ''} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, customer_email: e.target.value })} placeholder="customer@gmail.com" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Place of Supply (State) *</label>
+                    <input type="text" value={editInvoiceForm.place_of_supply || ''} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, place_of_supply: e.target.value })} placeholder="19 - West Bengal" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>GSTIN / PAN (Optional)</label>
+                    <input type="text" value={editInvoiceForm.customer_gstin_pan || ''} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, customer_gstin_pan: e.target.value })} placeholder="19ABCDE1234F1Z5 or PAN" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                  </div>
+                </div>
+
+                {/* GRID ROW 3: BILLING ADDRESS */}
+                <div>
+                  <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Billing Address & Pincode *</label>
+                  <input type="text" value={editInvoiceForm.customer_address || ''} onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, customer_address: e.target.value })} placeholder="Flat No., Building Name, Street / Locality, City - Pincode" style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} />
+                </div>
+              </div>
+
+              {/* CARD 3 (DEVELOPER ONLY): B2B DEVELOPER MASTER DETAILS & CORPORATE BILLING INFO */}
+              {editInvoiceForm.invoice_category === 'DEVELOPER' && (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #16a34a', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      🏢 B2B DEVELOPER MASTER DETAILS & CORPORATE BILLING INFO
+                    </span>
+                    <span style={{ fontSize: '0.7rem', background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                      Auto-Fill Enabled by Builder Vault
+                    </span>
+                  </div>
+
+                  {/* QUICK SELECT EXISTING DEVELOPER DROPDOWN */}
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>⚡ Auto-Fill from Builder Vault (Select Developer / Corporate Entity):</label>
+                    <select
+                      value={editInvoiceForm.developer_name || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (!val) return;
+                        const devList: Record<string, any> = {
+                          'Dhriti Builders & Developers': { gstin: '19AAACD4567E1Z2', contact: 'Mr. R. K. Sen (VP Sales)', mobile: '+91 98300 12345', email: 'billing@dhritibuilders.com', address: 'Dhriti Towers, Jessore Road, Barasat, Kolkata - 700124', rera: 'WBRERA/P/NOR/2024/000842', pos: '19 - West Bengal' },
+                          'Swaramayi Partner Developer': { gstin: '19AAACD4567E1Z2', contact: 'Mr. Animesh Sen', mobile: '+91 98300 12345', email: 'billing@dhritibuilders.com', address: 'Dhriti Towers, Jessore Road, Barasat, Kolkata - 700124', rera: 'WBRERA/P/NOR/2024/000842', pos: '19 - West Bengal' },
+                          'Merlin Group': { gstin: '19AAACM9988D1Z4', contact: 'Mr. S. Chatterjee (GM Sales)', mobile: '+91 98310 99887', email: 'billing@merlingroup.in', address: 'Merlin Oxford, 22 Prince Anwar Shah Road, Kolkata - 700033', rera: 'WBRERA/P/KOL/2024/000215', pos: '19 - West Bengal' },
+                          'PS Group': { gstin: '19AAACP1122K1Z8', contact: 'Mr. A. Banerjee (Finance Head)', mobile: '+91 98300 44556', email: 'billing@psgroup.in', address: 'PS Srijan Corporate Park, Sector V, Salt Lake, Kolkata - 700091', rera: 'WBRERA/P/NOR/2024/000321', pos: '19 - West Bengal' },
+                          'Aparna Constructions': { gstin: '36AAACA1234F1Z5', contact: 'Mr. S. K. Reddy (VP Sales)', mobile: '+91 98490 99887', email: 'billing@aparnaconstructions.com', address: 'Aparna Infra Towers, Road No 12, Banjara Hills, Hyderabad - 500034', rera: 'P02400001234', pos: '36 - Telangana' },
+                          'My Home Group': { gstin: '36AABCM5678G1Z9', contact: 'Mr. V. Ramakrishna (GM Accounts)', mobile: '+91 91210 55443', email: 'accounts@myhomegroup.in', address: 'My Home Hub, Hitech City Main Rd, Madhapur, Hyderabad - 500081', rera: 'P02400002156', pos: '36 - Telangana' },
+                          'Prestige Group': { gstin: '36AAACP9876H1Z2', contact: 'Ms. Ananya Sharma (Finance Lead)', mobile: '+91 98800 11223', email: 'billing.hyd@prestigeconstructions.com', address: 'Prestige Falcon Towers, Financial District, Nanakramguda, Hyderabad - 500032', rera: 'P02400003980', pos: '36 - Telangana' },
+                          'Sumadhura Infracon': { gstin: '36AABCS4321J1Z4', contact: 'Mr. K. Mahesh (Channel Partner Mgr)', mobile: '+91 90001 88776', email: 'cp.billing@sumadhura.com', address: 'Sumadhura Horizon, Mindspace Circle, Hitech City, Hyderabad - 500081', rera: 'P02400004512', pos: '36 - Telangana' }
+                        };
+                        const devInfo = devList[val];
+                        if (devInfo) {
+                          setEditInvoiceForm({
+                            ...editInvoiceForm,
+                            developer_name: val,
+                            developer_gstin: devInfo.gstin,
+                            developer_contact_person: devInfo.contact,
+                            developer_mobile: devInfo.mobile,
+                            developer_email: devInfo.email,
+                            developer_address: devInfo.address,
+                            developer_rera_id: devInfo.rera,
+                            developer_place_of_supply: devInfo.pos
+                          });
+                        } else {
+                          setEditInvoiceForm({ ...editInvoiceForm, developer_name: val });
+                        }
+                      }}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', color: '#4ade80', padding: '7px 10px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }}
+                    >
+                      <option value="">-- Select Developer / Builder Entity --</option>
+                      <option value="Dhriti Builders & Developers">🏢 Dhriti Builders & Developers (Kolkata)</option>
+                      <option value="Swaramayi Partner Developer">🏢 Swaramayi Partner Developer</option>
+                      <option value="Merlin Group">🏢 Merlin Group (Kolkata)</option>
+                      <option value="PS Group">🏢 PS Group (Kolkata)</option>
+                      <option value="Aparna Constructions">🏢 Aparna Constructions & Estates Pvt Ltd</option>
+                      <option value="My Home Group">🏢 My Home Group (My Home Constructions)</option>
+                      <option value="Prestige Group">🏢 Prestige Estates Projects Ltd</option>
+                      <option value="Sumadhura Infracon">🏢 Sumadhura Infracon Pvt Ltd</option>
+                    </select>
+                  </div>
+
+                  {/* GRID ROW 1: DEVELOPER NAME, GSTIN, RERA ID */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🏢 Developer / Builder Corporate Name *</label>
+                      <input 
+                        type="text" 
+                        value={editInvoiceForm.developer_name || ''} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_name: e.target.value })} 
+                        placeholder="Dhriti Builders & Developers" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                        required 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📜 Developer GSTIN *</label>
+                      <input 
+                        type="text" 
+                        value={editInvoiceForm.developer_gstin || ''} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_gstin: e.target.value })} 
+                        placeholder="19AAACD4567E1Z2" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', fontWeight: '800' }} 
+                        required 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🏛️ Developer RERA Reg. No.</label>
+                      <input 
+                        type="text" 
+                        value={editInvoiceForm.developer_rera_id || 'WBRERA/P/NOR/2024/000842'} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_rera_id: e.target.value })} 
+                        placeholder="WBRERA/P/NOR/2024/000842" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace' }} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* GRID ROW 2: CONTACT PERSON, MOBILE, EMAIL */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>👤 Authorized Contact Person *</label>
+                      <input 
+                        type="text" 
+                        value={editInvoiceForm.developer_contact_person || 'Mr. R. K. Sen (VP Sales)'} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_contact_person: e.target.value })} 
+                        placeholder="Mr. R. K. Sen (VP Sales)" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📞 Developer Phone / Mobile *</label>
+                      <input 
+                        type="text" 
+                        value={editInvoiceForm.developer_mobile || '+91 98300 12345'} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_mobile: e.target.value })} 
+                        placeholder="+91 98300 12345" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>✉️ Official Billing Email *</label>
+                      <input 
+                        type="email" 
+                        value={editInvoiceForm.developer_email || 'billing@dhritibuilders.com'} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_email: e.target.value })} 
+                        placeholder="billing@dhritibuilders.com" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+                  </div>
+
+                  {/* GRID ROW 3: PLACE OF SUPPLY & CORPORATE ADDRESS */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📍 Place of Supply (State) *</label>
+                      <input 
+                        type="text" 
+                        value={editInvoiceForm.developer_place_of_supply || '19 - West Bengal'} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_place_of_supply: e.target.value })} 
+                        placeholder="19 - West Bengal" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🏢 Developer Registered Corporate Address *</label>
+                      <input 
+                        type="text" 
+                        value={editInvoiceForm.developer_address || 'Dhriti Towers, Jessore Road, Barasat, Kolkata - 700124'} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, developer_address: e.target.value })} 
+                        placeholder="Dhriti Towers, Jessore Road, Barasat, Kolkata - 700124" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CARD 3: BILLED PARTICULARS / SERVICE DESCRIPTION */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>
+                    📝 Billed Particulars / Service Description *
+                  </label>
+                  <span style={{ fontSize: '0.7rem', color: '#0284c7', fontWeight: '700' }}>
+                    ⚡ Default Provided (Fully Editable Below)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {/* PRESET QUICK DROPDOWN */}
+                  <select
+                    value={
+                      ['Property Consultation & Processing Charges',
+                       '2.0% Channel Partner Success Fee / Brokerage',
+                       'Booking Advance & Property Registration Fee',
+                       'Real Estate Advisory & Documentation Charges',
+                       'Property Marketing & Site Visit Facilitation Fee'].includes(editInvoiceForm.particulars)
+                        ? editInvoiceForm.particulars
+                        : 'CUSTOM'
+                    }
+                    onChange={(e) => {
+                      if (e.target.value !== 'CUSTOM') {
+                        setEditInvoiceForm({ ...editInvoiceForm, particulars: e.target.value });
+                      }
+                    }}
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: '#38bdf8', padding: '6px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700' }}
+                  >
+                    <option value="Property Consultation & Processing Charges">📋 Default (Customer): Property Consultation & Processing Charges</option>
+                    <option value="2.0% Channel Partner Success Fee / Brokerage">🏢 Default (Developer): 2.0% Channel Partner Success Fee / Brokerage</option>
+                    <option value="Booking Advance & Property Registration Fee">💳 Booking Advance & Property Registration Fee</option>
+                    <option value="Real Estate Advisory & Documentation Charges">📄 Real Estate Advisory & Documentation Charges</option>
+                    <option value="Property Marketing & Site Visit Facilitation Fee">🚗 Property Marketing & Site Visit Facilitation Fee</option>
+                    <option value="CUSTOM">✍️ Custom Description (Edit text manually below)</option>
+                  </select>
+
+                  {/* EDITABLE TEXT INPUT */}
+                  <input 
+                    type="text" 
+                    value={editInvoiceForm.particulars || 'Property Consultation & Processing Charges'} 
+                    onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, particulars: e.target.value })} 
+                    placeholder="Property Consultation & Processing Charges" 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    required 
+                  />
+                </div>
+              </div>
+
+              {/* CARD 4: AGREEMENT VALUE & BROKERAGE CALCULATION */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #fbbf24', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    💰 AGREEMENT VALUE & BROKERAGE CHARGEABLE AMOUNT
+                  </span>
+                  <span style={{ fontSize: '0.7rem', background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                    Flat + Parking Price Based
+                  </span>
+                </div>
+
+                {/* GRID 1: FLAT PRICE, PARKING PRICE, TOTAL AGREEMENT VALUE */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      🏢 Flat Price (Base Cost) (₹) *
+                    </label>
+                    <input 
+                      type="number" 
+                      value={editInvoiceForm.flat_price || ''} 
+                      onChange={(e) => {
+                        const flatVal = Number(e.target.value || 0);
+                        const parkVal = Number(editInvoiceForm.parking_price || 0);
+                        const totalAgree = flatVal + parkVal;
+                        const brokPct = Number(editInvoiceForm.brokerage_percent || 2.0);
+                        const computedTaxable = Math.round(totalAgree * (brokPct / 100));
+
+                        setEditInvoiceForm({
+                          ...editInvoiceForm,
+                          flat_price: e.target.value,
+                          agreement_value: String(totalAgree),
+                          taxable_value: String(computedTaxable)
+                        });
+                      }} 
+                      placeholder="8000000" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }} 
+                      required 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      🚗 Car Parking Charges (₹)
+                    </label>
+                    <input 
+                      type="number" 
+                      value={editInvoiceForm.parking_price || ''} 
+                      onChange={(e) => {
+                        const flatVal = Number(editInvoiceForm.flat_price || 0);
+                        const parkVal = Number(e.target.value || 0);
+                        const totalAgree = flatVal + parkVal;
+                        const brokPct = Number(editInvoiceForm.brokerage_percent || 2.0);
+                        const computedTaxable = Math.round(totalAgree * (brokPct / 100));
+
+                        setEditInvoiceForm({
+                          ...editInvoiceForm,
+                          parking_price: e.target.value,
+                          agreement_value: String(totalAgree),
+                          taxable_value: String(computedTaxable)
+                        });
+                      }} 
+                      placeholder="400000" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }} 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      📑 Total Agreement Value (₹) *
+                    </label>
+                    <input 
+                      type="number" 
+                      value={editInvoiceForm.agreement_value || ''} 
+                      onChange={(e) => {
+                        const totalAgree = Number(e.target.value || 0);
+                        const brokPct = Number(editInvoiceForm.brokerage_percent || 2.0);
+                        const computedTaxable = Math.round(totalAgree * (brokPct / 100));
+                        setEditInvoiceForm({
+                          ...editInvoiceForm,
+                          agreement_value: e.target.value,
+                          taxable_value: String(computedTaxable)
+                        });
+                      }} 
+                      placeholder="8400000" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', color: '#fbbf24', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '900' }} 
+                      required 
+                    />
+                  </div>
+                </div>
+
+                {/* GRID 2: BROKERAGE PERCENT % & CHARGEABLE / TAXABLE SERVICE AMOUNT */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      % Brokerage Rate (%)
+                    </label>
+                    <input 
+                      type="number" 
+                      step="0.1" 
+                      value={editInvoiceForm.brokerage_percent || '2.0'} 
+                      onChange={(e) => {
+                        const brokPct = Number(e.target.value || 0);
+                        const totalAgree = Number(editInvoiceForm.agreement_value || 8400000);
+                        const computedTaxable = Math.round(totalAgree * (brokPct / 100));
+
+                        setEditInvoiceForm({
+                          ...editInvoiceForm,
+                          brokerage_percent: e.target.value,
+                          taxable_value: String(computedTaxable)
+                        });
+                      }} 
+                      placeholder="2.0" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }} 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      💼 Brokerage Chargeable / Taxable Amount (₹) *
+                    </label>
+                    <input 
+                      type="number" 
+                      value={editInvoiceForm.taxable_value || ''} 
+                      onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, taxable_value: e.target.value })} 
+                      placeholder="200000" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #38bdf8', color: '#38bdf8', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '900' }} 
+                      required 
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CARD 5: EDITABLE GST TAX OPTIONS & RATES */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #a855f7', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                  <label style={{ fontSize: '0.82rem', fontWeight: '900', color: '#c084fc', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={editInvoiceForm.apply_gst !== false}
+                      onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, apply_gst: e.target.checked })}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#a855f7' }}
+                    />
+                    <span>Apply GST Tax (Fully Editable Rates & Amounts)</span>
+                  </label>
+                  <span style={{ fontSize: '0.72rem', fontWeight: '900', color: editInvoiceForm.apply_gst !== false ? '#4ade80' : '#fbbf24', background: editInvoiceForm.apply_gst !== false ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)', padding: '2px 8px', borderRadius: '4px' }}>
+                    {editInvoiceForm.apply_gst !== false ? `🟢 ${Number(editInvoiceForm.cgst_rate || 9) + Number(editInvoiceForm.sgst_rate || 9)}% GST Tax Active` : '🟡 0% Tax Exempt'}
+                  </span>
+                </div>
+
+                {editInvoiceForm.apply_gst !== false && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                        ✏️ Total GST Rate (%) *
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.5" 
+                        value={editInvoiceForm.gst_rate !== undefined ? editInvoiceForm.gst_rate : '18'} 
+                        onChange={(e) => {
+                          const totalRate = Number(e.target.value || 0);
+                          const halfRate = totalRate / 2;
+                          setEditInvoiceForm({
+                            ...editInvoiceForm,
+                            gst_rate: e.target.value,
+                            cgst_rate: String(halfRate),
+                            sgst_rate: String(halfRate)
+                          });
+                        }} 
+                        placeholder="18" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #a855f7', color: '#c084fc', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                        CGST Rate (%) *
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.1" 
+                        value={editInvoiceForm.cgst_rate !== undefined ? editInvoiceForm.cgst_rate : '9'} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, cgst_rate: e.target.value })} 
+                        placeholder="9" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                        SGST Rate (%) *
+                      </label>
+                      <input 
+                        type="number" 
+                        step="0.1" 
+                        value={editInvoiceForm.sgst_rate !== undefined ? editInvoiceForm.sgst_rate : '9'} 
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, sgst_rate: e.target.value })} 
+                        placeholder="9" 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem' }} 
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* CARD 6: AGENCY BANK ACCOUNT & PAYMENT RECEIPT DETAILS (SUPER ADMIN RESTRICTED) */}
+              {(() => {
+                const isUserSuperAdmin = currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER' || isSuperAdmin;
+                return (
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isUserSuperAdmin ? '1px solid #38bdf8' : '1px solid #e11d48', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '900', color: isUserSuperAdmin ? '#38bdf8' : '#f87171', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🏦 AGENCY BANK ACCOUNT & PAYMENT RECEIPT DETAILS
+                      </span>
+                      <span style={{ fontSize: '0.7rem', background: isUserSuperAdmin ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: isUserSuperAdmin ? '#4ade80' : '#f87171', padding: '2px 8px', borderRadius: '4px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isUserSuperAdmin ? '👑 Editable by Super Admin Only' : '🔒 Read-Only (Super Admin Access Only)'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Bank Name *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isUserSuperAdmin}
+                          value={editInvoiceForm.bank_name || 'HDFC Bank'} 
+                          onChange={(e) => isUserSuperAdmin && setEditInvoiceForm({ ...editInvoiceForm, bank_name: e.target.value })} 
+                          placeholder="HDFC Bank" 
+                          style={{ width: '100%', background: !isUserSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isUserSuperAdmin ? 'not-allowed' : 'text', opacity: !isUserSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Account Number *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isUserSuperAdmin}
+                          value={editInvoiceForm.bank_account_number || '50200018942109'} 
+                          onChange={(e) => isUserSuperAdmin && setEditInvoiceForm({ ...editInvoiceForm, bank_account_number: e.target.value })} 
+                          placeholder="50200018942109" 
+                          style={{ width: '100%', background: !isUserSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', cursor: !isUserSuperAdmin ? 'not-allowed' : 'text', opacity: !isUserSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>IFSC Code *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isUserSuperAdmin}
+                          value={editInvoiceForm.bank_ifsc_code || 'HDFC0000128'} 
+                          onChange={(e) => isUserSuperAdmin && setEditInvoiceForm({ ...editInvoiceForm, bank_ifsc_code: e.target.value })} 
+                          placeholder="HDFC0000128" 
+                          style={{ width: '100%', background: !isUserSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', cursor: !isUserSuperAdmin ? 'not-allowed' : 'text', opacity: !isUserSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>UPI ID / VPA</label>
+                        <input 
+                          type="text" 
+                          disabled={!isUserSuperAdmin}
+                          value={editInvoiceForm.bank_upi_id || 'swaramayi@hdfcbank'} 
+                          onChange={(e) => isUserSuperAdmin && setEditInvoiceForm({ ...editInvoiceForm, bank_upi_id: e.target.value })} 
+                          placeholder="swaramayi@hdfcbank" 
+                          style={{ width: '100%', background: !isUserSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isUserSuperAdmin ? 'not-allowed' : 'text', opacity: !isUserSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* CARD 7: SWARAMAYI CORPORATE DETAILS & REGISTERED BUSINESS INFO (SUPER ADMIN ONLY) */}
+              {(() => {
+                const isUserSuperAdmin = currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER' || isSuperAdmin;
+                return (
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isUserSuperAdmin ? '1px solid #38bdf8' : '1px solid #e11d48', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                      <span style={{ fontSize: '0.8rem', fontWeight: '900', color: isUserSuperAdmin ? '#38bdf8' : '#f87171', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        🏢 SWARAMAYI CORPORATE DETAILS & REGISTERED BUSINESS INFO
+                      </span>
+                      <span style={{ fontSize: '0.7rem', background: isUserSuperAdmin ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)', color: isUserSuperAdmin ? '#4ade80' : '#f87171', padding: '2px 8px', borderRadius: '4px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isUserSuperAdmin ? '👑 Editable by Super Admin Only' : '🔒 Read-Only (Super Admin Access Only)'}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Company Registered Address *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isUserSuperAdmin}
+                          value={editInvoiceForm.company_address || 'Suite 402, Swaramayi Corporate Tower, Jubilee Hills, Hyderabad - 500033, Telangana'} 
+                          onChange={(e) => isUserSuperAdmin && setEditInvoiceForm({ ...editInvoiceForm, company_address: e.target.value })} 
+                          placeholder="Suite 402, Swaramayi Corporate Tower, Jubilee Hills, Hyderabad - 500033" 
+                          style={{ width: '100%', background: !isUserSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isUserSuperAdmin ? 'not-allowed' : 'text', opacity: !isUserSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>TS-RERA Registration No. *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isUserSuperAdmin}
+                          value={editInvoiceForm.company_rera_no || 'P02400008492'} 
+                          onChange={(e) => isUserSuperAdmin && setEditInvoiceForm({ ...editInvoiceForm, company_rera_no: e.target.value })} 
+                          placeholder="P02400008492" 
+                          style={{ width: '100%', background: !isUserSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', fontFamily: 'monospace', cursor: !isUserSuperAdmin ? 'not-allowed' : 'text', opacity: !isUserSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Corporate Email ID *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isUserSuperAdmin}
+                          value={editInvoiceForm.company_email || 'billing@swaramayi.com'} 
+                          onChange={(e) => isUserSuperAdmin && setEditInvoiceForm({ ...editInvoiceForm, company_email: e.target.value })} 
+                          placeholder="billing@swaramayi.com" 
+                          style={{ width: '100%', background: !isUserSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isUserSuperAdmin ? 'not-allowed' : 'text', opacity: !isUserSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Corporate Mobile No. *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isUserSuperAdmin}
+                          value={editInvoiceForm.company_mobile || '+91 98490 12345'} 
+                          onChange={(e) => isUserSuperAdmin && setEditInvoiceForm({ ...editInvoiceForm, company_mobile: e.target.value })} 
+                          placeholder="+91 98490 12345" 
+                          style={{ width: '100%', background: !isUserSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isUserSuperAdmin ? 'not-allowed' : 'text', opacity: !isUserSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Official Website *</label>
+                        <input 
+                          type="text" 
+                          disabled={!isUserSuperAdmin}
+                          value={editInvoiceForm.company_website || 'https://www.swaramayi.com'} 
+                          onChange={(e) => isUserSuperAdmin && setEditInvoiceForm({ ...editInvoiceForm, company_website: e.target.value })} 
+                          placeholder="https://www.swaramayi.com" 
+                          style={{ width: '100%', background: !isUserSuperAdmin ? (isLight ? '#e2e8f0' : '#1e293b') : (isLight ? '#ffffff' : '#1e293b'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '7px', borderRadius: '6px', fontSize: '0.82rem', cursor: !isUserSuperAdmin ? 'not-allowed' : 'text', opacity: !isUserSuperAdmin ? 0.75 : 1 }} 
+                        />
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* CARD 8: PAYMENT STATUS, PAYMENT MODE & REF */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #38bdf8', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: '900', color: '#38bdf8' }}>
+                  💳 PAYMENT SETTLEMENT & TRANSACTION STATUS
+                </span>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      Payment Status *
+                    </label>
+                    <select 
+                      value={editInvoiceForm.payment_status || 'PAID_SETTLED'} 
+                      onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, payment_status: e.target.value })}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: editInvoiceForm.payment_status === 'PAID_SETTLED' ? '#22c55e' : '#eab308', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
+                    >
+                      <option value="PAID_SETTLED">✓ PAID / SETTLED</option>
+                      <option value="UNPAID_PENDING">⏳ UNPAID / PENDING</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      Payment Mode
+                    </label>
+                    <select 
+                      value={editInvoiceForm.payment_mode || 'ONLINE'} 
+                      onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, payment_mode: e.target.value })}
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem' }}
+                    >
+                      <option value="ONLINE">💳 ONLINE (UPI / Card)</option>
+                      <option value="CASH">💵 CASH</option>
+                      <option value="CHEQUE">📑 CHEQUE</option>
+                      <option value="NEFT">🏦 NEFT / RTGS</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                      Txn / Payment Ref No.
+                    </label>
+                    <input 
+                      type="text" 
+                      value={editInvoiceForm.payment_ref || ''} 
+                      onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, payment_ref: e.target.value })}
+                      placeholder="e.g. TXN-9841284"
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem', fontFamily: 'monospace' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* AUTO GST SUMMARY PREVIEW */}
+              {(() => {
+                const taxVal = Number(editInvoiceForm.taxable_value || 0);
+                const applyGst = editInvoiceForm.apply_gst !== false;
+                const cgstRate = Number(editInvoiceForm.cgst_rate !== undefined ? editInvoiceForm.cgst_rate : 9);
+                const sgstRate = Number(editInvoiceForm.sgst_rate !== undefined ? editInvoiceForm.sgst_rate : 9);
+                const cgst = applyGst ? Math.round(taxVal * (cgstRate / 100)) : 0;
+                const sgst = applyGst ? Math.round(taxVal * (sgstRate / 100)) : 0;
+                const total = taxVal + cgst + sgst;
+
+                return (
+                  <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: applyGst ? '1px solid #22c55e' : '1px solid #38bdf8', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Brokerage Chargeable Amount:</span>
+                      <strong>₹{taxVal.toLocaleString('en-IN')}</strong>
+                    </div>
+                    {applyGst ? (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8' }}>
+                        <span>CGST ({cgstRate}%) + SGST ({sgstRate}%):</span>
+                        <strong>₹{(cgst + sgst).toLocaleString('en-IN')} (CGST: ₹{cgst.toLocaleString('en-IN')}, SGST: ₹{sgst.toLocaleString('en-IN')})</strong>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#fbbf24' }}>
+                        <span>GST Tax Rate:</span>
+                        <strong>0% (Exempt / Non-GST Invoice)</strong>
+                      </div>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #cbd5e1', paddingTop: '4px', color: applyGst ? '#22c55e' : '#38bdf8', fontWeight: '900', fontSize: '0.9rem' }}>
+                      <span>{applyGst ? `TOTAL TAX INVOICE AMOUNT (${cgstRate + sgstRate}% GST):` : 'TOTAL INVOICE AMOUNT (NON-GST / EXEMPT):'}</span>
+                      <span>₹{total.toLocaleString('en-IN')}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* MODAL ACTIONS */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
+                <button type="button" onClick={() => setShowEditInvoiceModal(null)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ background: editInvoiceForm.invoice_category === 'DEVELOPER' ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 22px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)' }}>
+                  ✓ Update & Save {editInvoiceForm.apply_gst !== false ? 'GST Tax Invoice' : 'Non-GST Invoice'}
+                </button>
+              </div>
+
+            </form>
           </div>
         </div>
       )}

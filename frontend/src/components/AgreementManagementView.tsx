@@ -52,8 +52,25 @@ export const AgreementManagementView: React.FC<AgreementManagementViewProps> = (
         {agreementCategory === 'customer' ? (
           <button 
             onClick={() => {
-              const plan = visitPlans[0];
-              const stop = plan?.stops[0] || { stopId: 'SRM-VSTOP-2026-000001', propertyTitle: 'Aparna Zenon Premium 3BHK', propertyCode: 'SRM-PROP-2026-000421', costSheetId: 'SRM-CS-2026-000145', developer: 'Aparna Constructions', latitude: '17.4612° N', longitude: '78.3689° E' };
+              const plan = (visitPlans && visitPlans.length > 0) ? visitPlans[0] : {
+                visitPlanId: 'SRM-VP-2026-000001',
+                visitScheduleId: 'SRM-VS-2026-000087',
+                customerName: 'SUMANTH VARMA',
+                customerNumber: 'SRM-CUS-2026-000185',
+                mobile: '+91 98765 43210',
+                email: 'sumanth.varma@gmail.com',
+                assignedExecutive: 'Ramesh Pawar (Field Exec - Kondapur)',
+                stops: []
+              };
+              const stop = (plan?.stops && plan.stops.length > 0) ? plan.stops[0] : { 
+                stopId: 'SRM-VSTOP-2026-000001', 
+                propertyTitle: 'GAJAPATI APARTMENT', 
+                propertyCode: 'SRM-PROP-2026-000426', 
+                costSheetId: 'COST-SHEET-2026-000001', 
+                developer: 'Dhriti Builders & Developers', 
+                latitude: '17.4612° N', 
+                longitude: '78.3689° E' 
+              };
               setShowPvaVerificationModal({ open: true, plan, stop });
             }}
             style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}

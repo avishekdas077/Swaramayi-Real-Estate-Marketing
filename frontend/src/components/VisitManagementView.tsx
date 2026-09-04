@@ -663,16 +663,43 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                           ) : (
                             <button 
                               onClick={() => {
-                                const matchedPlan = visitPlans.find(p => p.customerNumber === v.customerNumber || p.mobile === v.mobile) || visitPlans[0];
-                                const targetStop = matchedPlan?.stops[0] || {
+                                const matchedCust = (customers || []).find(c => (v.customerNumber && c.custCode === v.customerNumber) || (v.mobile && c.mobile === v.mobile) || (v.customerName && c.custName === v.customerName));
+                                const matchedProp = (properties || []).find(p => (v.propertyCode && (p.propertyCode === v.propertyCode || p.propCode === v.propertyCode)) || (v.propCode && (p.propertyCode === v.propCode || p.propCode === v.propCode)) || (v.propertyTitle && (p.title === v.propertyTitle || p.propTitle === v.propertyTitle)));
+                                const foundPlan = (visitPlans || []).find(p => (v.customerNumber && p.customerNumber === v.customerNumber) || (v.mobile && p.mobile === v.mobile) || (v.visitId && (p.visitPlanId === v.visitId || p.visitScheduleId === v.visitId)));
+                                const matchedPlan = foundPlan || {
+                                  visitPlanId: v.visitId || 'SRM-VP-2026-000001',
+                                  visitScheduleId: v.visitId || 'SRM-VS-2026-000087',
+                                  customerName: v.customerName || matchedCust?.custName || 'Customer',
+                                  customerNumber: v.customerNumber || matchedCust?.custCode || 'SRM-CUS-2026-000185',
+                                  mobile: v.mobile || matchedCust?.mobile || '+91 98490 12345',
+                                  email: v.email || matchedCust?.email || 'customer@gmail.com',
+                                  assignedExecutive: v.assignedExecutive || 'Ramesh Pawar (Field Exec - Kondapur)',
+                                  visitDate: v.visitDate || '2026-08-22',
+                                  visitTime: v.visitTime || '10:00 AM',
+                                  stops: [
+                                    {
+                                      stopId: 'SRM-VSTOP-2026-000001',
+                                      costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
+                                      propertyCode: v.propertyCode || v.propCode || matchedProp?.propertyCode || matchedProp?.propCode || 'SRM-PROP-2026-000426',
+                                      propertyTitle: v.propertyTitle || matchedProp?.title || matchedProp?.propTitle || 'GAJAPATI APARTMENT',
+                                      locality: matchedProp?.locality || matchedProp?.location || 'Barasat, Kolkata',
+                                      developer: matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
+                                      latitude: lat || matchedProp?.latitude || '17.4612° N',
+                                      longitude: lng || matchedProp?.longitude || '78.3689° E',
+                                      status: 'SCHEDULED'
+                                    }
+                                  ]
+                                };
+                                const targetStop = (matchedPlan.stops && matchedPlan.stops[0]) ? matchedPlan.stops[0] : {
                                   stopId: 'SRM-VSTOP-2026-000001',
                                   costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
-                                  propertyCode: v.propertyCode || 'SRM-PROP-2026-000421',
-                                  propertyTitle: v.propertyTitle,
-                                  locality: 'Kondapur',
-                                  developer: 'Partner Developer',
-                                  latitude: lat,
-                                  longitude: lng
+                                  propertyCode: v.propertyCode || v.propCode || matchedProp?.propertyCode || matchedProp?.propCode || 'SRM-PROP-2026-000426',
+                                  propertyTitle: v.propertyTitle || matchedProp?.title || matchedProp?.propTitle || 'GAJAPATI APARTMENT',
+                                  locality: matchedProp?.locality || matchedProp?.location || 'Barasat, Kolkata',
+                                  developer: matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
+                                  latitude: lat || matchedProp?.latitude || '17.4612° N',
+                                  longitude: lng || matchedProp?.longitude || '78.3689° E',
+                                  status: 'SCHEDULED'
                                 };
                                 setShowPvaVerificationModal({ open: true, plan: matchedPlan, stop: targetStop });
                               }} 
@@ -899,16 +926,43 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                             ) : (
                               <button 
                                 onClick={() => {
-                                  const matchedPlan = visitPlans.find(p => p.customerNumber === v.customerNumber || p.mobile === v.mobile) || visitPlans[0];
-                                  const targetStop = matchedPlan?.stops[0] || {
+                                  const matchedCust = (customers || []).find(c => (v.customerNumber && c.custCode === v.customerNumber) || (v.mobile && c.mobile === v.mobile) || (v.customerName && c.custName === v.customerName));
+                                  const matchedProp = (properties || []).find(p => (v.propertyCode && (p.propertyCode === v.propertyCode || p.propCode === v.propertyCode)) || (v.propCode && (p.propertyCode === v.propCode || p.propCode === v.propCode)) || (v.propertyTitle && (p.title === v.propertyTitle || p.propTitle === v.propertyTitle)));
+                                  const foundPlan = (visitPlans || []).find(p => (v.customerNumber && p.customerNumber === v.customerNumber) || (v.mobile && p.mobile === v.mobile) || (v.visitId && (p.visitPlanId === v.visitId || p.visitScheduleId === v.visitId)));
+                                  const matchedPlan = foundPlan || {
+                                    visitPlanId: v.visitId || 'SRM-VP-2026-000001',
+                                    visitScheduleId: v.visitId || 'SRM-VS-2026-000087',
+                                    customerName: v.customerName || matchedCust?.custName || 'Customer',
+                                    customerNumber: v.customerNumber || matchedCust?.custCode || 'SRM-CUS-2026-000185',
+                                    mobile: v.mobile || matchedCust?.mobile || '+91 98490 12345',
+                                    email: v.email || matchedCust?.email || 'customer@gmail.com',
+                                    assignedExecutive: v.assignedExecutive || 'Ramesh Pawar (Field Exec - Kondapur)',
+                                    visitDate: v.visitDate || '2026-08-22',
+                                    visitTime: v.visitTime || '10:00 AM',
+                                    stops: [
+                                      {
+                                        stopId: 'SRM-VSTOP-2026-000001',
+                                        costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
+                                        propertyCode: v.propertyCode || v.propCode || matchedProp?.propertyCode || matchedProp?.propCode || 'SRM-PROP-2026-000426',
+                                        propertyTitle: v.propertyTitle || matchedProp?.title || matchedProp?.propTitle || 'GAJAPATI APARTMENT',
+                                        locality: matchedProp?.locality || matchedProp?.location || 'Barasat, Kolkata',
+                                        developer: matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
+                                        latitude: matchedProp?.latitude || '17.4612° N',
+                                        longitude: matchedProp?.longitude || '78.3689° E',
+                                        status: 'SCHEDULED'
+                                      }
+                                    ]
+                                  };
+                                  const targetStop = (matchedPlan.stops && matchedPlan.stops[0]) ? matchedPlan.stops[0] : {
                                     stopId: 'SRM-VSTOP-2026-000001',
                                     costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
-                                    propertyCode: v.propertyCode || 'SRM-PROP-2026-000421',
-                                    propertyTitle: v.propertyTitle,
-                                    locality: 'Kondapur',
-                                    developer: 'Partner Developer',
-                                    latitude: '17.4612° N',
-                                    longitude: '78.3689° E'
+                                    propertyCode: v.propertyCode || v.propCode || matchedProp?.propertyCode || matchedProp?.propCode || 'SRM-PROP-2026-000426',
+                                    propertyTitle: v.propertyTitle || matchedProp?.title || matchedProp?.propTitle || 'GAJAPATI APARTMENT',
+                                    locality: matchedProp?.locality || matchedProp?.location || 'Barasat, Kolkata',
+                                    developer: matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
+                                    latitude: matchedProp?.latitude || '17.4612° N',
+                                    longitude: matchedProp?.longitude || '78.3689° E',
+                                    status: 'SCHEDULED'
                                   };
                                   setShowPvaVerificationModal({ open: true, plan: matchedPlan, stop: targetStop });
                                 }}

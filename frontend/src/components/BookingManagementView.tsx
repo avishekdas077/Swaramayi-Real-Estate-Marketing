@@ -15,6 +15,8 @@ interface BookingManagementViewProps {
   setInvoices?: (invoices: any[]) => void;
   setActiveTab?: (tab: string) => void;
   setBillingInvoiceCategory?: (cat: string) => void;
+  customers?: any[];
+  properties?: any[];
 }
 
 export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
@@ -31,13 +33,20 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
   setInvoices,
   setActiveTab,
   setBillingInvoiceCategory,
+  customers = [],
+  properties = [],
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
   const handleTransferToBilling = (b: any) => {
-    const generatedInvoiceNumber = (b.booking_code && b.booking_code.includes('SRM-BKG-'))
-      ? b.booking_code.replace('SRM-BKG-', 'SRM-INV-')
-      : `SRM-INV-2026-0000${(invoices?.length || 0) + 88}`;
+    const rawBookingCode = b.booking_code || 'SRM-BKG-2026-000087';
+    const generatedCustomerInvoiceNumber = rawBookingCode.includes('SRM-BKG-')
+      ? rawBookingCode.replace('SRM-BKG-', 'SRM-INV-')
+      : `SRM-INV-2026-0000${(invoices?.length || 0) + 87}`;
+
+    const generatedDeveloperInvoiceNumber = rawBookingCode.includes('SRM-BKG-')
+      ? rawBookingCode.replace('SRM-BKG-', 'SRM-DEV-INV-')
+      : `SRM-DEV-INV-2026-0000${(invoices?.length || 0) + 87}`;
 
     const brokerageAmt = Number(b.brokerage_amount) || 102297;
     const taxableVal = brokerageAmt;
@@ -45,23 +54,82 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
     const sgst = Math.round(taxableVal * 0.09);
     const totalAmt = taxableVal + cgst + sgst;
 
-    const newInvoiceObj = {
-      id: `inv-${Date.now()}`,
-      invoice_number: generatedInvoiceNumber,
+    // Look up real customer details from customers list
+    const matchedCust = (customers || []).find((c: any) => 
+      (b.customer_number && (c.customer_number === b.customer_number || c.id === b.customer_number || c.customerNumber === b.customer_number)) ||
+      (b.customer_name && (c.name?.toLowerCase() === b.customer_name.toLowerCase() || c.customer_name?.toLowerCase() === b.customer_name.toLowerCase() || c.customerName?.toLowerCase() === b.customer_name.toLowerCase())) ||
+      (b.customer_mobile && (c.mobile === b.customer_mobile || c.phone === b.customer_mobile))
+    );
+
+    const propCodeLookup = b.property_code || b.propertyCode || 'SRM-PROP-2026-000426';
+    const matchedProp = (properties || []).find((p: any) => 
+      p.property_code === propCodeLookup || p.id === propCodeLookup || p.propertyCode === propCodeLookup || (p.title && b.project_name && (p.title.toLowerCase().includes(b.project_name.toLowerCase()) || b.project_name.toLowerCase().includes(p.title.toLowerCase())))
+    );
+
+    const custName = b.customer_name || matchedCust?.name || matchedCust?.customer_name || matchedCust?.customerName || 'SUMANTH VARMA';
+    const custNum = b.customer_number || matchedCust?.customer_number || matchedCust?.customerNumber || matchedCust?.id || 'SRM-CUS-2026-000185';
+    const custMobile = b.customer_mobile || matchedCust?.mobile || matchedCust?.phone || '+91 98765 43210';
+    const custEmail = (b.customer_email && !b.customer_email.includes('customcr') && b.customer_email !== 'customer@gmail.com')
+      ? b.customer_email
+      : (matchedCust?.email || `${custName.toLowerCase().replace(/[^a-z0-9]/g, '.')}@gmail.com`);
+
+    const propTitle = b.project_name || matchedProp?.title || 'GAJAPATI APARTMENT';
+    const propLocality = matchedProp?.locality || b.locality || (b.project_name?.includes('Barasat') || b.project_name?.includes('Kolkata') ? 'Barasat, Kolkata' : 'Barasat, Kolkata');
+    const custAddress = b.customer_address || matchedCust?.address || matchedCust?.full_address || matchedProp?.full_address || (matchedCust?.preferredArea ? `Jessore Road, ${matchedCust.preferredArea}, West Bengal - 700124` : 'Jessore Road, Barasat, Kolkata, West Bengal - 700124');
+    const placeOfSupply = b.place_of_supply || matchedCust?.place_of_supply || matchedCust?.state || (propLocality.includes('Kolkata') || propTitle.includes('Kolkata') || (matchedCust?.preferredArea && matchedCust.preferredArea.includes('Kolkata')) ? '19 - West Bengal' : '19 - West Bengal');
+    const gstinPan = b.customer_gstin_pan || matchedCust?.gstin || matchedCust?.pan || '19ABCDE1234F1Z5';
+
+    const propConfig = matchedProp?.configuration || b.configuration || b.property_configuration || '2BHK Luxury Apartment';
+    const devName = b.developer_name || matchedProp?.developer || matchedProp?.builder || 'Dhriti Builders & Developers';
+    const devGstin = b.developer_gstin || matchedProp?.developer_gstin || '19AAACD4567E1Z2';
+    const devRera = matchedProp?.rera_id || b.developer_rera_id || 'WBRERA/P/NOR/2024/000842';
+    const devContact = b.developer_contact_person || 'Mr. Animesh Sen';
+    const devMobile = b.developer_mobile || '+91 98300 12345';
+    const devEmail = matchedProp?.developer_email || 'billing@dhritibuilders.com';
+    const devAddress = matchedProp?.developer_address || 'Dhriti Towers, Jessore Road, Barasat, Kolkata - 700124';
+    const devPos = placeOfSupply || '19 - West Bengal';
+    const branchName = b.branch_name || (propLocality.includes('Kolkata') ? 'Kolkata Branch' : 'Head Office (Kolkata)');
+    const agreeVal = String(b.agreement_value_num || 5114880);
+    const flatVal = String(b.flat_price || Math.round(Number(agreeVal) * 0.95));
+    const parkVal = String(b.parking_price || Math.round(Number(agreeVal) * 0.05));
+    const brokPct = String(b.brokerage_percent || 2.0);
+
+    // 1. CUSTOMER TAX INVOICE (B2C)
+    const customerInvoiceObj = {
+      id: `inv-cus-${Date.now()}`,
+      invoice_number: generatedCustomerInvoiceNumber,
       booking_code: b.booking_code,
-      customer_name: b.customer_name || 'SUMANTH VARMA',
-      customer_mobile: b.customer_mobile || '+91 98765 43210',
-      customer_number: b.customer_number || 'SRM-CUS-2026-000185',
-      property_title: b.project_name || 'GAJAPATI APARTMENT',
-      property_code: b.property_code || b.propertyCode || 'SRM-PROP-2026-000426',
-      developer_name: b.developer_name || 'Dhriti Builders & Developers',
-      developer_gstin: '19AAACD4567E1Z2',
-      developer_contact_person: 'Mr. Animesh Sen',
-      developer_mobile: '+91 98300 12345',
-      branch_name: 'Kolkata Branch',
+      customer_name: custName,
+      customer_mobile: custMobile,
+      customer_number: custNum,
+      customer_email: custEmail,
+      customer_address: custAddress,
+      place_of_supply: placeOfSupply,
+      customer_gstin_pan: gstinPan,
+      property_title: propTitle,
+      property_code: propCodeLookup,
+      property_locality: propLocality,
+      property_configuration: propConfig,
+      developer_name: devName,
+      developer_gstin: devGstin,
+      developer_rera_id: devRera,
+      developer_contact_person: devContact,
+      developer_mobile: devMobile,
+      developer_email: devEmail,
+      developer_address: devAddress,
+      developer_place_of_supply: devPos,
+      branch_name: branchName,
       invoice_category: 'CUSTOMER',
-      particulars: `Brokerage & Real Estate Marketing Service Charges for ${b.project_name || 'Booked Unit'} (${b.tower_unit || 'Unit'})`,
+      particulars: b.particulars || `Brokerage & Real Estate Marketing Service Charges for ${propTitle} (${b.tower_unit || 'Unit 302'})`,
+      flat_price: flatVal,
+      parking_price: parkVal,
+      agreement_value: agreeVal,
+      brokerage_percent: brokPct,
       taxable_value: taxableVal,
+      apply_gst: true,
+      gst_rate: '18',
+      cgst_rate: '9',
+      sgst_rate: '9',
       cgst_amount: cgst,
       sgst_amount: sgst,
       total_invoice_amount: totalAmt,
@@ -69,11 +137,57 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
       payment_mode: b.payment_mode || 'UPI / Online Bank Transfer',
       payment_ref: b.payment_ref || `TXN-SRM-${Math.floor(100000 + Math.random() * 900000)}`,
       created_date: new Date().toISOString().split('T')[0],
-      sales_executive: b.sales_executive || 'Ramesh Pawar (Field Exec - Kondapur)'
+      sales_executive: b.sales_executive || 'Ramesh Pawar'
+    };
+
+    // 2. DEVELOPER BROKERAGE INVOICE (B2B)
+    const developerInvoiceObj = {
+      id: `inv-dev-${Date.now() + 1}`,
+      invoice_number: generatedDeveloperInvoiceNumber,
+      booking_code: b.booking_code,
+      customer_name: custName,
+      customer_mobile: custMobile,
+      customer_number: custNum,
+      customer_email: custEmail,
+      customer_address: custAddress,
+      place_of_supply: placeOfSupply,
+      customer_gstin_pan: gstinPan,
+      property_title: propTitle,
+      property_code: propCodeLookup,
+      property_locality: propLocality,
+      property_configuration: propConfig,
+      developer_name: devName,
+      developer_gstin: devGstin,
+      developer_rera_id: devRera,
+      developer_contact_person: devContact,
+      developer_mobile: devMobile,
+      developer_email: devEmail,
+      developer_address: devAddress,
+      developer_place_of_supply: devPos,
+      branch_name: branchName,
+      invoice_category: 'DEVELOPER',
+      particulars: `2.0% Channel Partner Success Fee / Brokerage for ${propTitle} (${b.tower_unit || 'Unit 302'})`,
+      flat_price: flatVal,
+      parking_price: parkVal,
+      agreement_value: agreeVal,
+      brokerage_percent: brokPct,
+      taxable_value: taxableVal,
+      apply_gst: true,
+      gst_rate: '18',
+      cgst_rate: '9',
+      sgst_rate: '9',
+      cgst_amount: cgst,
+      sgst_amount: sgst,
+      total_invoice_amount: totalAmt,
+      payment_status: 'PAID_SETTLED',
+      payment_mode: b.payment_mode || 'UPI / Online Bank Transfer',
+      payment_ref: b.payment_ref || `TXN-DEV-${Math.floor(100000 + Math.random() * 900000)}`,
+      created_date: new Date().toISOString().split('T')[0],
+      sales_executive: b.sales_executive || 'Ramesh Pawar'
     };
 
     if (setInvoices) {
-      setInvoices((prev: any[]) => [newInvoiceObj, ...(prev || [])]);
+      setInvoices((prev: any[]) => [developerInvoiceObj, customerInvoiceObj, ...(prev || [])]);
     }
 
     if (setBookings) {
@@ -81,14 +195,14 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
     }
 
     if (setBillingInvoiceCategory) {
-      setBillingInvoiceCategory('CUSTOMER');
+      setBillingInvoiceCategory('DEVELOPER');
     }
 
     if (setActiveTab) {
       setActiveTab('billing_management');
     }
 
-    alert(`💳 BILLING INVOICE GENERATED SUCCESSFULLY!\n\nGenerated Tax Invoice: ${generatedInvoiceNumber}\nCustomer: ${b.customer_name || 'Customer'}\nProperty: ${b.project_name || 'Property'}\nTotal Amount Billed: ₹${totalAmt.toLocaleString('en-IN')}\n\nRecord removed from Booking Management and transferred to Billing Management.`);
+    alert(`💳 BILLING INVOICES GENERATED SUCCESSFULLY!\n\n1. 🏢 Developer Brokerage Invoice: ${generatedDeveloperInvoiceNumber} (Developer: ${devName})\n2. 👤 Customer Tax Invoice: ${generatedCustomerInvoiceNumber} (Customer: ${custName})\n\nProperty: ${propTitle}\nAgreement Value: ₹${Number(agreeVal).toLocaleString('en-IN')}\nTaxable Brokerage: ₹${taxableVal.toLocaleString('en-IN')}\nTotal Invoice (18% GST): ₹${totalAmt.toLocaleString('en-IN')}\n\nBoth records created in Billing Management and removed from Booking Management.`);
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

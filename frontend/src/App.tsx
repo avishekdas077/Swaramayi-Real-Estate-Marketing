@@ -1009,16 +1009,36 @@ function PvaVerificationModalContent({
   isLight = false,
   plan,
   stop,
-  protectionPeriodMonths,
-  geofenceRadiusMeters,
+  protectionPeriodMonths = 6,
+  geofenceRadiusMeters = 500,
   onClose,
-  projectVisitAgreements,
+  projectVisitAgreements = [],
   setProjectVisitAgreements,
   setAgreements,
   setVisitPlans,
   setShowPvaDocumentModal
 }: any) {
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const safePlan = plan || {
+    visitPlanId: 'SRM-VP-2026-000001',
+    visitScheduleId: 'SRM-VS-2026-000087',
+    customerName: 'Customer',
+    customerNumber: 'SRM-CUS-2026-000184',
+    mobile: '+91 98490 12345',
+    assignedExecutive: 'Ramesh Pawar (Field Exec)',
+    stops: []
+  };
+  const safeStop = stop || {
+    stopId: 'SRM-VSTOP-2026-000001',
+    propertyTitle: 'Property Site',
+    propertyCode: 'SRM-PROP-2026-000421',
+    costSheetId: 'SRM-CS-2026-000145',
+    developer: 'Partner Developer',
+    locality: 'Hyderabad',
+    latitude: '17.4612° N',
+    longitude: '78.3689° E'
+  };
+
   const [otpInput, setOtpInput] = useState<string>('849201');
   const [otpSent, setOtpSent] = useState<boolean>(true);
   const [otpVerified, setOtpVerified] = useState<boolean>(false);
@@ -1040,7 +1060,7 @@ function PvaVerificationModalContent({
   const handleSendOtp = () => {
     setOtpSent(true);
     setOtpTimerSeconds(300);
-    alert(`📱 OTP SENT!\n\n6-Digit Verification OTP (849201) has been sent to customer mobile ${plan.mobile || stop.mobile || '+91 98490 12345'}.`);
+    alert(`📱 OTP SENT!\n\n6-Digit Verification OTP (849201) has been sent to customer mobile ${safePlan.mobile || safeStop.mobile || '+91 98490 12345'}.`);
   };
 
   const handleVerifyOtp = () => {
@@ -1073,38 +1093,38 @@ function PvaVerificationModalContent({
       return;
     }
 
-    const nextPvaNum = projectVisitAgreements.length + 1;
+    const nextPvaNum = (projectVisitAgreements?.length || 0) + 1;
     const pvaId = `SRM-PVA-2026-00000${nextPvaNum}`;
     const todayStr = new Date().toISOString().split('T')[0];
     const expDate = new Date();
-    expDate.setMonth(expDate.getMonth() + protectionPeriodMonths);
+    expDate.setMonth(expDate.getMonth() + (protectionPeriodMonths || 6));
     const expDateStr = expDate.toISOString().split('T')[0];
 
     const newPva = {
       projectVisitAgreementId: pvaId,
-      visitScheduleId: plan.visitPlanId || plan.visitScheduleId || 'SRM-VS-2026-000087',
-      visitStopId: stop.stopId || 'SRM-VSTOP-2026-000001',
-      customerId: plan.customerNumber || 'SRM-CUS-2026-000184',
-      customerName: plan.customerName || 'Customer',
-      customerMobile: plan.mobile || '+91 98490 12345',
+      visitScheduleId: safePlan.visitPlanId || safePlan.visitScheduleId || 'SRM-VS-2026-000087',
+      visitStopId: safeStop.stopId || 'SRM-VSTOP-2026-000001',
+      customerId: safePlan.customerNumber || 'SRM-CUS-2026-000184',
+      customerName: safePlan.customerName || 'Customer',
+      customerMobile: safePlan.mobile || '+91 98490 12345',
       leadId: 'SRM-LEAD-2026-000001',
-      matchId: plan.matchingId || 'SRM-MAT-2026-000421',
-      propertyId: stop.propertyCode || stop.propertyId || 'SRM-PROP-2026-000421',
-      costSheetId: stop.costSheetId || 'SRM-CS-2026-000145',
+      matchId: safePlan.matchingId || 'SRM-MAT-2026-000421',
+      propertyId: safeStop.propertyCode || safeStop.propertyId || 'SRM-PROP-2026-000421',
+      costSheetId: safeStop.costSheetId || 'SRM-CS-2026-000145',
       projectId: `SRM-PROJ-2026-0000${20 + nextPvaNum}`,
-      projectTitle: stop.propertyTitle || 'Project Property',
-      locality: stop.locality || 'Hyderabad',
+      projectTitle: safeStop.propertyTitle || 'Project Property',
+      locality: safeStop.locality || 'Hyderabad',
       developerId: `DEV-0${nextPvaNum}`,
-      developerName: stop.developer || 'Partner Developer',
+      developerName: safeStop.developer || 'Partner Developer',
       salesPersonId: 'USR-07',
-      salesPersonName: plan.assignedExecutive || 'Ramesh Pawar (Field Exec)',
+      salesPersonName: safePlan.assignedExecutive || 'Ramesh Pawar (Field Exec)',
       visitDate: todayStr,
       arrivalTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       departureTime: '',
       geofenceStatus: 'GEOFENCE_VERIFIED',
       gpsAccuracyMeters: `14m (Within ${geofenceRadiusMeters}m Allowed Radius)`,
-      salesPersonLat: stop.latitude || '17.4612° N',
-      salesPersonLng: stop.longitude || '78.3689° E',
+      salesPersonLat: safeStop.latitude || '17.4612° N',
+      salesPersonLng: safeStop.longitude || '78.3689° E',
       customerOtpStatus: 'OTP_VERIFIED',
       otpVerifiedAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       otpHashRef: `SHA256:verified_otp_${otpInput}`,
@@ -1122,23 +1142,25 @@ function PvaVerificationModalContent({
       createdAt: new Date().toLocaleString(),
       updatedAt: new Date().toLocaleString(),
       auditLogs: [
-        { time: new Date().toLocaleTimeString(), user: plan.assignedExecutive || 'Field Exec', action: 'GEOFENCE_VERIFIED', details: `Geofence audit passed (${geofenceRadiusMeters}m radius).` },
-        { time: new Date().toLocaleTimeString(), user: plan.customerName || 'Customer', action: 'OTP_VERIFIED', details: 'Customer verified 6-digit OTP.' },
-        { time: new Date().toLocaleTimeString(), user: plan.customerName || 'Customer', action: 'CUSTOMER_ACKNOWLEDGED', details: `Accepted Project Visit Introduction Agreement V1.0 (${protectionPeriodMonths}-Month Protection).` },
+        { time: new Date().toLocaleTimeString(), user: safePlan.assignedExecutive || 'Field Exec', action: 'GEOFENCE_VERIFIED', details: `Geofence audit passed (${geofenceRadiusMeters}m radius).` },
+        { time: new Date().toLocaleTimeString(), user: safePlan.customerName || 'Customer', action: 'OTP_VERIFIED', details: 'Customer verified 6-digit OTP.' },
+        { time: new Date().toLocaleTimeString(), user: safePlan.customerName || 'Customer', action: 'CUSTOMER_ACKNOWLEDGED', details: `Accepted Project Visit Introduction Agreement V1.0 (${protectionPeriodMonths}-Month Protection).` },
         { time: new Date().toLocaleTimeString(), user: 'System AI Engine', action: 'PROJECT_VISIT_AGREEMENT_GENERATED', details: `Generated Project Visit Agreement ID ${pvaId}.` }
       ]
     };
 
-    setProjectVisitAgreements((prev: any[]) => [newPva, ...prev]);
+    if (setProjectVisitAgreements) {
+      setProjectVisitAgreements((prev: any[]) => [newPva, ...(prev || [])]);
+    }
 
     const newAgrRecord = {
       id: `AGR-PVA-${nextPvaNum}`,
       agreement_code: pvaId,
       agreement_type: 'CUSTOMER_SITE_VISIT',
-      title: `Customer Site Visit Agreement — ${stop.propertyTitle || 'Site Visit'}`,
-      party_name: plan.customerName || 'Customer',
-      party_contact: plan.mobile || '+91 98490 12345',
-      property_details: `${stop.propertyCode || 'SRM-PROP-2026-000421'} (${stop.propertyTitle || 'Site Visit'})`,
+      title: `Customer Site Visit Agreement — ${safeStop.propertyTitle || 'Site Visit'}`,
+      party_name: safePlan.customerName || 'Customer',
+      party_contact: safePlan.mobile || '+91 98490 12345',
+      property_details: `${safeStop.propertyCode || 'SRM-PROP-2026-000421'} (${safeStop.propertyTitle || 'Site Visit'})`,
       signed_status: 'EXECUTED_SIGNED',
       signature_hash: `OTP-VERIFIED-#${otpInput}-DIGITAL-SIG`,
       signed_at: `${todayStr} ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`,
@@ -1146,35 +1168,39 @@ function PvaVerificationModalContent({
     };
 
     if (setAgreements) {
-      setAgreements((prev: any[]) => [newAgrRecord, ...prev]);
+      setAgreements((prev: any[]) => [newAgrRecord, ...(prev || [])]);
     }
 
     // Update stop status in visit plans
-    setVisitPlans((prevPlans: any[]) => prevPlans.map(p => {
-      if (p.visitPlanId === (plan.visitPlanId || plan.visitScheduleId)) {
-        const updatedStops = p.stops.map((s: any) => {
-          if (s.stopId === stop.stopId) {
-            return { ...s, status: 'VISIT_COMPLETED', otpVerified: true, geofenceVerified: true, pvaId: pvaId };
-          }
-          return s;
-        });
-        const currentIdx = p.currentStopIndex;
-        const nextIdx = currentIdx < updatedStops.length - 1 ? currentIdx + 1 : currentIdx;
-        return {
-          ...p,
-          currentStopIndex: nextIdx,
-          stops: updatedStops,
-          auditLogs: [
-            { time: new Date().toLocaleTimeString(), user: plan.assignedExecutive || 'Field Exec', action: 'PROJECT_VISIT_VERIFIED', details: `Verified visit for ${stop.propertyTitle}. Generated ${pvaId}` },
-            ...p.auditLogs
-          ]
-        };
-      }
-      return p;
-    }));
+    if (setVisitPlans) {
+      setVisitPlans((prevPlans: any[]) => (prevPlans || []).map(p => {
+        if (p && (p.visitPlanId === (safePlan.visitPlanId || safePlan.visitScheduleId) || p.visitScheduleId === (safePlan.visitPlanId || safePlan.visitScheduleId))) {
+          const updatedStops = (p.stops || []).map((s: any) => {
+            if (s.stopId === safeStop.stopId || s.propertyCode === safeStop.propertyCode) {
+              return { ...s, status: 'VISIT_COMPLETED', otpVerified: true, geofenceVerified: true, pvaId: pvaId };
+            }
+            return s;
+          });
+          const currentIdx = p.currentStopIndex || 0;
+          const nextIdx = currentIdx < updatedStops.length - 1 ? currentIdx + 1 : currentIdx;
+          return {
+            ...p,
+            currentStopIndex: nextIdx,
+            stops: updatedStops,
+            auditLogs: [
+              { time: new Date().toLocaleTimeString(), user: safePlan.assignedExecutive || 'Field Exec', action: 'PROJECT_VISIT_VERIFIED', details: `Verified visit for ${safeStop.propertyTitle}. Generated ${pvaId}` },
+              ...(p.auditLogs || [])
+            ]
+          };
+        }
+        return p;
+      }));
+    }
 
     onClose();
-    setShowPvaDocumentModal({ open: true, pva: newPva });
+    if (setShowPvaDocumentModal) {
+      setShowPvaDocumentModal({ open: true, pva: newPva });
+    }
   };
 
   return (
@@ -1190,7 +1216,7 @@ function PvaVerificationModalContent({
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>PROJECT VISIT VERIFICATION & BROKER INTRODUCTION PROTECTION</h3>
               <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
-                Master Relationship: <strong style={{ color: '#38bdf8' }}>LEAD → CUS → MATCH → PROP → CS → VS ({plan.visitPlanId || plan.visitScheduleId}) → PVA</strong>
+                Master Relationship: <strong style={{ color: '#38bdf8' }}>LEAD → CUS → MATCH → PROP → CS → VS ({safePlan.visitPlanId || safePlan.visitScheduleId}) → PVA</strong>
               </p>
             </div>
           </div>
@@ -1201,15 +1227,15 @@ function PvaVerificationModalContent({
         <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '14px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.82rem' }}>
           <div>
             <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>TARGET PROJECT & PROPERTY</span>
-            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.98rem', marginTop: '2px' }}>🏢 {stop.propertyTitle || 'Property Site'}</h4>
-            <span style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: '800' }}>Developer: {stop.developer || 'Partner Developer'}</span>
-            <br /><span style={{ color: '#38bdf8', fontSize: '0.72rem', fontFamily: 'monospace' }}>Property Code: {stop.propertyCode || 'PROP-01'} | Cost Sheet: {stop.costSheetId}</span>
+            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.98rem', marginTop: '2px' }}>🏢 {safeStop.propertyTitle || 'Property Site'}</h4>
+            <span style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: '800' }}>Developer: {safeStop.developer || 'Partner Developer'}</span>
+            <br /><span style={{ color: '#38bdf8', fontSize: '0.72rem', fontFamily: 'monospace' }}>Property Code: {safeStop.propertyCode || 'PROP-01'} | Cost Sheet: {safeStop.costSheetId || 'N/A'}</span>
           </div>
           <div>
             <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>CUSTOMER & SALES EXECUTIVE</span>
-            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.95rem', marginTop: '2px' }}>👤 {plan.customerName} ({plan.customerNumber})</h4>
-            <span style={{ color: '#4ade80', fontFamily: 'monospace', fontWeight: '800' }}>{plan.mobile}</span>
-            <br /><span style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: '800' }}>Sales Exec: {plan.assignedExecutive}</span>
+            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.95rem', marginTop: '2px' }}>👤 {safePlan.customerName} ({safePlan.customerNumber})</h4>
+            <span style={{ color: '#4ade80', fontFamily: 'monospace', fontWeight: '800' }}>{safePlan.mobile}</span>
+            <br /><span style={{ color: '#fbbf24', fontSize: '0.75rem', fontWeight: '800' }}>Sales Exec: {safePlan.assignedExecutive}</span>
           </div>
         </div>
 
@@ -1220,7 +1246,7 @@ function PvaVerificationModalContent({
             <div>
               <span style={{ fontSize: '0.75rem', color: '#22c55e', fontWeight: '900' }}>STEP 1: GPS GEOFENCE AUDIT PASSED</span>
               <p style={{ fontSize: '0.8rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', marginTop: '2px' }}>
-                Sales Executive Position: <strong>{stop.latitude || '17.4612° N'}, {stop.longitude || '78.3689° E'}</strong>
+                Sales Executive Position: <strong>{safeStop.latitude || '17.4612° N'}, {safeStop.longitude || '78.3689° E'}</strong>
               </p>
               <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>Distance to Site: <strong>14 meters</strong> (Allowed Radius: {geofenceRadiusMeters}m)</span>
             </div>
@@ -1286,10 +1312,10 @@ function PvaVerificationModalContent({
           <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '12px', fontSize: '0.8rem', color: isLight ? '#0f172a' : '#cbd5e1', lineHeight: '1.5' }}>
             <p><strong>CUSTOMER ACKNOWLEDGEMENT & INTRODUCTION TERMS:</strong></p>
             <p style={{ marginTop: '6px' }}>
-              I, <strong>{plan.customerName}</strong> (Mobile: <strong>{plan.mobile}</strong>), confirm that I am visiting <strong>{stop.propertyTitle}</strong> today ({new Date().toLocaleDateString()}), introduced exclusively through <strong>SWARAMAYI REAL ESTATE MARKETING</strong>.
+              I, <strong>{safePlan.customerName}</strong> (Mobile: <strong>{safePlan.mobile}</strong>), confirm that I am visiting <strong>{safeStop.propertyTitle}</strong> today ({new Date().toLocaleDateString()}), introduced exclusively through <strong>SWARAMAYI REAL ESTATE MARKETING</strong>.
             </p>
             <p style={{ marginTop: '6px' }}>
-              I acknowledge that the assigned representative <strong>{plan.assignedExecutive}</strong> is accompanying me. Any future inquiry, negotiation, booking, or purchase relating to this project within the applicable protection period of <strong>{protectionPeriodMonths} Months</strong> (ending <strong>{new Date(Date.now() + protectionPeriodMonths * 30 * 24 * 3600 * 1000).toLocaleDateString()}</strong>) shall be processed according to the introduction and brokerage terms agreed with Swaramayi Real Estate Marketing.
+              I acknowledge that the assigned representative <strong>{safePlan.assignedExecutive}</strong> is accompanying me. Any future inquiry, negotiation, booking, or purchase relating to this project within the applicable protection period of <strong>{protectionPeriodMonths} Months</strong> (ending <strong>{new Date(Date.now() + protectionPeriodMonths * 30 * 24 * 3600 * 1000).toLocaleDateString()}</strong>) shall be processed according to the introduction and brokerage terms agreed with Swaramayi Real Estate Marketing.
             </p>
           </div>
 
@@ -8472,6 +8498,8 @@ export default function App() {
               currentRole={currentRole}
               users={users}
               branches={branches}
+              properties={properties}
+              customers={customers}
             />
           )}
 
@@ -8528,6 +8556,8 @@ export default function App() {
               setInvoices={setInvoices}
               setActiveTab={setActiveTab}
               setBillingInvoiceCategory={setBillingInvoiceCategory}
+              customers={customers}
+              properties={properties}
             />
           )}
 
