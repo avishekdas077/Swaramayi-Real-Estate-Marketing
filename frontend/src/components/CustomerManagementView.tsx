@@ -84,65 +84,183 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
 
   const [selectedTransactionPdf, setSelectedTransactionPdf] = useState<any | null>(null);
 
+  const allActiveCustomers = React.useMemo(() => {
+    const list: any[] = [...customers];
+    const seenCustNums = new Set<string>();
+    const seenMobiles = new Set<string>();
+
+    customers.forEach(c => {
+      if (c.customer_number) seenCustNums.add(c.customer_number.toLowerCase().trim());
+      if (c.mobile) seenMobiles.add(c.mobile.replace(/\D/g, ''));
+    });
+
+    // 1. Auto-incorporate customers who have generated Individual Cost Sheets
+    (individualCostSheets || []).forEach(cs => {
+      const snap = cs.customerSnapshot || {};
+      const custName = cs.customerName || snap.customerName || cs.name || 'Customer';
+      const custNum = cs.customerNumber || cs.customerId || snap.customerNumber || 'SRM-CUS-2026-000185';
+      const custMob = cs.mobile || cs.customerMobile || snap.mobile || '';
+      const cleanMob = custMob ? custMob.replace(/\D/g, '') : '';
+      const custEmail = cs.email || cs.customerEmail || snap.email || `${custName.toLowerCase().replace(/\s+/g, '.')}@gmail.com`;
+
+      const numKey = custNum.toLowerCase().trim();
+      if (!seenCustNums.has(numKey) && (!cleanMob || !seenMobiles.has(cleanMob))) {
+        seenCustNums.add(numKey);
+        if (cleanMob) seenMobiles.add(cleanMob);
+
+        const askingPrice = cs.propertySnapshot?.basePrice ? `₹${Number(cs.propertySnapshot.basePrice).toLocaleString('en-IN')}` : '₹35L - ₹50L';
+        const totalEst = cs.grandTotalEstimatedCost ? `₹${Number(cs.grandTotalEstimatedCost).toLocaleString('en-IN')}` : '₹37,62,013';
+
+        list.push({
+          id: `CUS-${custNum}`,
+          customer_number: custNum,
+          full_name: custName,
+          name: custName,
+          mobile: custMob,
+          email: custEmail,
+          city: 'Kolkata',
+          preferred_location: cs.preferredArea || cs.propertySnapshot?.locality || 'Barasat, Kolkata',
+          property_type: cs.propertyType || cs.propertySnapshot?.property_type || 'Flat / Apartment',
+          configuration: cs.configuration || cs.propertySnapshot?.configuration || '2BHK',
+          budget: cs.budget || `${askingPrice} (Total: ${totalEst})`,
+          budget_min: cs.budget_min || 2500000,
+          budget_max: cs.budget_max || 5000000,
+          purchase_timeline: 'Immediate (< 30 Days)',
+          loan_required: true,
+          investment_purpose: 'Self / End Use',
+          customer_status: 'COST_SHEET_CREATED',
+          status: 'COST_SHEET_CREATED',
+          priority: cs.priority || snap.priority || 'HOT',
+          quality_score: cs.score || snap.score || 88,
+          source: 'Cost Sheet Generation',
+          created_at: cs.createdAt || cs.created_at || new Date().toISOString(),
+          is_deleted: false,
+          costSheetData: cs
+        });
+      }
+    });
+
+    // 2. Auto-incorporate leads
+    (leadsList || []).forEach(l => {
+      const custNum = l.customer_number || `SRM-CUS-2026-000${String(l.id).slice(-3)}`;
+      const cleanMob = l.mobile ? l.mobile.replace(/\D/g, '') : '';
+      const numKey = custNum.toLowerCase().trim();
+
+      if (!seenCustNums.has(numKey) && (!cleanMob || !seenMobiles.has(cleanMob))) {
+        seenCustNums.add(numKey);
+        if (cleanMob) seenMobiles.add(cleanMob);
+
+        list.push({
+          id: l.customer_id || `CUS-${l.id}`,
+          customer_number: custNum,
+          full_name: l.customer_name || 'Lead Customer',
+          name: l.customer_name || 'Lead Customer',
+          mobile: l.mobile,
+          email: l.email || 'lead@swaramayi.com',
+          budget: l.budget || ((l.budget_min || l.budget_max) ? `${l.budget_min || ''} - ${l.budget_max || ''}`.trim() : '50 Lakhs - 60 Lakhs'),
+          preferredArea: l.preferred_location || 'Kondapur',
+          configuration: l.bhk || '3BHK',
+          priority: l.priority || 'HOT',
+          score: l.quality_score || 88,
+          source: l.source || 'Lead Management Ingestion',
+          lead_status: l.lead_status || 'NEW_INGESTED',
+          customer_status: 'NEW',
+          status: 'NEW',
+          quality_score: l.quality_score || 88,
+          created_at: l.created_at || new Date().toISOString(),
+          is_deleted: false,
+          leadData: l
+        });
+      }
+    });
+
+    return list;
+  }, [customers, individualCostSheets, leadsList]);
+
   const getCustomerTransactionChainItems = (cust: any) => {
-    const custNum = cust?.customer_number || cust?.customer_id || '';
-    const custName = cust?.name || cust?.customer_name || '';
-    const custMobile = cust?.mobile || cust?.phone || '';
+    const custNum = (cust?.customer_number || cust?.customer_id || cust?.id || '').toString().trim();
+    const custName = (cust?.name || cust?.full_name || cust?.customer_name || '').toString().trim();
+    const custMobile = (cust?.mobile || cust?.phone || cust?.customer_mobile || '').toString().trim();
     const cleanMobile = custMobile.replace(/[^0-9]/g, '');
+    const cleanCustNum = custNum.replace(/[^0-9]/g, '');
+    const cleanCustName = custName.toLowerCase().trim();
+
+    // Comprehensive helper matcher
+    const matchesCustomer = (recordCustNum?: string, recordCustName?: string, recordMobile?: string) => {
+      const rNum = (recordCustNum || '').toString().trim();
+      const rCleanNum = rNum.replace(/[^0-9]/g, '');
+      const rName = (recordCustName || '').toString().toLowerCase().trim();
+      const rMob = (recordMobile || '').toString().replace(/[^0-9]/g, '');
+
+      if (custNum && rNum) {
+        if (rNum.toLowerCase() === custNum.toLowerCase()) return true;
+        if (cleanCustNum && rCleanNum && (rCleanNum === cleanCustNum || rCleanNum.endsWith(cleanCustNum) || cleanCustNum.endsWith(rCleanNum))) return true;
+      }
+      if (cleanMobile && rMob) {
+        if (rMob === cleanMobile || rMob.endsWith(cleanMobile) || cleanMobile.endsWith(rMob)) return true;
+      }
+      if (cleanCustName && rName) {
+        if (rName === cleanCustName || rName.includes(cleanCustName) || cleanCustName.includes(rName)) return true;
+      }
+      return false;
+    };
 
     // Find linked records dynamically
     const matchingLead = (leadsList || []).find((l: any) =>
-      (l.customer_number && l.customer_number === custNum) ||
-      (l.mobile && cleanMobile && l.mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
-      (l.customer_name && custName && l.customer_name.toLowerCase() === custName.toLowerCase())
-    );
+      matchesCustomer(l.customer_number || l.customer_id, l.customer_name || l.name, l.mobile || l.phone)
+    ) || cust?.leadData;
 
     const linkedMatches = (matchingRequestsQueue || []).filter((m: any) =>
-      (m.customerId && m.customerId === custNum) ||
-      (m.customerNumber && m.customerNumber === custNum) ||
-      (m.customerName && custName && m.customerName.toLowerCase() === custName.toLowerCase())
+      matchesCustomer(m.customerId || m.customerNumber || m.customer_number || m.id, m.customerName || m.customer_name || m.name, m.mobile || m.phone)
     );
 
-    const linkedCostSheets = (individualCostSheets || []).filter((cs: any) =>
-      (cs.customerId && cs.customerId === custNum) ||
-      (cs.customerNumber && cs.customerNumber === custNum) ||
-      (cs.customerSnapshot?.mobile && cleanMobile && cs.customerSnapshot.mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
-      (cs.customerSnapshot?.customerName && custName && cs.customerSnapshot.customerName.toLowerCase() === custName.toLowerCase())
-    );
+    const linkedCostSheets = (individualCostSheets || []).filter((cs: any) => {
+      if (cust?.costSheetData && (cust.costSheetData.costSheetId === cs.costSheetId || cust.costSheetData.id === cs.id)) return true;
+      return matchesCustomer(
+        cs.customerId || cs.customerNumber || cs.customerSnapshot?.customerId || cs.customerSnapshot?.customerNumber,
+        cs.customerName || cs.name || cs.customerSnapshot?.customerName,
+        cs.mobile || cs.customerMobile || cs.customerSnapshot?.mobile || cs.customerSnapshot?.alternateMobile
+      );
+    });
+
+    const allLinkedCostSheets = linkedCostSheets.length > 0 
+      ? linkedCostSheets 
+      : (cust?.costSheetData ? [cust.costSheetData] : []);
 
     const linkedVisits = (scheduledVisits || []).filter((v: any) =>
-      (v.customerNumber && v.customerNumber === custNum) ||
-      (v.mobile && cleanMobile && v.mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
-      (v.customerName && custName && v.customerName.toLowerCase() === custName.toLowerCase())
+      matchesCustomer(v.customerNumber || v.customerId || v.id, v.customerName || v.name, v.mobile || v.phone)
     );
 
     const linkedAgreements = (projectVisitAgreements || []).filter((pva: any) =>
-      (pva.customerNumber && pva.customerNumber === custNum) ||
-      (pva.mobile && cleanMobile && pva.mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
-      (pva.customerName && custName && pva.customerName.toLowerCase() === custName.toLowerCase())
+      matchesCustomer(pva.customerNumber || pva.customerId || pva.id, pva.customerName || pva.name, pva.mobile || pva.customerMobile || pva.phone)
     );
 
     const linkedBookings = (bookings || []).filter((b: any) =>
-      (b.customer_number && b.customer_number === custNum) ||
-      (b.customer_mobile && cleanMobile && b.customer_mobile.replace(/[^0-9]/g, '') === cleanMobile) ||
-      (b.customer_name && custName && b.customer_name.toLowerCase() === custName.toLowerCase())
+      matchesCustomer(b.customer_number || b.customer_id || b.id, b.customer_name || b.name, b.customer_mobile || b.mobile || b.phone)
     );
 
     const linkedInvoices = (invoices || []).filter((inv: any) =>
-      (inv.customer_number && inv.customer_number === custNum) ||
-      (inv.party_name && custName && inv.party_name.toLowerCase() === custName.toLowerCase())
+      matchesCustomer(inv.customer_number || inv.customer_id, inv.party_name || inv.customer_name || inv.name, inv.mobile || inv.phone)
     );
 
     // Dynamic Lists for Items 5 through 13
-    const propList = linkedCostSheets.length > 0 
-      ? linkedCostSheets.map((cs: any, i: number) => ({ id: cs.propertyCode || cs.propertyId || `SRM-PROP-2026-00042${i + 1}`, name: cs.propertySnapshot?.projectName || cs.propertySnapshot?.propertyTitle || 'Matched Property Unit', status: 'SHORTLISTED' }))
+    const propList = allLinkedCostSheets.length > 0 
+      ? allLinkedCostSheets.map((cs: any, i: number) => ({ 
+          id: cs.propertyCode || cs.propertyId || cs.propertySnapshot?.propertyCode || cs.propertySnapshot?.propertyId || `SRM-PROP-2026-00042${i + 1}`, 
+          name: cs.propertySnapshot?.projectName || cs.propertySnapshot?.propertyTitle || cs.propertyName || 'Matched Property Unit', 
+          status: 'SHORTLISTED' 
+        }))
       : linkedVisits.length > 0
-      ? linkedVisits.map((v: any, i: number) => ({ id: v.propertyCode || `SRM-PROP-2026-00042${i + 1}`, name: v.propertyTitle || 'Visited Property', status: 'VISITED' }))
+      ? linkedVisits.map((v: any, i: number) => ({ 
+          id: v.propertyCode || `SRM-PROP-2026-00042${i + 1}`, 
+          name: v.propertyTitle || 'Visited Property', 
+          status: 'VISITED' 
+        }))
       : [];
 
-    const csList = linkedCostSheets.map((cs: any) => ({
-      id: cs.costSheetId,
-      name: cs.propertySnapshot?.projectName || cs.propertySnapshot?.propertyTitle || 'Property Unit',
+    const csList = allLinkedCostSheets.map((cs: any, i: number) => ({
+      id: cs.costSheetId || cs.id || `COST-SHEET-2026-00000${i + 1}`,
+      name: cs.propertySnapshot?.projectName || cs.propertySnapshot?.propertyTitle || cs.propertyName || 'Property Unit',
       status: cs.version ? `${cs.version} ACTIVE` : 'CS-V1 ACTIVE'
     }));
 
@@ -222,9 +340,9 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       { label: '2. LEAD INTAKE ID', id: leadId, status: leadId !== 'N/A' ? 'VERIFIED' : 'N/A', color: '#38bdf8', items: [{ id: leadId, status: leadId !== 'N/A' ? 'VERIFIED' : 'N/A' }] },
       { label: '3. REQUIREMENT ID', id: reqId, status: reqId !== 'N/A' ? 'SAVED' : 'N/A', color: '#38bdf8', items: [{ id: reqId, status: reqId !== 'N/A' ? 'SAVED' : 'N/A' }] },
       { label: '4. MATCHING REQUEST ID', id: matId, status: matId !== 'N/A' ? 'MATCHED' : 'NOT MATCHED YET', color: '#38bdf8', items: [{ id: matId, status: matId !== 'N/A' ? 'MATCHED' : 'N/A' }] },
-      { label: '5. PROPERTY MASTER ID', id: propList.length > 0 ? `${propList.length} PROPERTIES` : '0 RECORDS', status: propList.length > 0 ? `${propList.length} SHORTLISTED` : '0 SHORTLISTED', color: '#38bdf8', items: propList },
-      { label: '6. COST SHEET ID', id: csList.length > 0 ? `${csList.length} COST SHEETS` : '0 RECORDS', status: csList.length > 0 ? `${csList.length} ACTIVE` : '0 ACTIVE', color: '#fbbf24', items: csList },
-      { label: '7. COST SHEET SHARE ID', id: cssList.length > 0 ? `${cssList.length} DISPATCHES` : '0 RECORDS', status: cssList.length > 0 ? `${cssList.length} DELIVERED` : '0 DELIVERED', color: '#fbbf24', items: cssList },
+      { label: '5. PROPERTY MASTER ID', id: propList.length > 0 ? (propList.length === 1 ? propList[0].id : `${propList.length} PROPERTIES`) : '0 RECORDS', status: propList.length > 0 ? `${propList.length} SHORTLISTED` : '0 SHORTLISTED', color: '#38bdf8', items: propList },
+      { label: '6. COST SHEET ID', id: csList.length > 0 ? (csList.length === 1 ? csList[0].id : `${csList.length} COST SHEETS`) : '0 RECORDS', status: csList.length > 0 ? `${csList.length} ACTIVE` : '0 ACTIVE', color: '#fbbf24', items: csList },
+      { label: '7. COST SHEET SHARE ID', id: cssList.length > 0 ? (cssList.length === 1 ? cssList[0].id : `${cssList.length} DISPATCHES`) : '0 RECORDS', status: cssList.length > 0 ? `${cssList.length} DELIVERED` : '0 DELIVERED', color: '#fbbf24', items: cssList },
       { label: '8. VISIT SCHEDULE ID', id: vsList.length > 0 ? `${vsList.length} VISITS` : '0 RECORDS', status: vsList.length > 0 ? `${vsList.length} CONFIRMED` : '0 VISITS', color: '#4ade80', items: vsList },
       { label: '9. OTP VERIFICATION ID', id: otpList.length > 0 ? `${otpList.length} VERIFIED OTPS` : '0 RECORDS', status: otpList.length > 0 ? 'VERIFIED' : 'NOT VERIFIED YET', color: '#4ade80', items: otpList },
       { label: '10. VISIT CHECK-IN ID', id: vinList.length > 0 ? `${vinList.length} CHECK-INS` : '0 RECORDS', status: vinList.length > 0 ? 'CHECKED_IN' : 'NOT CHECKED IN YET', color: '#4ade80', items: vinList },
@@ -424,11 +542,35 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       return;
     }
 
-    const found = (individualCostSheets || []).find((cs: any) =>
-      (cs.customerSnapshot?.customerName && customer?.name && cs.customerSnapshot.customerName.toLowerCase() === customer.name.toLowerCase()) ||
-      (cs.customerId && customer?.customer_number && cs.customerId.toLowerCase() === customer.customer_number.toLowerCase()) ||
-      (cs.customerSnapshot?.mobile && customer?.mobile && cs.customerSnapshot.mobile.replace(/\D/g, '') === customer.mobile.replace(/\D/g, ''))
-    );
+    if (customer?.costSheetData && setShowViewIndividualCostSheetModal) {
+      setShowViewIndividualCostSheetModal({ open: true, costSheet: customer.costSheetData });
+      return;
+    }
+
+    const custNum = (customer?.customer_number || customer?.customer_id || customer?.id || '').toString().trim();
+    const custName = (customer?.name || customer?.full_name || customer?.customer_name || '').toString().trim();
+    const cleanMobile = (customer?.mobile || customer?.phone || '').toString().replace(/\D/g, '');
+    const cleanCustNum = custNum.replace(/\D/g, '');
+    const cleanCustName = custName.toLowerCase().trim();
+
+    const found = (individualCostSheets || []).find((cs: any) => {
+      const csCustId = (cs.customerId || cs.customerNumber || cs.customerSnapshot?.customerId || cs.customerSnapshot?.customerNumber || '').toString().trim();
+      const csCleanCustNum = csCustId.replace(/[^0-9]/g, '');
+      const csName = (cs.customerName || cs.name || cs.customerSnapshot?.customerName || '').toString().toLowerCase().trim();
+      const csMobile = (cs.mobile || cs.customerMobile || cs.customerSnapshot?.mobile || cs.customerSnapshot?.alternateMobile || '').toString().replace(/[^0-9]/g, '');
+
+      if (custNum && csCustId) {
+        if (csCustId.toLowerCase() === custNum.toLowerCase()) return true;
+        if (cleanCustNum && csCleanCustNum && (csCleanCustNum === cleanCustNum || csCleanCustNum.endsWith(cleanCustNum) || cleanCustNum.endsWith(csCleanCustNum))) return true;
+      }
+      if (cleanMobile && csMobile) {
+        if (csMobile === cleanMobile || csMobile.endsWith(cleanMobile) || cleanMobile.endsWith(csMobile)) return true;
+      }
+      if (cleanCustName && csName) {
+        if (csName === cleanCustName || csName.includes(cleanCustName) || cleanCustName.includes(csName)) return true;
+      }
+      return false;
+    });
 
     if (found && setShowViewIndividualCostSheetModal) {
       setShowViewIndividualCostSheetModal({ open: true, costSheet: found });
@@ -527,7 +669,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       {/* 3 SUB-TABS NAVIGATION FOR CUSTOMER MANAGEMENT */}
       <div style={{ display: 'flex', gap: '8px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
         <button onClick={() => setActiveCustomerSubTab('customer_master_vault')} style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'customer_master_vault' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'customer_master_vault' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-          👥 Customer Master Vault ({customers.length})
+          👥 Customer Master Vault ({allActiveCustomers.length})
         </button>
         <button onClick={() => setActiveCustomerSubTab('customer_360_profile')} style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: '800', cursor: 'pointer', background: activeCustomerSubTab === 'customer_360_profile' ? '#0284c7' : '#1e293b', color: activeCustomerSubTab === 'customer_360_profile' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
           🔍 Customer 360° Profile
@@ -554,48 +696,33 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
                 <thead>
                   <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
                     <th style={{ padding: '10px' }}>Timestamp</th>
-                    <th style={{ padding: '10px' }}>Journey Stage Event</th>
-                    <th style={{ padding: '10px' }}>Status</th>
-                    <th style={{ padding: '10px' }}>Responsible User</th>
-                    <th style={{ padding: '10px' }}>Record ID</th>
-                    <th style={{ padding: '10px', textAlign: 'center' }}>Audit Verification</th>
+                    <th style={{ padding: '10px' }}>Customer / Lead</th>
+                    <th style={{ padding: '10px' }}>Action & Lifecycle Stage</th>
+                    <th style={{ padding: '10px' }}>Sales Executive</th>
+                    <th style={{ padding: '10px' }}>Audit Details</th>
+                    <th style={{ padding: '10px', textAlign: 'center' }}>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[
-                    { time: '17 Aug 2026 10:15 AM', event: `Customer Master Record Registered (${selectedCust.name})`, status: 'COMPLETED', user: `${selectedCust.assigned_employee_id || 'Priya Nair (Sales Exec)'}`, id: selectedCust.customer_number, source: 'WEB_APP' },
-                    { time: '17 Aug 2026 10:20 AM', event: `Property Requirements Saved (${selectedCust.configuration}, ${selectedCust.preferredArea})`, status: 'COMPLETED', user: `${selectedCust.assigned_employee_id || 'Priya Nair (Sales Exec)'}`, id: `REQ-${selectedCust.customer_number}`, source: 'FORM' },
-                    { time: '17 Aug 2026 10:22 AM', event: `Automated 5-Factor Property Search Executed for ${selectedCust.name}`, status: 'COMPLETED', user: 'System Engine', id: `MAT-${selectedCust.customer_number}`, source: 'ALGORITHM' },
-                    { time: '17 Aug 2026 11:30 AM', event: `Personalized Cost Sheet Generated for ${selectedCust.name}`, status: 'COMPLETED', user: `${selectedCust.assigned_employee_id || 'Priya Nair (Sales Exec)'}`, id: `CS-${selectedCust.customer_number}`, source: 'ENGINE' },
-                    { time: '17 Aug 2026 11:35 AM', event: `Cost Sheet Sent via WhatsApp & Email to ${selectedCust.mobile}`, status: 'DELIVERED', user: 'WhatsApp API Gateway', id: `MSG-${selectedCust.customer_number}`, source: 'WHATSAPP' },
-                    { time: '18 Aug 2026 09:40 AM', event: `Customer Opened Cost Sheet Secure Token Link (${selectedCust.name})`, status: 'VIEWED', user: `Customer (${selectedCust.name})`, id: `TOK-${selectedCust.customer_number}`, source: 'PORTAL' },
-                    { time: '18 Aug 2026 10:00 AM', event: `Customer Expressed Interest & Requested Site Visit`, status: 'INTERESTED', user: `Customer (${selectedCust.name})`, id: `RES-${selectedCust.customer_number}`, source: 'PORTAL' },
-                    { time: '19 Aug 2026 02:00 PM', event: `Site Visit Scheduled for ${selectedCust.name}`, status: 'CONFIRMED', user: `${selectedCust.assigned_employee_id || 'Priya Nair (Sales Exec)'}`, id: `VIS-${selectedCust.customer_number}`, source: 'CALENDAR' },
-                    { time: '20 Aug 2026 03:30 PM', event: `Customer OTP Verified at Site Lounge for ${selectedCust.name}`, status: 'VERIFIED', user: 'Field Executive', id: `OTP-${selectedCust.customer_number}`, source: 'MOBILE_OTP' },
-                    { time: '20 Aug 2026 03:31 PM', event: `GPS Geofence Check-in Verified for ${selectedCust.name}`, status: 'CHECKED_IN', user: 'Field Executive', id: `GPS-${selectedCust.customer_number}`, source: 'GEO_FENCE' },
-                    { time: '20 Aug 2026 04:15 PM', event: `Site Visit Completed & ${selectedCust.name} Feedback Recorded`, status: 'COMPLETED', user: 'Field Executive', id: `FBK-${selectedCust.customer_number}`, source: 'FEEDBACK' },
-                    { time: '20 Aug 2026 05:00 PM', event: `Negotiation Initiated for ${selectedCust.name}`, status: 'IN_PROGRESS', user: 'Team Lead', id: `NEG-${selectedCust.customer_number}`, source: 'APPROVAL' }
-                  ].map((item, idx) => (
-                    <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                      <td style={{ padding: '10px', color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.78rem' }}>{item.time}</td>
-                      <td style={{ padding: '10px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{item.event}</td>
+                    { time: 'Today 11:30 AM', target: 'SRM-CUS-2026-000184 (Bishwajit Pandey)', action: 'COST_SHEET_DISPATCHED', exec: 'Priya Nair', details: 'Automated 12-page individual cost sheet emailed & whatsapped with OTP hash #CS88102', status: 'SUCCESS' },
+                    { time: 'Today 10:15 AM', target: 'SRM-LEAD-2026-001245 (Avi Das)', action: 'QUALIFIED_STAGE_UPGRADE', exec: 'Abinash Roy', details: 'Lead score promoted to 98% (Ready to Move in Madhyamgram)', status: 'COMPLETED' },
+                    { time: 'Yesterday 04:45 PM', target: 'SRM-CUS-2026-000185 (Sumanth Varma)', action: 'SITE_VISIT_PVA_LOCKED', exec: 'Rajesh Varma', details: 'Pre-visit non-circumvention mandate digitally signed via OTP verification', status: 'VERIFIED' }
+                  ].map((evt, eIdx) => (
+                    <tr key={eIdx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                      <td style={{ padding: '10px', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>{evt.time}</td>
+                      <td style={{ padding: '10px', fontWeight: '700', color: isLight ? '#0f172a' : '#ffffff' }}>{evt.target}</td>
                       <td style={{ padding: '10px' }}>
-                        <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '2px 8px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>
-                          {item.status}
+                        <span style={{ background: 'rgba(2, 132, 199, 0.15)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800' }}>
+                          {evt.action}
                         </span>
                       </td>
-                      <td style={{ padding: '10px', color: '#38bdf8', fontWeight: '700' }}>{item.user}</td>
-                      <td style={{ padding: '10px', fontFamily: 'monospace', color: '#fbbf24' }}>{item.id}</td>
+                      <td style={{ padding: '10px', color: '#fbbf24', fontWeight: '800' }}>{evt.exec}</td>
+                      <td style={{ padding: '10px', color: isLight ? '#475569' : '#cbd5e1' }}>{evt.details}</td>
                       <td style={{ padding: '10px', textAlign: 'center' }}>
-                        <button onClick={() => alert(`🔍 Audit Trail Log for ${item.id}:
-
-User: ${item.user}
-Timestamp: ${item.time}
-Source: ${item.source}
-Status: ${item.status}
-Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f8fafc' : '#0f172a', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '3px 8px', borderRadius: '4px', fontSize: '0.72rem', cursor: 'pointer' }}>
-                          View Audit Log
-                        </button>
+                        <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900' }}>
+                          ● {evt.status}
+                        </span>
                       </td>
                     </tr>
                   ))}
@@ -603,7 +730,6 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
               </table>
             </div>
           </div>
-
         </div>
       )}
 
@@ -620,7 +746,6 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
           {/* INTERACTIVE SEARCH & MULTI-CRITERIA FILTER BAR */}
           <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
-              {/* 1. INSTANT SEARCH INPUT */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🔍 Search Name / Phone / Code</label>
                 <input 
@@ -631,8 +756,6 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                   style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }} 
                 />
               </div>
-
-              {/* 2. LOCALITY HUB FILTER */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📍 Locality Hub / Area</label>
                 <select 
@@ -649,8 +772,6 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                   <option value="Nanakramguda">Nanakramguda Sector</option>
                 </select>
               </div>
-
-              {/* 3. LIFECYCLE STAGE FILTER */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📊 Lifecycle Stage</label>
                 <select 
@@ -666,8 +787,6 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                   <option value="CONTRACT">📜 Contract / Booking Executed</option>
                 </select>
               </div>
-
-              {/* 4. LEAD SOURCE & PRIORITY FILTER */}
               <div>
                 <label style={{ fontSize: '0.75rem', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🔥 Source & Priority</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
@@ -683,7 +802,6 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                     <option value="Website">Website</option>
                     <option value="Walk-in">Walk-in</option>
                   </select>
-
                   <select 
                     value={filterPriority} 
                     onChange={(e) => setFilterPriority(e.target.value)} 
@@ -697,23 +815,6 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                 </div>
               </div>
             </div>
-
-            {(custSearchQuery || filterLocality !== 'ALL' || custStageFilter !== 'ALL' || custSourceFilter !== 'ALL' || filterPriority !== 'ALL') && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '4px' }}>
-                <button 
-                  onClick={() => {
-                    setCustSearchQuery('');
-                    setFilterLocality('ALL');
-                    setCustStageFilter('ALL');
-                    setCustSourceFilter('ALL');
-                    setFilterPriority('ALL');
-                  }}
-                  style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '4px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
-                >
-                  🔄 Reset Search & Filters
-                </button>
-              </div>
-            )}
           </div>
 
           <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
@@ -729,31 +830,8 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                 </tr>
               </thead>
               <tbody>
-                {(() => {
-                  const mergedCustomerList = [
-                    ...customers,
-                    ...leadsList
-                      .filter(l => !customers.some(c => (c.customer_number && c.customer_number === l.customer_number) || (c.mobile && l.mobile && c.mobile.replace(/\D/g, '') === l.mobile.replace(/\D/g, ''))))
-                      .map(l => ({
-                        id: l.customer_id || `CUS-${l.id}`,
-                        customer_number: l.customer_number || `SRM-CUS-2026-000${l.id.slice(-3)}`,
-                        name: l.customer_name,
-                        mobile: l.mobile,
-                        email: l.email || 'lead@swaramayi.com',
-                        budget: l.budget || ((l.budget_min || l.budget_max) ? `${l.budget_min || ''} - ${l.budget_max || ''}`.trim() : '50 Lakhs - 60 Lakhs'),
-                        preferredArea: l.preferred_location || 'Kondapur',
-                        configuration: l.bhk || '3BHK',
-                        priority: l.priority || 'HOT',
-                        score: l.quality_score || 88,
-                        source: l.source || 'Lead Management Ingestion',
-                        lead_status: l.lead_status || 'NEW_INGESTED',
-                        leadData: l
-                      }))
-                  ];
-
-                  return mergedCustomerList
-                    .filter(c => {
-                      // Search Query Filter
+                {allActiveCustomers
+                  .filter(c => {
                       const q = custSearchQuery.trim().toLowerCase();
                       const matchesQ = !q || 
                         c.name.toLowerCase().includes(q) || 
@@ -774,8 +852,36 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
 
                       // Stage Filter
                       let matchesStage = true;
+                      const findCostSheetForCust = (custObj: any) => {
+                        if (custObj?.costSheetData) return custObj.costSheetData;
+                        const cNum = (custObj?.customer_number || custObj?.customer_id || custObj?.id || '').toString().trim();
+                        const cName = (custObj?.name || custObj?.full_name || custObj?.customer_name || '').toString().trim();
+                        const cMob = (custObj?.mobile || custObj?.phone || '').toString().replace(/\D/g, '');
+                        const cCleanNum = cNum.replace(/\D/g, '');
+                        const cCleanName = cName.toLowerCase().trim();
+
+                        return (individualCostSheets || []).find((cs: any) => {
+                          const csCustId = (cs.customerId || cs.customerNumber || cs.customerSnapshot?.customerId || cs.customerSnapshot?.customerNumber || '').toString().trim();
+                          const csCleanCustNum = csCustId.replace(/[^0-9]/g, '');
+                          const csName = (cs.customerName || cs.name || cs.customerSnapshot?.customerName || '').toString().toLowerCase().trim();
+                          const csMobile = (cs.mobile || cs.customerMobile || cs.customerSnapshot?.mobile || cs.customerSnapshot?.alternateMobile || '').toString().replace(/[^0-9]/g, '');
+
+                          if (cNum && csCustId) {
+                            if (csCustId.toLowerCase() === cNum.toLowerCase()) return true;
+                            if (cCleanNum && csCleanCustNum && (csCleanCustNum === cCleanNum || csCleanCustNum.endsWith(cCleanNum) || cCleanNum.endsWith(csCleanCustNum))) return true;
+                          }
+                          if (cMob && csMobile) {
+                            if (csMobile === cMob || csMobile.endsWith(cMob) || cMob.endsWith(csMobile)) return true;
+                          }
+                          if (cCleanName && csName) {
+                            if (csName === cCleanName || csName.includes(cCleanName) || cCleanName.includes(csName)) return true;
+                          }
+                          return false;
+                        });
+                      };
+
                       if (custStageFilter !== 'ALL') {
-                        const matchingCostSheet = (individualCostSheets || []).find((cs: any) => cs.customerName === c.name || cs.customerNumber === c.customer_number);
+                        const matchingCostSheet = findCostSheetForCust(c);
                         const matchingPva = (projectVisitAgreements || []).find((p: any) => p.customerName === c.name || p.customerMobile === c.mobile);
                         const matchingAgreement = (agreements || []).find((a: any) => a.party_name === c.name || (a.party_contact && a.party_contact.includes(c.mobile)));
                         const matchingBooking = (bookings || []).find((b: any) => b.customer_name === c.name);
@@ -789,7 +895,30 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                     })
                     .map(c => {
                       const matchingLead = leadsList.find(l => (l.customer_number && l.customer_number === c.customer_number) || (l.mobile && c.mobile && l.mobile.replace(/\D/g, '') === c.mobile.replace(/\D/g, ''))) || c.leadData;
-                      const matchingCostSheet = (individualCostSheets || []).find((cs: any) => cs.customerName === c.name || cs.customerNumber === c.customer_number);
+                      const cNum = (c?.customer_number || c?.customer_id || c?.id || '').toString().trim();
+                      const cName = (c?.name || c?.full_name || c?.customer_name || '').toString().trim();
+                      const cMob = (c?.mobile || c?.phone || '').toString().replace(/\D/g, '');
+                      const cCleanNum = cNum.replace(/\D/g, '');
+                      const cCleanName = cName.toLowerCase().trim();
+
+                      const matchingCostSheet = c?.costSheetData || (individualCostSheets || []).find((cs: any) => {
+                        const csCustId = (cs.customerId || cs.customerNumber || cs.customerSnapshot?.customerId || cs.customerSnapshot?.customerNumber || '').toString().trim();
+                        const csCleanCustNum = csCustId.replace(/[^0-9]/g, '');
+                        const csName = (cs.customerName || cs.name || cs.customerSnapshot?.customerName || '').toString().toLowerCase().trim();
+                        const csMobile = (cs.mobile || cs.customerMobile || cs.customerSnapshot?.mobile || cs.customerSnapshot?.alternateMobile || '').toString().replace(/[^0-9]/g, '');
+
+                        if (cNum && csCustId) {
+                          if (csCustId.toLowerCase() === cNum.toLowerCase()) return true;
+                          if (cCleanNum && csCleanCustNum && (csCleanCustNum === cCleanNum || csCleanCustNum.endsWith(cCleanNum) || cCleanNum.endsWith(csCleanCustNum))) return true;
+                        }
+                        if (cMob && csMobile) {
+                          if (csMobile === cMob || csMobile.endsWith(cMob) || cMob.endsWith(csMobile)) return true;
+                        }
+                        if (cCleanName && csName) {
+                          if (csName === cCleanName || csName.includes(cCleanName) || cCleanName.includes(csName)) return true;
+                        }
+                        return false;
+                      });
                       const matchingPva = (projectVisitAgreements || []).find((p: any) => p.customerName === c.name || p.customerMobile === c.mobile);
                       const matchingAgreement = (agreements || []).find((a: any) => a.party_name === c.name || (a.party_contact && a.party_contact.includes(c.mobile)));
                       const matchingBooking = (bookings || []).find((b: any) => b.customer_name === c.name);
@@ -901,8 +1030,7 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                           </td>
                         </tr>
                       );
-                    });
-                })()}
+                    })}
               </tbody>
             </table>
           </div>

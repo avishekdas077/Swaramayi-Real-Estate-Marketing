@@ -11,6 +11,10 @@ interface BookingManagementViewProps {
   setBookings?: React.Dispatch<React.SetStateAction<any[]>>;
   setShowNewBookingModal: (val: boolean) => void;
   setShowAllotmentModal: (val: any) => void;
+  invoices?: any[];
+  setInvoices?: (invoices: any[]) => void;
+  setActiveTab?: (tab: string) => void;
+  setBillingInvoiceCategory?: (cat: string) => void;
 }
 
 export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
@@ -23,8 +27,69 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
   setBookings,
   setShowNewBookingModal,
   setShowAllotmentModal,
+  invoices = [],
+  setInvoices,
+  setActiveTab,
+  setBillingInvoiceCategory,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
+  const handleTransferToBilling = (b: any) => {
+    const generatedInvoiceNumber = (b.booking_code && b.booking_code.includes('SRM-BKG-'))
+      ? b.booking_code.replace('SRM-BKG-', 'SRM-INV-')
+      : `SRM-INV-2026-0000${(invoices?.length || 0) + 88}`;
+
+    const brokerageAmt = Number(b.brokerage_amount) || 102297;
+    const taxableVal = brokerageAmt;
+    const cgst = Math.round(taxableVal * 0.09);
+    const sgst = Math.round(taxableVal * 0.09);
+    const totalAmt = taxableVal + cgst + sgst;
+
+    const newInvoiceObj = {
+      id: `inv-${Date.now()}`,
+      invoice_number: generatedInvoiceNumber,
+      booking_code: b.booking_code,
+      customer_name: b.customer_name || 'SUMANTH VARMA',
+      customer_mobile: b.customer_mobile || '+91 98765 43210',
+      customer_number: b.customer_number || 'SRM-CUS-2026-000185',
+      property_title: b.project_name || 'GAJAPATI APARTMENT',
+      property_code: b.property_code || b.propertyCode || 'SRM-PROP-2026-000426',
+      developer_name: b.developer_name || 'Dhriti Builders & Developers',
+      developer_gstin: '19AAACD4567E1Z2',
+      developer_contact_person: 'Mr. Animesh Sen',
+      developer_mobile: '+91 98300 12345',
+      branch_name: 'Kolkata Branch',
+      invoice_category: 'CUSTOMER',
+      particulars: `Brokerage & Real Estate Marketing Service Charges for ${b.project_name || 'Booked Unit'} (${b.tower_unit || 'Unit'})`,
+      taxable_value: taxableVal,
+      cgst_amount: cgst,
+      sgst_amount: sgst,
+      total_invoice_amount: totalAmt,
+      payment_status: 'PAID_SETTLED',
+      payment_mode: b.payment_mode || 'UPI / Online Bank Transfer',
+      payment_ref: b.payment_ref || `TXN-SRM-${Math.floor(100000 + Math.random() * 900000)}`,
+      created_date: new Date().toISOString().split('T')[0],
+      sales_executive: b.sales_executive || 'Ramesh Pawar (Field Exec - Kondapur)'
+    };
+
+    if (setInvoices) {
+      setInvoices((prev: any[]) => [newInvoiceObj, ...(prev || [])]);
+    }
+
+    if (setBookings) {
+      setBookings((prev: any[]) => (prev || []).filter((item: any) => item.id !== b.id && item.booking_code !== b.booking_code));
+    }
+
+    if (setBillingInvoiceCategory) {
+      setBillingInvoiceCategory('CUSTOMER');
+    }
+
+    if (setActiveTab) {
+      setActiveTab('billing_management');
+    }
+
+    alert(`💳 BILLING INVOICE GENERATED SUCCESSFULLY!\n\nGenerated Tax Invoice: ${generatedInvoiceNumber}\nCustomer: ${b.customer_name || 'Customer'}\nProperty: ${b.project_name || 'Property'}\nTotal Amount Billed: ₹${totalAmt.toLocaleString('en-IN')}\n\nRecord removed from Booking Management and transferred to Billing Management.`);
+  };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -170,6 +235,13 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
                           style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
                         >
                           📄 Allotment PDF
+                        </button>
+                        <button 
+                          onClick={() => handleTransferToBilling(b)} 
+                          style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)' }}
+                          title="Generate Tax Invoice, remove from Booking Management, and transfer to Billing Management"
+                        >
+                          💳 Billing
                         </button>
                         {isSuperAdmin && (
                           <button 

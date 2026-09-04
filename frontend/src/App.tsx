@@ -234,8 +234,10 @@ function ScheduleVisitModalContent({
 
     setScheduledVisits((prev: any[]) => [singleVisitSummary, ...prev]);
 
-    setIndividualCostSheets((prev: any[]) => prev.filter(sheet => 
-      !selectedCsIds.includes(sheet.costSheetId)
+    setIndividualCostSheets((prev: any[]) => prev.map(sheet => 
+      selectedCsIds.includes(sheet.costSheetId)
+        ? { ...sheet, status: 'CONVERTED_TO_VISIT', visitId: masterScheduleId }
+        : sheet
     ));
 
     setCreatedSuccess(newPlan);
@@ -3712,12 +3714,54 @@ export default function App() {
     if (!showSingleCostSheetConfirmModal) return;
     const { property: prop, matchingReq, calculated, nextId } = showSingleCostSheetConfirmModal;
 
-    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || 'SRM-CUS-2026-000187';
+    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || 'SRM-CUS-2026-000185';
     const matchId = matchingReq?.requestId || selectedMatchingId || 'MATCH-2026-000002';
 
     const newCostSheet = createCostSheetObject(prop, matchingReq, calculated, nextId, 1);
 
     setIndividualCostSheets(prev => [newCostSheet, ...prev]);
+
+    // Automatically register/update customer in Customer Management (Customer Master Vault)
+    const custName = matchingReq?.customerName || selectedCust?.name || selectedCust?.full_name || 'Customer';
+    const custMobile = matchingReq?.mobile || selectedCust?.mobile || '';
+    const cleanMobile = custMobile.replace(/\D/g, '');
+    const custEmail = matchingReq?.email || selectedCust?.email || `${custName.toLowerCase().replace(/\s+/g, '.')}@gmail.com`;
+    const askingPrice = prop?.basePrice ? `₹${Number(prop.basePrice).toLocaleString('en-IN')}` : '₹35L - ₹50L';
+    const totalEst = calculated?.grandTotalEstimatedCost ? `₹${Number(calculated.grandTotalEstimatedCost).toLocaleString('en-IN')}` : '₹37,62,013';
+
+    const newCustomerRecord = {
+      id: `CUS-${custId}`,
+      customer_number: custId,
+      full_name: custName,
+      name: custName,
+      mobile: custMobile,
+      email: custEmail,
+      city: 'Kolkata',
+      preferred_location: matchingReq?.preferredArea || prop?.locality || 'Barasat, Kolkata',
+      property_type: matchingReq?.propertyType || prop?.property_type || 'Flat / Apartment',
+      configuration: matchingReq?.configuration || prop?.configuration || '2BHK',
+      budget: matchingReq?.budget || `${askingPrice} (Total: ${totalEst})`,
+      budget_min: matchingReq?.budget_min || 2500000,
+      budget_max: matchingReq?.budget_max || 5000000,
+      purchase_timeline: 'Immediate (< 30 Days)',
+      loan_required: true,
+      investment_purpose: matchingReq?.purpose || 'Self / End Use',
+      customer_status: 'COST_SHEET_CREATED',
+      status: 'COST_SHEET_CREATED',
+      priority: matchingReq?.priority || 'HOT',
+      quality_score: matchingReq?.leadScore || 88,
+      source: 'Cost Sheet Generation',
+      created_at: new Date().toISOString(),
+      is_deleted: false
+    };
+
+    setCustomers(prev => {
+      const exists = prev.some(c => (c.customer_number && c.customer_number === custId) || (cleanMobile && c.mobile && c.mobile.replace(/\D/g, '') === cleanMobile));
+      if (exists) {
+        return prev.map(c => ((c.customer_number === custId || (cleanMobile && c.mobile && c.mobile.replace(/\D/g, '') === cleanMobile)) ? { ...c, ...newCustomerRecord } : c));
+      }
+      return [newCustomerRecord, ...prev];
+    });
 
     // Update matching request queue status to COST_SHEET_CREATED
     setMatchingRequestsQueue(prev => prev.map(req => {
@@ -3772,7 +3816,7 @@ export default function App() {
     const { properties: selectedProps, matchingReq } = showBulkCostSheetConfirmModal;
 
     const createdSheets: any[] = [];
-    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || 'SRM-CUS-2026-000187';
+    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || 'SRM-CUS-2026-000185';
     const matchId = matchingReq?.requestId || selectedMatchingId || 'MATCH-2026-000002';
 
     selectedProps.forEach((prop, idx) => {
@@ -3797,6 +3841,46 @@ export default function App() {
     if (newOnly.length > 0) {
       setIndividualCostSheets(prev => [...newOnly, ...prev]);
     }
+
+    // Automatically register/update customer in Customer Management (Customer Master Vault)
+    const custName = matchingReq?.customerName || selectedCust?.name || selectedCust?.full_name || 'Customer';
+    const custMobile = matchingReq?.mobile || selectedCust?.mobile || '';
+    const cleanMobile = custMobile.replace(/\D/g, '');
+    const custEmail = matchingReq?.email || selectedCust?.email || `${custName.toLowerCase().replace(/\s+/g, '.')}@gmail.com`;
+
+    const newCustomerRecord = {
+      id: `CUS-${custId}`,
+      customer_number: custId,
+      full_name: custName,
+      name: custName,
+      mobile: custMobile,
+      email: custEmail,
+      city: 'Kolkata',
+      preferred_location: matchingReq?.preferredArea || selectedProps[0]?.locality || 'Barasat, Kolkata',
+      property_type: matchingReq?.propertyType || selectedProps[0]?.property_type || 'Flat / Apartment',
+      configuration: matchingReq?.configuration || selectedProps[0]?.configuration || '2BHK',
+      budget: matchingReq?.budget || '₹25,00,000 - ₹38,00,000',
+      budget_min: matchingReq?.budget_min || 2500000,
+      budget_max: matchingReq?.budget_max || 5000000,
+      purchase_timeline: 'Immediate (< 30 Days)',
+      loan_required: true,
+      investment_purpose: matchingReq?.purpose || 'Self / End Use',
+      customer_status: 'COST_SHEET_CREATED',
+      status: 'COST_SHEET_CREATED',
+      priority: matchingReq?.priority || 'HOT',
+      quality_score: matchingReq?.leadScore || 88,
+      source: 'Cost Sheet Generation',
+      created_at: new Date().toISOString(),
+      is_deleted: false
+    };
+
+    setCustomers(prev => {
+      const exists = prev.some(c => (c.customer_number && c.customer_number === custId) || (cleanMobile && c.mobile && c.mobile.replace(/\D/g, '') === cleanMobile));
+      if (exists) {
+        return prev.map(c => ((c.customer_number === custId || (cleanMobile && c.mobile && c.mobile.replace(/\D/g, '') === cleanMobile)) ? { ...c, ...newCustomerRecord } : c));
+      }
+      return [newCustomerRecord, ...prev];
+    });
 
     // Update matching request status to COST_SHEET_CREATED
     setMatchingRequestsQueue(prev => prev.map(req => {
@@ -8313,6 +8397,8 @@ export default function App() {
               costSheetShares={costSheetShares}
               setActiveTab={setActiveTab}
               setActiveVisitSubTab={setActiveVisitSubTab}
+              scheduledVisits={scheduledVisits}
+              visitPlans={visitPlans}
             />
           )}
 
@@ -8438,6 +8524,10 @@ export default function App() {
               setBookings={setBookings}
               setShowNewBookingModal={setShowNewBookingModal}
               setShowAllotmentModal={setShowAllotmentModal}
+              invoices={invoices}
+              setInvoices={setInvoices}
+              setActiveTab={setActiveTab}
+              setBillingInvoiceCategory={setBillingInvoiceCategory}
             />
           )}
 

@@ -27,6 +27,8 @@ interface CostSheetSharingViewProps {
   costSheetShares: any[];
   setActiveTab?: (tab: string) => void;
   setActiveVisitSubTab?: (subTab: string) => void;
+  scheduledVisits?: any[];
+  visitPlans?: any[];
 }
 
 export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
@@ -55,8 +57,94 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
   costSheetShares = [],
   setActiveTab,
   setActiveVisitSubTab,
+  scheduledVisits = [],
+  visitPlans = [],
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
+  const allEffectiveCostSheets = React.useMemo(() => {
+    const list = [...individualCostSheets];
+    const seenIds = new Set(individualCostSheets.map(c => c.costSheetId));
+
+    (scheduledVisits || []).forEach((v, idx) => {
+      const csId = v.costSheetId || `COST-SHEET-2026-${String(idx + 1).padStart(6, '0')}`;
+      if (!seenIds.has(csId)) {
+        seenIds.add(csId);
+        list.push({
+          costSheetId: csId,
+          version: 'V01',
+          versionNumber: 1,
+          customerId: v.customerNumber || 'SRM-CUS-2026-000185',
+          matchId: v.matchingId || 'SRM-MAT-2026-000421',
+          propertyId: v.propertyCode || 'SRM-PROP-2026-000426',
+          propertyCode: v.propertyCode || 'SRM-PROP-2026-000426',
+          status: 'CONVERTED_TO_VISIT',
+          visitId: v.visitId || 'SRM-VS-2026-000087',
+          createdAt: v.visitDate || new Date().toLocaleDateString('en-GB'),
+          createdBy: v.assignedExecutive || 'Priya Nair (Sales Exec)',
+          customerSnapshot: {
+            customerId: v.customerNumber || 'SRM-CUS-2026-000185',
+            customerName: v.customerName || 'SUMANTH VARMA',
+            mobile: v.mobile || '+91 98765 43210',
+            alternateMobile: '+91 98490 88888',
+            email: `${(v.customerName || 'customer').toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
+            address: 'Barasat, Kolkata',
+            preferredLocation: 'Barasat, Kolkata',
+            preferredBhk: '2BHK',
+            budget: '₹35L - ₹50L',
+            purpose: 'Self Use',
+            assignedSalesperson: v.assignedExecutive || 'Priya Nair (Sales Exec)'
+          },
+          propertySnapshot: {
+            propertyId: v.propertyCode || 'SRM-PROP-2026-000426',
+            propertyCode: v.propertyCode || 'SRM-PROP-2026-000426',
+            propertyTitle: v.propertyTitle || 'GAJAPATI APARTMENT',
+            projectName: v.propertyTitle || 'GAJAPATI APARTMENT',
+            developerName: 'Dhriti Builders & Developers',
+            locality: 'Barasat',
+            city: 'Kolkata',
+            bhk: '2BHK',
+            possessionStatus: 'Ready to Move'
+          },
+          pricingSnapshot: {
+            basePrice: 3500000,
+            totalEstimatedCost: 3762013
+          },
+          formattedPriceBreakup: {
+            basePriceStr: '₹35,00,000',
+            totalEstimatedCostStr: '₹37,62,013'
+          }
+        });
+      }
+    });
+
+    return list;
+  }, [individualCostSheets, scheduledVisits]);
+
+  const convertedVisitsCount = Math.max(
+    individualCostSheets.filter(c => c.status === 'CONVERTED_TO_VISIT').length,
+    (scheduledVisits || []).filter(v => v.costSheetId || v.propertyCode).length,
+    (visitPlans || []).length
+  );
+
+  // Active Cost Sheets pending in Vault (converted items moved to Visit Management)
+  const pendingCostSheets = React.useMemo(() => {
+    return (individualCostSheets || []).filter(c => 
+      c.status !== 'CONVERTED_TO_VISIT' && !(scheduledVisits || []).some(v => v.costSheetId === c.costSheetId)
+    );
+  }, [individualCostSheets, scheduledVisits]);
+
+  const displayedCostSheets = React.useMemo(() => {
+    if (individualCostSheetsStatusFilter === 'CONVERTED_TO_VISIT') {
+      return (individualCostSheets || []).filter(c => 
+        c.status === 'CONVERTED_TO_VISIT' || (scheduledVisits || []).some(v => v.costSheetId === c.costSheetId)
+      );
+    }
+    if (individualCostSheetsStatusFilter !== 'ALL') {
+      return pendingCostSheets.filter(c => c.status === individualCostSheetsStatusFilter);
+    }
+    return pendingCostSheets;
+  }, [individualCostSheets, scheduledVisits, individualCostSheetsStatusFilter, pendingCostSheets]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -98,75 +186,52 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
       {/* CREATE SHARE AGAINST TRANSACTION ID BAR */}
       <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Share2 size={20} color="#fbbf24" />
-            <div>
-              <h4 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>⚡ QUICK CREATE COST SHEET SHARE AGAINST PARENT TRANSACTION ID</h4>
-              <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>Select parent Cost Sheet ID, Selection ID, or Customer ID to generate a new Share ID (SRM-PSH-2026).</p>
-            </div>
+          <div>
+            <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px' }}>⚡ QUICK CREATE COST SHEET SHARE AGAINST PARENT TRANSACTION ID</span>
+            <p style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', margin: '2px 0 0 0' }}>Select parent Cost Sheet ID, Selection ID, or Customer ID to generate a new Share ID(SRM-PSH-2026).</p>
           </div>
-
           <button 
             onClick={() => setShowCreateShareModal(true)} 
-            style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ background: 'rgba(251, 191, 36, 0.15)', color: '#fbbf24', border: '1px solid #fbbf24', padding: '6px 12px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
           >
-            <Plus size={15} color="#0f172a" /> + Open ID Builder Modal
+            <Plus size={14} /> + Open ID Builder Modal
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : '2fr 1fr 1fr', gap: '12px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : '2fr 1.5fr 1fr', gap: '12px', alignItems: 'center' }}>
           <div>
-            <label style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', display: 'block', marginBottom: '4px' }}>🎯 Select Target Transaction / Cost Sheet ID:</label>
+            <label style={{ fontSize: '0.68rem', color: '#38bdf8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🎯 Select Target Transaction / Cost Sheet ID:</label>
             <select 
               value={newShareForm.parentId} 
-              onChange={(e) => {
-                const id = e.target.value;
-                const found = (individualCostSheets || []).find((c: any) => c.costSheetId === id);
-                if (found) {
-                  setNewShareForm({
-                    ...newShareForm,
-                    parentId: id,
-                    customerName: found.customerSnapshot?.customerName || 'Customer',
-                    customerNumber: found.customerId,
-                    mobile: found.customerSnapshot?.mobile || '',
-                    propertyTitle: found.propertySnapshot?.propertyTitle || found.propertyCode,
-                    finalPrice: found.formattedPriceBreakup?.totalEstimatedCostStr || ''
-                  });
-                } else if (id.includes('CS-2026-000145')) {
-                  setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Rohan Deshmukh', customerNumber: 'SRM-CUS-2026-000184', mobile: '+91 98490 11223', propertyTitle: 'Aparna Zenon Premium 3BHK Residence', finalPrice: '₹84 Lakhs' });
-                } else if (id.includes('CS-2026-000146')) {
-                  setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Avishek Das', customerNumber: 'SRM-CUS-2026-000187', mobile: '9432328947', propertyTitle: 'Madhyamgram Premium 3BHK Flat', finalPrice: '55 Lakhs' });
-                } else if (id.includes('CS-2026-000147')) {
-                  setNewShareForm({ ...newShareForm, parentId: id, customerName: 'Sumanth Varma', customerNumber: 'SRM-CUS-2026-000186', mobile: '+91 98490 88888', propertyTitle: 'My Home Tarkshya Luxury 3BHK', finalPrice: '₹1.54 Crores' });
-                }
-              }}
-              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
+              onChange={(e) => setNewShareForm({ ...newShareForm, parentId: e.target.value })} 
+              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700' }}
             >
-              {(individualCostSheets || []).map((cs: any) => (
-                <option key={cs.costSheetId} value={cs.costSheetId}>
-                  {cs.costSheetId} — {cs.customerSnapshot?.customerName} ({cs.propertySnapshot?.propertyTitle || cs.propertyCode}, {cs.formattedPriceBreakup?.totalEstimatedCostStr})
+              {pendingCostSheets.map((c, idx) => (
+                <option key={idx} value={c.costSheetId}>
+                  {c.costSheetId} — {c.customerSnapshot?.customerName} ({c.propertySnapshot?.projectName || c.propertySnapshot?.propertyTitle}, {c.formattedPriceBreakup?.basePriceStr || 'Price'})
                 </option>
               ))}
-              <option value="SRM-CS-2026-000145">SRM-CS-2026-000145 — Rohan Deshmukh (Aparna Zenon 3BHK, ₹84 Lakhs)</option>
-              <option value="SRM-CS-2026-000146">SRM-CS-2026-000146 — Avishek Das (Madhyamgram 3BHK, 55 Lakhs)</option>
-              <option value="SRM-CS-2026-000147">SRM-CS-2026-000147 — Sumanth Varma (My Home Tarkshya 3BHK, ₹1.54 Crores)</option>
-              <option value="SRM-SEL-2026-000078">SRM-SEL-2026-000078 — Selection Record (Rohan Deshmukh, 3 Properties)</option>
-              <option value="MATREQ-2026-000002">MATREQ-2026-000002 — Avishek Das Matching Request</option>
+              {pendingCostSheets.length === 0 && (
+                <option value="SRM-CS-2026-000145">SRM-CS-2026-000145 — Rohan Deshmukh (Aparna Zenon 3BHK, ₹84 Lakhs)</option>
+              )}
             </select>
           </div>
 
           <div>
-            <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📲 Delivery Channel Gateway:</label>
-            <select value={newShareForm.channel} onChange={(e) => setNewShareForm({ ...newShareForm, channel: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
+            <label style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: '800', display: 'block', marginBottom: '4px' }}>📱 Delivery Channel Gateway:</label>
+            <select 
+              value={newShareForm.channel} 
+              onChange={(e) => setNewShareForm({ ...newShareForm, channel: e.target.value })} 
+              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '700' }}
+            >
               <option value="WhatsApp & Email Gateway">WhatsApp & Email Gateway</option>
-              <option value="WhatsApp Gateway Only">WhatsApp Business API Only</option>
-              <option value="Email PDF Attachment">Email PDF Attachment</option>
-              <option value="SMS Token Link">SMS Secure Token Link</option>
+              <option value="WhatsApp Official API Only">WhatsApp Official API Only</option>
+              <option value="Direct SMS Link Gateway">Direct SMS Link Gateway</option>
+              <option value="Customer Portal Token View">Customer Portal Token View</option>
             </select>
           </div>
 
-          <div>
-            <label style={{ fontSize: '0.72rem', color: 'transparent', display: 'block', marginBottom: '4px' }}>Action</label>
+          <div style={{ display: 'flex', alignItems: 'flex-end' }}>
             <button 
               onClick={() => alert(`🚀 Executed Quick Dispatch Share Token for ${newShareForm.parentId}!`)} 
               style={{ width: '100%', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
@@ -183,7 +248,7 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
           onClick={() => setActiveCostSheetShareSubTab('individual_cost_sheets')} 
           style={{ padding: '8px 18px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeCostSheetShareSubTab === 'individual_cost_sheets' ? '#0284c7' : '#1e293b', color: activeCostSheetShareSubTab === 'individual_cost_sheets' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'flex', alignItems: 'center', gap: '6px' }}
         >
-          📄 Master Individual Cost Sheets Vault ({individualCostSheets.length})
+          📄 Master Individual Cost Sheets Vault ({pendingCostSheets.length})
         </button>
         <button 
           onClick={() => setActiveCostSheetShareSubTab('dispatcher')} 
@@ -201,25 +266,25 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' }}>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px' }}>
               <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL COST SHEETS</span>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{individualCostSheets.length} Sheets</h3>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{pendingCostSheets.length} Sheets</h3>
               <span style={{ fontSize: '0.7rem', color: '#4ade80' }}>ONE PROPERTY = ONE COST SHEET</span>
             </div>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px' }}>
               <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>REVISED VERSIONS</span>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>{individualCostSheets.filter(c => c.versionNumber > 1).length} Revised</h3>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#fbbf24', marginTop: '2px' }}>{pendingCostSheets.filter(c => c.versionNumber > 1).length} Revised</h3>
               <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Version History Logged</span>
             </div>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px' }}>
               <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>PORTFOLIO ESTIMATED COST</span>
               <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>
-                {formatIndianRupees(individualCostSheets.reduce((acc, c) => acc + (c.pricingSnapshot?.totalEstimatedCost || 0), 0))}
+                {formatIndianRupees(pendingCostSheets.reduce((acc, c) => acc + (c.pricingSnapshot?.totalEstimatedCost || 0), 0))}
               </h3>
               <span style={{ fontSize: '0.7rem', color: '#38bdf8' }}>Includes Taxes & Charges</span>
             </div>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px' }}>
               <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>CONVERTED TO VISITS</span>
               <h3 style={{ fontSize: '1.4rem', fontWeight: '900', color: '#a855f7', marginTop: '2px' }}>
-                {individualCostSheets.filter(c => c.status === 'CONVERTED_TO_VISIT').length} Visits
+                {convertedVisitsCount} Visits
               </h3>
               <span style={{ fontSize: '0.7rem', color: '#4ade80' }}>CRM Pipeline Stage 6</span>
             </div>
@@ -245,7 +310,7 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                 onChange={(e) => setIndividualCostSheetsStatusFilter(e.target.value)} 
                 style={{ background: isLight ? '#f8fafc' : '#0f172a', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 12px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }}
               >
-                <option value="ALL">📋 All Statuses ({individualCostSheets.length})</option>
+                <option value="ALL">📋 All Statuses ({displayedCostSheets.length})</option>
                 <option value="GENERATED">🟢 GENERATED</option>
                 <option value="SENT_TO_CUSTOMER">📲 SENT TO CUSTOMER</option>
                 <option value="REVISED">✏️ REVISED</option>
@@ -260,14 +325,14 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
           <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>
-                📄 Master Individual Cost Sheets Vault ({individualCostSheets.length} Records)
+                📄 Master Individual Cost Sheets Vault ({displayedCostSheets.length} Records)
               </h3>
               <span style={{ fontSize: '0.75rem', color: '#4ade80', background: 'rgba(34, 197, 94, 0.15)', padding: '4px 10px', borderRadius: '20px', fontWeight: '800' }}>
                 ● ONE PROPERTY = ONE COST SHEET ENFORCED
               </span>
             </div>
 
-            {individualCostSheets.length === 0 ? (
+            {displayedCostSheets.length === 0 ? (
               <div style={{ padding: '36px 20px', textAlign: 'center', background: isLight ? '#f8fafc' : '#0f172a', borderRadius: '12px', border: '1px dashed #ef4444' }}>
                 <Trash2 size={32} color="#ef4444" style={{ margin: '0 auto 10px auto' }} />
                 <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '1.05rem' }}>📭 NO INDIVIDUAL COST SHEETS FOUND</h4>
@@ -291,10 +356,8 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {individualCostSheets
+                    {displayedCostSheets
                       .filter((item: any) => {
-                        if (item.status === 'CONVERTED_TO_VISIT') return false;
-                        if (individualCostSheetsStatusFilter !== 'ALL' && item.status !== individualCostSheetsStatusFilter) return false;
                         return matchesSearchQuery(item, searchQuery || individualCostSheetsSearch);
                       })
                       .map((item: any, i: number) => (
