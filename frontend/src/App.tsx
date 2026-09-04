@@ -2012,20 +2012,107 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_matching_queue_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const clean = parsed.filter((r: any) => 
-            r.requestId !== 'SRM-MAT-2026-000421' && 
-            r.requestId !== 'SRM-MAT-2026-000422' && 
-            r.customerName !== 'BISHWAJIT PANDEY' && 
-            r.customerName !== 'SUMANTH VARMA'
-          );
-          return clean;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
         }
       }
     } catch (e) {
       console.error('Error reading matching queue from localStorage:', e);
     }
-    return [];
+    return [
+      {
+        id: 'SRM-MAT-2026-000421',
+        requestId: 'SRM-MAT-2026-000421',
+        date: '04 Sep 2026',
+        customerName: 'BISHWAJIT PANDEY',
+        customerNumber: 'SRM-CUS-2026-000184',
+        leadId: 'SRM-LEAD-2026-001245',
+        requirementId: 'SRM-REQ-2026-000095',
+        mobile: '+91 98490 12345',
+        email: 'bishwajit.pandey@gmail.com',
+        purpose: 'Self / End Use',
+        propertyType: 'Flat / Apartment',
+        configuration: '3BHK',
+        budget: '₹35,00,000 - ₹50,00,000',
+        budget_min: 3500000,
+        budget_max: 5000000,
+        preferredArea: 'Barasat, Kolkata',
+        radiusKm: 10,
+        possessionStatus: 'Ready to Move',
+        carpetArea: '900 – 1200 Sq.Ft.',
+        facing: 'East Facing',
+        parking: 'Covered Slot',
+        amenities: '24/7 Power Backup, Security, Lift',
+        completenessScore: 92,
+        priority: 'HOT',
+        leadScore: 88,
+        assignedExecutive: 'Priya Nair (Sales Exec)',
+        status: 'PENDING',
+        created_at: '2026-09-04T06:42:00.000Z'
+      },
+      {
+        id: 'SRM-MAT-2026-000422',
+        requestId: 'SRM-MAT-2026-000422',
+        date: '04 Sep 2026',
+        customerName: 'SUMANTH VARMA',
+        customerNumber: 'SRM-CUS-2026-000185',
+        leadId: 'SRM-LEAD-2026-001246',
+        requirementId: 'SRM-REQ-2026-000096',
+        mobile: '+91 98765 43210',
+        email: 'sumanth.varma@gmail.com',
+        purpose: 'Self / End Use',
+        propertyType: 'Flat / Apartment',
+        configuration: '2BHK',
+        budget: '₹25,00,000 - ₹38,00,000',
+        budget_min: 2500000,
+        budget_max: 3800000,
+        preferredArea: 'Barasat, Kolkata',
+        radiusKm: 10,
+        possessionStatus: 'Ready to Move',
+        carpetArea: '650 – 850 Sq.Ft.',
+        facing: 'North-East Facing',
+        parking: 'Open Parking',
+        amenities: '24/7 Water, Security, Power Backup',
+        completenessScore: 88,
+        priority: 'WARM',
+        leadScore: 88,
+        assignedExecutive: 'Rajesh Varma (Super Admin)',
+        status: 'PENDING',
+        created_at: '2026-09-04T06:42:00.000Z'
+      },
+      {
+        id: 'SRM-MAT-2026-000423',
+        requestId: 'SRM-MAT-2026-000423',
+        date: '04 Sep 2026',
+        customerName: 'Avi Das',
+        customerNumber: 'SRM-CUS-2026-000186',
+        leadId: 'SRM-LEAD-2026-001247',
+        requirementId: 'SRM-REQ-2026-000097',
+        mobile: '7658789990',
+        email: 'avi@gmail.com',
+        purpose: 'Rent / Investment',
+        propertyType: 'Flat / Apartment',
+        configuration: '2BHK',
+        budget: '₹25,00,000 - ₹50,00,000',
+        budget_min: 2500000,
+        budget_max: 5000000,
+        preferredArea: 'Madhyamgram, Kolkata',
+        secondaryAreas: 'Sodepur',
+        secondary_areas: 'Sodepur',
+        radiusKm: 10,
+        possessionStatus: 'Ready to Move',
+        carpetArea: '500 – 1000 Sq.Ft.',
+        facing: 'North-East Facing',
+        parking: 'Covered Slot',
+        amenities: '24/7 Power Backup, Fire Safety, Security',
+        completenessScore: 100,
+        priority: 'HOT',
+        leadScore: 100,
+        assignedExecutive: 'Abinash Roy (Admin)',
+        status: 'PENDING',
+        created_at: '2026-09-04T06:42:00.000Z'
+      }
+    ];
   });
 
   useEffect(() => {
@@ -2947,63 +3034,12 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_customers_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed)) return parsed;
       }
     } catch (e) {
       console.error('Error reading customers from localStorage:', e);
     }
-    return [
-      {
-        id: 'CUS-001',
-        customer_number: 'SRM-CUS-2026-000184',
-        full_name: 'BISHWAJIT PANDEY',
-        name: 'BISHWAJIT PANDEY',
-        mobile: '+91 98490 12345',
-        alternate_mobile: '+91 70442 93951',
-        email: 'bishwajit.pandey@gmail.com',
-        city: 'Kolkata',
-        address: 'Chapadali, Barasat, North 24 Parganas',
-        preferred_location: 'Barasat, Kolkata',
-        property_type: 'Flat / Apartment',
-        configuration: '3BHK',
-        budget_min: 3500000,
-        budget_max: 5000000,
-        purchase_timeline: 'Immediate (< 30 Days)',
-        loan_required: true,
-        investment_purpose: 'Self / End Use',
-        customer_status: 'NEW',
-        status: 'NEW',
-        priority: 'HOT',
-        quality_score: 85,
-        created_at: new Date().toISOString(),
-        is_deleted: false
-      },
-      {
-        id: 'CUS-002',
-        customer_number: 'SRM-CUS-2026-000185',
-        full_name: 'SUMANTH VARMA',
-        name: 'SUMANTH VARMA',
-        mobile: '+91 98765 43210',
-        alternate_mobile: '+91 98833 95102',
-        email: 'sumanth.varma@gmail.com',
-        city: 'Kolkata',
-        address: 'Jessore Road, Barasat',
-        preferred_location: 'Barasat, Kolkata',
-        property_type: 'Flat / Apartment',
-        configuration: '2BHK',
-        budget_min: 2500000,
-        budget_max: 3800000,
-        purchase_timeline: '1-3 Months',
-        loan_required: true,
-        investment_purpose: 'Self / End Use',
-        customer_status: 'QUALIFIED',
-        status: 'QUALIFIED',
-        priority: 'WARM',
-        quality_score: 75,
-        created_at: new Date().toISOString(),
-        is_deleted: false
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
@@ -4806,19 +4842,20 @@ export default function App() {
                 return Array.from(map.values());
               });
             }
-            if (Array.isArray(mData.customers) && mData.customers.length > 0) {
-              setCustomers(prev => {
-                const map = new Map<string, any>();
-                prev.forEach((c: any) => map.set(c.id || c.customer_number, c));
-                mData.customers.forEach((c: any) => map.set(c.id || c.customer_number, c));
-                return Array.from(map.values());
-              });
+            if (Array.isArray(mData.customers)) {
+              setCustomers(mData.customers);
+              try {
+                localStorage.setItem('swaramayi_customers_v4_clean', JSON.stringify(mData.customers));
+              } catch (e) {}
             }
             if (Array.isArray(mData.leads)) {
               setLeadsList(mData.leads);
             }
             if (Array.isArray(mData.matching_requests) && mData.matching_requests.length > 0) {
               setMatchingRequestsQueue(mData.matching_requests);
+              try {
+                localStorage.setItem('swaramayi_matching_queue_v4_clean', JSON.stringify(mData.matching_requests));
+              } catch (e) {}
             }
             if (Array.isArray(mData.developers) && mData.developers.length > 0) {
               try {

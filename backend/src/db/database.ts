@@ -534,6 +534,9 @@ export function loadData() {
       if (mongoData.agreements) dbStore.data.agreements = mongoData.agreements as any;
       if (mongoData.bookings) dbStore.data.bookings = mongoData.bookings as any;
       if (mongoData.invoices) dbStore.data.invoices = mongoData.invoices as any;
+      if (mongoData.matching_requests) (dbStore.data as any).matching_requests = mongoData.matching_requests as any;
+      if (mongoData.cost_sheets) (dbStore.data as any).cost_sheets = mongoData.cost_sheets as any;
+      if (mongoData.developers) (dbStore.data as any).developers = mongoData.developers as any;
     }
   }).catch(() => {});
 }
