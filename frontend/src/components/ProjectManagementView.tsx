@@ -864,12 +864,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
     });
 
     const defaultMatrix = [
-      { title: 'TILOTTAMA APPARTMENT', locality: 'BARASAT, BANAMALIPUR, BARASAT NEAR ECO HOSPITAL', devName: 'LITTON SEN', devId: 'SRM-DEV-2026-000105', devMobile: '9883395102', devAltMobile: '7044293951', lat: '22.722361', lng: '88.493403' },
-      { title: 'My Home Bhooja', locality: 'Kondapur / HITEC City', devName: 'My Home Constructions', devId: 'SRM-DEV-2026-000101', devMobile: '9849012345', devAltMobile: '9849012346', lat: '17.440081', lng: '78.377625' },
-      { title: 'My Home Sayuk', locality: 'Tellapur / Gachibowli', devName: 'My Home Constructions', devId: 'SRM-DEV-2026-000101', devMobile: '9849012345', devAltMobile: '9849012346', lat: '17.452000', lng: '78.285000' },
-      { title: 'Aparna Zenon', locality: 'Nanakramguda / Financial District', devName: 'Aparna Constructions', devId: 'SRM-DEV-2026-000102', devMobile: '9849023456', devAltMobile: '9849023457', lat: '17.420100', lng: '78.341000' },
-      { title: 'Rajapushpa Imperia', locality: 'Tellapur Hub', devName: 'Rajapushpa Properties', devId: 'SRM-DEV-2026-000103', devMobile: '9849034567', devAltMobile: '9849034568', lat: '17.452000', lng: '78.285000' },
-      { title: 'Dhriti Residency', locality: 'Madinaguda Sector', devName: 'Dhriti Builders', devId: 'SRM-DEV-2026-000104', devMobile: '9849045678', devAltMobile: '9849045679', lat: '17.492100', lng: '78.341200' }
+      { title: 'TILOTTAMA APPARTMENT', locality: 'BARASAT, BANAMALIPUR, BARASAT NEAR ECO HOSPITAL', devName: 'LITTON SEN', devId: 'SRM-DEV-2026-000105', devMobile: '9883395102', devAltMobile: '7044293951', lat: '22.722361', lng: '88.493403' }
     ];
 
     defaultMatrix.forEach(def => {
@@ -3238,8 +3233,16 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           <button
                             onClick={() => {
                               if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Developer ${dev.id} (${dev.name})?`)) {
-                                const nextList = developerMasterList.filter((d: any) => d.id !== dev.id);
+                                const nextList = developerMasterList.filter((d: any) => d.id !== dev.id && d.name !== dev.name);
                                 setDeveloperMasterList(nextList);
+                                try {
+                                  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+                                  fetch(`http://${host}:5000/api/v1/crm/sync`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ developers: nextList })
+                                  }).catch(() => {});
+                                } catch (e) {}
                                 alert(`🗑️ Developer ${dev.name} permanently deleted.`);
                               }
                             }}
