@@ -880,10 +880,13 @@ Integrity Check: PASSED (SHA-256 Verified)`)} style={{ background: isLight ? '#f
                                   onClick={() => {
                                     if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete customer record ${c.customer_number || c.id} (${c.name})?`)) {
                                       if (setCustomers) {
-                                        setCustomers((prev: any[]) => (prev || []).filter((cust: any) => cust.id !== c.id && cust.customer_number !== c.customer_number));
+                                        setCustomers((prev: any[]) => (prev || []).filter((cust: any) => {
+                                          if (c._id && cust._id) return cust._id !== c._id;
+                                          return cust.id !== c.id;
+                                        }));
                                       }
                                       if (setLeadsList) {
-                                        setLeadsList((prev: any[]) => (prev || []).filter((l: any) => l.id !== c.id && l.customer_number !== c.customer_number && l.customer_id !== c.id));
+                                        setLeadsList((prev: any[]) => (prev || []).filter((l: any) => l.id !== c.id && l.customer_id !== c.id));
                                       }
                                       alert(`🗑️ Customer record ${c.customer_number || c.name} deleted permanently.`);
                                     }

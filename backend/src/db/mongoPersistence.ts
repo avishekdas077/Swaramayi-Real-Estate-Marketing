@@ -49,26 +49,16 @@ async function syncCollection(model: mongoose.Model<any>, records: any[]) {
 
   try {
     // Extract valid record identifiers
-    const validIds = records.map(r => r.id).filter(Boolean);
-    const validCustNums = records.map(r => r.customer_number).filter(Boolean);
-    const validBookingCodes = records.map(r => r.booking_code).filter(Boolean);
-    const validInvoiceNums = records.map(r => r.invoice_number).filter(Boolean);
-    const validAgreementCodes = records.map(r => r.agreement_code).filter(Boolean);
-    const validPvaIds = records.map(r => r.projectVisitAgreementId || r.pvaId).filter(Boolean);
-    const validCostSheetIds = records.map(r => r.costSheetId).filter(Boolean);
+    const validIds = records.map(r => r.id || r.customer_number || r.booking_code || r.invoice_number || r.agreement_code || r.costSheetId || r.projectVisitAgreementId || r.pvaId || r.team_name || r.branch_name).filter(Boolean);
+    const validMongoIds = records.map(r => r._id).filter(Boolean);
 
     // Delete records from MongoDB Atlas that were permanently deleted in CRM
-    const deleteConditions: any[] = [];
-    if (validIds.length > 0) deleteConditions.push({ id: { $nin: validIds } });
-    if (validCustNums.length > 0) deleteConditions.push({ customer_number: { $nin: validCustNums } });
-    if (validBookingCodes.length > 0) deleteConditions.push({ booking_code: { $nin: validBookingCodes } });
-    if (validInvoiceNums.length > 0) deleteConditions.push({ invoice_number: { $nin: validInvoiceNums } });
-    if (validAgreementCodes.length > 0) deleteConditions.push({ agreement_code: { $nin: validAgreementCodes } });
-    if (validPvaIds.length > 0) deleteConditions.push({ projectVisitAgreementId: { $nin: validPvaIds }, pvaId: { $nin: validPvaIds } });
-    if (validCostSheetIds.length > 0) deleteConditions.push({ costSheetId: { $nin: validCostSheetIds } });
-
-    if (deleteConditions.length > 0) {
-      await model.deleteMany({ $and: deleteConditions });
+    if (validIds.length > 0) {
+      const deleteFilter: any = { id: { $nin: validIds } };
+      if (validMongoIds.length > 0) {
+        deleteFilter._id = { $nin: validMongoIds };
+      }
+      await model.deleteMany(deleteFilter);
     }
 
     // Upsert remaining active records
