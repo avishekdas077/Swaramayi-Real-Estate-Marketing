@@ -1282,7 +1282,25 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       {activeCustomerSubTab === 'customer_360_profile' && (() => {
         const activeCust = (selectedCust && selectedCust.customer_number && selectedCust.customer_number !== 'NO_CUSTOMERS')
           ? selectedCust
-          : (allActiveCustomers.length > 0 ? allActiveCustomers[0] : selectedCust);
+          : (allActiveCustomers.length > 0 ? allActiveCustomers[0] : null);
+
+        if (!activeCust) {
+          return (
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
+              <span style={{ fontSize: '2.5rem' }}>👤</span>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>No Customer Selected for 360° Profile</h3>
+              <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8', maxWidth: '480px' }}>
+                Please select a customer from the <strong>Customer Master Vault</strong> table by clicking the <strong>360° View</strong> button.
+              </p>
+              <button 
+                onClick={() => setActiveCustomerSubTab('customer_vault')}
+                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}
+              >
+                ← Back to Customer Master Vault
+              </button>
+            </div>
+          );
+        }
 
         return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

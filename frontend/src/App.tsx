@@ -2074,7 +2074,16 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed;
+          return parsed.filter((r: any) => {
+            const name = (r.customerName || r.name || '').toString().toLowerCase();
+            const mob = (r.mobile || '').toString().replace(/\D/g, '');
+            const custNum = (r.customerNumber || '').toString().toUpperCase();
+            const reqId = (r.requestId || r.id || '').toString().toUpperCase();
+            if (name.includes('rishita') || mob.includes('8876697975') || custNum === 'SRM-CUS-2026-000188' || reqId === 'SRM-MAT-2026-000422') {
+              return false;
+            }
+            return true;
+          });
         }
       }
     } catch (e) {
@@ -2882,9 +2891,7 @@ export default function App() {
   }, [teams]);
 
   // 3. Approval Queue & Security Logs
-  const [approvalRequests, setApprovalRequests] = useState([
-    { id: 'REQ-01', request_code: 'SRM-REQ-2026-000101', request_type: 'LEAD_TRANSFER', record_id: 'SRM-CUS-2026-000184 (Rohan Deshmukh)', requested_by: 'Priya Nair (Sales Exec)', requested_at: '16 Aug 2026 12:00 PM', old_val: 'Priya Nair (Sales Exec)', new_val: 'Rahul Sharma (Team Lead)', reason: 'Customer requested senior consultant for villa project.', status: 'PENDING', approved_by: '' }
-  ]);
+  const [approvalRequests, setApprovalRequests] = useState<any[]>([]);
 
   const [activeSessions, setActiveSessions] = useState([
     { id: 'SES-01', user: 'Rajesh Varma (Super Admin)', role: 'SUPER_ADMIN', ip: '127.0.0.1 (Localhost)', device: 'Chrome / Windows 11', login_time: '27 Aug 09:00 AM', status: 'ACTIVE' },
@@ -3036,6 +3043,10 @@ export default function App() {
             const id = (c.id || c._id || '').toString().toLowerCase().trim();
             const name = (c.name || c.full_name || '').toString().toLowerCase().trim();
 
+            if (name.includes('rishita') || mob.includes('8876697975') || num.toUpperCase() === 'SRM-CUS-2026-000188') {
+              return;
+            }
+
             const key = num || (mob && mob.length >= 7 ? `mob:${mob.slice(-10)}` : '') || (id ? `id:${id}` : `name:${name}`);
             if (key && !seen.has(key)) {
               seen.add(key);
@@ -3073,7 +3084,15 @@ export default function App() {
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed;
+          return parsed.filter((l: any) => {
+            const name = (l.name || l.customer_name || '').toString().toLowerCase();
+            const mob = (l.mobile || l.phone || '').toString().replace(/\D/g, '');
+            const num = (l.customer_number || l.lead_number || l.id || '').toString().toUpperCase();
+            if (name.includes('rishita') || mob.includes('8876697975') || num.includes('000188')) {
+              return false;
+            }
+            return true;
+          });
         }
       }
     } catch (e) {
@@ -7289,7 +7308,7 @@ export default function App() {
                     <button onClick={handleOpenAddPropertyModal} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Building2 size={14} /> + Add Property
                     </button>
-                    <button onClick={() => alert('⚡ Running Smart Property Matching Engine across all 438 customer requirements...')} style={{ background: 'rgba(168, 85, 247, 0.2)', color: isLight ? '#7e22ce' : '#c084fc', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button onClick={() => alert(`⚡ Running Smart Property Matching Engine across ${customers.length} customer requirements...`)} style={{ background: 'rgba(168, 85, 247, 0.2)', color: isLight ? '#7e22ce' : '#c084fc', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Zap size={14} /> Find Matches
                     </button>
                     <button onClick={() => alert('📅 Opening Site Visit Scheduler...')} style={{ background: 'rgba(56, 189, 248, 0.2)', color: isLight ? '#0284c7' : '#38bdf8', border: '1px solid rgba(56, 189, 248, 0.4)', padding: '8px 12px', borderRadius: '8px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -7390,7 +7409,7 @@ export default function App() {
                 const totalPropertyStock = filteredProps.length;
 
                 const availableProperties = filteredProps.filter(p => 
-                  p.status === 'AVAILABLE' || p.status === 'READY_TO_MOVE' || p.status === 'ACTIVE' || !p.status
+                  p.status === 'LIVE' || p.status === 'AVAILABLE' || p.status === 'READY_TO_MOVE' || p.status === 'ACTIVE' || !p.status
                 );
                 const totalAvailable = availableProperties.length;
 
@@ -7483,42 +7502,42 @@ export default function App() {
                         <span style={{ fontSize: '0.65rem', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '700' }}>Click &rarr; Live Stock</span>
                       </div>
 
-                      {/* CARD 7: SITE VISITS */}
+                      {/* CARD 6: SITE VISITS */}
                       <div onClick={() => openDrillDown('SITE VISITS SCHEDULED', allVisits)} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer', boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none' }}>
                         <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>SITE VISITS</span>
                         <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0284c7' : '#38bdf8', marginTop: '2px' }}>{totalSiteVisits}</h4>
                         <span style={{ fontSize: '0.65rem', color: '#0284c7', fontWeight: '700' }}>Click &rarr; Visit Logs</span>
                       </div>
 
-                      {/* CARD 8: BOOKINGS */}
+                      {/* CARD 7: BOOKINGS */}
                       <div onClick={() => openDrillDown('CONFIRMED BOOKINGS', filteredBookings)} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer', boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none' }}>
                         <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>BOOKINGS</span>
                         <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#16a34a' : '#4ade80', marginTop: '2px' }}>{totalBookingsCount}</h4>
                         <span style={{ fontSize: '0.65rem', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '700' }}>Click &rarr; Bookings</span>
                       </div>
 
-                      {/* CARD 9: EXPECTED BROKERAGE */}
+                      {/* CARD 8: EXPECTED BROKERAGE */}
                       <div onClick={() => openDrillDown('EXPECTED BROKERAGE PIPELINE', filteredBookings)} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer', boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none' }}>
                         <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>EXPECTED BROKERAGE</span>
                         <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>{displayExpectedBrokerage}</h4>
                         <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Pipeline Deals</span>
                       </div>
 
-                      {/* CARD 10: RECEIVED BROKERAGE */}
+                      {/* CARD 9: RECEIVED BROKERAGE */}
                       <div onClick={() => openDrillDown('RECEIVED BROKERAGE LEDGER', invoices.filter(i => i.payment_status === 'PAID_SETTLED'))} style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', padding: '14px', borderRadius: '12px', cursor: 'pointer', boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none' }}>
                         <span style={{ fontSize: '0.7rem', color: isLight ? '#16a34a' : '#4ade80', textTransform: 'uppercase', fontWeight: '800' }}>RECEIVED BROKERAGE</span>
                         <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#16a34a' : '#4ade80', marginTop: '2px' }}>{displayReceivedBrokerage}</h4>
                         <span style={{ fontSize: '0.65rem', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '700' }}>✓ Invoiced & Paid</span>
                       </div>
 
-                      {/* CARD 11: PENDING BROKERAGE */}
+                      {/* CARD 10: PENDING BROKERAGE */}
                       <div onClick={() => openDrillDown('PENDING BROKERAGE LEDGER', invoices.filter(i => i.payment_status !== 'PAID_SETTLED'))} style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #f59e0b', padding: '14px', borderRadius: '12px', cursor: 'pointer', boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none' }}>
                         <span style={{ fontSize: '0.7rem', color: isLight ? '#d97706' : '#fbbf24', textTransform: 'uppercase', fontWeight: '800' }}>PENDING BROKERAGE</span>
                         <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#d97706' : '#fbbf24', marginTop: '2px' }}>{displayPendingBrokerage}</h4>
                         <span style={{ fontSize: '0.65rem', color: isLight ? '#d97706' : '#fbbf24', fontWeight: '700' }}>Invoiced & Awaiting</span>
                       </div>
 
-                      {/* CARD 12: RECEIVABLES */}
+                      {/* CARD 11: RECEIVABLES */}
                       <div onClick={() => openDrillDown('TOTAL RECEIVABLES DIRECTORY', invoices)} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '14px', borderRadius: '12px', cursor: 'pointer', boxShadow: isLight ? '0 2px 8px rgba(0,0,0,0.04)' : 'none' }}>
                         <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>RECEIVABLES</span>
                         <h4 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0284c7' : '#38bdf8', marginTop: '2px' }}>{displayReceivables}</h4>
@@ -7544,7 +7563,7 @@ export default function App() {
                       ? `₹${(totalStockVal / 10000000).toFixed(2)} Cr`
                       : `₹${(totalStockVal / 100000).toFixed(2)} L`;
 
-                    const availableUnits = properties.filter(p => p.status === 'AVAILABLE' || p.status === 'READY_TO_MOVE' || p.status === 'ACTIVE' || !p.status).length;
+                    const availableUnits = properties.filter(p => p.status === 'LIVE' || p.status === 'AVAILABLE' || p.status === 'READY_TO_MOVE' || p.status === 'ACTIVE' || !p.status).length;
                     const underNegUnits = properties.filter(p => p.status === 'UNDER_NEGOTIATION' || p.status === 'TOKEN_LOCKED' || p.status === 'BLOCKED').length;
                     const confirmedBookedUnits = properties.filter(p => p.status === 'BOOKED' || p.status === 'SOLD' || p.status === 'CONFIRMED').length || bookings.length;
 
@@ -8064,9 +8083,7 @@ export default function App() {
                     ...bookings.map(b => b.sales_executive).filter(Boolean)
                   ]));
 
-                  const displaySalespeople = uniqueSalespeople.length > 0 ? uniqueSalespeople : ['Priya Nair', 'Amit Patel', 'Srinivas Rao'];
-
-                  const salesData = displaySalespeople.map(name => {
+                  const salesData = uniqueSalespeople.map(name => {
                     const spLeads = customers.filter(c => c.assigned_salesperson === name || c.assigned_to === name).length;
                     const spQual = customers.filter(c => (c.assigned_salesperson === name || c.assigned_to === name) && (c.priority === 'HOT' || c.status === 'QUALIFIED')).length;
                     const spMatch = matchingRequestsQueue.filter(r => r.assignedExecutive === name).length;
@@ -8100,18 +8117,26 @@ export default function App() {
                             </tr>
                           </thead>
                           <tbody>
-                            {salesData.map((sp, i) => (
-                              <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                                <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{sp.name}</td>
-                                <td style={{ padding: '8px' }}>{sp.leads}</td>
-                                <td style={{ padding: '8px' }}>{sp.qual}</td>
-                                <td style={{ padding: '8px' }}>{sp.match}</td>
-                                <td style={{ padding: '8px', color: '#38bdf8' }}>{sp.visit}</td>
-                                <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.bkg}</td>
-                                <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.brk}</td>
-                                <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>{sp.conv}</td>
+                            {salesData.length > 0 ? (
+                              salesData.map((sp, i) => (
+                                <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                                  <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{sp.name}</td>
+                                  <td style={{ padding: '8px' }}>{sp.leads}</td>
+                                  <td style={{ padding: '8px' }}>{sp.qual}</td>
+                                  <td style={{ padding: '8px' }}>{sp.match}</td>
+                                  <td style={{ padding: '8px', color: '#38bdf8' }}>{sp.visit}</td>
+                                  <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.bkg}</td>
+                                  <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{sp.brk}</td>
+                                  <td style={{ padding: '8px', color: '#fbbf24', fontWeight: '800' }}>{sp.conv}</td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={8} style={{ padding: '16px', textAlign: 'center', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                  No salesperson performance data available.
+                                </td>
                               </tr>
-                            ))}
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -8163,9 +8188,7 @@ export default function App() {
               <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 1024 ? '1fr' : '1fr 1fr', gap: '20px' }}>
                 {(() => {
                   const uniqueDevs = Array.from(new Set(properties.map(p => p.developer || p.project_name || p.project || p.builder).filter(Boolean)));
-                  const displayDevs = uniqueDevs.length > 0 ? uniqueDevs : ['Aparna Constructions', 'My Home Group', 'Prestige Group', 'Jayabheri Group'];
-
-                  const devData = displayDevs.map(dev => {
+                  const devData = uniqueDevs.map(dev => {
                     const stock = properties.filter(p => p.developer === dev || p.project_name === dev || p.project === dev || p.builder === dev).length;
                     const visits = scheduledVisits.filter(v => v.developer === dev || v.propertyTitle?.includes(dev)).length;
                     const devBkgs = bookings.filter(b => b.developer === dev || b.project_name === dev);
@@ -8193,15 +8216,23 @@ export default function App() {
                             </tr>
                           </thead>
                           <tbody>
-                            {devData.map((d, i) => (
-                              <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                                <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{d.dev}</td>
-                                <td style={{ padding: '8px' }}>{d.stock}</td>
-                                <td style={{ padding: '8px' }}>{d.visits}</td>
-                                <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.bkg}</td>
-                                <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.brk}</td>
+                            {devData.length > 0 ? (
+                              devData.map((d, i) => (
+                                <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                                  <td style={{ padding: '8px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{d.dev}</td>
+                                  <td style={{ padding: '8px' }}>{d.stock}</td>
+                                  <td style={{ padding: '8px' }}>{d.visits}</td>
+                                  <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.bkg}</td>
+                                  <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>{d.brk}</td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td colSpan={5} style={{ padding: '16px', textAlign: 'center', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                  No developers in inventory.
+                                </td>
                               </tr>
-                            ))}
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -8574,10 +8605,12 @@ export default function App() {
             <MatchingManagementView
               isLight={isLight}
               windowWidth={windowWidth}
+              currentRole={currentRole}
               selectedCust={selectedCust}
               activeMatchingSubTab={activeMatchingSubTab}
               setActiveMatchingSubTab={setActiveMatchingSubTab}
               matchingRequestsQueue={matchingRequestsQueue}
+              setMatchingRequestsQueue={setMatchingRequestsQueue}
               selectedMatchingId={selectedMatchingId}
               setSelectedMatchingId={setSelectedMatchingId}
               costSheetShares={costSheetShares}
@@ -8593,6 +8626,7 @@ export default function App() {
               setActiveCostSheetShareSubTab={setActiveCostSheetShareSubTab}
               setSearchQuery={setSearchQuery}
               customers={customers}
+              setCustomers={setCustomers}
               setSelectedCust={setSelectedCust}
               properties={properties}
               selectedPropertyIds={selectedPropertyIds}

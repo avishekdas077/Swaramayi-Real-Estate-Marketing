@@ -294,6 +294,11 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
   const pendingApprovalBookings = (bookings || []).filter((b: any) => 
     b.approval_status === 'APPROVED_LOCKED' && b.approval_status !== 'REGISTER_DONE' && !b.registered && !registeredDoneBookings.some((rb: any) => rb.booking_code === b.booking_code)
   );
+
+  const activePendingBookings = (bookings || []).filter((b: any) => 
+    !registeredDoneBookings.some((rb: any) => rb.booking_code === b.booking_code || (rb.id && b.id && rb.id === b.id))
+  );
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -319,13 +324,20 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
       {/* SUB-TAB SELECTOR BAR */}
       <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '2px solid #e2e8f0' : '2px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
         {[
-          { id: 'all_bookings', label: `🏢 All Bookings Vault (${bookings.length})` },
-          { id: 'register_done', label: `✅ Register Done (${registeredDoneBookings.length})` },
+          { id: 'all_bookings', label: `🏢 All Bookings Vault (${activePendingBookings.length})` },
+          { id: 'register_done', label: `✅ Registration Done (${registeredDoneBookings.length})` },
           { id: 'booking_approvals', label: `⚖️ Approvals & Token Lock (${pendingApprovalBookings.length})` }
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveBookingSubTab(tab.id as any)}
+            onClick={() => {
+              if (tab.id === 'register_done') {
+                if (setBillingInvoiceCategory) setBillingInvoiceCategory('DEVELOPER');
+                if (setActiveTab) setActiveTab('billing_management');
+              } else {
+                setActiveBookingSubTab(tab.id as any);
+              }
+            }}
             style={{
               padding: '10px 18px',
               borderRadius: '8px',
@@ -368,7 +380,7 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {bookings.map((b: any) => (
+                {activePendingBookings.map((b: any) => (
                   <tr key={b.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                     <td style={{ padding: '12px' }}>
                       <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}>
@@ -453,7 +465,7 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
                           style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)' }}
                           title="Confirm unit registration done, generate Tax Invoice, and transfer to Billing Management"
                         >
-                          <CheckCircle2 size={13} /> Register Done
+                          <CheckCircle2 size={13} /> Registration Done
                         </button>
                         {isSuperAdmin && (
                           <button 

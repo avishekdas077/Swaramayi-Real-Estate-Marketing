@@ -1,13 +1,20 @@
+<<<<<<< Updated upstream
 import React, { useState } from 'react';
 import { Zap, Search, X, SearchCode, Eye, FileText } from 'lucide-react';
+=======
+import React from 'react';
+import { Zap, Search, X, Trash2 } from 'lucide-react';
+>>>>>>> Stashed changes
 
 interface MatchingManagementViewProps {
   isLight: boolean;
   windowWidth: number;
+  currentRole?: string;
   selectedCust: any;
   activeMatchingSubTab: string;
   setActiveMatchingSubTab: (tab: any) => void;
   matchingRequestsQueue: any[];
+  setMatchingRequestsQueue?: React.Dispatch<React.SetStateAction<any[]>>;
   selectedMatchingId: string;
   setSelectedMatchingId: (id: string) => void;
   costSheetShares: any[];
@@ -23,6 +30,7 @@ interface MatchingManagementViewProps {
   setActiveCostSheetShareSubTab: (tab: string) => void;
   setSearchQuery: (query: string) => void;
   customers: any[];
+  setCustomers?: React.Dispatch<React.SetStateAction<any[]>>;
   setSelectedCust: (cust: any) => void;
   properties: any[];
   selectedPropertyIds: string[];
@@ -40,10 +48,12 @@ interface MatchingManagementViewProps {
 export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
   isLight,
   windowWidth,
+  currentRole,
   selectedCust = {},
   activeMatchingSubTab,
   setActiveMatchingSubTab,
   matchingRequestsQueue = [],
+  setMatchingRequestsQueue,
   selectedMatchingId,
   setSelectedMatchingId,
   costSheetShares = [],
@@ -59,6 +69,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
   setActiveCostSheetShareSubTab,
   setSearchQuery,
   customers = [],
+  setCustomers,
   setSelectedCust,
   properties = [],
   selectedPropertyIds = [],
@@ -72,6 +83,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
   sourcingRequests = [],
   setSourcingRequests,
 }) => {
+<<<<<<< Updated upstream
   // PROPERTY SOURCING REQUEST MODAL STATES
   const [sourcingModalRequest, setSourcingModalRequest] = useState<any | null>(null);
   const [sourcingReasonInput, setSourcingReasonInput] = useState<string>('');
@@ -154,6 +166,68 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
     setSourcingError('');
     alert(`🎉 SUCCESS! Customer ${newSourcingObj.customer_name} transferred to Property Sourcing Requests Desk.\n\n• Sourcing ID: ${newSourcingId}\n• Reason: "${sourcingReasonInput.trim()}"`);
     setActiveTab('property_sourcing_requests');
+=======
+  const isSuperAdmin = !currentRole || currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER' || currentRole.toUpperCase().includes('SUPER') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
+  const handleDeleteMatchingRequest = (req: any) => {
+    if (!req) return;
+    const reqId = (req.requestId || req.id || '').toString().trim();
+    const custNum = (req.customerNumber || req.customerId || '').toString().trim();
+    const custName = (req.customerName || req.name || '').toString().trim();
+    const mobile = (req.mobile || '').toString().replace(/\D/g, '');
+
+    if (window.confirm(`Are you sure you want to remove matching request & customer "${custName || reqId}" from Matching Management?`)) {
+      if (setMatchingRequestsQueue) {
+        setMatchingRequestsQueue(prev => {
+          const next = (prev || []).filter(r => {
+            const rId = (r.requestId || r.id || '').toString().trim();
+            const rCustNum = (r.customerNumber || r.customerId || '').toString().trim();
+            const rName = (r.customerName || r.name || '').toString().trim();
+            const rMob = (r.mobile || '').toString().replace(/\D/g, '');
+
+            if (reqId && rId && rId.toLowerCase() === reqId.toLowerCase()) return false;
+            if (custNum && rCustNum && rCustNum.toLowerCase() === custNum.toLowerCase()) return false;
+            if (mobile && rMob && mobile.length >= 7 && rMob === mobile) return false;
+            if (custName && rName && rName.toLowerCase() === custName.toLowerCase()) return false;
+            return true;
+          });
+          try {
+            localStorage.setItem('swaramayi_matching_queue_v7_clean', JSON.stringify(next));
+          } catch (e) {
+            console.error(e);
+          }
+          return next;
+        });
+      }
+
+      if (setCustomers) {
+        setCustomers(prev => {
+          const next = (prev || []).filter(c => {
+            const cNum = (c.customer_number || c.customerNumber || c.customerId || c.id || '').toString().trim();
+            const cName = (c.name || c.full_name || '').toString().trim();
+            const cMob = (c.mobile || c.phone || '').toString().replace(/\D/g, '');
+
+            if (custNum && cNum && cNum.toLowerCase() === custNum.toLowerCase()) return false;
+            if (mobile && cMob && mobile.length >= 7 && cMob === mobile) return false;
+            if (custName && cName && cName.toLowerCase() === custName.toLowerCase()) return false;
+            return true;
+          });
+          try {
+            localStorage.setItem('swaramayi_customers_v7_clean', JSON.stringify(next));
+          } catch (e) {
+            console.error(e);
+          }
+          return next;
+        });
+      }
+
+      if (selectedMatchingId === reqId || (custNum && selectedMatchingId === custNum)) {
+        setSelectedMatchingId('');
+      }
+
+      alert(`🗑️ Matching Request & Customer ${custName || reqId} removed successfully!`);
+    }
+>>>>>>> Stashed changes
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -437,7 +511,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                             )}
                           </td>
                           <td style={{ padding: '10px', textAlign: 'center' }}>
-                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
                               {isCostSheetCreated ? (
                                 <button 
                                   onClick={() => {
@@ -474,6 +548,15 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                                     Run Matcher
                                   </button>
                                 </>
+                              )}
+                              {isSuperAdmin && (
+                                <button
+                                  onClick={() => handleDeleteMatchingRequest(req)}
+                                  title={`Delete / Remove ${req.customerName || req.requestId}`}
+                                  style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <Trash2 size={13} /> Delete
+                                </button>
                               )}
                             </div>
                           </td>
@@ -620,8 +703,13 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                     <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Possession & Facing:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{activeMatchingReq.possessionStatus || 'Ready to Move'} | {activeMatchingReq.facing || 'East Facing'}</strong></div>
                   </div>
 
-                  {/* RUN MATCHER BUTTON (SECTION 4) */}
-                  <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                  {/* RUN MATCHER & DELETE BUTTONS (SECTION 4) */}
+                  <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
+                    {isSuperAdmin && (
+                      <button onClick={() => handleDeleteMatchingRequest(activeMatchingReq)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <Trash2 size={15} /> 🗑️ DELETE / REMOVE REQUEST ({activeMatchingReq.requestId})
+                      </button>
+                    )}
                     <button onClick={() => alert(`⚡ Executed real-time property matching engine for ${activeMatchingReq.requestId} snapshot!`)} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <Zap size={15} /> ⚡ RUN / RE-RUN MATCHER FOR {activeMatchingReq.requestId}
                     </button>
