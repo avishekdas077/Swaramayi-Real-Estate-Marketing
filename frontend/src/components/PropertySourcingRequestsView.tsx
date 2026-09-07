@@ -17,6 +17,7 @@ interface PropertySourcingRequestsViewProps {
   openIdDetailsModal: (id: string, type: string) => void;
   maskPhone: (phone: string) => string;
   setActiveTab: (tab: string) => void;
+  setSelectedMatchingId?: (id: string) => void;
 }
 
 export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsViewProps> = ({
@@ -30,7 +31,8 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
   isSuperAdmin = false,
   openIdDetailsModal,
   maskPhone,
-  setActiveTab
+  setActiveTab,
+  setSelectedMatchingId
 }) => {
   // Sourcing Requests Queue with LocalStorage Persistence & Dynamic Fallback
   const [internalSourcingRequests, setInternalSourcingRequests] = useState<any[]>(() => {
@@ -65,6 +67,7 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
     mobile: '',
     email: '',
     preferred_locality: 'Kondapur',
+    secondary_areas: 'Gachibowli, Hitec City',
     property_type: 'Flat / Apartment',
     configuration: '3BHK',
     budget_min: '₹70 Lakhs',
@@ -109,6 +112,7 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
       customer_number: nextCustCode,
       mobile: newRequestForm.mobile,
       preferred_locality: newRequestForm.preferred_locality,
+      secondary_areas: newRequestForm.secondary_areas || 'Barasat, New Town',
       property_type: newRequestForm.property_type,
       configuration: newRequestForm.configuration,
       budget_min: newRequestForm.budget_min,
@@ -132,6 +136,7 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
       mobile: '',
       email: '',
       preferred_locality: 'Kondapur',
+      secondary_areas: 'Gachibowli, Hitec City',
       property_type: 'Flat / Apartment',
       configuration: '3BHK',
       budget_min: '₹70 Lakhs',
@@ -170,8 +175,71 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
     alert(`✅ SOURCING REQUEST ${reqId} UPDATED!\n\nStatus set to: ${updateForm.status}`);
   };
 
+  // Handle Send Customer Back to Matching Management without changing original Matching Code
+  const handleSendToMatching = (req: any) => {
+    if (!req) return;
+
+    const originalMatchingId = req.matching_id || (req.lead_details && req.lead_details.matching_id) || 'SRM-MAT-2026-000422';
+    const targetCustNo = (req.customer_number || req.customer_id || '').toString().trim().toLowerCase();
+    const targetMob = (req.mobile || '').toString().replace(/\D/g, '');
+    const targetReqId = (req.id || req.sourcing_id || '').toString().trim().toLowerCase();
+
+    if (setSourcingRequests) {
+      setSourcingRequests(prev => {
+        const nextList = (prev || []).filter((r: any) => {
+          const rId = (r.id || r.sourcing_id || '').toString().trim().toLowerCase();
+          const rCustNo = (r.customer_number || r.customer_id || r.customerNumber || '').toString().trim().toLowerCase();
+          const rMob = (r.mobile || '').toString().replace(/\D/g, '');
+
+          if (targetReqId && rId && rId === targetReqId) return false;
+          if (targetCustNo && rCustNo && targetCustNo === rCustNo) return false;
+          if (targetMob && rMob && targetMob.length >= 7 && targetMob === rMob) return false;
+          return true;
+        });
+        try {
+          localStorage.setItem('swaramayi_sourcing_requests_v1', JSON.stringify(nextList));
+        } catch (e) {
+          console.error('Error persisting sourcing requests after send to matching', e);
+        }
+        return nextList;
+      });
+    }
+
+    if (setSelectedMatchingId) {
+      setSelectedMatchingId(originalMatchingId);
+    }
+
+    setActiveTab('matching_management');
+    alert(`⚡ CUSTOMER TRANSFERRED TO MATCHING MANAGEMENT!\n\n• Customer: ${req.customer_name}\n• Matching ID (Unchanged): ${originalMatchingId}\n\nTransferred out of Property Sourcing Vault back into Matching Management Workspace.`);
+  };
+
+  // Deduplicate Sourcing Requests by Customer ID / Mobile so each customer ID has at most 1 Sourcing Request
+  const uniqueSourcingRequests = (() => {
+    const map = new Map<string, any>();
+    (sourcingRequests || []).forEach(req => {
+      const custKey = (req.customer_number || req.customer_id || req.customerNumber || '').toString().trim().toLowerCase();
+      const mobKey = (req.mobile || '').toString().replace(/\D/g, '');
+      const nameKey = (req.customer_name || req.customerName || '').toString().trim().toLowerCase();
+      const key = custKey || (mobKey.length >= 7 ? mobKey : nameKey);
+
+      if (!key) return;
+
+      if (!map.has(key)) {
+        map.set(key, req);
+      } else {
+        const existing = map.get(key);
+        const existingDate = new Date(existing.created_at || 0).getTime();
+        const newDate = new Date(req.created_at || 0).getTime();
+        if (newDate >= existingDate) {
+          map.set(key, { ...existing, ...req });
+        }
+      }
+    });
+    return Array.from(map.values());
+  })();
+
   // Filter Sourcing Requests
-  const filteredRequests = sourcingRequests.filter(req => {
+  const filteredRequests = uniqueSourcingRequests.filter(req => {
     if (statusFilter !== 'ALL' && req.status !== statusFilter) return false;
     if (priorityFilter !== 'ALL' && req.priority !== priorityFilter) return false;
 
@@ -180,19 +248,21 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
       const matchName = (req.customer_name || '').toLowerCase().includes(q);
       const matchId = (req.id || '').toLowerCase().includes(q);
       const matchCustCode = (req.customer_number || '').toLowerCase().includes(q);
+      const matchMatchingId = (req.matching_id || (req.lead_details && req.lead_details.matching_id) || '').toLowerCase().includes(q);
       const matchMobile = (req.mobile || '').includes(q);
       const matchLoc = (req.preferred_locality || '').toLowerCase().includes(q);
-      return matchName || matchId || matchCustCode || matchMobile || matchLoc;
+      const matchNotes = (req.sourcing_reason || req.notes || '').toLowerCase().includes(q);
+      return matchName || matchId || matchCustCode || matchMatchingId || matchMobile || matchLoc || matchNotes;
     }
     return true;
   });
 
   // Summary Metrics
-  const totalCount = sourcingRequests.length;
-  const pendingCount = sourcingRequests.filter(r => r.status === 'PENDING_SOURCING').length;
-  const contactedCount = sourcingRequests.filter(r => r.status === 'BUILDER_CONTACTED').length;
-  const matchedCount = sourcingRequests.filter(r => r.status === 'INVENTORY_MATCHED' || r.status === 'CLOSED').length;
-  const urgentCount = sourcingRequests.filter(r => r.priority === 'HOT').length;
+  const totalCount = uniqueSourcingRequests.length;
+  const pendingCount = uniqueSourcingRequests.filter(r => r.status === 'PENDING_SOURCING').length;
+  const contactedCount = uniqueSourcingRequests.filter(r => r.status === 'BUILDER_CONTACTED').length;
+  const matchedCount = uniqueSourcingRequests.filter(r => r.status === 'INVENTORY_MATCHED' || r.status === 'CLOSED').length;
+  const urgentCount = uniqueSourcingRequests.filter(r => r.priority === 'HOT').length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -311,7 +381,7 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
               type="text" 
               value={searchQuery} 
               onChange={(e) => setSearchQuery(e.target.value)} 
-              placeholder="Search Customer, Sourcing ID, Locality..." 
+              placeholder="Search Customer, Reason, ID, Locality..." 
               style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '6px 10px 6px 30px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '700' }} 
             />
           </div>
@@ -336,8 +406,9 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
               <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
                 <th style={{ padding: '12px' }}>Sourcing ID & Date</th>
                 <th style={{ padding: '12px' }}>Customer Name & Contact</th>
-                <th style={{ padding: '12px' }}>Customer ID</th>
+                <th style={{ padding: '12px' }}>Customer & Matching ID</th>
                 <th style={{ padding: '12px' }}>Target Spec & Locality</th>
+                <th style={{ padding: '12px' }}>💬 Shift Reason / Executive Notes</th>
                 <th style={{ padding: '12px' }}>Target Budget</th>
                 <th style={{ padding: '12px' }}>Sourcing Status</th>
                 <th style={{ padding: '12px' }}>Assigned Desk</th>
@@ -347,7 +418,7 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
             <tbody>
               {filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={8} style={{ padding: '30px', textAlign: 'center', color: isLight ? '#64748b' : '#94a3b8' }}>
+                  <td colSpan={9} style={{ padding: '30px', textAlign: 'center', color: isLight ? '#64748b' : '#94a3b8' }}>
                     🔍 No property sourcing requests found matching your filters.
                   </td>
                 </tr>
@@ -356,6 +427,7 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
                   const isPending = req.status === 'PENDING_SOURCING';
                   const isContacted = req.status === 'BUILDER_CONTACTED';
                   const isMatched = req.status === 'INVENTORY_MATCHED' || req.status === 'CLOSED';
+                  const shiftNotes = req.sourcing_reason || req.notes || (req.lead_details && req.lead_details.sourcing_reason) || 'No specific notes recorded.';
 
                   return (
                     <tr key={req.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
@@ -384,18 +456,48 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
                       <td style={{ padding: '12px' }}>
                         <span 
                           onClick={() => openIdDetailsModal(req.customer_number, 'CUSTOMER_ID')}
-                          style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace', textDecoration: 'underline', cursor: 'pointer' }}
+                          style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace', textDecoration: 'underline', cursor: 'pointer', display: 'block' }}
+                          title="Click to view Customer details"
                         >
                           👤 {req.customer_number}
                         </span>
+                        <span 
+                          onClick={() => openIdDetailsModal(req.matching_id || (req.lead_details && req.lead_details.matching_id) || 'SRM-MAT-2026-000422', 'MATCHING_ID')}
+                          style={{ fontSize: '0.73rem', color: '#c084fc', fontFamily: 'monospace', textDecoration: 'underline', cursor: 'pointer', display: 'inline-block', marginTop: '4px', background: 'rgba(192, 132, 252, 0.12)', border: '1px solid rgba(192, 132, 252, 0.3)', padding: '2px 6px', borderRadius: '4px' }}
+                          title="Click to view Matching Request details"
+                        >
+                          ⚡ {req.matching_id || (req.lead_details && req.lead_details.matching_id) || 'SRM-MAT-2026-000422'}
+                        </span>
                       </td>
 
-                      <td style={{ padding: '12px' }}>
-                        <strong style={{ color: '#fbbf24' }}>{req.configuration} {req.property_type}</strong>
-                        <br />
-                        <span style={{ fontSize: '0.75rem', color: isLight ? '#0f172a' : '#ffffff' }}>📍 {req.preferred_locality}</span>
-                        <br />
-                        <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontStyle: 'italic' }}>Facing: {req.facing || 'East'}</span>
+                      <td style={{ padding: '12px', minWidth: '190px' }}>
+                        <strong style={{ color: '#fbbf24', fontSize: '0.85rem' }}>{req.configuration} {req.property_type}</strong>
+                        <div style={{ marginTop: '4px', fontSize: '0.75rem' }}>
+                          <span style={{ color: '#22c55e', fontWeight: '900' }}>📍 Primary Preferred:</span>{' '}
+                          <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800' }}>
+                            {req.preferred_locality || 'Madhamgram'}
+                          </strong>
+                        </div>
+                        <div style={{ marginTop: '2px', fontSize: '0.73rem' }}>
+                          <span style={{ color: '#38bdf8', fontWeight: '900' }}>🌐 Secondary Preferred:</span>{' '}
+                          <span style={{ color: isLight ? '#475569' : '#cbd5e1', fontWeight: '700' }}>
+                            {req.secondary_areas || (req.lead_details && req.lead_details.secondary_areas) || 'Barasat, New Town, Hitec City'}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontStyle: 'italic', display: 'block', marginTop: '2px' }}>
+                          Facing: {req.facing || 'East Facing'}
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '12px', minWidth: '220px', maxWidth: '320px' }}>
+                        <div style={{ background: isLight ? '#fef3c7' : 'rgba(234, 179, 8, 0.12)', border: '1px solid rgba(234, 179, 8, 0.4)', borderRadius: '8px', padding: '8px 10px', fontSize: '0.78rem', color: isLight ? '#0f172a' : '#ffffff', lineHeight: '1.4' }}>
+                          <span style={{ fontSize: '0.68rem', color: '#d97706', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '2px' }}>
+                            💬 SIFT REASON / NOTES:
+                          </span>
+                          <strong style={{ fontWeight: '800', wordBreak: 'break-word' }}>
+                            "{shiftNotes}"
+                          </strong>
+                        </div>
                       </td>
 
                       <td style={{ padding: '12px', color: '#4ade80', fontWeight: '900' }}>
@@ -449,13 +551,11 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
                             <Edit3 size={13} /> Update
                           </button>
                           <button
-                            onClick={() => {
-                              setActiveTab('matching_management');
-                            }}
+                            onClick={() => handleSendToMatching(req)}
                             style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid rgba(168, 85, 247, 0.4)', padding: '5px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.73rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                            title="Scan Stock Vault for matching properties"
+                            title={`Send ${req.customer_name} back to Matching Management under original Matching Code: ${req.matching_id || (req.lead_details && req.lead_details.matching_id) || 'SRM-MAT-2026-000422'}`}
                           >
-                            <Sparkles size={13} /> Scan Stock
+                            <Sparkles size={13} /> Send to Matching
                           </button>
                           {isSuperAdmin && (
                             <button
@@ -508,11 +608,18 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Preferred Locality *</label>
-                  <input type="text" value={newRequestForm.preferred_locality} onChange={(e) => setNewRequestForm({ ...newRequestForm, preferred_locality: e.target.value })} placeholder="e.g. Kondapur" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Primary Preferred Locality *</label>
+                  <input type="text" value={newRequestForm.preferred_locality} onChange={(e) => setNewRequestForm({ ...newRequestForm, preferred_locality: e.target.value })} placeholder="e.g. Madhamgram" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
                 </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Secondary Preferred Localities</label>
+                  <input type="text" value={newRequestForm.secondary_areas} onChange={(e) => setNewRequestForm({ ...newRequestForm, secondary_areas: e.target.value })} placeholder="e.g. Barasat, New Town, Hitec City" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Property Type</label>
                   <select value={newRequestForm.property_type} onChange={(e) => setNewRequestForm({ ...newRequestForm, property_type: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>

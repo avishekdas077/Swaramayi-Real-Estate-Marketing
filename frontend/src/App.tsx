@@ -8656,6 +8656,7 @@ export default function App() {
               openIdDetailsModal={openIdDetailsModal}
               maskPhone={maskPhone}
               setActiveTab={setActiveTab}
+              setSelectedMatchingId={setSelectedMatchingId}
             />
           )}
 

@@ -109,7 +109,8 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
       customer_id: sourcingModalRequest.customerNumber || cust.customer_number || 'SRM-CUS-2026-000188',
       lead_id: sourcingModalRequest.leadId || cust.lead_number || 'SRM-LD-2026-000101',
       matching_id: sourcingModalRequest.requestId,
-      preferred_locality: sourcingModalRequest.preferredArea || cust.preferredArea || 'Madhamgram',
+      preferred_locality: sourcingModalRequest.preferredArea || cust.preferredArea || cust.preferred_locality || 'Madhamgram',
+      secondary_areas: sourcingModalRequest.secondary_areas || cust.secondary_areas || cust.secondary_locality || 'Barasat, New Town, Hitec City',
       property_type: sourcingModalRequest.propertyCategory || cust.property_type || 'Flat / Apartment',
       configuration: sourcingModalRequest.configuration || cust.configuration || '2BHK',
       budget_min: sourcingModalRequest.budget_min || cust.budget_min || '₹50 Lakhs',
@@ -134,8 +135,8 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
         investment_purpose: cust.investment_purpose || 'Self Use / End User',
         property_type: sourcingModalRequest.propertyCategory || cust.property_type || 'Flat / Apartment',
         configuration: sourcingModalRequest.configuration || cust.configuration || '2BHK',
-        preferred_locality: sourcingModalRequest.preferredArea || cust.preferredArea || 'Madhamgram',
-        secondary_areas: cust.secondary_areas || 'Hitec City, Gachibowli',
+        preferred_locality: sourcingModalRequest.preferredArea || cust.preferredArea || cust.preferred_locality || 'Madhamgram',
+        secondary_areas: sourcingModalRequest.secondary_areas || cust.secondary_areas || cust.secondary_locality || 'Barasat, New Town, Hitec City',
         budget_min: sourcingModalRequest.budget_min || cust.budget_min || '₹50 Lakhs',
         budget_max: sourcingModalRequest.budget_max || cust.budget_max || '₹1.00 Crore',
         budget_range: `${sourcingModalRequest.budget_min || '₹50 Lakhs'} - ${sourcingModalRequest.budget_max || '₹1.00 Crore'}`,
@@ -155,12 +156,91 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
     };
 
     if (setSourcingRequests) {
-      setSourcingRequests(prev => [newSourcingObj, ...(prev || [])]);
+      setSourcingRequests(prev => {
+        const existingList = prev || [];
+        const targetCustNo = (newSourcingObj.customer_number || newSourcingObj.customer_id || '').toString().trim().toLowerCase();
+        const targetMob = (newSourcingObj.mobile || '').toString().replace(/\D/g, '');
+        const targetName = (newSourcingObj.customer_name || '').toString().trim().toLowerCase();
+
+        const existingIdx = existingList.findIndex((r: any) => {
+          const rCustNo = (r.customer_number || r.customer_id || r.customerNumber || '').toString().trim().toLowerCase();
+          const rMob = (r.mobile || '').toString().replace(/\D/g, '');
+          const rName = (r.customer_name || r.customerName || '').toString().trim().toLowerCase();
+
+          if (targetCustNo && rCustNo && targetCustNo === rCustNo) return true;
+          if (targetMob && rMob && targetMob.length >= 7 && targetMob === rMob) return true;
+          if (targetName && rName && targetName.length > 2 && targetName === rName) return true;
+          return false;
+        });
+
+        if (existingIdx !== -1) {
+          const existingItem = existingList[existingIdx];
+          const updatedItem = {
+            ...existingItem,
+            matching_id: sourcingModalRequest.requestId || existingItem.matching_id,
+            notes: sourcingReasonInput.trim(),
+            sourcing_reason: sourcingReasonInput.trim(),
+            status: 'PENDING_SOURCING',
+            updated_at: new Date().toISOString(),
+            lead_details: {
+              ...existingItem.lead_details,
+              ...newSourcingObj.lead_details,
+              sourcing_id: existingItem.id || existingItem.sourcing_id
+            }
+          };
+
+          const remaining = existingList.filter((_, idx) => idx !== existingIdx).filter((r: any) => {
+            const rCustNo = (r.customer_number || r.customer_id || r.customerNumber || '').toString().trim().toLowerCase();
+            const rMob = (r.mobile || '').toString().replace(/\D/g, '');
+            if (targetCustNo && rCustNo && targetCustNo === rCustNo) return false;
+            if (targetMob && rMob && targetMob.length >= 7 && targetMob === rMob) return false;
+            return true;
+          });
+
+          return [updatedItem, ...remaining];
+        }
+
+        return [newSourcingObj, ...existingList];
+      });
     }
+
+    // AUTOMATICALLY REMOVE FROM MATCHING MANAGEMENT QUEUE UPON TRANSFER
+    const targetReqId = (sourcingModalRequest.requestId || sourcingModalRequest.id || '').toString().trim();
+    const targetCustNum = (sourcingModalRequest.customerNumber || sourcingModalRequest.customerId || '').toString().trim();
+    const targetCustName = (sourcingModalRequest.customerName || sourcingModalRequest.name || '').toString().trim();
+    const targetMobile = (sourcingModalRequest.mobile || '').toString().replace(/\D/g, '');
+
+    if (setMatchingRequestsQueue) {
+      setMatchingRequestsQueue(prev => {
+        const next = (prev || []).filter(r => {
+          const rId = (r.requestId || r.id || '').toString().trim();
+          const rCustNum = (r.customerNumber || r.customerId || '').toString().trim();
+          const rName = (r.customerName || r.name || '').toString().trim();
+          const rMob = (r.mobile || '').toString().replace(/\D/g, '');
+
+          if (targetReqId && rId && rId.toLowerCase() === targetReqId.toLowerCase()) return false;
+          if (targetCustNum && rCustNum && rCustNum.toLowerCase() === targetCustNum.toLowerCase()) return false;
+          if (targetMobile && rMob && targetMobile.length >= 7 && rMob === targetMobile) return false;
+          if (targetCustName && rName && rName.toLowerCase() === targetCustName.toLowerCase()) return false;
+          return true;
+        });
+        try {
+          localStorage.setItem('swaramayi_matching_queue_v7_clean', JSON.stringify(next));
+        } catch (e) {
+          console.error('Error persisting matching queue after sourcing shift', e);
+        }
+        return next;
+      });
+    }
+
+    if (selectedMatchingId === targetReqId && setSelectedMatchingId) {
+      setSelectedMatchingId('');
+    }
+
     setSourcingModalRequest(null);
     setSourcingReasonInput('');
     setSourcingError('');
-    alert(`🎉 SUCCESS! Customer ${newSourcingObj.customer_name} transferred to Property Sourcing Requests Desk.\n\n• Sourcing ID: ${newSourcingId}\n• Reason: "${sourcingReasonInput.trim()}"`);
+    alert(`🎉 SUCCESS! Customer ${newSourcingObj.customer_name} transferred to Property Sourcing Requests Desk.\n\n• Sourcing ID: ${newSourcingId}\n• Reason: "${sourcingReasonInput.trim()}"\n\n(Customer request removed from Matching Management Vault)`);
     setActiveTab('property_sourcing_requests');
   };
 
@@ -263,6 +343,55 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
           const seenCustNums = new Set<string>();
           const seenMobiles = new Set<string>();
 
+          // SOURCING EXCLUSION SETS (Remove any customer/request shifted to Property Sourcing Requests)
+          const sourcedMatchingIds = new Set<string>();
+          const sourcedCustNums = new Set<string>();
+          const sourcedMobiles = new Set<string>();
+          const sourcedNames = new Set<string>();
+
+          let activeSourcingQueue = sourcingRequests || [];
+          if (!activeSourcingQueue.length) {
+            try {
+              const saved = localStorage.getItem('swaramayi_sourcing_requests_v1');
+              if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) activeSourcingQueue = parsed;
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }
+
+          activeSourcingQueue.forEach((s: any) => {
+            if (s.matching_id) sourcedMatchingIds.add(s.matching_id.toString().trim().toLowerCase());
+            if (s.id) sourcedMatchingIds.add(s.id.toString().trim().toLowerCase());
+            if (s.sourcing_id) sourcedMatchingIds.add(s.sourcing_id.toString().trim().toLowerCase());
+            
+            if (s.customer_number) sourcedCustNums.add(s.customer_number.toString().trim().toLowerCase());
+            if (s.customer_id) sourcedCustNums.add(s.customer_id.toString().trim().toLowerCase());
+            if (s.customerNumber) sourcedCustNums.add(s.customerNumber.toString().trim().toLowerCase());
+
+            if (s.mobile) {
+              const cleanM = s.mobile.toString().replace(/\D/g, '');
+              if (cleanM && cleanM.length >= 7) sourcedMobiles.add(cleanM);
+            }
+            if (s.customer_name) sourcedNames.add(s.customer_name.toString().trim().toLowerCase());
+            if (s.customerName) sourcedNames.add(s.customerName.toString().trim().toLowerCase());
+          });
+
+          const isShiftedToSourcing = (reqId?: string, custNum?: string, custName?: string, mob?: string) => {
+            const rId = (reqId || '').toString().trim().toLowerCase();
+            const cNum = (custNum || '').toString().trim().toLowerCase();
+            const cName = (custName || '').toString().trim().toLowerCase();
+            const cMob = (mob || '').toString().replace(/\D/g, '');
+
+            if (rId && sourcedMatchingIds.has(rId)) return true;
+            if (cNum && sourcedCustNums.has(cNum)) return true;
+            if (cMob && cMob.length >= 7 && sourcedMobiles.has(cMob)) return true;
+            if (cName && cName.length > 2 && sourcedNames.has(cName)) return true;
+            return false;
+          };
+
           const findActualCostSheet = (reqId?: string, custNum?: string, custName?: string, mob?: string) => {
             return (individualCostSheets || []).find((cs: any) => {
               const csCustId = (cs.customerId || cs.customerSnapshot?.customerId || cs.customerSnapshot?.customerNumber || cs.customerNumber || '').toString().trim().toLowerCase();
@@ -284,6 +413,8 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
           };
 
           matchingRequestsQueue.forEach(r => {
+            if (isShiftedToSourcing(r.requestId || r.id, r.customerNumber || r.customerId, r.customerName || r.name, r.mobile)) return;
+
             const custNum = (r.customerNumber || '').toLowerCase().trim();
             const mob = (r.mobile || '').replace(/\D/g, '');
             if (custNum) seenCustNums.add(custNum);
@@ -304,14 +435,18 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
             const custMob = (c.mobile || c.phone || '').toString().trim();
             const cleanMob = custMob.replace(/\D/g, '');
             const numKey = custNum.toLowerCase().trim();
+            const custName = c.name || c.full_name || '';
+
+            const numDigits = (c.id || custNum || '184').toString().replace(/\D/g, '').slice(-6).padStart(6, '0');
+            const reqId = `SRM-MAT-2026-${numDigits || String(420 + idx)}`;
+
+            if (isShiftedToSourcing(reqId, custNum, custName, custMob)) return;
 
             if (!seenCustNums.has(numKey) && (!cleanMob || !seenMobiles.has(cleanMob))) {
               seenCustNums.add(numKey);
               if (cleanMob) seenMobiles.add(cleanMob);
 
-              const numDigits = (c.id || custNum || '184').toString().replace(/\D/g, '').slice(-6).padStart(6, '0');
-              const reqId = `SRM-MAT-2026-${numDigits || String(420 + idx)}`;
-              const actualCostSheet = findActualCostSheet(reqId, custNum, c.name || c.full_name, custMob);
+              const actualCostSheet = findActualCostSheet(reqId, custNum, custName, custMob);
               const isCreated = !!actualCostSheet;
 
               list.push({
