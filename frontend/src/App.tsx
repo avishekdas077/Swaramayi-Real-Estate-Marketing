@@ -2893,7 +2893,7 @@ export default function App() {
         title: 'SHIBALAY',
         developer: 'KRISHNA DAS',
         developer_id: 'SRM-DEV-2026-000105',
-        project_id: 'SRM-DEV-2026-000105',
+        project_id: 'SRM-PROJ-2026-000087',
         configuration: '3BHK',
         super_builtup_area: 'P10',
         carpet_area: '497.6 Sq.Ft.',
@@ -4880,12 +4880,20 @@ export default function App() {
             if (Array.isArray(mData.teams) && mData.teams.length > 0) setTeams(mData.teams);
             if (Array.isArray(mData.branches) && mData.branches.length > 0) setBranches(mData.branches);
             if (Array.isArray(mData.properties) && mData.properties.length > 0) {
-              setProperties(prev => {
-                const map = new Map<string, any>();
-                prev.forEach((p: any) => map.set(p.id || p.property_code, p));
-                mData.properties.forEach((p: any) => map.set(p.id || p.property_code, p));
-                return Array.from(map.values());
+              const sanitizedProps = mData.properties.map((p: any) => {
+                if (p.project_id && p.project_id.startsWith('SRM-DEV-')) {
+                  const fixedCode = (p.title || '').toLowerCase().includes('shibalay') ? 'SRM-PROJ-2026-000087' :
+                                    (p.title || '').toLowerCase().includes('gajapati') ? 'SRM-PROJ-2026-000088' :
+                                    (p.title || '').toLowerCase().includes('dhriti') ? 'SRM-PROJ-2026-000089' :
+                                    'SRM-PROJ-2026-000088';
+                  return { ...p, project_id: fixedCode };
+                }
+                return p;
               });
+              setProperties(sanitizedProps);
+              try {
+                localStorage.setItem('swaramayi_properties_v4_clean', JSON.stringify(sanitizedProps));
+              } catch (e) {}
             }
             if (Array.isArray(mData.customers)) {
               setCustomers(mData.customers);
@@ -8430,6 +8438,7 @@ export default function App() {
               setActiveRadius={setActiveRadius}
               calculateIndividualCostSheet={calculateIndividualCostSheet}
               formatIndianRupees={formatIndianRupees}
+              syncAllToMongoDB={syncAllToMongoDB}
             />
           )}
 

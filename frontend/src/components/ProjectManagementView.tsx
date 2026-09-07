@@ -46,6 +46,7 @@ interface ProjectManagementViewProps {
   detectLocalityFromCoords?: (lat: string, lng: string) => Promise<{ locality: string; fullAddress: string; rawDetails: any }>;
   setPropertyUnits?: React.Dispatch<React.SetStateAction<any[]>>;
   setProperties?: React.Dispatch<React.SetStateAction<any[]>>;
+  syncAllToMongoDB?: (overrideData?: any) => void;
 }
 
 export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
@@ -56,6 +57,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   setActiveProjectSubTab,
   properties = [],
   setProperties,
+  syncAllToMongoDB,
   propertyUnits = [],
   projectVisitAgreements = [],
   editingProperty,
@@ -217,7 +219,13 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
     // 2. From properties list
     (properties || []).forEach((prop: any) => {
-      const projId = prop.project_id || prop.code || prop.id;
+      let projId = (prop.project_id && !prop.project_id.startsWith('SRM-DEV-')) ? prop.project_id : null;
+      if (!projId) {
+        projId = (prop.title || '').toLowerCase().includes('shibalay') ? 'SRM-PROJ-2026-000087' :
+                 (prop.title || '').toLowerCase().includes('gajapati') ? 'SRM-PROJ-2026-000088' :
+                 (prop.title || '').toLowerCase().includes('dhriti') ? 'SRM-PROJ-2026-000089' :
+                 `SRM-PROJ-2026-${String(Math.floor(100000 + Math.random() * 900000))}`;
+      }
       if (projId && !masterProjectsMap.has(projId) && (prop.title || prop.project_title)) {
         masterProjectsMap.set(projId, {
           id: projId,
@@ -3055,7 +3063,19 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                       (m.id && p.project_id && m.id === p.project_id) ||
                       (m.code && p.project_id && m.code === p.project_id)
                     );
-                    const projCode = p.project_id || matchedMaster?.code || matchedMaster?.id || 'SRM-PROJ-2026-000088';
+                    let rawProjCode = (p.project_id && !p.project_id.startsWith('SRM-DEV-')) ? p.project_id : null;
+                    if (!rawProjCode && matchedMaster?.code && !matchedMaster.code.startsWith('SRM-DEV-')) {
+                      rawProjCode = matchedMaster.code;
+                    }
+                    if (!rawProjCode && matchedMaster?.id && !matchedMaster.id.startsWith('SRM-DEV-')) {
+                      rawProjCode = matchedMaster.id;
+                    }
+                    const projCode = (rawProjCode && !rawProjCode.startsWith('SRM-DEV-')) ? rawProjCode : (
+                      (p.title || '').toLowerCase().includes('shibalay') ? 'SRM-PROJ-2026-000087' :
+                      (p.title || '').toLowerCase().includes('gajapati') ? 'SRM-PROJ-2026-000088' :
+                      (p.title || '').toLowerCase().includes('dhriti') ? 'SRM-PROJ-2026-000089' :
+                      'SRM-PROJ-2026-000088'
+                    );
 
                     // PARKING COMPUTATION FOR THIS ROW
                     const projProps = properties.filter(item => 
@@ -3089,13 +3109,15 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     const availCountForType = isEv ? availEv : isOpen ? availOpen : availCovered;
                     const totalCapForType = isEv ? totalEvCap : isOpen ? totalOpenCap : totalCoveredCap;
 
+
+
                     return (
                       <tr key={p.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                         <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{p.property_code}</td>
                         <td style={{ padding: '12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{p.title}</td>
                         <td style={{ padding: '12px' }}>
                           <div style={{ fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{p.developer}</div>
-                          <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: '1px solid #a855f7', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', fontFamily: 'monospace', marginTop: '3px', display: 'inline-block' }}>
+                          <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: '1px solid #a855f7', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '900', fontFamily: 'monospace', marginTop: '4px', display: 'inline-block' }} title="Master Project Code">
                             🔑 {projCode}
                           </span>
                         </td>
@@ -3115,45 +3137,68 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           </span>
                         </td>
                         <td style={{ padding: '12px' }}>
-                          <select
-                            value={(() => {
-                              const s = (p.status || 'LIVE').toUpperCase().replace(/\s+/g, '_');
-                              return s === 'AVAILABLE' ? 'LIVE' : s;
-                            })()}
-                            onChange={(e) => {
-                              const newStatus = e.target.value;
-                              if (setProperties) {
-                                setProperties((prev: any[]) => prev.map((item: any) => item.id === p.id ? { ...item, status: newStatus } : item));
+                          {(() => {
+                            const rawStatus = (p.status || 'LIVE').toUpperCase().replace(/\s+/g, '_');
+                            const normalizedStatus = rawStatus === 'AVAILABLE' ? 'LIVE' : rawStatus;
+                            
+                            const getStatusBadgeStyle = (statusVal: string) => {
+                              if (statusVal.includes('SOLD')) {
+                                return { border: '1.5px solid #ef4444', bg: 'rgba(239, 68, 68, 0.18)', color: '#f87171' };
+                              } else if (statusVal.includes('BOOKED')) {
+                                return { border: '1.5px solid #fbbf24', bg: 'rgba(234, 179, 8, 0.18)', color: '#fbbf24' };
+                              } else if (statusVal.includes('HOLD') || statusVal.includes('RESERVED')) {
+                                return { border: '1.5px solid #f59e0b', bg: 'rgba(245, 158, 11, 0.18)', color: '#fbbf24' };
+                              } else if (statusVal.includes('UNDER_CONSTRUCTION') || statusVal.includes('CONSTRUCTION')) {
+                                return { border: '1.5px solid #a855f7', bg: 'rgba(168, 85, 247, 0.18)', color: '#c084fc' };
+                              } else if (statusVal.includes('READY')) {
+                                return { border: '1.5px solid #0284c7', bg: 'rgba(2, 132, 199, 0.18)', color: '#38bdf8' };
                               }
-                            }}
-                            style={{
-                              padding: '5px 10px',
-                              borderRadius: '6px',
-                              fontWeight: '900',
-                              fontSize: '0.74rem',
-                              cursor: 'pointer',
-                              border: (p.status || '').toUpperCase().includes('SOLD') 
-                                ? '1.5px solid #ef4444' 
-                                : (p.status || '').toUpperCase().includes('BOOKED') 
-                                ? '1.5px solid #fbbf24' 
-                                : '1.5px solid #22c55e',
-                              background: (p.status || '').toUpperCase().includes('SOLD') 
-                                ? 'rgba(239, 68, 68, 0.18)' 
-                                : (p.status || '').toUpperCase().includes('BOOKED') 
-                                ? 'rgba(234, 179, 8, 0.18)' 
-                                : 'rgba(34, 197, 94, 0.18)',
-                              color: (p.status || '').toUpperCase().includes('SOLD') 
-                                ? '#f87171' 
-                                : (p.status || '').toUpperCase().includes('BOOKED') 
-                                ? '#fbbf24' 
-                                : '#4ade80',
-                              outline: 'none'
-                            }}
-                          >
-                            <option value="LIVE" style={{ background: '#0f172a', color: '#4ade80' }}>🟢 LIVE</option>
-                            <option value="SOLD_OUT" style={{ background: '#0f172a', color: '#f87171' }}>🔴 SOLD OUT</option>
-                            <option value="BOOKED" style={{ background: '#0f172a', color: '#fbbf24' }}>🟡 BOOKED</option>
-                          </select>
+                              return { border: '1.5px solid #22c55e', bg: 'rgba(34, 197, 94, 0.18)', color: '#4ade80' };
+                            };
+
+                            const badgeStyle = getStatusBadgeStyle(normalizedStatus);
+
+                            return (
+                              <select
+                                value={normalizedStatus}
+                                onChange={(e) => {
+                                  const newStatus = e.target.value;
+                                  let updatedProps: any[] = [];
+                                  if (setProperties) {
+                                    setProperties((prev: any[]) => {
+                                      updatedProps = prev.map((item: any) => item.id === p.id ? { ...item, status: newStatus } : item);
+                                      try {
+                                        localStorage.setItem('swaramayi_properties_v4_clean', JSON.stringify(updatedProps));
+                                      } catch (err) {}
+                                      return updatedProps;
+                                    });
+                                  }
+                                  if (syncAllToMongoDB && updatedProps.length > 0) {
+                                    syncAllToMongoDB({ properties: updatedProps });
+                                  }
+                                }}
+                                style={{
+                                  padding: '6px 10px',
+                                  borderRadius: '8px',
+                                  fontWeight: '900',
+                                  fontSize: '0.74rem',
+                                  cursor: 'pointer',
+                                  border: badgeStyle.border,
+                                  background: badgeStyle.bg,
+                                  color: badgeStyle.color,
+                                  outline: 'none',
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                <option value="LIVE" style={{ background: '#0f172a', color: '#4ade80' }}>🟢 LIVE / AVAILABLE</option>
+                                <option value="HOLD" style={{ background: '#0f172a', color: '#fbbf24' }}>⚡ HOLD / RESERVED</option>
+                                <option value="BOOKED" style={{ background: '#0f172a', color: '#fbbf24' }}>🟡 BOOKED</option>
+                                <option value="SOLD_OUT" style={{ background: '#0f172a', color: '#f87171' }}>🔴 SOLD OUT</option>
+                                <option value="UNDER_CONSTRUCTION" style={{ background: '#0f172a', color: '#c084fc' }}>🏗️ UNDER CONSTRUCTION</option>
+                                <option value="READY_TO_MOVE" style={{ background: '#0f172a', color: '#38bdf8' }}>🔑 READY TO MOVE</option>
+                              </select>
+                            );
+                          })()}
                         </td>
                         <td style={{ padding: '12px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
