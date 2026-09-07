@@ -29,6 +29,7 @@ interface CostSheetSharingViewProps {
   setActiveVisitSubTab?: (subTab: string) => void;
   scheduledVisits?: any[];
   visitPlans?: any[];
+  syncAllToMongoDB?: (overrideData?: any) => Promise<void>;
 }
 
 export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
@@ -59,67 +60,13 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
   setActiveVisitSubTab,
   scheduledVisits = [],
   visitPlans = [],
+  syncAllToMongoDB,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
   const allEffectiveCostSheets = React.useMemo(() => {
-    const list = [...individualCostSheets];
-    const seenIds = new Set(individualCostSheets.map(c => c.costSheetId));
-
-    (scheduledVisits || []).forEach((v, idx) => {
-      const csId = v.costSheetId || `COST-SHEET-2026-${String(idx + 1).padStart(6, '0')}`;
-      if (!seenIds.has(csId)) {
-        seenIds.add(csId);
-        list.push({
-          costSheetId: csId,
-          version: 'V01',
-          versionNumber: 1,
-          customerId: v.customerNumber || 'SRM-CUS-2026-000185',
-          matchId: v.matchingId || 'SRM-MAT-2026-000421',
-          propertyId: v.propertyCode || 'SRM-PROP-2026-000426',
-          propertyCode: v.propertyCode || 'SRM-PROP-2026-000426',
-          status: 'CONVERTED_TO_VISIT',
-          visitId: v.visitId || 'SRM-VS-2026-000087',
-          createdAt: v.visitDate || new Date().toLocaleDateString('en-GB'),
-          createdBy: v.assignedExecutive || 'Priya Nair (Sales Exec)',
-          customerSnapshot: {
-            customerId: v.customerNumber || 'SRM-CUS-2026-000185',
-            customerName: v.customerName || 'SUMANTH VARMA',
-            mobile: v.mobile || '+91 98765 43210',
-            alternateMobile: '+91 98490 88888',
-            email: `${(v.customerName || 'customer').toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
-            address: 'Barasat, Kolkata',
-            preferredLocation: 'Barasat, Kolkata',
-            preferredBhk: '2BHK',
-            budget: '₹35L - ₹50L',
-            purpose: 'Self Use',
-            assignedSalesperson: v.assignedExecutive || 'Priya Nair (Sales Exec)'
-          },
-          propertySnapshot: {
-            propertyId: v.propertyCode || 'SRM-PROP-2026-000426',
-            propertyCode: v.propertyCode || 'SRM-PROP-2026-000426',
-            propertyTitle: v.propertyTitle || 'GAJAPATI APARTMENT',
-            projectName: v.propertyTitle || 'GAJAPATI APARTMENT',
-            developerName: 'Dhriti Builders & Developers',
-            locality: 'Barasat',
-            city: 'Kolkata',
-            bhk: '2BHK',
-            possessionStatus: 'Ready to Move'
-          },
-          pricingSnapshot: {
-            basePrice: 3500000,
-            totalEstimatedCost: 3762013
-          },
-          formattedPriceBreakup: {
-            basePriceStr: '₹35,00,000',
-            totalEstimatedCostStr: '₹37,62,013'
-          }
-        });
-      }
-    });
-
-    return list;
-  }, [individualCostSheets, scheduledVisits]);
+    return individualCostSheets || [];
+  }, [individualCostSheets]);
 
   const convertedVisitsCount = Math.max(
     individualCostSheets.filter(c => c.status === 'CONVERTED_TO_VISIT').length,
@@ -127,24 +74,21 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
     (visitPlans || []).length
   );
 
-  // Active Cost Sheets pending in Vault (converted items moved to Visit Management)
+  // Active Cost Sheets pending in Vault
   const pendingCostSheets = React.useMemo(() => {
-    return (individualCostSheets || []).filter(c => 
-      c.status !== 'CONVERTED_TO_VISIT' && !(scheduledVisits || []).some(v => v.costSheetId === c.costSheetId)
-    );
-  }, [individualCostSheets, scheduledVisits]);
+    return individualCostSheets || [];
+  }, [individualCostSheets]);
 
+  // Active Cost Sheets displayed in Vault
   const displayedCostSheets = React.useMemo(() => {
     if (individualCostSheetsStatusFilter === 'CONVERTED_TO_VISIT') {
-      return (individualCostSheets || []).filter(c => 
-        c.status === 'CONVERTED_TO_VISIT' || (scheduledVisits || []).some(v => v.costSheetId === c.costSheetId)
-      );
+      return (individualCostSheets || []).filter(c => c.status === 'CONVERTED_TO_VISIT');
     }
     if (individualCostSheetsStatusFilter !== 'ALL') {
-      return pendingCostSheets.filter(c => c.status === individualCostSheetsStatusFilter);
+      return (individualCostSheets || []).filter(c => c.status === individualCostSheetsStatusFilter);
     }
-    return pendingCostSheets;
-  }, [individualCostSheets, scheduledVisits, individualCostSheetsStatusFilter, pendingCostSheets]);
+    return individualCostSheets || [];
+  }, [individualCostSheets, individualCostSheetsStatusFilter]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -412,9 +356,10 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                               </button>
                               <button 
                                 onClick={() => handleOpenRevisionModal(item)} 
-                                style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}
+                                style={{ background: '#f59e0b', color: '#0f172a', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}
+                                title="Edit Customer Details or Pricing & Create Revisions"
                               >
-                                ✏️ Revise
+                                ✏️ Edit
                               </button>
                               <button 
                                 onClick={() => {
@@ -445,15 +390,29 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                               {isSuperAdmin && (
                                 <button 
                                   onClick={() => {
-                                    if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Cost Sheet record ${item.costSheetId} for ${item.customerSnapshot?.customerName || 'Customer'}?`)) {
+                                    if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Cost Sheet record ${item.costSheetId} for ${item.customerSnapshot?.customerName || 'Customer'} from the system and database?`)) {
+                                      const updatedCostSheets = (individualCostSheets || []).filter((c: any) => 
+                                        c.costSheetId !== item.costSheetId && 
+                                        (!item.id || c.id !== item.id) &&
+                                        (!item.costSheetId || c.costSheetId !== item.costSheetId)
+                                      );
                                       if (setIndividualCostSheets) {
-                                        setIndividualCostSheets((prev: any[]) => (prev || []).filter((c: any) => c.costSheetId !== item.costSheetId));
+                                        setIndividualCostSheets(updatedCostSheets);
                                       }
-                                      alert(`🗑️ Cost Sheet ${item.costSheetId} deleted permanently from vault.`);
+                                      try {
+                                        localStorage.setItem('swaramayi_indiv_cost_sheets_v5_clean', JSON.stringify(updatedCostSheets));
+                                      } catch (e) {}
+
+                                      if (syncAllToMongoDB) {
+                                        syncAllToMongoDB({
+                                          cost_sheets: updatedCostSheets
+                                        });
+                                      }
+                                      alert(`🗑️ Cost Sheet ${item.costSheetId} has been permanently deleted from database and vault.`);
                                     }
                                   }} 
                                   style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}
-                                  title="Permanently delete this cost sheet record"
+                                  title="Permanently delete this cost sheet record from database"
                                 >
                                   🗑️ Delete
                                 </button>

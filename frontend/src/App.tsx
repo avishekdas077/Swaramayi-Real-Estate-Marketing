@@ -215,21 +215,27 @@ function ScheduleVisitModalContent({
 
     setVisitPlans((prev: any[]) => [newPlan, ...prev]);
 
+    const propertyTitleDisplay = stopsData.length === 1 
+      ? stopsData[0].propertyTitle 
+      : `${stopsData[0]?.propertyTitle || 'Property'} (+${stopsData.length - 1} more: ${stopsData.slice(1).map(s => s.propertyTitle).join(', ')})`;
+
     const singleVisitSummary = {
       visitId: masterScheduleId,
       costSheetId: selectedCsIds[0],
       customerName: targetCustName,
       customerNumber: targetCustomerId,
       mobile: targetCustMobile,
-      propertyTitle: `${stopsData.length} Properties (${stopsData.map(s => s.locality).join(', ')})`,
+      propertyTitle: propertyTitleDisplay,
       propertyCode: stopsData[0]?.propertyCode,
+      locality: stopsData[0]?.locality,
       visitDate: visitDate,
       visitTime: startTime,
       assignedExecutive: assignedExec,
       transport: transportMode,
       status: 'ASSIGNED',
       conflictStatus: '🟢 NO OVERLAP CONFLICT',
-      totalStops: stopsData.length
+      totalStops: stopsData.length,
+      stops: stopsData
     };
 
     setScheduledVisits((prev: any[]) => [singleVisitSummary, ...prev]);
@@ -1016,6 +1022,7 @@ function PvaVerificationModalContent({
   setProjectVisitAgreements,
   setAgreements,
   setVisitPlans,
+  setScheduledVisits,
   setShowPvaDocumentModal
 }: any) {
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -1194,6 +1201,21 @@ function PvaVerificationModalContent({
           };
         }
         return p;
+      }));
+    }
+
+    // Update scheduled visits state
+    if (setScheduledVisits) {
+      setScheduledVisits((prevVisits: any[]) => (prevVisits || []).map(v => {
+        if (v && (v.visitId === safePlan.visitPlanId || v.visitId === safePlan.visitScheduleId || (v.customerNumber && v.customerNumber === safePlan.customerNumber) || (v.mobile && safePlan.mobile && v.mobile.replace(/\D/g, '') === safePlan.mobile.replace(/\D/g, '')))) {
+          return {
+            ...v,
+            status: 'OTP_VERIFIED',
+            otpVerified: true,
+            pvaId: pvaId
+          };
+        }
+        return v;
       }));
     }
 
@@ -2009,23 +2031,34 @@ export default function App() {
       const keysToClean = [
         'swaramayi_leads_v4',
         'swaramayi_leads_v5_clean',
+        'swaramayi_leads_v6_clean',
         'swaramayi_customers_v3',
         'swaramayi_customers_v4_clean',
+        'swaramayi_customers_v5_clean',
+        'swaramayi_customers_v6_clean',
         'swaramayi_properties_v3',
         'swaramayi_properties_v4_clean',
         'swaramayi_cost_sheet_shares_v3',
         'swaramayi_cost_sheet_shares_v4_clean',
+        'swaramayi_cost_sheet_shares_v5_clean',
         'swaramayi_indiv_cost_sheets_v4',
         'swaramayi_indiv_cost_sheets_v5_clean',
+        'swaramayi_indiv_cost_sheets_v6_clean',
         'swaramayi_bookings_v2',
         'swaramayi_bookings_v3_clean',
         'swaramayi_agreements_vault_v4',
         'swaramayi_agreements_vault_v5_clean',
         'swaramayi_invoices_v4',
+        'swaramayi_invoices_v5_clean',
         'swaramayi_matching_queue_v3',
+        'swaramayi_matching_queue_v5_clean',
+        'swaramayi_matching_queue_v6_clean',
         'swaramayi_scheduled_visits_v3',
+        'swaramayi_scheduled_visits_v4_clean',
         'swaramayi_visit_plans_v3',
-        'swaramayi_project_visit_agreements_v1'
+        'swaramayi_visit_plans_v4_clean',
+        'swaramayi_project_visit_agreements_v1',
+        'swaramayi_project_visit_agreements_v2_clean'
       ];
       keysToClean.forEach(k => localStorage.removeItem(k));
     } catch (e) {}
@@ -2037,115 +2070,22 @@ export default function App() {
   const [matchingVaultFilter, setMatchingVaultFilter] = useState<'PENDING_ONLY' | 'ALL'>('PENDING_ONLY');
   const [matchingRequestsQueue, setMatchingRequestsQueue] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_matching_queue_v4_clean');
+      const saved = localStorage.getItem('swaramayi_matching_queue_v7_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        if (Array.isArray(parsed)) {
           return parsed;
         }
       }
     } catch (e) {
       console.error('Error reading matching queue from localStorage:', e);
     }
-    return [
-      {
-        id: 'SRM-MAT-2026-000421',
-        requestId: 'SRM-MAT-2026-000421',
-        date: '04 Sep 2026',
-        customerName: 'BISHWAJIT PANDEY',
-        customerNumber: 'SRM-CUS-2026-000184',
-        leadId: 'SRM-LEAD-2026-001245',
-        requirementId: 'SRM-REQ-2026-000095',
-        mobile: '+91 98490 12345',
-        email: 'bishwajit.pandey@gmail.com',
-        purpose: 'Self / End Use',
-        propertyType: 'Flat / Apartment',
-        configuration: '3BHK',
-        budget: '₹35,00,000 - ₹50,00,000',
-        budget_min: 3500000,
-        budget_max: 5000000,
-        preferredArea: 'Barasat, Kolkata',
-        radiusKm: 10,
-        possessionStatus: 'Ready to Move',
-        carpetArea: '900 – 1200 Sq.Ft.',
-        facing: 'East Facing',
-        parking: 'Covered Slot',
-        amenities: '24/7 Power Backup, Security, Lift',
-        completenessScore: 92,
-        priority: 'HOT',
-        leadScore: 88,
-        assignedExecutive: 'Priya Nair (Sales Exec)',
-        status: 'PENDING',
-        created_at: '2026-09-04T06:42:00.000Z'
-      },
-      {
-        id: 'SRM-MAT-2026-000422',
-        requestId: 'SRM-MAT-2026-000422',
-        date: '04 Sep 2026',
-        customerName: 'SUMANTH VARMA',
-        customerNumber: 'SRM-CUS-2026-000185',
-        leadId: 'SRM-LEAD-2026-001246',
-        requirementId: 'SRM-REQ-2026-000096',
-        mobile: '+91 98765 43210',
-        email: 'sumanth.varma@gmail.com',
-        purpose: 'Self / End Use',
-        propertyType: 'Flat / Apartment',
-        configuration: '2BHK',
-        budget: '₹25,00,000 - ₹38,00,000',
-        budget_min: 2500000,
-        budget_max: 3800000,
-        preferredArea: 'Barasat, Kolkata',
-        radiusKm: 10,
-        possessionStatus: 'Ready to Move',
-        carpetArea: '650 – 850 Sq.Ft.',
-        facing: 'North-East Facing',
-        parking: 'Open Parking',
-        amenities: '24/7 Water, Security, Power Backup',
-        completenessScore: 88,
-        priority: 'WARM',
-        leadScore: 88,
-        assignedExecutive: 'Rajesh Varma (Super Admin)',
-        status: 'PENDING',
-        created_at: '2026-09-04T06:42:00.000Z'
-      },
-      {
-        id: 'SRM-MAT-2026-000423',
-        requestId: 'SRM-MAT-2026-000423',
-        date: '04 Sep 2026',
-        customerName: 'Avi Das',
-        customerNumber: 'SRM-CUS-2026-000186',
-        leadId: 'SRM-LEAD-2026-001247',
-        requirementId: 'SRM-REQ-2026-000097',
-        mobile: '7658789990',
-        email: 'avi@gmail.com',
-        purpose: 'Rent / Investment',
-        propertyType: 'Flat / Apartment',
-        configuration: '2BHK',
-        budget: '₹25,00,000 - ₹50,00,000',
-        budget_min: 2500000,
-        budget_max: 5000000,
-        preferredArea: 'Madhyamgram, Kolkata',
-        secondaryAreas: 'Sodepur',
-        secondary_areas: 'Sodepur',
-        radiusKm: 10,
-        possessionStatus: 'Ready to Move',
-        carpetArea: '500 – 1000 Sq.Ft.',
-        facing: 'North-East Facing',
-        parking: 'Covered Slot',
-        amenities: '24/7 Power Backup, Fire Safety, Security',
-        completenessScore: 100,
-        priority: 'HOT',
-        leadScore: 100,
-        assignedExecutive: 'Abinash Roy (Admin)',
-        status: 'PENDING',
-        created_at: '2026-09-04T06:42:00.000Z'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_matching_queue_v4_clean', JSON.stringify(matchingRequestsQueue));
+      localStorage.setItem('swaramayi_matching_queue_v7_clean', JSON.stringify(matchingRequestsQueue));
     } catch (e) {
       console.error('Error saving matching queue to localStorage:', e);
     }
@@ -2157,11 +2097,11 @@ export default function App() {
   const [activeSelectionRecord, setActiveSelectionRecord] = useState<{ selectionId: string; matchingId: string; customerId: string; propertyIds: string[]; date: string; status: string } | null>(null);
   const [scheduledVisits, setScheduledVisits] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_scheduled_visits_v4_clean');
+      const saved = localStorage.getItem('swaramayi_scheduled_visits_v7_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.filter((v: any) => v.customerName !== 'Avishek Das' && v.visitId !== 'SRM-VS-2026-000089');
+          return parsed;
         }
       }
     } catch (e) {
@@ -2172,7 +2112,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_scheduled_visits_v4_clean', JSON.stringify(scheduledVisits));
+      localStorage.setItem('swaramayi_scheduled_visits_v7_clean', JSON.stringify(scheduledVisits));
     } catch (e) {
       console.error('Error saving scheduled visits to localStorage:', e);
     }
@@ -2185,11 +2125,11 @@ export default function App() {
 
   const [visitPlans, setVisitPlans] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_visit_plans_v4_clean');
+      const saved = localStorage.getItem('swaramayi_visit_plans_v7_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.filter((p: any) => p.customerName !== 'Avishek Das' && p.planId !== 'SRM-VP-2026-000089' && p.visitId !== 'SRM-VS-2026-000089');
+          return parsed;
         }
       }
     } catch (e) {
@@ -2200,7 +2140,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_visit_plans_v4_clean', JSON.stringify(visitPlans));
+      localStorage.setItem('swaramayi_visit_plans_v7_clean', JSON.stringify(visitPlans));
     } catch (e) {
       console.error('Error saving visit plans to localStorage:', e);
     }
@@ -2213,15 +2153,11 @@ export default function App() {
 
   const [projectVisitAgreements, setProjectVisitAgreements] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_project_visit_agreements_v2_clean');
+      const saved = localStorage.getItem('swaramayi_project_visit_agreements_v7_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.map((p: any) => ({
-            ...p,
-            protectionPeriodMonths: 12,
-            protectionEndDate: p.protectionStartDate ? `${parseInt(p.protectionStartDate.slice(0,4)) + 1}-${p.protectionStartDate.slice(5)}` : '2027-08-26'
-          }));
+          return parsed;
         }
       }
     } catch (e) {
@@ -2232,7 +2168,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_project_visit_agreements_v2_clean', JSON.stringify(projectVisitAgreements));
+      localStorage.setItem('swaramayi_project_visit_agreements_v7_clean', JSON.stringify(projectVisitAgreements));
     } catch (e) {
       console.error('Error saving project visit agreements to localStorage:', e);
     }
@@ -2937,10 +2873,15 @@ export default function App() {
   // 4. BULK PROPERTIES MASTER STOCK (WITH LOCALSTORAGE PERSISTENCE)
   const [properties, setProperties] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_properties_v4_clean');
+      const saved = localStorage.getItem('swaramayi_properties_v5_clean') || localStorage.getItem('swaramayi_properties_v4_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((p: any) => ({
+            ...p,
+            status: (p.status || '').toUpperCase() === 'AVAILABLE' ? 'LIVE' : (p.status || 'LIVE')
+          }));
+        }
       }
     } catch (e) {
       console.error('Error reading properties from localStorage:', e);
@@ -2959,7 +2900,7 @@ export default function App() {
         final_price: '₹22,76,200',
         price_sqft: '₹4,574/Sq.Ft.',
         car_parking: 'Covered Basement & 1 Slot',
-        status: 'AVAILABLE',
+        status: 'LIVE',
         locality: 'BARASAT, CHAPADALI',
         full_address: 'Chapadali Bus Terminus Hub, Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
         latitude: '22.722361',
@@ -2985,7 +2926,7 @@ export default function App() {
         final_price: '₹35,15,900',
         price_sqft: '₹5,020/Sq.Ft.',
         car_parking: 'Covered Basement & 1 Slot',
-        status: 'AVAILABLE',
+        status: 'LIVE',
         locality: 'Barasat, Kolkata',
         full_address: 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
         latitude: '22.722361',
@@ -3011,7 +2952,7 @@ export default function App() {
         final_price: '₹36,21,400',
         price_sqft: '₹5,042/Sq.Ft.',
         car_parking: 'Covered Basement & 1 Slot',
-        status: 'AVAILABLE',
+        status: 'LIVE',
         locality: 'Barasat, Kolkata',
         full_address: 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
         latitude: '22.722361',
@@ -3029,7 +2970,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_properties_v4_clean', JSON.stringify(properties));
+      localStorage.setItem('swaramayi_properties_v5_clean', JSON.stringify(properties));
     } catch (e) {
       console.error('Error saving properties to localStorage:', e);
     }
@@ -3057,12 +2998,34 @@ export default function App() {
   const [propertyUnits, setPropertyUnits] = useState([]);
 
   // 6. CUSTOMERS MASTER VAULT (WITH LOCALSTORAGE PERSISTENCE)
+  const defaultInitialCustomers: any[] = [];
+
   const [customers, setCustomers] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_customers_v4_clean');
+      const saved = localStorage.getItem('swaramayi_customers_v7_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          const seen = new Set<string>();
+          const deduped: any[] = [];
+          parsed.forEach((c: any) => {
+            if (!c) return;
+            const num = (c.customer_number || c.customerNumber || c.customerId || c.customer_id || '').toString().toLowerCase().trim();
+            const mob = (c.mobile || c.phone || '').toString().replace(/\D/g, '');
+            const id = (c.id || c._id || '').toString().toLowerCase().trim();
+            const name = (c.name || c.full_name || '').toString().toLowerCase().trim();
+
+            const key = num || (mob && mob.length >= 7 ? `mob:${mob.slice(-10)}` : '') || (id ? `id:${id}` : `name:${name}`);
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              if (num) seen.add(`num:${num}`);
+              if (mob && mob.length >= 7) seen.add(`mob:${mob.slice(-10)}`);
+              if (id) seen.add(`id:${id}`);
+              deduped.push(c);
+            }
+          });
+          return deduped;
+        }
       }
     } catch (e) {
       console.error('Error reading customers from localStorage:', e);
@@ -3072,37 +3035,24 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_customers_v4_clean', JSON.stringify(customers));
+      localStorage.setItem('swaramayi_customers_v7_clean', JSON.stringify(customers));
     } catch (e) {
       console.error('Error saving customers to localStorage:', e);
     }
   }, [customers]);
 
   const [rawSelectedCust, setSelectedCust] = useState<any>(null);
-  const selectedCust = rawSelectedCust || customers[0] || {
-    id: 'CUS-EMPTY',
-    customer_number: 'NO_CUSTOMERS',
-    name: 'No Customer Records in Vault',
-    mobile: 'N/A',
-    email: 'N/A',
-    budget: 'N/A',
-    preferredArea: 'N/A',
-    configuration: 'N/A',
-    status: 'EMPTY',
-    priority: 'COLD',
-    score: 0,
-    source: 'N/A'
-  };
+  const selectedCust = rawSelectedCust || customers[0] || null;
 
   // 6.5. CENTRAL LEADS MASTER STORE (WITH LOCALSTORAGE PERSISTENCE)
   const [activeEditingLeadId, setActiveEditingLeadId] = useState<string | null>(null);
   const [leadsList, setLeadsList] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_leads_v5_clean');
+      const saved = localStorage.getItem('swaramayi_leads_v7_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.filter((l: any) => l.lead_number !== 'SRM-LEAD-2026-001245' && l.lead_number !== 'SRM-LEAD-2026-001246' && l.customer_name !== 'BISHWAJIT PANDEY' && l.customer_name !== 'SUMANTH VARMA');
+          return parsed;
         }
       }
     } catch (e) {
@@ -3113,7 +3063,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_leads_v5_clean', JSON.stringify(leadsList));
+      localStorage.setItem('swaramayi_leads_v7_clean', JSON.stringify(leadsList));
     } catch (e) {
       console.error('Error saving leads to localStorage:', e);
     }
@@ -3497,6 +3447,9 @@ export default function App() {
     setShowRevisionModal({
       open: true,
       costSheet,
+      customerName: costSheet.customerSnapshot?.customerName || costSheet.customerName || '',
+      customerMobile: costSheet.customerSnapshot?.mobile || costSheet.mobile || '',
+      customerEmail: costSheet.customerSnapshot?.email || costSheet.email || '',
       revBasePrice: basePrice,
       revFloorRise: floorRise,
       revPlc: plc,
@@ -3509,6 +3462,7 @@ export default function App() {
       revStampDutyPct: ps.stampDutyPct !== undefined ? ps.stampDutyPct : 5,
       revRegPct: ps.registrationPct !== undefined ? ps.registrationPct : 1,
       revUnitNotes: unitNotes,
+      status: costSheet.status || 'GENERATED',
       reason: ''
     });
   };
@@ -3516,7 +3470,7 @@ export default function App() {
   // Master Individual Cost Sheets Array with LocalStorage Persistence
   const [individualCostSheets, setIndividualCostSheets] = useState<any[]>(() => {
     try {
-      const saved = localStorage.getItem('swaramayi_indiv_cost_sheets_v5_clean');
+      const saved = localStorage.getItem('swaramayi_indiv_cost_sheets_v7_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) return parsed;
@@ -3530,7 +3484,7 @@ export default function App() {
 
   useEffect(() => {
     try {
-      localStorage.setItem('swaramayi_indiv_cost_sheets_v5_clean', JSON.stringify(individualCostSheets));
+      localStorage.setItem('swaramayi_indiv_cost_sheets_v7_clean', JSON.stringify(individualCostSheets));
     } catch (e) {
       console.error('Error saving individual cost sheets to localStorage:', e);
     }
@@ -3571,8 +3525,10 @@ export default function App() {
 
   // CREATE COST SHEET OBJECT FACTORY
   const createCostSheetObject = (prop: any, matchingReq: any, calculated: any, costSheetId: string, versionNum: number = 1): any => {
-    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || 'SRM-CUS-2026-000187';
-    const matchId = matchingReq?.requestId || selectedMatchingId || 'MATCH-2026-000002';
+    const custMob = matchingReq?.mobile || selectedCust?.mobile || '';
+    const cleanMob = custMob.replace(/\D/g, '');
+    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || (cleanMob ? `SRM-CUS-2026-${cleanMob.slice(-6)}` : `SRM-CUS-2026-000999`);
+    const matchId = matchingReq?.requestId || selectedMatchingId || (cleanMob ? `SRM-MAT-2026-${cleanMob.slice(-6)}` : `SRM-MAT-2026-000999`);
     const propCode = prop.property_code || prop.id || 'SRM-PROP-2026-000421';
 
     return {
@@ -3621,15 +3577,15 @@ export default function App() {
 
       customerSnapshot: {
         customerId: custId,
-        customerName: matchingReq?.customerName || selectedCust?.name || 'Avishek Das',
-        mobile: matchingReq?.mobile || selectedCust?.mobile || '9432328947',
-        alternateMobile: '+91 98490 88888',
-        email: selectedCust?.email || 'avishek.das@gmail.com',
-        address: 'Madhyamgram Main Road, Sector 2, Kolkata / Hyderabad',
-        preferredLocation: matchingReq?.preferredArea || 'Madhyamgram / Kondapur',
-        preferredBhk: matchingReq?.configuration || '3BHK',
-        budget: matchingReq?.budget || '50 lakh – 60 Lakh',
-        purpose: matchingReq?.purpose || 'Self Use',
+        customerName: matchingReq?.customerName || selectedCust?.name || selectedCust?.full_name || 'Customer',
+        mobile: matchingReq?.mobile || selectedCust?.mobile || '',
+        alternateMobile: matchingReq?.alternateMobile || '+91 98490 88888',
+        email: matchingReq?.email || selectedCust?.email || `${(matchingReq?.customerName || selectedCust?.name || 'customer').toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
+        address: matchingReq?.preferredArea ? `${matchingReq.preferredArea}, Kolkata` : 'Kolkata, West Bengal',
+        preferredLocation: matchingReq?.preferredArea || prop?.locality || 'Barasat, Kolkata',
+        preferredBhk: matchingReq?.configuration || prop?.configuration || '2BHK',
+        budget: matchingReq?.budget || '₹25,00,000 - ₹50,00,000',
+        purpose: matchingReq?.purpose || 'Self / End Use',
         assignedSalesperson: matchingReq?.assignedExecutive || 'Priya Nair (Sales Exec)'
       },
 
@@ -3740,8 +3696,10 @@ export default function App() {
     if (!showSingleCostSheetConfirmModal) return;
     const { property: prop, matchingReq, calculated, nextId } = showSingleCostSheetConfirmModal;
 
-    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || 'SRM-CUS-2026-000185';
-    const matchId = matchingReq?.requestId || selectedMatchingId || 'MATCH-2026-000002';
+    const custMob = matchingReq?.mobile || selectedCust?.mobile || '';
+    const cleanMob = custMob.replace(/\D/g, '');
+    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || (cleanMob ? `SRM-CUS-2026-${cleanMob.slice(-6)}` : `SRM-CUS-2026-000999`);
+    const matchId = matchingReq?.requestId || selectedMatchingId || (cleanMob ? `SRM-MAT-2026-${cleanMob.slice(-6)}` : `SRM-MAT-2026-000999`);
 
     const newCostSheet = createCostSheetObject(prop, matchingReq, calculated, nextId, 1);
 
@@ -3842,8 +3800,10 @@ export default function App() {
     const { properties: selectedProps, matchingReq } = showBulkCostSheetConfirmModal;
 
     const createdSheets: any[] = [];
-    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || 'SRM-CUS-2026-000185';
-    const matchId = matchingReq?.requestId || selectedMatchingId || 'MATCH-2026-000002';
+    const custMob = matchingReq?.mobile || selectedCust?.mobile || '';
+    const cleanMob = custMob.replace(/\D/g, '');
+    const custId = matchingReq?.customerNumber || selectedCust?.customer_number || (cleanMob ? `SRM-CUS-2026-${cleanMob.slice(-6)}` : `SRM-CUS-2026-000999`);
+    const matchId = matchingReq?.requestId || selectedMatchingId || (cleanMob ? `SRM-MAT-2026-${cleanMob.slice(-6)}` : `SRM-MAT-2026-000999`);
 
     selectedProps.forEach((prop, idx) => {
       const propCode = prop.property_code || prop.id;
@@ -3935,7 +3895,7 @@ export default function App() {
     });
   };
 
-  // LIVE REVISION CALCULATION HELPER
+  // CALCULATE REVISION LIVE TOTALS HELPER
   const calculateRevisionLiveTotals = (form: any) => {
     const base = form.revBasePrice || 0;
     const floor = form.revFloorRise || 0;
@@ -3946,24 +3906,27 @@ export default function App() {
     const infra = form.revInfraLegal || 0;
     const disc = form.revDiscount || 0;
 
-    const subtotal = Math.max(0, base + floor + plc + park + club + maint + infra - disc);
+    const subtotal = Math.max(0, (base + floor + plc + park + club + maint + infra) - disc);
+    const gstPct = form.revGstPct !== undefined ? form.revGstPct : 5;
+    const stampPct = form.revStampDutyPct !== undefined ? form.revStampDutyPct : 5;
+    const regPct = form.revRegPct !== undefined ? form.revRegPct : 1;
 
-    const gst = Math.round(base * ((form.revGstPct || 5) / 100));
-    const stamp = Math.round(base * ((form.revStampDutyPct || 5) / 100));
-    const reg = Math.round(base * ((form.revRegPct || 1) / 100));
-
+    const gst = Math.round((subtotal * gstPct) / 100);
+    const stamp = Math.round((subtotal * stampPct) / 100);
+    const reg = Math.round((subtotal * regPct) / 100);
     const grandTotal = subtotal + gst + stamp + reg;
+
     return { subtotal, gst, stamp, reg, grandTotal };
   };
 
-  // EXECUTE COST SHEET REVISION (FULL DETAILS REVISION - V02, V03)
-  const executeCreateRevision = () => {
+  // EXECUTE COST SHEET EDIT / REVISION (FULL DETAILS REVISION - V02, V03 OR IN-PLACE EDIT)
+  const executeCreateRevision = (inPlace: boolean = false) => {
     if (!showRevisionModal) return;
     const form = showRevisionModal;
     const costSheet = form.costSheet;
 
-    const nextVerNum = (costSheet.versionNumber || 1) + 1;
-    const newVerCode = `V0${nextVerNum}`;
+    const nextVerNum = inPlace ? (costSheet.versionNumber || 1) : ((costSheet.versionNumber || 1) + 1);
+    const newVerCode = inPlace ? (costSheet.version || 'V01') : `V0${nextVerNum}`;
 
     const liveCalc = calculateRevisionLiveTotals(form);
     const oldTotalStr = costSheet.formattedPriceBreakup?.totalEstimatedCostStr || formatIndianRupees(costSheet.pricingSnapshot?.totalEstimatedCost || 0);
@@ -3980,18 +3943,30 @@ export default function App() {
     if (form.revInfraLegal !== ((origPs.infrastructureCharge || 0) + (origPs.legalCharge || 0))) changedFields.push('Infra & Legal');
     if (form.revDiscount !== origPs.discountAmount) changedFields.push('Special Discount');
     if (form.revGstPct !== origPs.gstPct) changedFields.push('GST Rate');
+    if (form.customerName && form.customerName !== (costSheet.customerSnapshot?.customerName || costSheet.customerName)) changedFields.push('Customer Name');
+    if (form.customerMobile && form.customerMobile !== (costSheet.customerSnapshot?.mobile || costSheet.mobile)) changedFields.push('Customer Mobile');
 
     const carpetNum = parseSqftToNumeric(costSheet.propertySnapshot?.carpetArea || 1250);
     const ratePerSqft = carpetNum > 0 ? Math.round(form.revBasePrice / carpetNum) : 5000;
 
+    const newCustName = form.customerName || costSheet.customerSnapshot?.customerName || costSheet.customerName || 'Customer';
+    const newCustMob = form.customerMobile || costSheet.customerSnapshot?.mobile || costSheet.mobile || '';
+
     const revisedSheet = {
       ...costSheet,
+      customerName: newCustName,
+      mobile: newCustMob,
       version: newVerCode,
       versionNumber: nextVerNum,
-      status: 'REVISED',
-      revisionReason: form.reason || 'Manager approved price adjustment.',
+      status: inPlace ? (costSheet.status || 'GENERATED') : 'REVISED',
+      revisionReason: form.reason || (inPlace ? 'Cost sheet details edited.' : 'Manager approved price adjustment.'),
       previousPriceStr: oldTotalStr,
-      changedFields: changedFields.length > 0 ? changedFields : ['Pricing & Charges Revision'],
+      changedFields: changedFields.length > 0 ? changedFields : ['Details & Pricing Update'],
+      customerSnapshot: {
+        ...costSheet.customerSnapshot,
+        customerName: newCustName,
+        mobile: newCustMob
+      },
       propertySnapshot: {
         ...costSheet.propertySnapshot,
         unitNumber: form.revUnitNotes || costSheet.propertySnapshot?.unitNumber
@@ -4039,8 +4014,8 @@ export default function App() {
         {
           timestamp: new Date().toISOString(),
           user: 'Rahul Sharma (Team Lead)',
-          action: 'COST_SHEET_REVISED',
-          details: `Created Revision ${newVerCode}. Modified: ${changedFields.join(', ') || 'Pricing'}. New Total: ${formatIndianRupees(liveCalc.grandTotal)}. Reason: ${form.reason}`,
+          action: inPlace ? 'COST_SHEET_EDITED' : 'COST_SHEET_REVISED',
+          details: `${inPlace ? 'Edited' : 'Created Revision ' + newVerCode}. Modified: ${changedFields.join(', ') || 'Pricing'}. New Total: ${formatIndianRupees(liveCalc.grandTotal)}. Reason: ${form.reason || 'N/A'}`,
           ip: '127.0.0.1',
           device: 'Chrome / Windows 11'
         },
@@ -4050,11 +4025,20 @@ export default function App() {
 
     setIndividualCostSheets(prev => prev.map(cs => cs.costSheetId === costSheet.costSheetId ? revisedSheet : cs));
 
+    // Update customers state if customer details changed
+    if (newCustName || newCustMob) {
+      const custId = costSheet.customerId || costSheet.customerSnapshot?.customerId || costSheet.customerSnapshot?.customerNumber;
+      if (custId) {
+        setCustomers(prev => prev.map(c => (c.customer_number === custId || c.id === custId) ? { ...c, full_name: newCustName, name: newCustName, mobile: newCustMob } : c));
+      }
+    }
+
     setShowRevisionModal(null);
     setShowViewIndividualCostSheetModal({
       open: true,
       costSheet: revisedSheet
     });
+    alert(inPlace ? `✏️ Cost Sheet ${costSheet.costSheetId} updated successfully!` : `🚀 New Revision ${newVerCode} for Cost Sheet ${costSheet.costSheetId} created successfully!`);
   };
 
   // DELETE ALL CURRENT RECORDS INSIDE FUNCTION
@@ -4120,27 +4104,7 @@ export default function App() {
     } catch (e) {
       console.error('Error reading bookings from localStorage:', e);
     }
-    return [
-      {
-        id: 'BKG-SEED-1',
-        booking_code: 'SRM-BKG-2026-000088',
-        booking_date: '2026-09-01',
-        customer_name: 'Bishwajit Pandey',
-        customer_mobile: '9330401757',
-        customer_number: 'SRM-CUS-2026-000188',
-        project_name: '1 Properties (BARASAT, BANAMALIPUR, BARASAT NEAR ECO HOSPITAL)',
-        property_code: 'SRM-PROP-2026-000426',
-        developer_name: 'Swaramayi Partner Developer',
-        tower_unit: 'Block A - Unit 302',
-        agreement_value: '₹51,14,880',
-        token_amount: 100000,
-        payment_mode: 'UPI / Online Bank Transfer',
-        payment_ref: 'TXN-SRM-361495',
-        brokerage_rate: '2.0%',
-        brokerage_amount: 102297,
-        approval_status: 'APPROVED_LOCKED'
-      }
-    ];
+    return [];
   });
 
   useEffect(() => {
@@ -4823,38 +4787,6 @@ export default function App() {
     }
   }, [invoices]);
 
-  // FETCH LATEST DATA FROM MONGODB ATLAS ON MOUNT
-  useEffect(() => {
-    const fetchMongoDBData = async () => {
-      try {
-        const res = await fetch('http://localhost:5000/api/v1/crm/sync');
-        if (res.ok) {
-          const json = await res.json();
-          if (json.status === 'SUCCESS' && json.data) {
-            if (Array.isArray(json.data.users) && json.data.users.length > 0) setUsers(json.data.users);
-            if (Array.isArray(json.data.teams) && json.data.teams.length > 0) setTeams(json.data.teams);
-            if (Array.isArray(json.data.branches) && json.data.branches.length > 0) setBranches(json.data.branches);
-            if (Array.isArray(json.data.properties)) setProperties(json.data.properties);
-            if (Array.isArray(json.data.customers)) setCustomers(json.data.customers);
-            if (Array.isArray(json.data.leads)) setLeadsList(json.data.leads);
-            if (Array.isArray(json.data.agreements)) setAgreements(json.data.agreements);
-            if (Array.isArray(json.data.invoices)) setInvoices(json.data.invoices);
-            if (Array.isArray(json.data.bookings)) setBookings(json.data.bookings);
-            if (Array.isArray(json.data.site_visits)) setScheduledVisits(json.data.site_visits);
-            if (Array.isArray(json.data.matching_requests)) setMatchingRequestsQueue(json.data.matching_requests);
-            if (Array.isArray(json.data.cost_sheets)) setIndividualCostSheets(json.data.cost_sheets);
-            if (Array.isArray(json.data.pva_agreements)) setProjectVisitAgreements(json.data.pva_agreements);
-            if (Array.isArray(json.data.sourcing_requests)) setSourcingRequests(json.data.sourcing_requests);
-            if (Array.isArray(json.data.developers)) setDevelopers(json.data.developers);
-          }
-        }
-      } catch (err) {
-        console.warn('Initial MongoDB sync fetch note:', err);
-      }
-    };
-    fetchMongoDBData();
-  }, []);
-
   const [sourcingRequests, setSourcingRequests] = useState<any[]>(() => {
     try {
       const saved = localStorage.getItem('swaramayi_sourcing_requests_v1');
@@ -4914,8 +4846,8 @@ export default function App() {
         developers: overrideData?.developers || devList,
         customers: overrideData?.customers || customers,
         leads: overrideData?.leads || leadsList,
-        bookings: overrideData?.bookings || bookings,
-        invoices: overrideData?.invoices || invoices,
+        bookings: overrideData?.bookings !== undefined ? overrideData.bookings : bookings,
+        invoices: overrideData?.invoices !== undefined ? overrideData.invoices : invoices,
         agreements: overrideData?.agreements || agreements,
         cost_sheets: overrideData?.cost_sheets || individualCostSheets,
         matching_requests: overrideData?.matching_requests || matchingRequestsQueue,
@@ -4944,6 +4876,9 @@ export default function App() {
           const result = await res.json();
           if (result.status === 'SUCCESS' && result.data) {
             const mData = result.data;
+            if (Array.isArray(mData.users) && mData.users.length > 0) setUsers(mData.users);
+            if (Array.isArray(mData.teams) && mData.teams.length > 0) setTeams(mData.teams);
+            if (Array.isArray(mData.branches) && mData.branches.length > 0) setBranches(mData.branches);
             if (Array.isArray(mData.properties) && mData.properties.length > 0) {
               setProperties(prev => {
                 const map = new Map<string, any>();
@@ -4961,10 +4896,40 @@ export default function App() {
             if (Array.isArray(mData.leads)) {
               setLeadsList(mData.leads);
             }
+            if (Array.isArray(mData.agreements)) {
+              setAgreements(mData.agreements);
+            }
+            if (Array.isArray(mData.invoices)) {
+              setInvoices(mData.invoices);
+              try {
+                localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(mData.invoices));
+              } catch (e) {}
+            }
+            if (Array.isArray(mData.bookings)) {
+              setBookings(mData.bookings);
+              try {
+                localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(mData.bookings));
+              } catch (e) {}
+            }
+            if (Array.isArray(mData.site_visits)) {
+              setScheduledVisits(mData.site_visits);
+            }
             if (Array.isArray(mData.matching_requests) && mData.matching_requests.length > 0) {
               setMatchingRequestsQueue(mData.matching_requests);
               try {
                 localStorage.setItem('swaramayi_matching_queue_v4_clean', JSON.stringify(mData.matching_requests));
+              } catch (e) {}
+            }
+            if (Array.isArray(mData.cost_sheets)) {
+              setIndividualCostSheets(mData.cost_sheets);
+            }
+            if (Array.isArray(mData.pva_agreements)) {
+              setProjectVisitAgreements(mData.pva_agreements);
+            }
+            if (Array.isArray(mData.sourcing_requests)) {
+              setSourcingRequests(mData.sourcing_requests);
+              try {
+                localStorage.setItem('swaramayi_sourcing_requests_v1', JSON.stringify(mData.sourcing_requests));
               } catch (e) {}
             }
             if (Array.isArray(mData.developers) && mData.developers.length > 0) {
@@ -5022,16 +4987,202 @@ export default function App() {
   const [showUpdateRequirementModal, setShowUpdateRequirementModal] = useState<{ open: boolean; customer: any } | null>(null);
   const [showAlternativePropertyModal, setShowAlternativePropertyModal] = useState<{ open: boolean; customer: any; currentProperty: any } | null>(null);
   const [showLogSalesFeedbackModal, setShowLogSalesFeedbackModal] = useState<boolean>(false);
-  const [salesFeedbackForm, setSalesFeedbackForm] = useState({
-    visitPlanId: 'SRM-VP-2026-000001',
-    customerName: 'Rohan Deshmukh',
-    propertyTitle: 'Aparna Zenon 3BHK',
-    rating: '5',
-    satisfaction: '😍 Highly Satisfied (Ready for Booking)',
-    dislike_reason: 'None',
-    buyer_intent: '🔥 HOT - Booking Lead',
-    executive_notes: 'Customer loved the balcony view and project amenities.'
+  
+  // DYNAMIC STRUCTURED 5-STAR VISIT FEEDBACKS STATE (WITH LOCALSTORAGE PERSISTENCE)
+  const [visitFeedbacks, setVisitFeedbacks] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_visit_feedbacks_v2');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading visit feedbacks from localStorage:', e);
+    }
+    return [];
   });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_visit_feedbacks_v2', JSON.stringify(visitFeedbacks));
+    } catch (e) {
+      console.error('Error saving visit feedbacks to localStorage:', e);
+    }
+  }, [visitFeedbacks]);
+
+  const [salesFeedbackForm, setSalesFeedbackForm] = useState({
+    feedbackId: '',
+    visitId: '',
+    customerName: '',
+    custMobile: '',
+    custCode: '',
+    propTitle: '',
+    propCode: '',
+    locality: '',
+    rating: 5,
+    satisfaction: '😍 Highly Satisfied (Ready for Booking)',
+    reason: '',
+    buyer_intent: '🔥 HOT - Booking Lead',
+    exec: 'Priya Nair (Sales Exec)',
+    budget_min: '₹35 Lakhs',
+    budget_max: '₹75 Lakhs',
+    prefArea: 'Kolkata',
+    property_type: 'Flat / Apartment',
+    configuration: '2BHK / 3BHK',
+    feedback_date: ''
+  });
+
+  const handleOpenFeedbackModal = (visitItem?: any) => {
+    const nowStr = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    if (visitItem) {
+      const propTitle = visitItem.propertyTitle || visitItem.propertySnapshot?.propertyTitle || (visitItem.properties && visitItem.properties[0]?.propertyTitle) || 'Property Site Visit';
+      const propCode = visitItem.propertyCode || visitItem.propertySnapshot?.propertyCode || (visitItem.properties && visitItem.properties[0]?.propertyCode) || 'SRM-PROP-01';
+      const locality = visitItem.locality || visitItem.location || visitItem.propertySnapshot?.locality || 'Barasat, Kolkata';
+      const custName = visitItem.customerName || visitItem.customerSnapshot?.customerName || 'Customer';
+      const custMobile = visitItem.mobile || visitItem.customerSnapshot?.mobile || '';
+      const custCode = visitItem.customerId || visitItem.customerNumber || visitItem.customerSnapshot?.customerNumber || (custMobile ? `SRM-CUS-2026-${custMobile.replace(/\D/g, '').slice(-6)}` : 'SRM-CUS-2026-000188');
+      const visitId = visitItem.visitId || visitItem.id || `SRM-VS-2026-${Date.now().toString().slice(-6)}`;
+      const exec = visitItem.assignedFieldExecutive || visitItem.assignedExecutive || 'Punita Roy';
+
+      setSalesFeedbackForm({
+        feedbackId: `FB-${Date.now().toString().slice(-6)}`,
+        visitId,
+        customerName: custName,
+        custMobile,
+        custCode,
+        propTitle,
+        propCode,
+        locality,
+        rating: 5,
+        satisfaction: '😍 Highly Satisfied (Ready for Booking)',
+        reason: '',
+        buyer_intent: '🔥 HOT - Booking Lead',
+        exec,
+        budget_min: visitItem.budget_min || '₹35 Lakhs',
+        budget_max: visitItem.budget_max || '₹75 Lakhs',
+        prefArea: locality,
+        property_type: 'Flat / Apartment',
+        configuration: '2BHK / 3BHK',
+        feedback_date: nowStr
+      });
+    } else {
+      const defaultVisit = scheduledVisits[0] || (visitPlans[0] && visitPlans[0].stops && visitPlans[0].stops[0]) || null;
+      const custName = defaultVisit?.customerName || (customers[0]?.name || customers[0]?.full_name) || '';
+      const custMobile = defaultVisit?.mobile || customers[0]?.mobile || '';
+      const custCode = defaultVisit?.customerNumber || customers[0]?.customer_number || 'SRM-CUS-2026-000188';
+      const propTitle = defaultVisit?.propertyTitle || (properties[0]?.title || properties[0]?.name) || 'Residential Flat';
+      const propCode = defaultVisit?.propertyCode || properties[0]?.property_code || properties[0]?.id || 'SRM-PROP-01';
+      const locality = defaultVisit?.locality || properties[0]?.locality || 'Barasat, Kolkata';
+      const visitId = defaultVisit?.visitId || `SRM-VS-2026-${Date.now().toString().slice(-6)}`;
+      const exec = defaultVisit?.assignedFieldExecutive || 'Priya Nair (Sales Exec)';
+
+      setSalesFeedbackForm({
+        feedbackId: `FB-${Date.now().toString().slice(-6)}`,
+        visitId,
+        customerName: custName,
+        custMobile,
+        custCode,
+        propTitle,
+        propCode,
+        locality,
+        rating: 5,
+        satisfaction: '😍 Highly Satisfied (Ready for Booking)',
+        reason: '',
+        buyer_intent: '🔥 HOT - Booking Lead',
+        exec,
+        budget_min: '₹35 Lakhs',
+        budget_max: '₹75 Lakhs',
+        prefArea: locality,
+        property_type: 'Flat / Apartment',
+        configuration: '2BHK / 3BHK',
+        feedback_date: nowStr
+      });
+    }
+    setShowLogSalesFeedbackModal(true);
+  };
+
+  const handleSaveFeedback = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!salesFeedbackForm.customerName.trim()) {
+      alert('Please enter customer name.');
+      return;
+    }
+    if (!salesFeedbackForm.reason.trim()) {
+      alert('Please enter customer objection or feedback details.');
+      return;
+    }
+
+    const ratingNum = Number(salesFeedbackForm.rating) || 5;
+    const newFb = {
+      id: salesFeedbackForm.feedbackId || `FB-${Date.now().toString().slice(-6)}`,
+      visitId: salesFeedbackForm.visitId || `SRM-VS-2026-${Date.now().toString().slice(-6)}`,
+      custName: salesFeedbackForm.customerName,
+      custMobile: salesFeedbackForm.custMobile,
+      custCode: salesFeedbackForm.custCode || (salesFeedbackForm.custMobile ? `SRM-CUS-2026-${salesFeedbackForm.custMobile.replace(/\D/g, '').slice(-6)}` : 'SRM-CUS-2026-000188'),
+      propTitle: salesFeedbackForm.propTitle || 'Property Site Visit',
+      propCode: salesFeedbackForm.propCode || 'SRM-PROP-01',
+      locality: salesFeedbackForm.locality || 'Kolkata',
+      rating: ratingNum,
+      satisfaction: salesFeedbackForm.satisfaction,
+      reason: salesFeedbackForm.reason,
+      intent: salesFeedbackForm.buyer_intent,
+      exec: salesFeedbackForm.exec,
+      budget_min: salesFeedbackForm.budget_min,
+      budget_max: salesFeedbackForm.budget_max,
+      prefArea: salesFeedbackForm.prefArea,
+      property_type: salesFeedbackForm.property_type,
+      configuration: salesFeedbackForm.configuration,
+      createdAt: salesFeedbackForm.feedback_date || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+    };
+
+    setVisitFeedbacks(prev => [newFb, ...prev.filter(f => f.id !== newFb.id && f.visitId !== newFb.visitId)]);
+
+    // Update scheduledVisits state
+    setScheduledVisits(prev => prev.map(sv => {
+      if (sv.visitId === newFb.visitId || sv.id === newFb.visitId || (sv.customerName === newFb.custName && sv.propertyTitle === newFb.propTitle)) {
+        return {
+          ...sv,
+          feedback: true,
+          feedbackRating: newFb.rating,
+          feedbackSatisfaction: newFb.satisfaction,
+          feedbackRemarks: newFb.reason,
+          buyerIntent: newFb.intent,
+          feedbackLoggedAt: newFb.createdAt
+        };
+      }
+      return sv;
+    }));
+
+    // Update visitPlans state
+    setVisitPlans(prev => prev.map(vp => {
+      if (vp.stops && Array.isArray(vp.stops)) {
+        const updatedStops = vp.stops.map((st: any) => {
+          if (st.visitId === newFb.visitId || st.propertyTitle === newFb.propTitle) {
+            return {
+              ...st,
+              feedback: true,
+              feedbackRating: newFb.rating,
+              feedbackRemarks: newFb.reason
+            };
+          }
+          return st;
+        });
+        return { ...vp, stops: updatedStops };
+      }
+      return vp;
+    }));
+
+    setShowLogSalesFeedbackModal(false);
+    setActiveVisitSubTab('visit_feedback');
+    alert(`⭐ 5-Star Feedback recorded successfully for ${newFb.custName} (${newFb.visitId})!`);
+  };
+
+  const handleDeleteFeedback = (fbId: string) => {
+    if (window.confirm('Are you sure you want to delete this feedback record?')) {
+      setVisitFeedbacks(prev => prev.filter(fb => fb.id !== fbId));
+    }
+  };
+
   const [billingInvoiceCategory, setBillingInvoiceCategory] = useState<'CUSTOMER' | 'DEVELOPER'>('CUSTOMER');
   const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState<boolean>(false);
   const [showPrintInvoiceModal, setShowPrintInvoiceModal] = useState<{ open: boolean; invoice: any } | null>(null);
@@ -5496,7 +5647,12 @@ export default function App() {
 
   const handleDeleteCustomer = (id: string, code: string) => {
     if (window.confirm(`Are you sure you want to delete Customer Record ${code}?`)) {
-      setCustomers(customers.filter(c => c.id !== id));
+      const cleanCode = (code || '').toLowerCase().trim();
+      const cleanId = (id || '').toLowerCase().trim();
+      setCustomers(prev => prev.filter(c => c.id !== id && (c.customer_number || '').toLowerCase() !== cleanCode));
+      setMatchingRequestsQueue(prev => prev.filter(r => (r.customerNumber || '').toLowerCase() !== cleanCode && (r.requestId || '').toLowerCase() !== cleanCode && (r.id || '').toLowerCase() !== cleanId));
+      setIndividualCostSheets(prev => prev.filter(cs => (cs.customerId || cs.customerSnapshot?.customerNumber || '').toLowerCase() !== cleanCode));
+      setLeadsList(prev => prev.filter(l => (l.customer_number || '').toLowerCase() !== cleanCode && (l.id || '').toLowerCase() !== cleanId));
       alert(`🗑️ Customer Record ${code} deleted successfully!`);
     }
   };
@@ -5780,7 +5936,14 @@ export default function App() {
       priority: newCustomerForm.priority as any,
       score: newCustomerForm.priority === 'HOT' ? 88 : 72
     };
-    setCustomers([newC, ...customers]);
+    setCustomers(prev => {
+      const cleanMobile = (newCustomerForm.mobile || '').replace(/\D/g, '');
+      const exists = prev.some(c => (c.customer_number && c.customer_number === newCustNumber) || (cleanMobile && cleanMobile.length >= 7 && c.mobile && c.mobile.replace(/\D/g, '') === cleanMobile));
+      if (exists) {
+        return prev.map(c => ((c.customer_number === newCustNumber || (cleanMobile && cleanMobile.length >= 7 && c.mobile && c.mobile.replace(/\D/g, '') === cleanMobile)) ? { ...c, ...newC } : c));
+      }
+      return [newC, ...prev];
+    });
     setShowAddCustomerModal(false);
     setShowCustomerModal(false);
     setShowLeadModal(false);
@@ -5970,7 +6133,14 @@ export default function App() {
       updated_at: new Date().toISOString()
     };
 
-    setCustomers([newC, ...customers]);
+    setCustomers(prev => {
+      const cleanMobile = (mob || '').replace(/\D/g, '');
+      const exists = prev.some(c => (c.customer_number && c.customer_number === newCustNumber) || (cleanMobile && cleanMobile.length >= 7 && c.mobile && c.mobile.replace(/\D/g, '') === cleanMobile));
+      if (exists) {
+        return prev.map(c => ((c.customer_number === newCustNumber || (cleanMobile && cleanMobile.length >= 7 && c.mobile && c.mobile.replace(/\D/g, '') === cleanMobile)) ? { ...c, ...newC } : c));
+      }
+      return [newC, ...prev];
+    });
     setLeadsList([newLeadObj, ...leadsList]);
     setShowLeadModal(false);
     alert(`📋 New Lead (${newLeadObj.lead_number} - ${callDisp}) & Customer Master (${newCustNumber}) saved into Customer & Lead Management!`);
@@ -8222,6 +8392,7 @@ export default function App() {
               activeProjectSubTab={activeProjectSubTab}
               setActiveProjectSubTab={setActiveProjectSubTab}
               properties={properties}
+              setProperties={setProperties}
               propertyUnits={propertyUnits}
               setPropertyUnits={setPropertyUnits}
               projectVisitAgreements={projectVisitAgreements}
@@ -8375,6 +8546,7 @@ export default function App() {
               calculatePropertyMatchScore={calculatePropertyMatchScore}
               handleRowLevelCreateCostSheet={handleRowLevelCreateCostSheet}
               handleBulkCreateCostSheets={handleBulkCreateCostSheets}
+              individualCostSheets={individualCostSheets}
             />
           )}
 
@@ -8425,6 +8597,7 @@ export default function App() {
               setActiveVisitSubTab={setActiveVisitSubTab}
               scheduledVisits={scheduledVisits}
               visitPlans={visitPlans}
+              syncAllToMongoDB={syncAllToMongoDB}
             />
           )}
 
@@ -8470,6 +8643,10 @@ export default function App() {
               setSelectedCust={setSelectedCust}
               setActiveMatchingSubTab={setActiveMatchingSubTab}
               setShowLogSalesFeedbackModal={setShowLogSalesFeedbackModal}
+              handleOpenFeedbackModal={handleOpenFeedbackModal}
+              visitFeedbacks={visitFeedbacks}
+              setVisitFeedbacks={setVisitFeedbacks}
+              handleDeleteFeedback={handleDeleteFeedback}
               setShowAlternativePropertyModal={setShowAlternativePropertyModal}
               setUpdateReqForm={setUpdateReqForm}
               setShowUpdateRequirementModal={setShowUpdateRequirementModal}
@@ -8479,6 +8656,7 @@ export default function App() {
               setScheduledVisits={setScheduledVisits}
               setVisitPlans={setVisitPlans}
               setActiveBookingSubTab={setActiveBookingSubTab}
+              syncAllToMongoDB={syncAllToMongoDB}
             />
           )}
 
@@ -8558,6 +8736,7 @@ export default function App() {
               setBillingInvoiceCategory={setBillingInvoiceCategory}
               customers={customers}
               properties={properties}
+              syncAllToMongoDB={syncAllToMongoDB}
             />
           )}
 
@@ -11849,6 +12028,10 @@ export default function App() {
                         priority: 'HOT',
                         score: dynamicScore,
                         last_completed_step: 9,
+                        status: 'MATCHING_INITIATED',
+                        customer_status: 'MATCHING_INITIATED',
+                        lifecycle_stage: 'STAGE_2_MATCHING',
+                        costSheetData: undefined,
                         created_at: existingCustomer ? existingCustomer.created_at : new Date().toISOString(),
                         updated_at: new Date().toISOString()
                       };
@@ -13046,49 +13229,76 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL 6: FULL DETAILS COST SHEET REVISION CREATION MODAL */}
+      {/* MODAL 6: FULL DETAILS COST SHEET EDITOR & REVISION CREATION MODAL */}
       {showRevisionModal && showRevisionModal.open && showRevisionModal.costSheet && (() => {
         const liveCalc = calculateRevisionLiveTotals(showRevisionModal);
         const oldTotalStr = showRevisionModal.costSheet.formattedPriceBreakup?.totalEstimatedCostStr || formatIndianRupees(showRevisionModal.costSheet.pricingSnapshot?.totalEstimatedCost || 0);
         const nextVerCode = `V0${(showRevisionModal.costSheet.versionNumber || 1) + 1}`;
+        const currentVerCode = showRevisionModal.costSheet.version || 'V01';
         const oldTotalNum = showRevisionModal.costSheet.pricingSnapshot?.totalEstimatedCost || 0;
         const diffNum = oldTotalNum - liveCalc.grandTotal;
 
         return (
           <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '20px' }}>
-            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', width: '94vw', maxWidth: '850px', maxHeight: '92vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', width: '94vw', maxWidth: '880px', maxHeight: '92vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
               
               {/* HEADER */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <Edit3 size={26} color="#fbbf24" />
                   <div>
-                    <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>FULL COST SHEET REVISION EDITOR</h3>
+                    <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>✏️ FULL COST SHEET EDITOR & REVISION MANAGER</h3>
                     <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
-                      TARGET: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{showRevisionModal.costSheet.costSheetId}</strong> • CURRENT: <span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>{showRevisionModal.costSheet.version || 'V01'}</span> → NEW VERSION: <strong style={{ color: '#4ade80' }}>{nextVerCode}</strong>
+                      TARGET ID: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{showRevisionModal.costSheet.costSheetId}</strong> • CURRENT VERSION: <span style={{ color: '#fbbf24', fontWeight: '800' }}>{currentVerCode}</span> • NEXT REVISION: <strong style={{ color: '#4ade80' }}>{nextVerCode}</strong>
                     </p>
                   </div>
                 </div>
                 <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowRevisionModal(null)} />
               </div>
 
-              {/* TARGET SUMMARY BANNER */}
-              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '12px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '0.82rem' }}>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Customer Name:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{showRevisionModal.costSheet.customerSnapshot?.customerName} ({showRevisionModal.costSheet.customerSnapshot?.mobile})</strong></div>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Property Code & Title:</span> <strong style={{ color: '#38bdf8', display: 'block' }}>{showRevisionModal.costSheet.propertySnapshot?.propertyCode} — {showRevisionModal.costSheet.propertySnapshot?.propertyTitle}</strong></div>
+              {/* TARGET EDITABLE CUSTOMER & PROPERTY BANNER */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px 16px', display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.2fr', gap: '14px', fontSize: '0.82rem', alignItems: 'center' }}>
+                <div>
+                  <label style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    👤 Customer Name *
+                  </label>
+                  <input 
+                    type="text" 
+                    value={showRevisionModal.customerName || ''} 
+                    onChange={(e) => setShowRevisionModal({ ...showRevisionModal, customerName: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    📱 Mobile Number *
+                  </label>
+                  <input 
+                    type="text" 
+                    value={showRevisionModal.customerMobile || ''} 
+                    onChange={(e) => setShowRevisionModal({ ...showRevisionModal, customerMobile: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '6px 10px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                  />
+                </div>
+                <div>
+                  <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.74rem', fontWeight: '800', display: 'block', marginBottom: '4px' }}>🏢 Property Linked:</span>
+                  <strong style={{ color: '#38bdf8', display: 'block', fontSize: '0.82rem', wordBreak: 'break-word' }}>
+                    {showRevisionModal.costSheet.propertySnapshot?.propertyCode} — {showRevisionModal.costSheet.propertySnapshot?.propertyTitle}
+                  </strong>
+                </div>
               </div>
 
               {/* LIVE COMPARISON SUMMARY PANEL */}
               <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', border: '1px solid #fbbf24', borderRadius: '12px', padding: '16px', display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', alignItems: 'center' }}>
                 <div style={{ borderRight: '1px solid #334155', paddingRight: '12px' }}>
-                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>PREVIOUS COST ({showRevisionModal.costSheet.version || 'V01'})</span>
+                  <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', textTransform: 'uppercase' }}>PREVIOUS COST ({currentVerCode})</span>
                   <h4 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#64748b' : '#94a3b8', margin: '4px 0 0 0', textDecoration: 'line-through' }}>
                     {oldTotalStr}
                   </h4>
                 </div>
 
                 <div style={{ borderRight: '1px solid #334155', paddingRight: '12px' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: '900', textTransform: 'uppercase' }}>REVISED COST ({nextVerCode})</span>
+                  <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: '900', textTransform: 'uppercase' }}>UPDATED / REVISED TOTAL</span>
                   <h4 style={{ fontSize: '1.3rem', fontWeight: '900', color: '#4ade80', margin: '4px 0 0 0' }}>
                     {formatIndianRupees(liveCalc.grandTotal)}
                   </h4>
@@ -13105,7 +13315,7 @@ export default function App() {
               {/* ALL PRICING EDITABLE FORM GRID */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h4 style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.88rem', letterSpacing: '0.5px' }}>
-                  ✏️ REVISE ALL ITEMIZATION DETAILS & PRICING COMPONENTS:
+                  ✏️ EDIT ITEMIZATION DETAILS & PRICING COMPONENTS:
                 </h4>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px' }}>
@@ -13278,34 +13488,44 @@ export default function App() {
                 </div>
               </div>
 
-              {/* REASON FOR REVISION (MANDATORY AUDIT TRAIL NOTE) */}
+              {/* REASON / AUDIT TRAIL NOTE */}
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #fbbf24', borderRadius: '12px', padding: '14px' }}>
                 <label style={{ fontSize: '0.78rem', color: '#fbbf24', fontWeight: '900', display: 'block', marginBottom: '6px' }}>
-                  📌 REASON FOR REVISION (MANDATORY AUDIT TRAIL LOG ENTRY) *
+                  📌 REASON FOR UPDATE / REVISION (AUDIT TRAIL LOG ENTRY)
                 </label>
                 <textarea 
                   rows={2} 
                   value={showRevisionModal.reason} 
                   onChange={(e) => setShowRevisionModal({ ...showRevisionModal, reason: e.target.value })} 
-                  placeholder="e.g. Approved ₹1,00,000 festival discount & waived PLC charges for senior customer referral..." 
+                  placeholder="e.g. Corrected customer contact name, applied ₹50,000 festival discount..." 
                   style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px', borderRadius: '6px', fontSize: '0.85rem' }} 
                 />
               </div>
 
-              {/* MODAL FOOTER */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+              {/* MODAL FOOTER WITH DUAL ACTION BUTTONS */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
                 <button 
                   onClick={() => setShowRevisionModal(null)} 
-                  style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                  style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
                 >
                   Cancel
                 </button>
-                <button 
-                  onClick={executeCreateRevision} 
-                  style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', color: '#0f172a', border: 'none', padding: '10px 26px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.92rem', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  🚀 EXECUTE REVISION ({nextVerCode})
-                </button>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={() => executeCreateRevision(true)} 
+                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    title="Update cost sheet in-place without incrementing version"
+                  >
+                    💾 SAVE EDITS (Update In-Place)
+                  </button>
+                  <button 
+                    onClick={() => executeCreateRevision(false)} 
+                    style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', color: '#0f172a', border: 'none', padding: '10px 22px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.90rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    title="Create a new version increment (e.g., V02, V03)"
+                  >
+                    🚀 SAVE AS NEW REVISION ({nextVerCode})
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -13970,7 +14190,9 @@ export default function App() {
           onClose={() => setShowPvaVerificationModal(null)}
           projectVisitAgreements={projectVisitAgreements}
           setProjectVisitAgreements={setProjectVisitAgreements}
+          setAgreements={setAgreements}
           setVisitPlans={setVisitPlans}
+          setScheduledVisits={setScheduledVisits}
           setShowPvaDocumentModal={setShowPvaDocumentModal}
         />
       )}
@@ -14241,47 +14463,211 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: LOG EXECUTIVE VISIT FEEDBACK */}
+      {/* MODAL: LOG EXECUTIVE VISIT 5-STAR STRUCTURED FEEDBACK */}
       {showLogSalesFeedbackModal && (
         <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.88)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2400, padding: '20px' }}>
-          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', width: '100%', maxWidth: '600px', maxHeight: '92vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #fbbf24', width: '100%', maxWidth: '700px', maxHeight: '92vh', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', overflowY: 'auto' }}>
+            
+            {/* MODAL HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>
-                  ➕ LOG EXECUTIVE VISIT FEEDBACK
-                </h3>
-                <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>Record customer post-visit rating, objections, and buyer intent status.</p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span style={{ fontSize: '1.6rem' }}>⭐</span>
+                <div>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>
+                    STRUCTURED 5-STAR POST-VISIT FEEDBACK FORM
+                  </h3>
+                  <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                    Record customer satisfaction, rating, objections, and buyer intent for Visit: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{salesFeedbackForm.visitId || 'SRM-VS-2026'}</strong>
+                  </p>
+                </div>
               </div>
               <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowLogSalesFeedbackModal(false)} />
             </div>
 
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              setShowLogSalesFeedbackModal(false);
-              alert('⭐ Post-visit executive feedback logged successfully!');
-            }} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <form onSubmit={handleSaveFeedback} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              
+              {/* ROW 1: CUSTOMER DETAILS */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    👤 Customer Full Name *
+                  </label>
+                  <input 
+                    type="text" 
+                    value={salesFeedbackForm.customerName} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, customerName: e.target.value })} 
+                    placeholder="e.g. Rishita Sharma" 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                    required 
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    📱 Mobile Number
+                  </label>
+                  <input 
+                    type="text" 
+                    value={salesFeedbackForm.custMobile} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, custMobile: e.target.value })} 
+                    placeholder="+91 98765 43210" 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                  />
+                </div>
+              </div>
+
+              {/* ROW 2: VISITED PROPERTY & LOCALITY */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    🏢 Visited Property Title / Code *
+                  </label>
+                  <input 
+                    type="text" 
+                    value={salesFeedbackForm.propTitle} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, propTitle: e.target.value })} 
+                    placeholder="e.g. SRM-PROP-2026-000426 / Dhriti Green Vista" 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                    required 
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    📍 Location / Area
+                  </label>
+                  <input 
+                    type="text" 
+                    value={salesFeedbackForm.locality} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, locality: e.target.value })} 
+                    placeholder="e.g. Barasat, Kolkata" 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                  />
+                </div>
+              </div>
+
+              {/* ROW 3: STAR RATING (1-5 INTERACTIVE) & SATISFACTION */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #fbbf24', borderRadius: '10px', padding: '14px', display: 'grid', gridTemplateColumns: '1.2fr 1.8fr', gap: '14px', alignItems: 'center' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', display: 'block', marginBottom: '6px' }}>
+                    ⭐ 5-STAR RATING SELECTOR:
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {[1, 2, 3, 4, 5].map((starVal) => (
+                      <button
+                        key={starVal}
+                        type="button"
+                        onClick={() => {
+                          let autoSatis = '😍 Highly Satisfied (Ready for Booking)';
+                          let autoIntent = '🔥 HOT - Booking Lead';
+                          if (starVal === 4) { autoSatis = '🙂 Moderately Interested (Comparing Options)'; autoIntent = '⚡ WARM - Comparing Options'; }
+                          if (starVal === 3) { autoSatis = '😐 Neutral / Follow-up Needed'; autoIntent = '⚡ WARM - Needs Alternative'; }
+                          if (starVal === 2) { autoSatis = '😕 Not Satisfied (Requires Alternative)'; autoIntent = '⚡ WARM - Needs Alternative'; }
+                          if (starVal === 1) { autoSatis = '❌ Rejected Property'; autoIntent = '❄️ COLD - Rejected'; }
+                          setSalesFeedbackForm({ ...salesFeedbackForm, rating: starVal, satisfaction: autoSatis, buyer_intent: autoIntent });
+                        }}
+                        style={{
+                          background: starVal <= Number(salesFeedbackForm.rating) ? '#fbbf24' : (isLight ? '#e2e8f0' : '#334155'),
+                          color: starVal <= Number(salesFeedbackForm.rating) ? '#0f172a' : '#94a3b8',
+                          border: 'none',
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: '900',
+                          fontSize: '0.9rem',
+                          transition: 'all 0.15s'
+                        }}
+                      >
+                        {starVal} ★
+                      </button>
+                    ))}
+                  </div>
+                  <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '800', marginTop: '4px', display: 'block' }}>
+                    {'⭐'.repeat(Number(salesFeedbackForm.rating))} ({salesFeedbackForm.rating}/5 Stars)
+                  </span>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    Customer Satisfaction Level *
+                  </label>
+                  <select 
+                    value={salesFeedbackForm.satisfaction} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, satisfaction: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  >
+                    <option value="😍 Highly Satisfied (Ready for Booking)">😍 Highly Satisfied (Ready for Booking)</option>
+                    <option value="🙂 Moderately Interested (Comparing Options)">🙂 Moderately Interested (Comparing Options)</option>
+                    <option value="😐 Neutral / Follow-up Needed">😐 Neutral / Follow-up Needed</option>
+                    <option value="😕 Not Satisfied (Requires Alternative)">😕 Not Satisfied (Requires Alternative)</option>
+                    <option value="❌ Rejected Property">❌ Rejected Property</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* ROW 4: BUYER INTENT & ASSIGNED EXECUTIVE */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    🎯 Buyer Intent Status *
+                  </label>
+                  <select 
+                    value={salesFeedbackForm.buyer_intent} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, buyer_intent: e.target.value })} 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: salesFeedbackForm.buyer_intent.includes('HOT') ? '#22c55e' : '#fbbf24', fontWeight: '900', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}
+                  >
+                    <option value="🔥 HOT - Booking Lead">🔥 HOT - Ready for Booking / Token</option>
+                    <option value="⚡ WARM - Comparing Options">⚡ WARM - Comparing with Other Options</option>
+                    <option value="⚡ WARM - Needs Alternative">⚡ WARM - Needs Alternative Property</option>
+                    <option value="❄️ COLD - Not Interested">❄️ COLD - Not Interested / Budget Mismatch</option>
+                    <option value="❄️ COLD - Rejected">❄️ COLD - Disliked Location / Floor</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
+                    👤 Assigned Sales Executive
+                  </label>
+                  <input 
+                    type="text" 
+                    value={salesFeedbackForm.exec} 
+                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, exec: e.target.value })} 
+                    placeholder="e.g. Punita Roy" 
+                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                  />
+                </div>
+              </div>
+
+              {/* ROW 5: OBJECTION / FEEDBACK DETAILS */}
               <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
-                <input type="text" defaultValue="Rohan Deshmukh" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                <label style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', display: 'block', marginBottom: '4px' }}>
+                  💬 Sales Person Feedback & Customer Objection Details *
+                </label>
+                <textarea 
+                  rows={3} 
+                  value={salesFeedbackForm.reason} 
+                  onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, reason: e.target.value })} 
+                  placeholder="Describe customer feedback, budget gap (e.g. Over budget by ₹5L), preferred facing, amenities preference, or why they liked/disliked the property..." 
+                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 12px', borderRadius: '6px', fontSize: '0.85rem' }} 
+                  required 
+                />
               </div>
-              <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Satisfaction Rating *</label>
-                <select style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                  <option value="5">⭐⭐⭐⭐⭐ 5/5 Stars (Ready for Booking)</option>
-                  <option value="4">⭐⭐⭐⭐ 4/5 Stars (Interested)</option>
-                  <option value="3">⭐⭐⭐ 3/5 Stars (Needs Follow-up)</option>
-                  <option value="2">⭐⭐ 2/5 Stars (Not Satisfied)</option>
-                  <option value="1">⭐ 1/5 Stars (Rejected Property)</option>
-                </select>
+
+              {/* MODAL FOOTER */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '6px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => setShowLogSalesFeedbackModal(false)} 
+                  style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', color: '#0f172a', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.88rem', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  💾 Save 5-Star Feedback
+                </button>
               </div>
-              <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Objection / Feedback Details *</label>
-                <textarea rows={3} placeholder="Describe customer feedback, budget gap, location dislike..." style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem' }} required />
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
-                <button type="button" onClick={() => setShowLogSalesFeedbackModal(false)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
-                <button type="submit" style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>Log Feedback</button>
-              </div>
+
             </form>
           </div>
         </div>

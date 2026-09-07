@@ -17,6 +17,7 @@ interface BookingManagementViewProps {
   setBillingInvoiceCategory?: (cat: string) => void;
   customers?: any[];
   properties?: any[];
+  syncAllToMongoDB?: (overrideData?: any) => Promise<void>;
 }
 
 export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
@@ -35,6 +36,7 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
   setBillingInvoiceCategory,
   customers = [],
   properties = [],
+  syncAllToMongoDB,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
@@ -186,12 +188,28 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
       sales_executive: b.sales_executive || 'Ramesh Pawar'
     };
 
+    const updatedInvoices = [developerInvoiceObj, customerInvoiceObj, ...(invoices || [])];
+    const updatedBookings = (bookings || []).filter((item: any) => item.id !== b.id && item.booking_code !== b.booking_code);
+
     if (setInvoices) {
-      setInvoices((prev: any[]) => [developerInvoiceObj, customerInvoiceObj, ...(prev || [])]);
+      setInvoices(updatedInvoices);
     }
+    try {
+      localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(updatedInvoices));
+    } catch (e) {}
 
     if (setBookings) {
-      setBookings((prev: any[]) => (prev || []).filter((item: any) => item.id !== b.id && item.booking_code !== b.booking_code));
+      setBookings(updatedBookings);
+    }
+    try {
+      localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(updatedBookings));
+    } catch (e) {}
+
+    if (syncAllToMongoDB) {
+      syncAllToMongoDB({
+        bookings: updatedBookings,
+        invoices: updatedInvoices
+      });
     }
 
     if (setBillingInvoiceCategory) {
@@ -202,7 +220,7 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
       setActiveTab('billing_management');
     }
 
-    alert(`💳 BILLING INVOICES GENERATED SUCCESSFULLY!\n\n1. 🏢 Developer Brokerage Invoice: ${generatedDeveloperInvoiceNumber} (Developer: ${devName})\n2. 👤 Customer Tax Invoice: ${generatedCustomerInvoiceNumber} (Customer: ${custName})\n\nProperty: ${propTitle}\nAgreement Value: ₹${Number(agreeVal).toLocaleString('en-IN')}\nTaxable Brokerage: ₹${taxableVal.toLocaleString('en-IN')}\nTotal Invoice (18% GST): ₹${totalAmt.toLocaleString('en-IN')}\n\nBoth records created in Billing Management and removed from Booking Management.`);
+    alert(`💳 BILLING INVOICES GENERATED SUCCESSFULLY!\n\n1. 🏢 Developer Brokerage Invoice: ${generatedDeveloperInvoiceNumber} (Developer: ${devName})\n2. 👤 Customer Tax Invoice: ${generatedCustomerInvoiceNumber} (Customer: ${custName})\n\nProperty: ${propTitle}\nAgreement Value: ₹${Number(agreeVal).toLocaleString('en-IN')}\nTaxable Brokerage: ₹${taxableVal.toLocaleString('en-IN')}\nTotal Invoice (18% GST): ₹${totalAmt.toLocaleString('en-IN')}\n\nBoth records created in Billing Management and permanently removed from Booking Management in Database.`);
   };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -360,15 +378,27 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
                         {isSuperAdmin && (
                           <button 
                             onClick={() => {
-                              if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Booking record ${b.booking_code || b.id} for ${b.customer_name || 'Customer'}?`)) {
+                              if (window.confirm(`⚠️ CONFIRM PERMANENT DELETION:\n\nAre you sure you want to permanently delete Booking record ${b.booking_code || b.id} for ${b.customer_name || 'Customer'} from the system and database?`)) {
+                                const updatedBookings = (bookings || []).filter((item: any) => 
+                                  item.id !== b.id && 
+                                  item.booking_code !== b.booking_code && 
+                                  (!b.id || item.id !== b.id) &&
+                                  (!b.booking_code || item.booking_code !== b.booking_code)
+                                );
                                 if (setBookings) {
-                                  setBookings((prev: any[]) => (prev || []).filter((item: any) => item.id !== b.id && item.booking_code !== b.booking_code));
+                                  setBookings(updatedBookings);
                                 }
-                                alert(`🗑️ Booking record ${b.booking_code || b.id} deleted permanently.`);
+                                try {
+                                  localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(updatedBookings));
+                                } catch (e) {}
+                                if (syncAllToMongoDB) {
+                                  syncAllToMongoDB({ bookings: updatedBookings });
+                                }
+                                alert(`🗑️ Booking record ${b.booking_code || b.id} has been permanently deleted from the database.`);
                               }
                             }}
                             style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                            title="Permanently delete booking record"
+                            title="Permanently delete booking record from database"
                           >
                             🗑️ Delete
                           </button>

@@ -45,6 +45,7 @@ interface ProjectManagementViewProps {
   formatIndianRupees: (amount: number) => string;
   detectLocalityFromCoords?: (lat: string, lng: string) => Promise<{ locality: string; fullAddress: string; rawDetails: any }>;
   setPropertyUnits?: React.Dispatch<React.SetStateAction<any[]>>;
+  setProperties?: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
@@ -54,6 +55,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   activeProjectSubTab,
   setActiveProjectSubTab,
   properties = [],
+  setProperties,
   propertyUnits = [],
   projectVisitAgreements = [],
   editingProperty,
@@ -2899,10 +2901,17 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   </div>
                   <div>
                     <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '6px' }}>Stock Inventory Status</label>
-                    <select value={newPropertyForm.status} onChange={(e) => setNewPropertyForm({ ...newPropertyForm, status: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#16a34a' : '#4ade80', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}>
-                      <option value="AVAILABLE">🟢 AVAILABLE IN STOCK</option>
-                      <option value="HOLD">⚡ HOLD / RESERVED</option>
-                      <option value="BOOKED">🔴 BOOKED</option>
+                    <select 
+                      value={(() => {
+                        const s = (newPropertyForm.status || 'LIVE').toUpperCase().replace(/\s+/g, '_');
+                        return s === 'AVAILABLE' ? 'LIVE' : s;
+                      })()} 
+                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, status: e.target.value })} 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
+                    >
+                      <option value="LIVE">🟢 LIVE</option>
+                      <option value="SOLD_OUT">🔴 SOLD OUT</option>
+                      <option value="BOOKED">🟡 BOOKED</option>
                     </select>
                   </div>
                 </div>
@@ -3106,9 +3115,45 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           </span>
                         </td>
                         <td style={{ padding: '12px' }}>
-                          <span style={{ background: p.status === 'AVAILABLE' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: p.status === 'AVAILABLE' ? '#4ade80' : '#ef4444', padding: '2px 8px', borderRadius: '4px', fontWeight: '800', fontSize: '0.72rem' }}>
-                            {p.status}
-                          </span>
+                          <select
+                            value={(() => {
+                              const s = (p.status || 'LIVE').toUpperCase().replace(/\s+/g, '_');
+                              return s === 'AVAILABLE' ? 'LIVE' : s;
+                            })()}
+                            onChange={(e) => {
+                              const newStatus = e.target.value;
+                              if (setProperties) {
+                                setProperties((prev: any[]) => prev.map((item: any) => item.id === p.id ? { ...item, status: newStatus } : item));
+                              }
+                            }}
+                            style={{
+                              padding: '5px 10px',
+                              borderRadius: '6px',
+                              fontWeight: '900',
+                              fontSize: '0.74rem',
+                              cursor: 'pointer',
+                              border: (p.status || '').toUpperCase().includes('SOLD') 
+                                ? '1.5px solid #ef4444' 
+                                : (p.status || '').toUpperCase().includes('BOOKED') 
+                                ? '1.5px solid #fbbf24' 
+                                : '1.5px solid #22c55e',
+                              background: (p.status || '').toUpperCase().includes('SOLD') 
+                                ? 'rgba(239, 68, 68, 0.18)' 
+                                : (p.status || '').toUpperCase().includes('BOOKED') 
+                                ? 'rgba(234, 179, 8, 0.18)' 
+                                : 'rgba(34, 197, 94, 0.18)',
+                              color: (p.status || '').toUpperCase().includes('SOLD') 
+                                ? '#f87171' 
+                                : (p.status || '').toUpperCase().includes('BOOKED') 
+                                ? '#fbbf24' 
+                                : '#4ade80',
+                              outline: 'none'
+                            }}
+                          >
+                            <option value="LIVE" style={{ background: '#0f172a', color: '#4ade80' }}>🟢 LIVE</option>
+                            <option value="SOLD_OUT" style={{ background: '#0f172a', color: '#f87171' }}>🔴 SOLD OUT</option>
+                            <option value="BOOKED" style={{ background: '#0f172a', color: '#fbbf24' }}>🟡 BOOKED</option>
+                          </select>
                         </td>
                         <td style={{ padding: '12px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
@@ -3405,9 +3450,25 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: '1px solid #a855f7', padding: '3px 10px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '900', fontFamily: 'monospace' }}>
                       🏢 PROJ: {projCode}
                     </span>
-                    <span style={{ background: viewPropertyModal.status === 'AVAILABLE' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)', color: viewPropertyModal.status === 'AVAILABLE' ? '#4ade80' : '#ef4444', padding: '3px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem' }}>
-                      ● {viewPropertyModal.status}
-                    </span>
+                    {(() => {
+                      const st = (viewPropertyModal.status || 'AVAILABLE').toUpperCase();
+                      const isLive = st.includes('LIVE');
+                      const isSold = st.includes('SOLD');
+                      const isBooked = st.includes('BOOKED');
+                      return (
+                        <span style={{ 
+                          background: isLive ? 'rgba(56, 189, 248, 0.2)' : isSold ? 'rgba(239, 68, 68, 0.2)' : isBooked ? 'rgba(234, 179, 8, 0.2)' : 'rgba(34, 197, 94, 0.2)', 
+                          color: isLive ? '#38bdf8' : isSold ? '#ef4444' : isBooked ? '#fbbf24' : '#4ade80', 
+                          border: isLive ? '1px solid #38bdf8' : isSold ? '1px solid #ef4444' : isBooked ? '1px solid #fbbf24' : '1px solid #22c55e',
+                          padding: '3px 10px', 
+                          borderRadius: '6px', 
+                          fontWeight: '800', 
+                          fontSize: '0.78rem' 
+                        }}>
+                          ● {isLive ? 'LIVE' : isSold ? 'SOLD OUT' : isBooked ? 'BOOKED' : 'AVAILABLE'}
+                        </span>
+                      );
+                    })()}
                   </div>
                   <h2 style={{ fontSize: '1.4rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: '4px 0' }}>
                     {viewPropertyModal.title}
@@ -4124,11 +4185,10 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px' }}>
                     <div>
                       <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Unit Availability Status</label>
-                      <select value={sliderUnitForm.status} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, status: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '1.5px solid #22c55e', color: sliderUnitForm.status === 'AVAILABLE' ? '#22c55e' : '#ef4444', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }}>
-                        <option value="AVAILABLE">🟢 AVAILABLE</option>
-                        <option value="BOOKED">🔴 BOOKED / SOLD</option>
-                        <option value="RESERVED">🟡 RESERVED</option>
-                        <option value="BLOCKED">🟠 HELD / BLOCKED</option>
+                      <select value={(() => { const s = (sliderUnitForm.status || 'LIVE').toUpperCase(); return s === 'AVAILABLE' ? 'LIVE' : s; })()} onChange={(e) => setSliderUnitForm({ ...sliderUnitForm, status: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '1.5px solid #0284c7', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', padding: '8px 12px', borderRadius: '8px', fontSize: '0.88rem' }}>
+                        <option value="LIVE">🟢 LIVE</option>
+                        <option value="SOLD_OUT">🔴 SOLD OUT</option>
+                        <option value="BOOKED">🟡 BOOKED</option>
                       </select>
                     </div>
 

@@ -32,6 +32,7 @@ interface MatchingManagementViewProps {
   calculatePropertyMatchScore: (cust: any, prop: any) => any;
   handleRowLevelCreateCostSheet: (prop: any) => void;
   handleBulkCreateCostSheets: () => void;
+  individualCostSheets?: any[];
 }
 
 export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
@@ -65,6 +66,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
   calculatePropertyMatchScore,
   handleRowLevelCreateCostSheet,
   handleBulkCreateCostSheets,
+  individualCostSheets = [],
 }) => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -100,38 +102,106 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
 
       {/* SUB-TAB 1: AI MATCHING ENGINE (MATCHING ID CENTERED WORKSPACE) */}
       {activeMatchingSubTab === 'ai_matching_engine' && (() => {
-        const pendingRequests = matchingRequestsQueue.filter(r => !r.costSheetId && r.status !== 'COST_SHEET_CREATED');
-        const matchedReq = matchingRequestsQueue.find(r => 
-          r.requestId.toLowerCase() === selectedMatchingId.toLowerCase() || 
-          r.customerNumber.toLowerCase() === selectedMatchingId.toLowerCase()
-        );
-        const activeMatchingReq = matchedReq || pendingRequests[0] || matchingRequestsQueue[0] || {
-          requestId: 'NO_MATCHING_REQUESTS',
-          date: 'N/A',
-          customerName: 'No Matching Requests Available',
-          customerNumber: 'N/A',
-          leadId: 'N/A',
-          requirementId: 'N/A',
-          mobile: 'N/A',
-          purpose: 'N/A',
-          propertyType: 'N/A',
-          configuration: 'N/A',
-          budget: 'N/A',
-          preferredArea: 'N/A',
-          secondaryAreas: 'N/A',
-          radiusKm: 0,
-          possessionStatus: 'N/A',
-          carpetArea: 'N/A',
-          facing: 'N/A',
-          parking: 'N/A',
-          amenities: 'N/A',
-          completenessScore: 0,
-          priority: 'COLD',
-          leadScore: 0,
-          assignedExecutive: 'Unassigned',
-          status: 'NO_REQUESTS',
-          version: 'SNAPSHOT V1'
-        };
+        const allMatchingRequests = (() => {
+          const list: any[] = [];
+          const seenCustNums = new Set<string>();
+          const seenMobiles = new Set<string>();
+
+          const findActualCostSheet = (reqId?: string, custNum?: string, custName?: string, mob?: string) => {
+            return (individualCostSheets || []).find((cs: any) => {
+              const csCustId = (cs.customerId || cs.customerSnapshot?.customerId || cs.customerSnapshot?.customerNumber || cs.customerNumber || '').toString().trim().toLowerCase();
+              const csMatchId = (cs.matchingRequestId || cs.matchId || cs.requestId || '').toString().trim().toLowerCase();
+              const csName = (cs.customerName || cs.name || cs.customerSnapshot?.customerName || '').toString().toLowerCase().trim();
+              const csMob = (cs.mobile || cs.customerMobile || cs.customerSnapshot?.mobile || cs.customerSnapshot?.alternateMobile || '').toString().replace(/\D/g, '');
+
+              const targetReqId = (reqId || '').toString().trim().toLowerCase();
+              const targetCustNum = (custNum || '').toString().trim().toLowerCase();
+              const targetName = (custName || '').toString().toLowerCase().trim();
+              const targetMob = (mob || '').toString().replace(/\D/g, '');
+
+              if (targetReqId && csMatchId && targetReqId === csMatchId) return true;
+              if (targetCustNum && csCustId && targetCustNum === csCustId) return true;
+              if (targetMob && csMob && targetMob.length >= 10 && targetMob === csMob) return true;
+              if (targetName && csName && targetName.length > 2 && targetName === csName) return true;
+              return false;
+            });
+          };
+
+          matchingRequestsQueue.forEach(r => {
+            const custNum = (r.customerNumber || '').toLowerCase().trim();
+            const mob = (r.mobile || '').replace(/\D/g, '');
+            if (custNum) seenCustNums.add(custNum);
+            if (mob) seenMobiles.add(mob);
+
+            const actualCostSheet = findActualCostSheet(r.requestId, r.customerNumber, r.customerName, r.mobile);
+            const isCreated = !!actualCostSheet;
+
+            list.push({
+              ...r,
+              status: isCreated ? 'COST_SHEET_CREATED' : 'PENDING',
+              costSheetId: actualCostSheet?.costSheetId || undefined
+            });
+          });
+
+          (customers || []).forEach((c, idx) => {
+            const custNum = (c.customer_number || c.customer_id || c.id || '').toString().trim();
+            const custMob = (c.mobile || c.phone || '').toString().trim();
+            const cleanMob = custMob.replace(/\D/g, '');
+            const numKey = custNum.toLowerCase().trim();
+
+            if (!seenCustNums.has(numKey) && (!cleanMob || !seenMobiles.has(cleanMob))) {
+              seenCustNums.add(numKey);
+              if (cleanMob) seenMobiles.add(cleanMob);
+
+              const numDigits = (c.id || custNum || '184').toString().replace(/\D/g, '').slice(-6).padStart(6, '0');
+              const reqId = `SRM-MAT-2026-${numDigits || String(420 + idx)}`;
+              const actualCostSheet = findActualCostSheet(reqId, custNum, c.name || c.full_name, custMob);
+              const isCreated = !!actualCostSheet;
+
+              list.push({
+                id: reqId,
+                requestId: reqId,
+                date: c.created_at ? new Date(c.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '04 Sep 2026',
+                customerName: c.name || c.full_name || 'Customer',
+                customerNumber: custNum,
+                leadId: c.lead_number || `SRM-LEAD-2026-0012${numDigits.slice(-2)}`,
+                requirementId: `SRM-REQ-2026-0000${numDigits.slice(-2)}`,
+                mobile: custMob,
+                email: c.email || `${(c.name || 'customer').toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
+                purpose: c.investment_purpose || 'Self / End Use',
+                propertyType: c.property_type || 'Flat / Apartment',
+                configuration: c.configuration || '2BHK',
+                budget: c.budget || '₹25,00,000 - ₹50,00,000',
+                budget_min: c.budget_min || 2500000,
+                budget_max: c.budget_max || 5000000,
+                preferredArea: c.preferredArea || c.preferred_location || c.locality || 'Madhyamgram, Kolkata',
+                secondaryAreas: c.secondary_areas || '',
+                radiusKm: 10,
+                possessionStatus: c.possession_status || 'Ready to Move',
+                carpetArea: c.carpet_area_min && c.carpet_area_max ? `${c.carpet_area_min} – ${c.carpet_area_max} Sq.Ft.` : '650 – 1000 Sq.Ft.',
+                facing: c.facing || 'East Facing',
+                parking: c.parking || 'Covered Slot',
+                amenities: c.amenities || '24/7 Power Backup, Security',
+                completenessScore: c.score || c.quality_score || 90,
+                priority: c.priority || 'HOT',
+                leadScore: c.score || c.quality_score || 90,
+                assignedExecutive: c.assigned_salesperson || 'Abinash Roy (Admin)',
+                status: isCreated ? 'COST_SHEET_CREATED' : 'PENDING',
+                costSheetId: actualCostSheet?.costSheetId || undefined,
+                created_at: c.created_at || new Date().toISOString()
+              });
+            }
+          });
+
+          return list;
+        })();
+
+        const pendingRequests = allMatchingRequests.filter(r => !r.costSheetId && r.status !== 'COST_SHEET_CREATED');
+        const matchedReq = selectedMatchingId ? allMatchingRequests.find(r => 
+          (r.requestId && r.requestId.toLowerCase() === selectedMatchingId.toLowerCase()) || 
+          (r.customerNumber && r.customerNumber.toLowerCase() === selectedMatchingId.toLowerCase())
+        ) : null;
+        const activeMatchingReq = matchedReq || null;
 
         return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -140,7 +210,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
           <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : windowWidth <= 1024 ? 'repeat(4, 1fr)' : 'repeat(7, 1fr)', gap: '10px' }}>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
               <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>MATCHING REQUESTS</span>
-              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{matchingRequestsQueue.length}</h4>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{allMatchingRequests.length}</h4>
             </div>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
               <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>PENDING</span>
@@ -148,15 +218,15 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
             </div>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
               <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>IN PROGRESS</span>
-              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{matchingRequestsQueue.filter(r => r.status === 'IN_PROGRESS').length}</h4>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{allMatchingRequests.filter(r => r.status === 'IN_PROGRESS').length}</h4>
             </div>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
               <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>MATCHED</span>
-              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>{matchingRequestsQueue.filter(r => r.status === 'MATCHED' || (r.score && r.score >= 80)).length}</h4>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>{allMatchingRequests.filter(r => r.status === 'MATCHED' || (r.score && r.score >= 80)).length}</h4>
             </div>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
               <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>SELECTED</span>
-              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>{matchingRequestsQueue.filter(r => r.status === 'SELECTED' || r.selectedCount > 0).length}</h4>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: '900', color: '#4ade80', marginTop: '2px' }}>{allMatchingRequests.filter(r => r.status === 'SELECTED' || r.selectedCount > 0).length}</h4>
             </div>
             <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '12px 10px', borderRadius: '10px', textAlign: 'center' }}>
               <span style={{ fontSize: '0.65rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>SHARED WITH CUS</span>
@@ -172,7 +242,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
           <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #22c55e', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>📥 INBOUND MATCHING REQUESTS SNAPSHOT VAULT ({matchingRequestsQueue.length})</h3>
+                <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>📥 INBOUND MATCHING REQUESTS SNAPSHOT VAULT ({allMatchingRequests.length})</h3>
                 <span style={{ background: '#22c55e', color: '#ffffff', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900' }}>QUALIFIED HANDOFF ACTIVE</span>
               </div>
 
@@ -191,7 +261,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                     cursor: 'pointer' 
                   }}
                 >
-                  ⚡ PENDING COST SHEETS ONLY ({matchingRequestsQueue.filter(r => !r.costSheetId && r.status !== 'COST_SHEET_CREATED').length})
+                  ⚡ PENDING COST SHEETS ONLY ({pendingRequests.length})
                 </button>
                 <button 
                   onClick={() => setMatchingVaultFilter('ALL')}
@@ -206,7 +276,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                     cursor: 'pointer' 
                   }}
                 >
-                  📋 ALL MATCHING REQUESTS ({matchingRequestsQueue.length})
+                  📋 ALL MATCHING REQUESTS ({allMatchingRequests.length})
                 </button>
               </div>
             </div>
@@ -225,10 +295,10 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {matchingRequestsQueue
+                  {allMatchingRequests
                     .filter(req => (matchingVaultFilter === 'ALL' || (!req.costSheetId && req.status !== 'COST_SHEET_CREATED')) && matchesSearchQuery(req, searchQuery || matchingSearchQuery))
                     .map((req) => {
-                      const isCostSheetCreated = !!req.costSheetId || req.status === 'COST_SHEET_CREATED';
+                      const isCostSheetCreated = !!req.costSheetId;
                       return (
                         <tr key={req.requestId} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', background: selectedMatchingId === req.requestId ? 'rgba(2, 132, 199, 0.15)' : 'transparent' }}>
                           <td style={{ padding: '10px' }}>
@@ -271,7 +341,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                           <td style={{ padding: '10px' }}>
                             {isCostSheetCreated ? (
                               <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '2px 8px', borderRadius: '12px', fontWeight: '900', fontSize: '0.75rem', display: 'inline-block' }}>
-                                🟢 COST SHEET CREATED ({req.costSheetId || 'SRM-CS-2026-000145'})
+                                🟢 COST SHEET CREATED ({req.costSheetId})
                               </span>
                             ) : (
                               <span style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', border: '1px solid #fbbf24', padding: '2px 8px', borderRadius: '12px', fontWeight: '900', fontSize: '0.75rem', display: 'inline-block' }}>
@@ -333,7 +403,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                 <div>
                   <h3 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>SEARCH MATCHING REQUEST</h3>
                   <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
-                    Primary Operational ID: Enter Matching Request ID (e.g. SRM-MAT-2026-000421 or MATREQ-2026-000002).
+                    Primary Operational ID: Select or enter Matching Request ID (e.g. SRM-MAT-2026-000421).
                   </p>
                 </div>
               </div>
@@ -342,7 +412,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                 value={selectedMatchingId} 
                 onChange={(e) => {
                   setSelectedMatchingId(e.target.value);
-                  const req = matchingRequestsQueue.find(r => r.requestId === e.target.value);
+                  const req = allMatchingRequests.find(r => r.requestId === e.target.value);
                   if (req) {
                     const cust = customers.find(c => c.customer_number === req.customerNumber || c.name === req.customerName);
                     if (cust) setSelectedCust(cust);
@@ -350,11 +420,12 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                 }} 
                 style={{ background: isLight ? '#f8fafc' : '#0f172a', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 14px', fontSize: '0.85rem', fontWeight: '800' }}
               >
-                {matchingRequestsQueue
+                <option value="">-- Select a Matching Request to Open Workspace --</option>
+                {allMatchingRequests
                   .filter(req => matchingVaultFilter === 'ALL' || (!req.costSheetId && req.status !== 'COST_SHEET_CREATED'))
                   .map((req) => (
                     <option key={req.requestId} value={req.requestId}>
-                      ⚡ PENDING: {req.requestId} — {req.customerName} ({req.configuration}, {req.preferredArea})
+                      ⚡ {req.requestId} — {req.customerName} ({req.configuration}, {req.preferredArea})
                     </option>
                   ))}
               </select>
@@ -373,11 +444,11 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                     setMatchingSearchQuery(val);
                     if (val.trim()) {
                       const q = val.trim().toLowerCase();
-                      const match = matchingRequestsQueue.find(r => 
-                        r.requestId.toLowerCase().includes(q) ||
-                        r.customerNumber.toLowerCase().includes(q) ||
-                        r.customerName.toLowerCase().includes(q) ||
-                        r.mobile.includes(q)
+                      const match = allMatchingRequests.find(r => 
+                        (r.requestId && r.requestId.toLowerCase().includes(q)) ||
+                        (r.customerNumber && r.customerNumber.toLowerCase().includes(q)) ||
+                        (r.customerName && r.customerName.toLowerCase().includes(q)) ||
+                        (r.mobile && r.mobile.includes(q))
                       );
                       if (match) {
                         setSelectedMatchingId(match.requestId);
@@ -392,90 +463,110 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
               </div>
             </div>
 
-            {/* MATCHING REQUEST HEADER (SECTION 2 & 21) */}
-            <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', fontSize: '0.82rem' }}>
-              <div>
-                <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>PRIMARY MATCHING ID</span>
-                <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#38bdf8', fontFamily: 'monospace' }}>{activeMatchingReq.requestId}</h4>
-                <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>● MATCHING WORKSPACE ACTIVE</span>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>CUSTOMER IDENTITY</span>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>{activeMatchingReq.customerName}</h4>
-                <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>{activeMatchingReq.customerNumber} ({activeMatchingReq.mobile})</span>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>LINKED REQ & LEAD IDs</span>
-                <h4 style={{ fontSize: '0.82rem', fontWeight: '800', color: '#fbbf24', fontFamily: 'monospace' }}>{activeMatchingReq.requirementId || 'SRM-REQ-2026-000094'}</h4>
-                <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>{activeMatchingReq.leadId || 'SRM-LEAD-2026-000184'}</span>
-              </div>
-              <div>
-                <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>CREATED BY & STATUS</span>
-                <h4 style={{ fontSize: '0.82rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{activeMatchingReq.assignedExecutive || 'Priya Nair (Sales Exec)'}</h4>
-                <span style={{ background: activeMatchingReq.status === 'COST_SHEET_CREATED' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.2)', color: activeMatchingReq.status === 'COST_SHEET_CREATED' ? '#4ade80' : '#fbbf24', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900' }}>{activeMatchingReq.status}</span>
-              </div>
-            </div>
-
-            {/* COST SHEET CREATED & TRANSFERRED NOTIFICATION BANNER */}
-            {(activeMatchingReq.status === 'COST_SHEET_CREATED' || activeMatchingReq.costSheetId) && (
-              <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', borderRadius: '12px', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.92rem', margin: 0 }}>
-                    🟢 COST SHEET CREATED & TRANSFERRED TO COST SHEET SHARING
-                  </h4>
-                  <p style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.78rem', margin: '2px 0 0 0' }}>
-                    Cost Sheet ID: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{activeMatchingReq.costSheetId || 'SRM-CS-2026-000145'}</strong> has been generated for customer {activeMatchingReq.customerName}.
-                  </p>
+            {/* MATCHING REQUEST HEADER & LOCKED SNAPSHOT (ONLY WHEN A REQUEST IS SELECTED) */}
+            {activeMatchingReq && (
+              <>
+                {/* MATCHING REQUEST HEADER (SECTION 2 & 21) */}
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px', fontSize: '0.82rem' }}>
+                  <div>
+                    <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>PRIMARY MATCHING ID</span>
+                    <h4 style={{ fontSize: '1rem', fontWeight: '900', color: '#38bdf8', fontFamily: 'monospace' }}>{activeMatchingReq.requestId}</h4>
+                    <span style={{ fontSize: '0.72rem', color: '#4ade80', fontWeight: '800' }}>● MATCHING WORKSPACE ACTIVE</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>CUSTOMER IDENTITY</span>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>{activeMatchingReq.customerName}</h4>
+                    <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>{activeMatchingReq.customerNumber} ({activeMatchingReq.mobile})</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>LINKED REQ & LEAD IDs</span>
+                    <h4 style={{ fontSize: '0.82rem', fontWeight: '800', color: '#fbbf24', fontFamily: 'monospace' }}>{activeMatchingReq.requirementId || 'SRM-REQ-2026-000094'}</h4>
+                    <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace' }}>{activeMatchingReq.leadId || 'SRM-LEAD-2026-000184'}</span>
+                  </div>
+                  <div>
+                    <span style={{ fontSize: '0.68rem', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase', fontWeight: '800' }}>CREATED BY & STATUS</span>
+                    <h4 style={{ fontSize: '0.82rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{activeMatchingReq.assignedExecutive || 'Priya Nair (Sales Exec)'}</h4>
+                    <span style={{ background: activeMatchingReq.status === 'COST_SHEET_CREATED' ? 'rgba(34, 197, 94, 0.2)' : 'rgba(234, 179, 8, 0.2)', color: activeMatchingReq.status === 'COST_SHEET_CREATED' ? '#4ade80' : '#fbbf24', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900' }}>{activeMatchingReq.status}</span>
+                  </div>
                 </div>
-                <button 
-                  onClick={() => {
-                    setActiveTab('cost_sheet_share');
-                    setActiveCostSheetShareSubTab('individual_cost_sheets');
-                    setSearchQuery(activeMatchingReq.costSheetId || activeMatchingReq.customerNumber);
-                  }} 
-                  style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  📋 Open in Cost Sheet Sharing →
-                </button>
-              </div>
+
+                {/* COST SHEET CREATED & TRANSFERRED NOTIFICATION BANNER */}
+                {(activeMatchingReq.status === 'COST_SHEET_CREATED' || activeMatchingReq.costSheetId) && (
+                  <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', borderRadius: '12px', padding: '14px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '0.92rem', margin: 0 }}>
+                        🟢 COST SHEET CREATED & TRANSFERRED TO COST SHEET SHARING
+                      </h4>
+                      <p style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.78rem', margin: '2px 0 0 0' }}>
+                        Cost Sheet ID: <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{activeMatchingReq.costSheetId || 'SRM-CS-2026-000145'}</strong> has been generated for customer {activeMatchingReq.customerName}.
+                      </p>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        setActiveTab('cost_sheet_share');
+                        setActiveCostSheetShareSubTab('individual_cost_sheets');
+                        setSearchQuery(activeMatchingReq.costSheetId || activeMatchingReq.customerNumber);
+                      }} 
+                      style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                    >
+                      📋 Open in Cost Sheet Sharing →
+                    </button>
+                  </div>
+                )}
+
+                {/* LOCKED CUSTOMER REQUIREMENT SNAPSHOT (SECTION 3 & 24) */}
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: '900' }}>🔒 LOCKED CUSTOMER REQUIREMENT SNAPSHOT FOR {activeMatchingReq.requestId}</span>
+                    <span style={{ background: '#334155', color: '#fbbf24', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800' }}>REQUIREMENT VERSION: {activeMatchingReq.version || 'SNAPSHOT V1'}</span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(3, 1fr)' : 'repeat(6, 1fr)', gap: '10px', fontSize: '0.8rem' }}>
+                    <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Target Property Code:</span> <strong style={{ color: '#38bdf8', fontFamily: 'monospace', display: 'block', fontWeight: '900' }}>{activeMatchingReq.propertyCode || activeMatchingReq.propCode || 'N/A (Open Re-Rank Search)'}</strong></div>
+                    <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Property Type:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{activeMatchingReq.propertyType || 'Apartment / Flat'}</strong></div>
+                    <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>BHK Config:</span> <strong style={{ color: '#fbbf24', display: 'block' }}>{activeMatchingReq.configuration || '3 BHK'}</strong></div>
+                    <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Budget Range:</span> <strong style={{ color: '#4ade80', display: 'block' }}>{activeMatchingReq.budget}</strong></div>
+                    <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Preferred Location:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{activeMatchingReq.preferredArea} ({activeMatchingReq.radiusKm || 10} KM)</strong></div>
+                    <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Possession & Facing:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{activeMatchingReq.possessionStatus || 'Ready to Move'} | {activeMatchingReq.facing || 'East Facing'}</strong></div>
+                  </div>
+
+                  {/* RUN MATCHER BUTTON (SECTION 4) */}
+                  <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <button onClick={() => alert(`⚡ Executed real-time property matching engine for ${activeMatchingReq.requestId} snapshot!`)} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Zap size={15} /> ⚡ RUN / RE-RUN MATCHER FOR {activeMatchingReq.requestId}
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
-
-            {/* LOCKED CUSTOMER REQUIREMENT SNAPSHOT (SECTION 3 & 24) */}
-            <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.8rem', color: '#38bdf8', fontWeight: '900' }}>🔒 LOCKED CUSTOMER REQUIREMENT SNAPSHOT FOR {activeMatchingReq.requestId}</span>
-                <span style={{ background: '#334155', color: '#fbbf24', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '800' }}>REQUIREMENT VERSION: {activeMatchingReq.version || 'SNAPSHOT V1'}</span>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : windowWidth <= 1024 ? 'repeat(3, 1fr)' : 'repeat(6, 1fr)', gap: '10px', fontSize: '0.8rem' }}>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Target Property Code:</span> <strong style={{ color: '#38bdf8', fontFamily: 'monospace', display: 'block', fontWeight: '900' }}>{activeMatchingReq.propertyCode || activeMatchingReq.propCode || 'N/A (Open Re-Rank Search)'}</strong></div>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Property Type:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{activeMatchingReq.propertyType || 'Apartment / Flat'}</strong></div>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>BHK Config:</span> <strong style={{ color: '#fbbf24', display: 'block' }}>{activeMatchingReq.configuration || '3 BHK'}</strong></div>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Budget Range:</span> <strong style={{ color: '#4ade80', display: 'block' }}>{activeMatchingReq.budget}</strong></div>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Preferred Location:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{activeMatchingReq.preferredArea} ({activeMatchingReq.radiusKm || 10} KM)</strong></div>
-                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.7rem' }}>Possession & Facing:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{activeMatchingReq.possessionStatus || 'Ready to Move'} | {activeMatchingReq.facing || 'East Facing'}</strong></div>
-              </div>
-
-              {/* RUN MATCHER BUTTON (SECTION 4) */}
-              <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px', display: 'flex', justifyContent: 'flex-end' }}>
-                <button onClick={() => alert(`⚡ Executed real-time property matching engine for ${activeMatchingReq.requestId} snapshot!`)} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Zap size={15} /> ⚡ RUN / RE-RUN MATCHER FOR {activeMatchingReq.requestId}
-                </button>
-              </div>
-            </div>
           </div>
 
-          {/* MATCHED PROPERTIES RESULTS & TABLE (SECTION 5, 7, 8, 9) */}
-          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-              <div>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>🎯 MATCHED PROPERTIES FOR {activeMatchingReq.requestId} ({activeMatchingReq.customerName})</h3>
-                <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>{properties.length} Total Inventory Properties • AI Matching & Manual Lookup Active</p>
+          {/* IF NO MATCHING REQUEST IS SELECTED, SHOW CLEAN PROMPT; OTHERWISE SHOW MATCHED PROPERTIES & DISPATCHER */}
+          {!activeMatchingReq ? (
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px dashed #cbd5e1' : '1px dashed #334155', borderRadius: '16px', padding: '40px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Zap size={24} color="#38bdf8" />
               </div>
-              <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '900', border: '1px solid #22c55e' }}>
-                {selectedPropertyIds.length} PROPERTIES SELECTED
-              </span>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                No Matching Request Workspace Active
+              </h3>
+              <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8', maxWidth: '540px', margin: 0 }}>
+                Click <strong style={{ color: '#0284c7' }}>"📂 Open Workspace"</strong> or <strong style={{ color: '#22c55e' }}>"Run Matcher"</strong> on any request in the <strong style={{ color: '#22c55e' }}>Inbound Vault above</strong>, or choose a Matching ID from the search bar to inspect customer requirements and matched properties.
+              </p>
             </div>
+          ) : (
+            <>
+              {/* MATCHED PROPERTIES RESULTS & TABLE (SECTION 5, 7, 8, 9) */}
+              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>🎯 MATCHED PROPERTIES FOR {activeMatchingReq.requestId} ({activeMatchingReq.customerName})</h3>
+                    <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>{properties.length} Total Inventory Properties • AI Matching & Manual Lookup Active</p>
+                  </div>
+                  <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '900', border: '1px solid #22c55e' }}>
+                    {selectedPropertyIds.length} PROPERTIES SELECTED
+                  </span>
+                </div>
 
             {/* MANUAL PROPERTY SEARCH & MATCH SELECTION CONTROL PANEL */}
             <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -802,8 +893,10 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
               >
                 📄 CREATE INDIVIDUAL COST SHEETS ({selectedPropertyIds.length} SELECTED) & SEND TO SHARING
               </button>
+              </div>
             </div>
-          </div>
+          </>
+        )}
 
         </div>
         );

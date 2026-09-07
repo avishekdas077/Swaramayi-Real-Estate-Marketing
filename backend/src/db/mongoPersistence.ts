@@ -43,36 +43,96 @@ export const DeveloperModel = mongoose.models.Developer || mongoose.model('Devel
 
 // Helper function to sync array of records into a model (handles permanent deletions)
 async function syncCollection(model: mongoose.Model<any>, records: any[]) {
-  if (!records || !Array.isArray(records) || records.length === 0) {
+  if (!records || !Array.isArray(records)) {
     return;
   }
 
   try {
-    // Extract valid record identifiers
-    const validIds = records.map(r => r.id || r.customer_number || r.booking_code || r.invoice_number || r.agreement_code || r.costSheetId || r.projectVisitAgreementId || r.pvaId || r.team_name || r.branch_name).filter(Boolean);
-    const validMongoIds = records.map(r => r._id).filter(Boolean);
+    if (records.length === 0) {
+      // All records were deleted by user in CRM -> wipe database collection
+      await model.deleteMany({});
+      return;
+    }
 
-    // Delete records from MongoDB Atlas that were permanently deleted in CRM
+    // Extract valid record identifiers
+    const validIds: string[] = [];
+    const validMongoIds: any[] = [];
+
+    records.forEach((r: any) => {
+      if (r._id) validMongoIds.push(r._id);
+      if (r.id) validIds.push(String(r.id));
+      if (r.booking_code) validIds.push(String(r.booking_code));
+      if (r.invoice_number) validIds.push(String(r.invoice_number));
+      if (r.agreement_code) validIds.push(String(r.agreement_code));
+      if (r.customer_number) validIds.push(String(r.customer_number));
+      if (r.property_code) validIds.push(String(r.property_code));
+      if (r.lead_number) validIds.push(String(r.lead_number));
+      if (r.costSheetId) validIds.push(String(r.costSheetId));
+      if (r.projectVisitAgreementId) validIds.push(String(r.projectVisitAgreementId));
+      if (r.pvaId) validIds.push(String(r.pvaId));
+      if (r.visitId) validIds.push(String(r.visitId));
+      if (r.visitScheduleId) validIds.push(String(r.visitScheduleId));
+      if (r.visitPlanId) validIds.push(String(r.visitPlanId));
+      if (r.planId) validIds.push(String(r.planId));
+      if (r.requestId) validIds.push(String(r.requestId));
+      if (r.selectionId) validIds.push(String(r.selectionId));
+      if (r.team_name) validIds.push(String(r.team_name));
+      if (r.branch_name) validIds.push(String(r.branch_name));
+      if (r.name) validIds.push(String(r.name));
+    });
+
+    const orConditions: any[] = [];
     if (validIds.length > 0) {
-      const deleteFilter: any = { id: { $nin: validIds } };
-      if (validMongoIds.length > 0) {
-        deleteFilter._id = { $nin: validMongoIds };
-      }
-      await model.deleteMany(deleteFilter);
+      orConditions.push({ id: { $in: validIds } });
+      orConditions.push({ booking_code: { $in: validIds } });
+      orConditions.push({ invoice_number: { $in: validIds } });
+      orConditions.push({ agreement_code: { $in: validIds } });
+      orConditions.push({ customer_number: { $in: validIds } });
+      orConditions.push({ property_code: { $in: validIds } });
+      orConditions.push({ lead_number: { $in: validIds } });
+      orConditions.push({ costSheetId: { $in: validIds } });
+      orConditions.push({ projectVisitAgreementId: { $in: validIds } });
+      orConditions.push({ pvaId: { $in: validIds } });
+      orConditions.push({ visitId: { $in: validIds } });
+      orConditions.push({ visitScheduleId: { $in: validIds } });
+      orConditions.push({ visitPlanId: { $in: validIds } });
+      orConditions.push({ planId: { $in: validIds } });
+      orConditions.push({ requestId: { $in: validIds } });
+      orConditions.push({ selectionId: { $in: validIds } });
+      orConditions.push({ team_name: { $in: validIds } });
+      orConditions.push({ branch_name: { $in: validIds } });
+      orConditions.push({ name: { $in: validIds } });
+    }
+    if (validMongoIds.length > 0) {
+      orConditions.push({ _id: { $in: validMongoIds } });
+    }
+
+    // Delete records from MongoDB Atlas that are no longer present in CRM
+    if (orConditions.length > 0) {
+      await model.deleteMany({ $nor: orConditions });
+    } else {
+      await model.deleteMany({});
     }
 
     // Upsert remaining active records
     const ops = records.map(rec => {
-      const filter = rec.id 
+      const filter: any = rec.id 
         ? { id: rec.id } 
-        : (rec.customer_number ? { customer_number: rec.customer_number } 
+        : (rec.visitId ? { visitId: rec.visitId }
+        : (rec.visitScheduleId ? { visitScheduleId: rec.visitScheduleId }
+        : (rec.visitPlanId ? { visitPlanId: rec.visitPlanId }
+        : (rec.planId ? { planId: rec.planId }
         : (rec.booking_code ? { booking_code: rec.booking_code } 
         : (rec.invoice_number ? { invoice_number: rec.invoice_number } 
         : (rec.agreement_code ? { agreement_code: rec.agreement_code } 
+        : (rec.customer_number ? { customer_number: rec.customer_number } 
+        : (rec.property_code ? { property_code: rec.property_code } 
+        : (rec.lead_number ? { lead_number: rec.lead_number } 
         : (rec.costSheetId ? { costSheetId: rec.costSheetId } 
         : (rec.projectVisitAgreementId ? { projectVisitAgreementId: rec.projectVisitAgreementId } 
         : (rec.team_name ? { team_name: rec.team_name } 
-        : (rec.branch_name ? { branch_name: rec.branch_name } : rec))))))));
+        : (rec.branch_name ? { branch_name: rec.branch_name } 
+        : (rec.name ? { name: rec.name } : rec)))))))))))))));
       
       return {
         updateOne: {

@@ -41,6 +41,10 @@ interface VisitManagementViewProps {
   setSelectedCust: (val: any) => void;
   setActiveMatchingSubTab: (tab: string) => void;
   setShowLogSalesFeedbackModal: (val: boolean) => void;
+  handleOpenFeedbackModal?: (visitItem?: any) => void;
+  visitFeedbacks?: any[];
+  setVisitFeedbacks?: React.Dispatch<React.SetStateAction<any[]>>;
+  handleDeleteFeedback?: (fbId: string) => void;
   setShowAlternativePropertyModal: (val: any) => void;
   setUpdateReqForm: (val: any) => void;
   setShowUpdateRequirementModal: (val: any) => void;
@@ -50,6 +54,7 @@ interface VisitManagementViewProps {
   setScheduledVisits?: React.Dispatch<React.SetStateAction<any[]>>;
   setVisitPlans?: React.Dispatch<React.SetStateAction<any[]>>;
   setActiveBookingSubTab?: (tab: any) => void;
+  syncAllToMongoDB?: (overrideData?: any) => Promise<void>;
 }
 
 export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
@@ -92,6 +97,10 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
   setSelectedCust,
   setActiveMatchingSubTab,
   setShowLogSalesFeedbackModal,
+  handleOpenFeedbackModal,
+  visitFeedbacks = [],
+  setVisitFeedbacks,
+  handleDeleteFeedback,
   setShowAlternativePropertyModal,
   setUpdateReqForm,
   setShowUpdateRequirementModal,
@@ -101,8 +110,60 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
   setScheduledVisits,
   setVisitPlans,
   setActiveBookingSubTab,
+  syncAllToMongoDB,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
+  const unifiedVisits = React.useMemo(() => {
+    const list: any[] = [...(scheduledVisits || [])];
+    (visitPlans || []).forEach(plan => {
+      const exists = list.some(sv => sv.visitId === plan.visitPlanId || sv.visitId === plan.visitScheduleId);
+      if (!exists) {
+        const firstStop = (plan.stops && plan.stops[0]) || {};
+        const propTitle = plan.stops && plan.stops.length === 1 
+          ? plan.stops[0].propertyTitle 
+          : (plan.stops && plan.stops.length > 1 ? `${plan.stops[0].propertyTitle} (+${plan.stops.length - 1} more)` : (firstStop.propertyTitle || 'Property Visit'));
+        list.push({
+          visitId: plan.visitPlanId || plan.visitScheduleId,
+          costSheetId: firstStop.costSheetId,
+          customerName: plan.customerName,
+          customerNumber: plan.customerNumber,
+          mobile: plan.mobile,
+          propertyTitle: propTitle,
+          propertyCode: firstStop.propertyCode,
+          locality: firstStop.locality,
+          visitDate: plan.visitDate,
+          visitTime: plan.startTime || (firstStop.scheduledTime || '10:00 AM'),
+          assignedExecutive: plan.assignedExecutive,
+          transport: plan.transport || '🚗 Chauffeur Cab Pick & Drop Needed',
+          status: plan.status || 'ASSIGNED',
+          totalStops: plan.stops ? plan.stops.length : 1,
+          stops: plan.stops
+        });
+      }
+    });
+    return list;
+  }, [scheduledVisits, visitPlans]);
+
+  const getPvaMatch = (v: any) => {
+    const cleanMob = (v?.mobile || '').replace(/\D/g, '');
+    const cleanCustNo = (v?.customerNumber || '').toLowerCase().trim();
+    const vId = (v?.visitId || '').toLowerCase().trim();
+    const csId = (v?.costSheetId || '').toLowerCase().trim();
+
+    return (projectVisitAgreements || []).find((p: any) => {
+      const pMob = (p?.customerMobile || '').replace(/\D/g, '');
+      const pCustNo = (p?.customerId || '').toLowerCase().trim();
+      const pVId = (p?.visitScheduleId || '').toLowerCase().trim();
+      const pCsId = (p?.costSheetId || '').toLowerCase().trim();
+
+      if (vId && pVId && (vId === pVId || vId.includes(pVId) || pVId.includes(vId))) return true;
+      if (cleanCustNo && pCustNo && (cleanCustNo === pCustNo || cleanCustNo.includes(pCustNo) || pCustNo.includes(cleanCustNo))) return true;
+      if (cleanMob && cleanMob.length >= 7 && pMob && (cleanMob.endsWith(pMob) || pMob.endsWith(cleanMob))) return true;
+      if (csId && pCsId && csId === pCsId) return true;
+      return false;
+    });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -380,14 +441,39 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                               {isSuperAdmin && (
                                 <button 
                                   onClick={() => {
-                                    if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Visit Route Plan ${plan.visitPlanId || plan.visitScheduleId} for ${plan.customerName || 'Customer'}?`)) {
+                                    if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Visit Route Plan ${plan.visitPlanId || plan.visitScheduleId} for ${plan.customerName || 'Customer'} from the system and database?`)) {
+                                      const updatedPlans = (visitPlans || []).filter((p: any) => 
+                                        p.visitPlanId !== plan.visitPlanId && 
+                                        p.visitScheduleId !== plan.visitPlanId && 
+                                        p.visitPlanId !== plan.visitScheduleId && 
+                                        p.visitScheduleId !== plan.visitScheduleId && 
+                                        (!plan.id || p.id !== plan.id)
+                                      );
+                                      const updatedVisits = (scheduledVisits || []).filter((sv: any) => 
+                                        sv.visitId !== plan.visitPlanId && 
+                                        sv.costSheetId !== plan.visitPlanId && 
+                                        sv.visitId !== plan.visitScheduleId && 
+                                        sv.costSheetId !== plan.visitScheduleId && 
+                                        (!plan.id || sv.id !== plan.id)
+                                      );
                                       if (setVisitPlans) {
-                                        setVisitPlans((prev: any[]) => (prev || []).filter((p: any) => p.visitPlanId !== plan.visitPlanId && p.visitScheduleId !== plan.visitPlanId));
+                                        setVisitPlans(updatedPlans);
                                       }
+                                      try {
+                                        localStorage.setItem('swaramayi_visit_plans_v4_clean', JSON.stringify(updatedPlans));
+                                      } catch (e) {}
                                       if (setScheduledVisits) {
-                                        setScheduledVisits((prev: any[]) => (prev || []).filter((sv: any) => sv.visitId !== plan.visitPlanId && sv.costSheetId !== plan.visitPlanId));
+                                        setScheduledVisits(updatedVisits);
                                       }
-                                      alert(`🗑️ Visit Route Plan ${plan.visitPlanId || plan.visitScheduleId} deleted permanently by Super Admin.`);
+                                      try {
+                                        localStorage.setItem('swaramayi_scheduled_visits_v4_clean', JSON.stringify(updatedVisits));
+                                      } catch (e) {}
+                                      if (syncAllToMongoDB) {
+                                        syncAllToMongoDB({
+                                          site_visits: updatedVisits
+                                        });
+                                      }
+                                      alert(`🗑️ Visit Route Plan ${plan.visitPlanId || plan.visitScheduleId} has been permanently deleted from the database.`);
                                     }
                                   }}
                                   style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem' }}
@@ -520,53 +606,68 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
     })()}
 
     {/* SUB-TAB 2: VISIT SCHEDULER */}
-    {activeVisitSubTab === 'visit_scheduler' && (
-      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>📅 Scheduled Site Visits Register ({scheduledVisits.length} Visits)</h3>
-            <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>Visits scheduled from Cost Sheet Sharing or Direct Booking Workflow</p>
-          </div>
-          <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800', border: '1px solid #22c55e' }}>
-            ● AUTOMATIC COST SHEET SHARING TRANSFERS ACTIVE
-          </span>
-        </div>
+    {activeVisitSubTab === 'visit_scheduler' && (() => {
+      const filteredVisits = unifiedVisits.filter(v => matchesSearchQuery(v, searchQuery));
 
-        {scheduledVisits.length === 0 ? (
-          <div style={{ padding: '36px 20px', textAlign: 'center', background: isLight ? '#f8fafc' : '#0f172a', borderRadius: '12px', border: '1px dashed #ef4444' }}>
-            <Trash2 size={32} color="#ef4444" style={{ margin: '0 auto 10px auto' }} />
-            <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '1.05rem' }}>📭 NO SCHEDULED SITE VISITS FOUND</h4>
-            <p style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.82rem', marginTop: '4px' }}>
-              Click "🚘 Visit Schedule" on any record in Cost Sheet Sharing to transfer a customer & property visit here.
-            </p>
+      return (
+        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>📅 Scheduled Site Visits Register ({filteredVisits.length} Visits)</h3>
+              <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>Visits scheduled from Cost Sheet Sharing, Route Planner or Direct Booking Workflow</p>
+            </div>
+            <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', padding: '4px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '800', border: '1px solid #22c55e' }}>
+              ● AUTOMATIC VISIT & ROUTE SYNC ACTIVE
+            </span>
           </div>
-        ) : (
-          <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
-            <thead>
-              <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                <th style={{ padding: '10px' }}>Visit ID & Cost Sheet ID</th>
-                <th style={{ padding: '10px' }}>Customer & Contact</th>
-                <th style={{ padding: '10px' }}>Target Property</th>
-                <th style={{ padding: '10px' }}>Scheduled Date & Time</th>
-                <th style={{ padding: '10px' }}>Assigned Field Exec</th>
-                <th style={{ padding: '10px' }}>OTP Verification Status</th>
-                <th style={{ padding: '10px' }}>Transport Logistics</th>
-                <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scheduledVisits
-                .filter(v => matchesSearchQuery(v, searchQuery))
-                .map((v: any, idx: number) => {
-                  const pCode = v.propertyCode || v.propertyTitle;
-                  const matchedProp = properties.find((p: any) => 
-                    p.property_code === pCode || 
-                    p.id === pCode || 
-                    (v.propertyTitle && p.title.toLowerCase().includes(v.propertyTitle.toLowerCase()))
+
+          {filteredVisits.length === 0 ? (
+            <div style={{ padding: '36px 20px', textAlign: 'center', background: isLight ? '#f8fafc' : '#0f172a', borderRadius: '12px', border: '1px dashed #ef4444' }}>
+              <Trash2 size={32} color="#ef4444" style={{ margin: '0 auto 10px auto' }} />
+              <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '1.05rem' }}>📭 NO SCHEDULED SITE VISITS FOUND</h4>
+              <p style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.82rem', marginTop: '4px' }}>
+                Click "+ Schedule Site Visit" or transfer a cost sheet from Cost Sheet Sharing to create a visit.
+              </p>
+            </div>
+          ) : (
+            <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+              <thead>
+                <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                  <th style={{ padding: '10px' }}>Visit ID & Cost Sheet ID</th>
+                  <th style={{ padding: '10px' }}>Customer & Contact</th>
+                  <th style={{ padding: '10px' }}>Target Property</th>
+                  <th style={{ padding: '10px' }}>Scheduled Date & Time</th>
+                  <th style={{ padding: '10px' }}>Assigned Field Exec</th>
+                  <th style={{ padding: '10px' }}>OTP Verification Status</th>
+                  <th style={{ padding: '10px' }}>Transport Logistics</th>
+                  <th style={{ padding: '10px', textAlign: 'center' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredVisits.map((v: any, idx: number) => {
+                  const matchedPlan = (visitPlans || []).find((p: any) => 
+                    (v.visitId && (p.visitPlanId === v.visitId || p.visitScheduleId === v.visitId)) ||
+                    (v.customerNumber && p.customerNumber === v.customerNumber && v.visitDate === p.visitDate) ||
+                    (v.mobile && p.mobile === v.mobile && v.visitDate === p.visitDate)
                   );
-                  const lat = matchedProp?.latitude || '17.4612° N';
-                  const lng = matchedProp?.longitude || '78.3689° E';
+
+                  const firstStop = (matchedPlan?.stops && matchedPlan.stops[0]) || (v.stops && v.stops[0]) || null;
+                  const cleanPropTitle = (firstStop && firstStop.propertyTitle) 
+                    ? firstStop.propertyTitle 
+                    : (v.propertyTitle && !v.propertyTitle.includes('Properties (') ? v.propertyTitle : (firstStop?.propertyTitle || 'GAJAPATI APARTMENT'));
+
+                  const cleanPropCode = firstStop?.propertyCode || v.propertyCode || v.propCode || 'SRM-PROP-2026-000426';
+                  const cleanLocality = firstStop?.locality || v.locality || 'Barasat, Kolkata';
+                  const totalStopsCount = (matchedPlan?.stops && matchedPlan.stops.length) || (v.stops && v.stops.length) || v.totalStops || 1;
+
+                  const matchedProp = properties.find((p: any) => 
+                    p.property_code === cleanPropCode || 
+                    p.id === cleanPropCode || 
+                    (cleanPropTitle && p.title && p.title.toLowerCase().includes(cleanPropTitle.toLowerCase()))
+                  );
+                  const lat = firstStop?.latitude || matchedProp?.latitude || '22.722351';
+                  const lng = firstStop?.longitude || matchedProp?.longitude || '88.485484';
 
                   const matchingPva = projectVisitAgreements.find((p: any) => 
                     p.customerMobile === v.mobile || 
@@ -595,10 +696,22 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                         )}
                       </td>
                       <td style={{ padding: '10px' }}>
-                        <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.82rem' }}>{v.propertyTitle}</strong>
-                        <div style={{ marginTop: '3px', marginBottom: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                          <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.88rem' }}>
+                            🏢 {cleanPropTitle}
+                          </strong>
+                          {totalStopsCount > 1 && (
+                            <span style={{ background: 'rgba(251, 191, 36, 0.15)', border: '1px solid #fbbf24', color: '#fbbf24', fontSize: '0.68rem', fontWeight: '900', padding: '1px 6px', borderRadius: '4px' }}>
+                              +{totalStopsCount - 1} more
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ marginTop: '3px', marginBottom: '3px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
                           <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 7px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
-                            🏢 Property Code: {v.propertyCode || v.propCode || 'SRM-PROP-2026-000426'}
+                            Code: {cleanPropCode}
+                          </span>
+                          <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>
+                            📍 {cleanLocality}
                           </span>
                         </div>
                         <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>
@@ -664,57 +777,72 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                             <button 
                               onClick={() => {
                                 const matchedCust = (customers || []).find(c => (v.customerNumber && c.custCode === v.customerNumber) || (v.mobile && c.mobile === v.mobile) || (v.customerName && c.custName === v.customerName));
-                                const matchedProp = (properties || []).find(p => (v.propertyCode && (p.propertyCode === v.propertyCode || p.propCode === v.propertyCode)) || (v.propCode && (p.propertyCode === v.propCode || p.propCode === v.propCode)) || (v.propertyTitle && (p.title === v.propertyTitle || p.propTitle === v.propertyTitle)));
-                                const foundPlan = (visitPlans || []).find(p => (v.customerNumber && p.customerNumber === v.customerNumber) || (v.mobile && p.mobile === v.mobile) || (v.visitId && (p.visitPlanId === v.visitId || p.visitScheduleId === v.visitId)));
-                                const matchedPlan = foundPlan || {
+                                const matchedPlanObj = matchedPlan || {
                                   visitPlanId: v.visitId || 'SRM-VP-2026-000001',
                                   visitScheduleId: v.visitId || 'SRM-VS-2026-000087',
                                   customerName: v.customerName || matchedCust?.custName || 'Customer',
                                   customerNumber: v.customerNumber || matchedCust?.custCode || 'SRM-CUS-2026-000185',
                                   mobile: v.mobile || matchedCust?.mobile || '+91 98490 12345',
                                   email: v.email || matchedCust?.email || 'customer@gmail.com',
-                                  assignedExecutive: v.assignedExecutive || 'Ramesh Pawar (Field Exec - Kondapur)',
+                                  assignedExecutive: v.assignedExecutive || 'Punita Roy',
                                   visitDate: v.visitDate || '2026-08-22',
                                   visitTime: v.visitTime || '10:00 AM',
                                   stops: [
                                     {
                                       stopId: 'SRM-VSTOP-2026-000001',
                                       costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
-                                      propertyCode: v.propertyCode || v.propCode || matchedProp?.propertyCode || matchedProp?.propCode || 'SRM-PROP-2026-000426',
-                                      propertyTitle: v.propertyTitle || matchedProp?.title || matchedProp?.propTitle || 'GAJAPATI APARTMENT',
-                                      locality: matchedProp?.locality || matchedProp?.location || 'Barasat, Kolkata',
+                                      propertyCode: cleanPropCode,
+                                      propertyTitle: cleanPropTitle,
+                                      locality: cleanLocality,
                                       developer: matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
-                                      latitude: lat || matchedProp?.latitude || '17.4612° N',
-                                      longitude: lng || matchedProp?.longitude || '78.3689° E',
+                                      latitude: lat,
+                                      longitude: lng,
                                       status: 'SCHEDULED'
                                     }
                                   ]
                                 };
-                                const targetStop = (matchedPlan.stops && matchedPlan.stops[0]) ? matchedPlan.stops[0] : {
+                                const targetStop = (matchedPlanObj.stops && matchedPlanObj.stops[0]) ? matchedPlanObj.stops[0] : {
                                   stopId: 'SRM-VSTOP-2026-000001',
                                   costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
-                                  propertyCode: v.propertyCode || v.propCode || matchedProp?.propertyCode || matchedProp?.propCode || 'SRM-PROP-2026-000426',
-                                  propertyTitle: v.propertyTitle || matchedProp?.title || matchedProp?.propTitle || 'GAJAPATI APARTMENT',
-                                  locality: matchedProp?.locality || matchedProp?.location || 'Barasat, Kolkata',
+                                  propertyCode: cleanPropCode,
+                                  propertyTitle: cleanPropTitle,
+                                  locality: cleanLocality,
                                   developer: matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
-                                  latitude: lat || matchedProp?.latitude || '17.4612° N',
-                                  longitude: lng || matchedProp?.longitude || '78.3689° E',
+                                  latitude: lat,
+                                  longitude: lng,
                                   status: 'SCHEDULED'
                                 };
-                                setShowPvaVerificationModal({ open: true, plan: matchedPlan, stop: targetStop });
+                                setShowPvaVerificationModal({ open: true, plan: matchedPlanObj, stop: targetStop });
                               }} 
                               style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem' }}
                             >
                               🔐 Verify OTP Now
                             </button>
                           )}
-                          <button onClick={() => { setActiveVisitSubTab('visit_feedback'); alert(`⭐ Opening feedback form for Visit ${v.visitId}`); }} style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}>⭐ Feedback</button>
+                          <button 
+                            onClick={() => {
+                              if (handleOpenFeedbackModal) {
+                                handleOpenFeedbackModal({
+                                  ...v,
+                                  propertyTitle: cleanPropTitle,
+                                  propertyCode: cleanPropCode,
+                                  locality: cleanLocality
+                                });
+                              } else {
+                                setShowLogSalesFeedbackModal(true);
+                              }
+                            }} 
+                            style={{ background: '#fbbf24', color: '#0f172a', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}
+                            title="Log Customer 5-Star Feedback"
+                          >
+                            ⭐ Feedback
+                          </button>
                           <button 
                             onClick={() => {
                               setUpdateReqForm({
                                 budget_min: '₹50 Lakhs',
                                 budget_max: '₹1.5 Crores',
-                                preferredArea: v.propertyTitle || 'Kondapur / Gachibowli',
+                                preferredArea: cleanPropTitle || 'Barasat, Kolkata',
                                 configuration: '3BHK',
                                 dislike_reason: 'Over Budget',
                                 remarks: ''
@@ -725,12 +853,6 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                                   custName: v.customerName || 'Customer', 
                                   custCode: v.customerNumber || v.mobile || 'SRM-CUS-2026', 
                                   mobile: v.mobile || v.customerNumber, 
-                                  prefArea: v.propertyTitle || 'Kondapur / Gachibowli',
-                                  budget_min: '₹50 Lakhs',
-                                  budget_max: '₹1.5 Crores',
-                                  reason: 'Updated from Single Site Visit Scheduler',
-                                  visitId: v.visitId || 'SRM-VS-2026-000088',
-                                  costSheetId: v.costSheetId || 'COST-SHEET-2026-000002',
                                   propertyCode: v.propertyCode || v.propCode || 'SRM-PROP-2026-000426'
                                 } 
                               });
@@ -766,20 +888,51 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                                 sales_executive: v.assignedExecutive || 'Ramesh Pawar (Field Exec - Kondapur)'
                               };
 
+                              const updatedBookings = [newBookingObj, ...(bookings || [])];
+                              const updatedVisits = (scheduledVisits || []).filter((sv: any) => 
+                                sv.visitId !== v.visitId && 
+                                sv.costSheetId !== v.costSheetId && 
+                                (!v.id || sv.id !== v.id)
+                              );
+                              const updatedPlans = (visitPlans || []).filter((plan: any) => 
+                                plan.visitScheduleId !== v.visitId && 
+                                plan.visitPlanId !== v.visitId && 
+                                (!v.id || plan.id !== v.id)
+                              );
+
                               if (setBookings) {
-                                setBookings((prev: any[]) => [newBookingObj, ...(prev || [])]);
+                                setBookings(updatedBookings);
                               }
+                              try {
+                                localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(updatedBookings));
+                              } catch (e) {}
+
                               if (setScheduledVisits) {
-                                setScheduledVisits((prev: any[]) => (prev || []).filter((sv: any) => sv.visitId !== v.visitId && sv.costSheetId !== v.costSheetId));
+                                setScheduledVisits(updatedVisits);
                               }
+                              try {
+                                localStorage.setItem('swaramayi_scheduled_visits_v4_clean', JSON.stringify(updatedVisits));
+                              } catch (e) {}
+
                               if (setVisitPlans) {
-                                setVisitPlans((prev: any[]) => (prev || []).filter((plan: any) => plan.visitScheduleId !== v.visitId && plan.visitPlanId !== v.visitId));
+                                setVisitPlans(updatedPlans);
                               }
+                              try {
+                                localStorage.setItem('swaramayi_visit_plans_v4_clean', JSON.stringify(updatedPlans));
+                              } catch (e) {}
+
+                              if (syncAllToMongoDB) {
+                                syncAllToMongoDB({
+                                  bookings: updatedBookings,
+                                  site_visits: updatedVisits
+                                });
+                              }
+
                               setActiveTab('booking_management');
                               if (setActiveBookingSubTab) {
                                 setActiveBookingSubTab('all_bookings');
                               }
-                              alert(`🏢 BOOKING CREATED SUCCESSFULLY!\n\nGenerated Booking Code: ${generatedBookingCode}\nCustomer: ${v.customerName || 'Bishwajit Pandey'}\nProperty: ${v.propertyTitle || 'TILOTTAMA APPARTMENT'}\n\nRecord removed from Visit Management and transferred to Booking Management.`);
+                              alert(`🏢 BOOKING CREATED SUCCESSFULLY!\n\nGenerated Booking Code: ${generatedBookingCode}\nCustomer: ${v.customerName || 'Bishwajit Pandey'}\nProperty: ${v.propertyTitle || 'TILOTTAMA APPARTMENT'}\n\nRecord removed from Visit Management and permanently transferred to Booking Management.`);
                             }}
                             style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px' }}
                             title="Convert visit into Booking Code, remove from Visit Management and transfer to Booking Management"
@@ -790,18 +943,46 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                           {isSuperAdmin && (
                             <button 
                               onClick={() => {
-                                if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Scheduled Visit record ${v.visitId || v.costSheetId || 'this visit'} for ${v.customerName || 'Customer'}?`)) {
+                                if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Scheduled Visit record ${v.visitId || v.costSheetId || 'this visit'} for ${v.customerName || 'Customer'} from the system and database?`)) {
+                                  const updatedVisits = (scheduledVisits || []).filter((sv: any) => 
+                                    sv.visitId !== v.visitId && 
+                                    sv.costSheetId !== v.costSheetId && 
+                                    (!v.id || sv.id !== v.id) &&
+                                    (!v.visitId || sv.visitId !== v.visitId) &&
+                                    (!v.costSheetId || sv.costSheetId !== v.costSheetId)
+                                  );
+                                  const updatedPlans = (visitPlans || []).filter((plan: any) => 
+                                    plan.visitScheduleId !== v.visitId && 
+                                    plan.visitPlanId !== v.visitId && 
+                                    (!v.id || plan.id !== v.id) &&
+                                    (!v.visitId || (plan.visitScheduleId !== v.visitId && plan.visitPlanId !== v.visitId))
+                                  );
+
                                   if (setScheduledVisits) {
-                                    setScheduledVisits((prev: any[]) => (prev || []).filter((sv: any) => sv.visitId !== v.visitId && sv.costSheetId !== v.costSheetId && sv.id !== v.id));
+                                    setScheduledVisits(updatedVisits);
                                   }
+                                  try {
+                                    localStorage.setItem('swaramayi_scheduled_visits_v4_clean', JSON.stringify(updatedVisits));
+                                  } catch (e) {}
+
                                   if (setVisitPlans) {
-                                    setVisitPlans((prev: any[]) => (prev || []).filter((plan: any) => plan.visitScheduleId !== v.visitId && plan.visitPlanId !== v.visitId && plan.id !== v.id));
+                                    setVisitPlans(updatedPlans);
                                   }
-                                  alert(`🗑️ Scheduled Visit record ${v.visitId || v.costSheetId || ''} deleted permanently by Super Admin.`);
+                                  try {
+                                    localStorage.setItem('swaramayi_visit_plans_v4_clean', JSON.stringify(updatedPlans));
+                                  } catch (e) {}
+
+                                  if (syncAllToMongoDB) {
+                                    syncAllToMongoDB({
+                                      site_visits: updatedVisits
+                                    });
+                                  }
+
+                                  alert(`🗑️ Scheduled Visit record ${v.visitId || v.costSheetId || ''} has been permanently deleted from the database.`);
                                 }
                               }}
                               style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px' }}
-                              title="Super Admin Only: Permanently delete this scheduled site visit record"
+                              title="Super Admin Only: Permanently delete this scheduled site visit record from database"
                             >
                               🗑️ Delete
                             </button>
@@ -813,176 +994,215 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                 })}
             </tbody>
           </table>
-</div>
+        </div>
         )}
       </div>
-    )}
+    );
+    })()}
 
-    {/* SUB-TAB 2: OTP & GEOFENCE CHECK-IN CONTROL CENTER */}
-    {activeVisitSubTab === 'visit_otp_checkin' && (
-      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-          <div>
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              🔐 6-DIGIT MOBILE OTP & GPS GEOFENCE VERIFICATION CONTROL CENTER
-            </h3>
-            <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
-              Real-time tracking of pending vs completed customer OTP verifications and Project Visit Agreements (PVA)
-            </p>
+    {/* SUB-TAB 3: OTP & GEOFENCE CHECK-IN CONTROL CENTER */}
+    {activeVisitSubTab === 'visit_otp_checkin' && (() => {
+      const filteredVisits = unifiedVisits.filter(v => matchesSearchQuery(v, searchQuery));
+      const verifiedVisits = unifiedVisits.filter(v => {
+        const pva = getPvaMatch(v);
+        return !!pva || v.status === 'OTP_VERIFIED' || v.status === 'COMPLETED' || (v.stops && v.stops.some((s: any) => s.otpVerified || s.status === 'VISIT_COMPLETED'));
+      });
+      const pendingVisits = unifiedVisits.filter(v => {
+        const pva = getPvaMatch(v);
+        return !pva && v.status !== 'OTP_VERIFIED' && v.status !== 'COMPLETED' && (!v.stops || !v.stops.some((s: any) => s.otpVerified || s.status === 'VISIT_COMPLETED'));
+      });
+
+      return (
+        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                🔐 6-DIGIT MOBILE OTP & GPS GEOFENCE VERIFICATION CONTROL CENTER
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                Real-time tracking of pending vs completed customer OTP verifications and Project Visit Agreements (PVA)
+              </p>
+            </div>
+            <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid #22c55e', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+              ● 5-MINUTE OTP TIMER & GEOFENCE ACTIVE
+            </span>
           </div>
-          <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#4ade80', border: '1px solid #22c55e', padding: '4px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
-            ● 5-MINUTE OTP TIMER & GEOFENCE ACTIVE
-          </span>
-        </div>
 
-        {/* SUMMARY CARDS */}
-        {(() => {
-          const verifiedVisits = scheduledVisits.filter(v => projectVisitAgreements.some(p => p.customerMobile === v.mobile || p.visitScheduleId === v.visitId || p.customerId === v.customerNumber));
-          const pendingVisits = scheduledVisits.filter(v => !projectVisitAgreements.some(p => p.customerMobile === v.mobile || p.visitScheduleId === v.visitId || p.customerId === v.customerNumber));
+          {/* SUMMARY CARDS */}
+          <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
+            <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '16px', borderRadius: '12px' }}>
+              <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL SCHEDULED VISITS</span>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#38bdf8', marginTop: '4px' }}>{unifiedVisits.length} Visits</h3>
+            </div>
+            <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', padding: '16px', borderRadius: '12px' }}>
+              <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800' }}>⏳ PENDING OTP VERIFICATION</span>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#fbbf24', marginTop: '4px' }}>{pendingVisits.length} Visits Pending</h3>
+            </div>
+            <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', padding: '16px', borderRadius: '12px' }}>
+              <span style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: '800' }}>✅ OTP VERIFIED (PVA GENERATED)</span>
+              <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#4ade80', marginTop: '4px' }}>{verifiedVisits.length} Visits Verified</h3>
+            </div>
+          </div>
 
-          return (
-            <>
-              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(3, 1fr)', gap: '14px' }}>
-                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '16px', borderRadius: '12px' }}>
-                  <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL SCHEDULED VISITS</span>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#38bdf8', marginTop: '4px' }}>{scheduledVisits.length} Visits</h3>
-                </div>
-                <div style={{ background: 'rgba(245, 158, 11, 0.1)', border: '1px solid #f59e0b', padding: '16px', borderRadius: '12px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '800' }}>⏳ PENDING OTP VERIFICATION</span>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#fbbf24', marginTop: '4px' }}>{pendingVisits.length} Visits Pending</h3>
-                </div>
-                <div style={{ background: 'rgba(34, 197, 94, 0.1)', border: '1px solid #22c55e', padding: '16px', borderRadius: '12px' }}>
-                  <span style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: '800' }}>✅ OTP VERIFIED (PVA GENERATED)</span>
-                  <h3 style={{ fontSize: '1.5rem', fontWeight: '900', color: '#4ade80', marginTop: '4px' }}>{verifiedVisits.length} Visits Verified</h3>
-                </div>
-              </div>
+          {/* LIVE OTP VERIFICATION REGISTER TABLE */}
+          {filteredVisits.length === 0 ? (
+            <div style={{ padding: '36px 20px', textAlign: 'center', background: isLight ? '#f8fafc' : '#0f172a', borderRadius: '12px', border: '1px dashed #ef4444' }}>
+              <Trash2 size={32} color="#ef4444" style={{ margin: '0 auto 10px auto' }} />
+              <h4 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '1.05rem' }}>📭 NO SCHEDULED VISITS FOUND FOR OTP VERIFICATION</h4>
+              <p style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.82rem', marginTop: '4px' }}>
+                Schedule a site visit from Cost Sheet Sharing or Route Planner to trigger OTP check-in.
+              </p>
+            </div>
+          ) : (
+            <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+                <thead>
+                  <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                    <th style={{ padding: '12px' }}>Visit ID & Date</th>
+                    <th style={{ padding: '12px' }}>Customer Name & Contact</th>
+                    <th style={{ padding: '12px' }}>Target Property & GPS</th>
+                    <th style={{ padding: '12px' }}>OTP Verification Status</th>
+                    <th style={{ padding: '12px' }}>Legal PVA Reference</th>
+                    <th style={{ padding: '12px', textAlign: 'center' }}>Verification Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredVisits.map((v: any, idx: number) => {
+                    const pvaMatch = getPvaMatch(v);
+                    const isVerified = !!pvaMatch || v.status === 'OTP_VERIFIED' || v.status === 'COMPLETED' || (v.stops && v.stops.some((s: any) => s.otpVerified || s.status === 'VISIT_COMPLETED'));
+                    const fallbackPvaId = (v.stops && v.stops.find((s: any) => s.pvaId)?.pvaId) || 'SRM-PVA-2026-000001';
+                    const displayPvaId = pvaMatch?.projectVisitAgreementId || fallbackPvaId;
 
-              {/* LIVE OTP VERIFICATION REGISTER TABLE */}
-              <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
-                  <thead>
-                    <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                      <th style={{ padding: '12px' }}>Visit ID & Date</th>
-                      <th style={{ padding: '12px' }}>Customer Name & Contact</th>
-                      <th style={{ padding: '12px' }}>Target Property & GPS</th>
-                      <th style={{ padding: '12px' }}>OTP Verification Status</th>
-                      <th style={{ padding: '12px' }}>Legal PVA Reference</th>
-                      <th style={{ padding: '12px', textAlign: 'center' }}>Verification Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {scheduledVisits.map((v: any, idx: number) => {
-                      const pvaMatch = projectVisitAgreements.find((p: any) => p.customerMobile === v.mobile || p.visitScheduleId === v.visitId || p.customerId === v.customerNumber);
-                      const isVerified = !!pvaMatch;
-
-                      return (
-                        <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <td style={{ padding: '12px' }}>
-                            <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{v.visitId}</span>
-                            <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>📅 {v.visitDate} at {v.visitTime}</span>
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>{v.customerName}</strong>
-                            <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{v.mobile}</span>
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{v.propertyTitle}</strong>
-                            <div style={{ marginTop: '2px', marginBottom: '2px' }}>
-                              <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
-                                🏢 Property Code: {v.propertyCode || v.propCode || 'SRM-PROP-2026-000426'}
-                              </span>
+                    return (
+                      <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                        <td style={{ padding: '12px' }}>
+                          <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>{v.visitId}</span>
+                          <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>📅 {v.visitDate} at {v.visitTime}</span>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>{v.customerName}</strong>
+                          <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{v.mobile}</span>
+                          {v.customerNumber && (
+                            <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace', display: 'block' }}>{v.customerNumber}</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{v.propertyTitle}</strong>
+                          <div style={{ marginTop: '2px', marginBottom: '2px' }}>
+                            <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
+                              🏢 Property Code: {v.propertyCode || v.propCode || 'SRM-PROP-2026-000426'}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>📍 GPS: {v.latitude || '22.722351° N'}, {v.longitude || '88.485484° E'}</span>
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          {isVerified ? (
+                            <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900', display: 'inline-block' }}>
+                              ✅ OTP VERIFIED ({displayPvaId})
+                            </span>
+                          ) : (
+                            <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900', display: 'inline-block' }}>
+                              ⏳ OTP VERIFICATION PENDING
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px' }}>
+                          {isVerified ? (
+                            <div>
+                              <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', fontSize: '0.78rem' }}>{displayPvaId}</span>
+                              <br /><span style={{ fontSize: '0.7rem', color: '#4ade80' }}>Protection till {pvaMatch?.protectionEndDate || '2027-02-22'}</span>
                             </div>
-                            <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>📍 GPS: 17.4612° N, 78.3689° E</span>
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            {isVerified ? (
-                              <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900', display: 'inline-block' }}>
-                                ✅ OTP VERIFIED (COMPLETED)
-                              </span>
-                            ) : (
-                              <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900', display: 'inline-block' }}>
-                                ⏳ OTP VERIFICATION PENDING
-                              </span>
-                            )}
-                          </td>
-                          <td style={{ padding: '12px' }}>
-                            {isVerified ? (
-                              <div>
-                                <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', fontSize: '0.78rem' }}>{pvaMatch.projectVisitAgreementId}</span>
-                                <br /><span style={{ fontSize: '0.7rem', color: '#4ade80' }}>Protection till {pvaMatch.protectionEndDate}</span>
-                              </div>
-                            ) : (
-                              <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontStyle: 'italic' }}>PVA Pending OTP Check-In</span>
-                            )}
-                          </td>
-                          <td style={{ padding: '12px', textAlign: 'center' }}>
-                            {isVerified ? (
-                              <button 
-                                onClick={() => setShowPvaDocumentModal({ open: true, pva: pvaMatch })}
-                                style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem' }}
-                              >
-                                📄 View Verified PVA PDF
-                              </button>
-                            ) : (
-                              <button 
-                                onClick={() => {
-                                  const matchedCust = (customers || []).find(c => (v.customerNumber && c.custCode === v.customerNumber) || (v.mobile && c.mobile === v.mobile) || (v.customerName && c.custName === v.customerName));
-                                  const matchedProp = (properties || []).find(p => (v.propertyCode && (p.propertyCode === v.propertyCode || p.propCode === v.propertyCode)) || (v.propCode && (p.propertyCode === v.propCode || p.propCode === v.propCode)) || (v.propertyTitle && (p.title === v.propertyTitle || p.propTitle === v.propertyTitle)));
-                                  const foundPlan = (visitPlans || []).find(p => (v.customerNumber && p.customerNumber === v.customerNumber) || (v.mobile && p.mobile === v.mobile) || (v.visitId && (p.visitPlanId === v.visitId || p.visitScheduleId === v.visitId)));
-                                  const matchedPlan = foundPlan || {
-                                    visitPlanId: v.visitId || 'SRM-VP-2026-000001',
-                                    visitScheduleId: v.visitId || 'SRM-VS-2026-000087',
-                                    customerName: v.customerName || matchedCust?.custName || 'Customer',
-                                    customerNumber: v.customerNumber || matchedCust?.custCode || 'SRM-CUS-2026-000185',
-                                    mobile: v.mobile || matchedCust?.mobile || '+91 98490 12345',
-                                    email: v.email || matchedCust?.email || 'customer@gmail.com',
-                                    assignedExecutive: v.assignedExecutive || 'Ramesh Pawar (Field Exec - Kondapur)',
-                                    visitDate: v.visitDate || '2026-08-22',
-                                    visitTime: v.visitTime || '10:00 AM',
-                                    stops: [
-                                      {
-                                        stopId: 'SRM-VSTOP-2026-000001',
-                                        costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
-                                        propertyCode: v.propertyCode || v.propCode || matchedProp?.propertyCode || matchedProp?.propCode || 'SRM-PROP-2026-000426',
-                                        propertyTitle: v.propertyTitle || matchedProp?.title || matchedProp?.propTitle || 'GAJAPATI APARTMENT',
-                                        locality: matchedProp?.locality || matchedProp?.location || 'Barasat, Kolkata',
-                                        developer: matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
-                                        latitude: matchedProp?.latitude || '17.4612° N',
-                                        longitude: matchedProp?.longitude || '78.3689° E',
-                                        status: 'SCHEDULED'
-                                      }
-                                    ]
-                                  };
-                                  const targetStop = (matchedPlan.stops && matchedPlan.stops[0]) ? matchedPlan.stops[0] : {
-                                    stopId: 'SRM-VSTOP-2026-000001',
-                                    costSheetId: v.costSheetId || 'SRM-CS-2026-000145',
-                                    propertyCode: v.propertyCode || v.propCode || matchedProp?.propertyCode || matchedProp?.propCode || 'SRM-PROP-2026-000426',
-                                    propertyTitle: v.propertyTitle || matchedProp?.title || matchedProp?.propTitle || 'GAJAPATI APARTMENT',
-                                    locality: matchedProp?.locality || matchedProp?.location || 'Barasat, Kolkata',
-                                    developer: matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
-                                    latitude: matchedProp?.latitude || '17.4612° N',
-                                    longitude: matchedProp?.longitude || '78.3689° E',
-                                    status: 'SCHEDULED'
-                                  };
-                                  setShowPvaVerificationModal({ open: true, plan: matchedPlan, stop: targetStop });
-                                }}
-                                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem' }}
-                              >
-                                🔐 Verify 6-Digit OTP Now
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </>
-          );
-        })()}
-      </div>
-    )}
+                          ) : (
+                            <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontStyle: 'italic' }}>PVA Pending OTP Check-In</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px', textAlign: 'center' }}>
+                          {isVerified ? (
+                            <button 
+                              onClick={() => {
+                                const activePva = pvaMatch || {
+                                  projectVisitAgreementId: displayPvaId,
+                                  visitScheduleId: v.visitId || 'SRM-VS-2026-000087',
+                                  customerId: v.customerNumber || 'SRM-CUS-2026-000188',
+                                  customerName: v.customerName || 'Rishita sharma',
+                                  customerMobile: v.mobile || '8876597975',
+                                  propertyId: v.propertyCode || 'SRM-PROP-2026-000426',
+                                  projectTitle: v.propertyTitle || 'GAJAPATI APARTMENT',
+                                  locality: v.locality || 'Barasat, Kolkata',
+                                  developerName: 'Dhriti Builders & Developers',
+                                  salesPersonName: v.assignedExecutive || 'Punita Roy',
+                                  visitDate: v.visitDate || '2026-08-22',
+                                  protectionStartDate: v.visitDate || '2026-08-22',
+                                  protectionEndDate: '2027-02-22',
+                                  customerOtpStatus: 'OTP_VERIFIED',
+                                  geofenceStatus: 'GEOFENCE_VERIFIED',
+                                  documentUrl: `file:///pva_${displayPvaId}.pdf`
+                                };
+                                setShowPvaDocumentModal({ open: true, pva: activePva });
+                              }}
+                              style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem' }}
+                            >
+                              📄 View Verified PVA PDF
+                            </button>
+                          ) : (
+                            <button 
+                              onClick={() => {
+                                const matchedCust = (customers || []).find(c => (v.customerNumber && (c.customer_number === v.customerNumber || c.custCode === v.customerNumber)) || (v.mobile && c.mobile === v.mobile) || (v.customerName && (c.name === v.customerName || c.custName === v.customerName)));
+                                const matchedProp = (properties || []).find(p => (v.propertyCode && (p.property_code === v.propertyCode || p.propertyCode === v.propertyCode || p.propCode === v.propertyCode)) || (v.propertyTitle && (p.title === v.propertyTitle || p.propTitle === v.propertyTitle)));
+                                const foundPlan = (visitPlans || []).find(p => (v.customerNumber && p.customerNumber === v.customerNumber) || (v.mobile && p.mobile === v.mobile) || (v.visitId && (p.visitPlanId === v.visitId || p.visitScheduleId === v.visitId)));
+                                const matchedPlan = foundPlan || {
+                                  visitPlanId: v.visitId || 'SRM-VP-2026-000001',
+                                  visitScheduleId: v.visitId || 'SRM-VS-2026-000087',
+                                  customerName: v.customerName || matchedCust?.name || 'Customer',
+                                  customerNumber: v.customerNumber || matchedCust?.customer_number || 'SRM-CUS-2026-000188',
+                                  mobile: v.mobile || matchedCust?.mobile || '8876597975',
+                                  email: v.email || matchedCust?.email || 'customer@gmail.com',
+                                  assignedExecutive: v.assignedExecutive || 'Punita Roy',
+                                  visitDate: v.visitDate || '2026-08-22',
+                                  visitTime: v.visitTime || '10:00 AM',
+                                  stops: [
+                                    {
+                                      stopId: 'SRM-VSTOP-2026-000001',
+                                      costSheetId: v.costSheetId || 'COST-SHEET-2026-000001',
+                                      propertyCode: v.propertyCode || matchedProp?.property_code || 'SRM-PROP-2026-000426',
+                                      propertyTitle: v.propertyTitle || matchedProp?.title || 'GAJAPATI APARTMENT',
+                                      locality: matchedProp?.locality || v.locality || 'Barasat, Kolkata',
+                                      developer: matchedProp?.developer || 'Dhriti Builders & Developers',
+                                      latitude: matchedProp?.latitude || '22.722351° N',
+                                      longitude: matchedProp?.longitude || '88.485484° E',
+                                      status: 'SCHEDULED'
+                                    }
+                                  ]
+                                };
+                                const targetStop = (matchedPlan.stops && matchedPlan.stops[0]) ? matchedPlan.stops[0] : {
+                                  stopId: 'SRM-VSTOP-2026-000001',
+                                  costSheetId: v.costSheetId || 'COST-SHEET-2026-000001',
+                                  propertyCode: v.propertyCode || matchedProp?.property_code || 'SRM-PROP-2026-000426',
+                                  propertyTitle: v.propertyTitle || matchedProp?.title || 'GAJAPATI APARTMENT',
+                                  locality: matchedProp?.locality || v.locality || 'Barasat, Kolkata',
+                                  developer: matchedProp?.developer || 'Dhriti Builders & Developers',
+                                  latitude: matchedProp?.latitude || '22.722351° N',
+                                  longitude: matchedProp?.longitude || '88.485484° E',
+                                  status: 'SCHEDULED'
+                                };
+                                setShowPvaVerificationModal({ open: true, plan: matchedPlan, stop: targetStop });
+                              }}
+                              style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem' }}
+                            >
+                              🔐 Verify 6-Digit OTP Now
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    })()}
 
     {/* SUB-TAB 3: VISIT SATISFACTION, REQUIREMENT UPDATE & ALTERNATIVE PROPERTY RECOMMENDATIONS */}
     {activeVisitSubTab === 'visit_feedback' && (
@@ -1001,7 +1221,13 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
 
           <div style={{ display: 'flex', gap: '10px' }}>
             <button 
-              onClick={() => setShowLogSalesFeedbackModal(true)}
+              onClick={() => {
+                if (handleOpenFeedbackModal) {
+                  handleOpenFeedbackModal();
+                } else {
+                  setShowLogSalesFeedbackModal(true);
+                }
+              }}
               style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
               ➕ Log Executive Visit Feedback
@@ -1018,126 +1244,133 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
           </div>
         </div>
 
-        {/* CUSTOMER SATISFACTION & ALTERNATIVE RECOMMENDATION REGISTER TABLE */}
-        <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
-            <thead>
-              <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
-                <th style={{ padding: '12px' }}>Customer & Visit ID</th>
-                <th style={{ padding: '12px' }}>Visited Property</th>
-                <th style={{ padding: '12px' }}>Satisfaction & Rating</th>
-                <th style={{ padding: '12px' }}>Sales Person Feedback & Objection</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>Buyer Intent Status</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>Salesperson Actions & Alternatives</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                {
-                  id: 'FB-01',
-                  visitId: 'SRM-VP-2026-000001',
-                  custName: 'Rohan Deshmukh',
-                  custMobile: '+91 98490 12345',
-                  custCode: 'SRM-CUS-2026-000184',
-                  propTitle: 'Prestige High Fields 3BHK',
-                  locality: 'Nanakramguda',
-                  rating: 2,
-                  satisfaction: '😕 Not Satisfied (Requires Alternative)',
-                  reason: 'Over Budget by ₹15L & East Facing Preferred',
-                  intent: '⚡ WARM - Needs Alternative',
-                  exec: 'Priya Nair (Sales Exec)',
-                  budget_min: '₹70 Lakhs',
-                  budget_max: '₹84 Lakhs',
-                  prefArea: 'Kondapur / Gachibowli'
-                },
-                {
-                  id: 'FB-02',
-                  visitId: 'SRM-VP-2026-000002',
-                  custName: 'Priya Sharma',
-                  custMobile: '+91 99887 76655',
-                  custCode: 'SRM-CUS-2026-000185',
-                  propTitle: 'Financial Towers 4BHK Sky Suite',
-                  locality: 'Financial District',
-                  rating: 5,
-                  satisfaction: '😍 Highly Satisfied (Ready for Booking)',
-                  reason: 'Loved 12th Floor Sky Suite View & Layout',
-                  intent: '🔥 HOT - Booking Lead',
-                  exec: 'Priya Nair (Sales Exec)',
-                  budget_min: '₹1.80 Crore',
-                  budget_max: '₹2.20 Crore',
-                  prefArea: 'Financial District'
-                },
-                {
-                  id: 'FB-03',
-                  visitId: 'SRM-VP-2026-000003',
-                  custName: 'Dr. Ananth Kulkarni',
-                  custMobile: '+91 98480 33445',
-                  custCode: 'SRM-CUS-2026-000186',
-                  propTitle: 'My Home Bhooja 5BHK Villa',
-                  locality: 'HITEC City',
-                  rating: 4,
-                  satisfaction: '🙂 Moderately Interested (Comparing Options)',
-                  reason: 'Comparing 5BHK Options with Jayabheri Silicon',
-                  intent: '⚡ WARM - Comparing Options',
-                  exec: 'Rahul Sharma (TL)',
-                  budget_min: '₹4.00 Crore',
-                  budget_max: '₹5.00 Crore',
-                  prefArea: 'HITEC City'
+        {/* DYNAMIC FEEDBACK LIST / EMPTY STATE */}
+        {(!visitFeedbacks || visitFeedbacks.length === 0) ? (
+          <div style={{ textAlign: 'center', padding: '48px 20px', background: isLight ? '#f8fafc' : '#0f172a', borderRadius: '12px', border: isLight ? '1px dashed #cbd5e1' : '1px dashed #334155' }}>
+            <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '8px' }}>⭐</span>
+            <h4 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: '0 0 6px 0' }}>
+              No Visit Feedback Recorded Yet
+            </h4>
+            <p style={{ fontSize: '0.82rem', color: isLight ? '#64748b' : '#94a3b8', maxWidth: '480px', margin: '0 auto 16px auto' }}>
+              Click <strong>"➕ Log Executive Visit Feedback"</strong> above or click <strong>"⭐ Feedback"</strong> on any scheduled site visit in the Visit Scheduler to record 5-star customer feedback.
+            </p>
+            <button 
+              onClick={() => {
+                if (handleOpenFeedbackModal) {
+                  handleOpenFeedbackModal();
+                } else {
+                  setShowLogSalesFeedbackModal(true);
                 }
-              ].map((fb, idx) => (
-                <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                  <td style={{ padding: '12px' }}>
-                    <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>{fb.custName}</strong>
-                    <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{fb.custMobile}</span>
-                    <br /><span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>{fb.visitId}</span>
-                  </td>
-
-                  <td style={{ padding: '12px' }}>
-                    <strong style={{ color: '#fbbf24', fontSize: '0.85rem' }}>🏢 {fb.propTitle}</strong>
-                    <div style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>📍 {fb.locality}</div>
-                  </td>
-
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.85rem' }}>
-                      {'⭐'.repeat(fb.rating)} ({fb.rating}/5 Stars)
-                    </div>
-                    <span style={{ fontSize: '0.75rem', color: fb.rating <= 2 ? '#ef4444' : fb.rating >= 4 ? '#4ade80' : '#fbbf24', fontWeight: '800' }}>
-                      {fb.satisfaction}
-                    </span>
-                  </td>
-
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ fontSize: '0.8rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>
-                      "{fb.reason}"
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
-                      By Exec: {fb.exec}
-                    </div>
-                  </td>
-
-                  <td style={{ padding: '12px', textAlign: 'center' }}>
-                    <span style={{ background: fb.intent.includes('HOT') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)', color: fb.intent.includes('HOT') ? '#4ade80' : '#fbbf24', border: `1px solid ${fb.intent.includes('HOT') ? '#22c55e' : '#eab308'}`, padding: '4px 10px', borderRadius: '20px', fontWeight: '900', fontSize: '0.72rem', display: 'inline-block' }}>
-                      {fb.intent}
-                    </span>
-                  </td>
-
-                  <td style={{ padding: '12px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                      {fb.rating <= 3 && (
-                        <button 
-                          onClick={() => setShowAlternativePropertyModal({ open: true, customer: fb, currentProperty: fb.propTitle })}
-                          style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        >
-                          🔄 Recommend Best Alternative Property
-                        </button>
-                      )}
-                    </div>
-                  </td>
+              }}
+              style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', color: '#0f172a', border: 'none', padding: '10px 22px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+            >
+              ➕ Record First Visit Feedback Now
+            </button>
+          </div>
+        ) : (
+          <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.83rem' }}>
+              <thead>
+                <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                  <th style={{ padding: '12px' }}>Customer & Visit ID</th>
+                  <th style={{ padding: '12px' }}>Visited Property</th>
+                  <th style={{ padding: '12px' }}>Satisfaction & Rating</th>
+                  <th style={{ padding: '12px' }}>Sales Person Feedback & Objection</th>
+                  <th style={{ padding: '12px', textAlign: 'center' }}>Buyer Intent Status</th>
+                  <th style={{ padding: '12px', textAlign: 'center' }}>Salesperson Actions & Alternatives</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {visitFeedbacks.map((fb: any, idx: number) => (
+                  <tr key={fb.id || idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                    <td style={{ padding: '12px' }}>
+                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.9rem' }}>{fb.custName}</strong>
+                      {fb.custMobile && <><br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{fb.custMobile}</span></>}
+                      <br /><span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>{fb.visitId}</span>
+                    </td>
+
+                    <td style={{ padding: '12px' }}>
+                      <strong style={{ color: '#fbbf24', fontSize: '0.85rem' }}>🏢 {fb.propTitle}</strong>
+                      <div style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>📍 {fb.locality || 'Kolkata'}</div>
+                    </td>
+
+                    <td style={{ padding: '12px' }}>
+                      <div style={{ color: '#fbbf24', fontWeight: '900', fontSize: '0.85rem' }}>
+                        {'⭐'.repeat(Number(fb.rating) || 5)} ({fb.rating || 5}/5 Stars)
+                      </div>
+                      <span style={{ fontSize: '0.75rem', color: Number(fb.rating) <= 2 ? '#ef4444' : Number(fb.rating) >= 4 ? '#4ade80' : '#fbbf24', fontWeight: '800' }}>
+                        {fb.satisfaction || 'Satisfied'}
+                      </span>
+                    </td>
+
+                    <td style={{ padding: '12px' }}>
+                      <div style={{ fontSize: '0.8rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700' }}>
+                        "{fb.reason}"
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
+                        By Exec: {fb.exec || 'Sales Exec'} • {fb.createdAt || 'Just now'}
+                      </div>
+                    </td>
+
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <span style={{ background: (fb.intent || '').includes('HOT') ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)', color: (fb.intent || '').includes('HOT') ? '#4ade80' : '#fbbf24', border: `1px solid ${(fb.intent || '').includes('HOT') ? '#22c55e' : '#eab308'}`, padding: '4px 10px', borderRadius: '20px', fontWeight: '900', fontSize: '0.72rem', display: 'inline-block' }}>
+                        {fb.intent || 'WARM Lead'}
+                      </span>
+                    </td>
+
+                    <td style={{ padding: '12px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        {Number(fb.rating) <= 3 && (
+                          <button 
+                            onClick={() => setShowAlternativePropertyModal({ open: true, customer: fb, currentProperty: fb.propTitle })}
+                            style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="Recommend Alternative Matching Properties"
+                          >
+                            🔄 Recommend Alternatives
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => {
+                            setUpdateReqForm({
+                              budget_min: fb.budget_min || '₹50 Lakhs',
+                              budget_max: fb.budget_max || '₹1.5 Crores',
+                              preferredArea: fb.locality || fb.propTitle || 'Barasat, Kolkata',
+                              configuration: fb.configuration || '2BHK / 3BHK',
+                              dislike_reason: fb.reason || 'Over Budget',
+                              remarks: fb.reason || ''
+                            });
+                            setShowUpdateRequirementModal({ 
+                              open: true, 
+                              customer: { 
+                                custName: fb.custName || 'Customer', 
+                                custCode: fb.custCode || fb.custMobile || 'SRM-CUS-2026', 
+                                mobile: fb.custMobile, 
+                                prefArea: fb.locality || fb.propTitle || 'Barasat, Kolkata' 
+                              } 
+                            });
+                          }} 
+                          style={{ background: '#334155', color: '#38bdf8', border: '1px solid #38bdf8', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem' }}
+                          title="Update customer requirements on-the-spot"
+                        >
+                          📝 Update Requirement
+                        </button>
+                        {handleDeleteFeedback && (
+                          <button 
+                            onClick={() => handleDeleteFeedback(fb.id)} 
+                            style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '900', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}
+                            title="Delete Feedback Record"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     )}
 
