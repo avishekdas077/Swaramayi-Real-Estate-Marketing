@@ -7,6 +7,10 @@ interface BillingManagementViewProps {
   setBillingInvoiceCategory: (category: string) => void;
   invoices: any[];
   setInvoices?: (invoices: any[]) => void;
+  bookings?: any[];
+  setBookings?: React.Dispatch<React.SetStateAction<any[]>>;
+  setActiveTab?: (tab: string) => void;
+  syncAllToMongoDB?: (overrideData?: any) => Promise<void>;
   searchQuery: string;
   matchesSearchQuery: (item: any, query: string) => boolean;
   setCreateInvoiceForm: (form: any) => void;
@@ -25,6 +29,10 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
   setBillingInvoiceCategory,
   invoices = [],
   setInvoices,
+  bookings = [],
+  setBookings,
+  setActiveTab,
+  syncAllToMongoDB,
   searchQuery,
   matchesSearchQuery,
   setCreateInvoiceForm,
@@ -101,6 +109,85 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
     setInvoices(updatedInvoices);
     setShowEditInvoiceModal(null);
     alert(`🎉 Invoice ${editInvoiceForm.invoice_number || editInvoiceForm.id} updated successfully!`);
+  };
+
+  const handleSendInvoiceToBooking = (inv: any) => {
+    // 1. Resolve booking code
+    const rawBookingCode = inv.booking_code || (inv.invoice_number ? inv.invoice_number.replace('SRM-INV-', 'SRM-BKG-').replace('SRM-DEV-INV-', 'SRM-BKG-') : 'SRM-BKG-2026-000087');
+    const bkgCode = rawBookingCode.includes('SRM-BKG-') ? rawBookingCode : `SRM-BKG-2026-${(inv.customer_number || '000087').replace(/\D/g, '').slice(-6) || '000087'}`;
+
+    // 2. Resolve customer details
+    const matchedCust = (customers || []).find((c: any) => 
+      (inv.customer_number && (c.customer_number === inv.customer_number || c.id === inv.customer_number || c.customerNumber === inv.customer_number)) ||
+      (inv.customer_name && (c.name?.toLowerCase() === inv.customer_name.toLowerCase() || c.customer_name?.toLowerCase() === inv.customer_name.toLowerCase() || c.customerName?.toLowerCase() === inv.customer_name.toLowerCase())) ||
+      (inv.customer_mobile && (c.mobile === inv.customer_mobile || c.phone === inv.customer_mobile))
+    );
+
+    // 3. Resolve property details
+    const propCodeLookup = inv.property_code || inv.propertyCode || 'SRM-PROP-2026-000426';
+    const matchedProp = (properties || []).find((p: any) => 
+      p.property_code === propCodeLookup || p.id === propCodeLookup || p.propertyCode === propCodeLookup || (p.title && inv.property_title && (p.title.toLowerCase().includes(inv.property_title.toLowerCase()) || inv.property_title.toLowerCase().includes(p.title.toLowerCase())))
+    );
+
+    const custName = inv.customer_name || matchedCust?.name || 'Rishita sharma';
+    const custNum = inv.customer_number || matchedCust?.customer_number || 'SRM-CUS-2026-000188';
+    const custMobile = inv.customer_mobile || matchedCust?.mobile || '+91 88765 97975';
+    const custEmail = inv.customer_email || matchedCust?.email || 'rishita@gmail.com';
+
+    const propTitle = inv.property_title || matchedProp?.title || 'GAJAPATI APARTMENT';
+    const propLocality = inv.property_locality || matchedProp?.locality || 'Barasat, Kolkata';
+    const devName = inv.developer_name || matchedProp?.developer || 'Dhriti Builders & Developers';
+    const agreeVal = Number(inv.agreement_value || (inv.flat_price ? Number(inv.flat_price) + Number(inv.parking_price || 0) : inv.taxable_value ? Math.round(Number(inv.taxable_value) / 0.02) : 5114880));
+    const tokenVal = 100000;
+    const brokAmt = Number(inv.taxable_value) || Math.round(agreeVal * 0.02);
+
+    const bookingObj = {
+      id: `bkg-${Date.now()}`,
+      booking_code: bkgCode,
+      booking_date: inv.created_date || new Date().toISOString().split('T')[0],
+      customer_name: custName,
+      customer_mobile: custMobile,
+      customer_number: custNum,
+      customer_email: custEmail,
+      project_name: propTitle,
+      property_code: propCodeLookup,
+      developer_name: devName,
+      tower_unit: 'Block A - Unit 302',
+      agreement_value: `₹${agreeVal.toLocaleString('en-IN')}`,
+      agreement_value_num: agreeVal,
+      token_amount: tokenVal,
+      payment_mode: inv.payment_mode || 'UPI / Online Bank Transfer',
+      payment_ref: inv.payment_ref || `TXN-BKG-${Math.floor(100000 + Math.random() * 900000)}`,
+      brokerage_rate: '2.0%',
+      brokerage_percent: 2.0,
+      brokerage_amount: brokAmt,
+      approval_status: 'APPROVED_LOCKED',
+      sales_executive: inv.sales_executive || 'Ramesh Pawar',
+      source_invoice_id: inv.invoice_number || inv.id,
+      invoiced: true
+    };
+
+    const existingWithoutThis = (bookings || []).filter((b: any) => b.booking_code !== bkgCode && b.customer_number !== custNum);
+    const updatedBookings = [bookingObj, ...existingWithoutThis];
+
+    if (setBookings) {
+      setBookings(updatedBookings);
+    }
+    try {
+      localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(updatedBookings));
+    } catch (e) {}
+
+    if (syncAllToMongoDB) {
+      syncAllToMongoDB({
+        bookings: updatedBookings
+      });
+    }
+
+    if (setActiveTab) {
+      setActiveTab('booking_management');
+    }
+
+    alert(`🏢 CUSTOMER DETAILS SENT TO BOOKING MANAGEMENT!\n\nBooking Code: ${bkgCode}\nCustomer: ${custName} (${custNum})\nProperty: ${propTitle} (Block A - Unit 302)\nAgreement Value: ₹${agreeVal.toLocaleString('en-IN')}\nAdvance Token: ₹${tokenVal.toLocaleString('en-IN')}\nStatus: APPROVED_LOCKED\n\nNavigating to Booking Management now.`);
   };
 
   const isDateInPeriod = (dateStr: string) => {
@@ -357,8 +444,8 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                 .filter(i => (billingInvoiceCategory === 'DEVELOPER' ? i.invoice_category === 'DEVELOPER' : (i.invoice_category === 'CUSTOMER' || !i.invoice_category)))
                 .filter(i => matchesSearchQuery(i, searchQuery))
                 .filter(i => isDateInPeriod(i.created_date))
-                .map(i => (
-                  <tr key={i.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                .map((i, rowIdx) => (
+                  <tr key={i.id ? `${i.id}-${rowIdx}` : `inv-${rowIdx}`} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                     <td style={{ padding: '12px' }}>
                       <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}>
                         🆔 {i.invoice_number}
@@ -381,6 +468,23 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                           <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>
                             👤 {i.developer_contact_person || 'Mr. S. K. Reddy'} • 📞 {i.developer_mobile || '+91 98490 99887'}
                           </div>
+                          {i.customer_name && (
+                            <div style={{ marginTop: '6px', paddingTop: '4px', borderTop: isLight ? '1px dashed #cbd5e1' : '1px dashed #334155', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.75rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
+                                👤 Customer: {i.customer_name}
+                              </span>
+                              {i.customer_mobile && (
+                                <span style={{ fontSize: '0.72rem', color: '#4ade80', fontFamily: 'monospace', fontWeight: '700' }}>
+                                  ({i.customer_mobile})
+                                </span>
+                              )}
+                              {i.customer_number && (
+                                <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontFamily: 'monospace' }}>
+                                  [{i.customer_number}]
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       ) : (
                         <div>
@@ -388,6 +492,11 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                           <div style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace', marginTop: '2px' }}>
                             {i.customer_mobile || '+91 98490 12345'}
                           </div>
+                          {i.customer_number && (
+                            <div style={{ fontSize: '0.7rem', color: '#38bdf8', fontFamily: 'monospace', marginTop: '2px' }}>
+                              🆔 {i.customer_number}
+                            </div>
+                          )}
                         </div>
                       )}
                     </td>
@@ -556,8 +665,8 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                               company_email: i.company_email || 'billing@swaramayi.com',
                               company_mobile: i.company_mobile || '+91 98300 98765',
                               company_website: i.company_website || 'https://www.swaramayi.com',
-                              payment_status: i.payment_status || 'PAID_SETTLED',
-                              payment_mode: i.payment_mode || 'ONLINE',
+                              payment_status: i.payment_status || 'UNPAID_PENDING',
+                              payment_mode: i.payment_mode || '',
                               payment_ref: i.payment_ref || '',
                               sales_executive: i.sales_executive || matchedCust?.assignedExecutive || 'Rajesh Varma'
                             });
@@ -582,11 +691,23 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                         {isSuperAdmin && (
                           <button 
                             onClick={() => {
-                              if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Invoice record ${i.invoice_number || i.id} for ${i.customer_name || i.developer_name || 'Client'}?`)) {
+                              if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to delete this invoice record for ${i.customer_name || i.developer_name || 'Client'}?`)) {
+                                const remainingInvoices = invoices.filter((item: any, idx: number) => {
+                                  if (i.id && item.id) {
+                                    return item.id !== i.id;
+                                  }
+                                  return (item !== i && idx !== rowIdx);
+                                });
                                 if (setInvoices) {
-                                  setInvoices(invoices.filter((item: any) => item.id !== i.id && item.invoice_number !== i.invoice_number));
+                                  setInvoices(remainingInvoices);
                                 }
-                                alert(`🗑️ Invoice record ${i.invoice_number || i.id} deleted permanently.`);
+                                try {
+                                  localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(remainingInvoices));
+                                } catch (err) {}
+                                if (syncAllToMongoDB) {
+                                  syncAllToMongoDB({ invoices: remainingInvoices });
+                                }
+                                alert(`🗑️ Invoice record deleted.`);
                               }
                             }}
                             style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -1991,12 +2112,12 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                       Payment Status *
                     </label>
                     <select 
-                      value={editInvoiceForm.payment_status || 'PAID_SETTLED'} 
+                      value={editInvoiceForm.payment_status || 'UNPAID_PENDING'} 
                       onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, payment_status: e.target.value })}
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: editInvoiceForm.payment_status === 'PAID_SETTLED' ? '#22c55e' : '#eab308', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '800' }}
                     >
-                      <option value="PAID_SETTLED">✓ PAID / SETTLED</option>
                       <option value="UNPAID_PENDING">⏳ UNPAID / PENDING</option>
+                      <option value="PAID_SETTLED">✓ PAID / SETTLED</option>
                     </select>
                   </div>
 

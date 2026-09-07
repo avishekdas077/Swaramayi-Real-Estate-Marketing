@@ -4786,7 +4786,20 @@ export default function App() {
       const saved = localStorage.getItem('swaramayi_invoices_v6');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) {
+          const seen = new Set<string>();
+          const deduped: any[] = [];
+          for (const inv of parsed) {
+            const key = inv.id || `${inv.invoice_number}_${inv.invoice_category || 'CUSTOMER'}`;
+            const numKey = inv.invoice_number ? `${inv.invoice_number}_${inv.invoice_category || 'CUSTOMER'}` : null;
+            if (numKey && seen.has(numKey)) continue;
+            if (seen.has(key)) continue;
+            if (numKey) seen.add(numKey);
+            seen.add(key);
+            deduped.push(inv);
+          }
+          return deduped;
+        }
       }
     } catch (e) {
       console.error('Error reading invoices from localStorage:', e);
@@ -4923,9 +4936,20 @@ export default function App() {
               setAgreements(mData.agreements);
             }
             if (Array.isArray(mData.invoices)) {
-              setInvoices(mData.invoices);
+              const seen = new Set<string>();
+              const dedupedInvoices: any[] = [];
+              for (const inv of mData.invoices) {
+                const key = inv.id || `${inv.invoice_number}_${inv.invoice_category || 'CUSTOMER'}`;
+                const numKey = inv.invoice_number ? `${inv.invoice_number}_${inv.invoice_category || 'CUSTOMER'}` : null;
+                if (numKey && seen.has(numKey)) continue;
+                if (seen.has(key)) continue;
+                if (numKey) seen.add(numKey);
+                seen.add(key);
+                dedupedInvoices.push(inv);
+              }
+              setInvoices(dedupedInvoices);
               try {
-                localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(mData.invoices));
+                localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(dedupedInvoices));
               } catch (e) {}
             }
             if (Array.isArray(mData.bookings)) {
@@ -5126,14 +5150,12 @@ export default function App() {
 
   const handleSaveFeedback = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!salesFeedbackForm.customerName.trim()) {
+    if (!salesFeedbackForm.customerName || !salesFeedbackForm.customerName.trim()) {
       alert('Please enter customer name.');
       return;
     }
-    if (!salesFeedbackForm.reason.trim()) {
-      alert('Please enter customer objection or feedback details.');
-      return;
-    }
+
+    const feedbackDetails = (salesFeedbackForm.reason || (salesFeedbackForm as any).executive_notes || (salesFeedbackForm as any).dislike_reason || 'Good visit, customer interested in property.').trim();
 
     const ratingNum = Number(salesFeedbackForm.rating) || 5;
     const newFb = {
@@ -5142,23 +5164,23 @@ export default function App() {
       custName: salesFeedbackForm.customerName,
       custMobile: salesFeedbackForm.custMobile,
       custCode: salesFeedbackForm.custCode || (salesFeedbackForm.custMobile ? `SRM-CUS-2026-${salesFeedbackForm.custMobile.replace(/\D/g, '').slice(-6)}` : 'SRM-CUS-2026-000188'),
-      propTitle: salesFeedbackForm.propTitle || 'Property Site Visit',
-      propCode: salesFeedbackForm.propCode || 'SRM-PROP-01',
-      locality: salesFeedbackForm.locality || 'Kolkata',
+      propTitle: salesFeedbackForm.propTitle || (salesFeedbackForm as any).propertyTitle || 'GAJAPATI APARTMENT',
+      propCode: salesFeedbackForm.propCode || 'SRM-PROP-2026-000426',
+      locality: salesFeedbackForm.locality || 'Barasat, Kolkata',
       rating: ratingNum,
-      satisfaction: salesFeedbackForm.satisfaction,
-      reason: salesFeedbackForm.reason,
-      intent: salesFeedbackForm.buyer_intent,
-      exec: salesFeedbackForm.exec,
-      budget_min: salesFeedbackForm.budget_min,
-      budget_max: salesFeedbackForm.budget_max,
-      prefArea: salesFeedbackForm.prefArea,
-      property_type: salesFeedbackForm.property_type,
-      configuration: salesFeedbackForm.configuration,
+      satisfaction: salesFeedbackForm.satisfaction || (ratingNum >= 4 ? '😍 Highly Satisfied (Ready for Booking)' : (ratingNum === 3 ? '😐 Neutral / Follow-up Needed' : '😕 Not Satisfied')),
+      reason: feedbackDetails,
+      intent: salesFeedbackForm.buyer_intent || '🔥 HOT - Booking Lead',
+      exec: salesFeedbackForm.exec || 'Punita Roy (Field Exec)',
+      budget_min: salesFeedbackForm.budget_min || '₹35 Lakhs',
+      budget_max: salesFeedbackForm.budget_max || '₹75 Lakhs',
+      prefArea: salesFeedbackForm.prefArea || salesFeedbackForm.locality || 'Barasat, Kolkata',
+      property_type: salesFeedbackForm.property_type || 'Flat / Apartment',
+      configuration: salesFeedbackForm.configuration || '2BHK / 3BHK',
       createdAt: salesFeedbackForm.feedback_date || new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
     };
 
-    setVisitFeedbacks(prev => [newFb, ...prev.filter(f => f.id !== newFb.id && f.visitId !== newFb.visitId)]);
+    setVisitFeedbacks(prev => [newFb, ...(prev || []).filter(f => f.id !== newFb.id && f.visitId !== newFb.visitId)]);
 
     // Update scheduledVisits state
     setScheduledVisits(prev => prev.map(sv => {
@@ -8534,6 +8556,7 @@ export default function App() {
               setShowPvaDocumentModal={setShowPvaDocumentModal}
               setShowViewIndividualCostSheetModal={setShowViewIndividualCostSheetModal}
               scheduledVisits={scheduledVisits}
+              visitPlans={visitPlans}
               properties={properties}
             />
           )}
@@ -8693,6 +8716,10 @@ export default function App() {
               setBillingInvoiceCategory={setBillingInvoiceCategory}
               invoices={invoices}
               setInvoices={setInvoices}
+              bookings={bookings}
+              setBookings={setBookings}
+              setActiveTab={setActiveTab}
+              syncAllToMongoDB={syncAllToMongoDB}
               searchQuery={searchQuery}
               matchesSearchQuery={matchesSearchQuery}
               setCreateInvoiceForm={setCreateInvoiceForm}
@@ -17020,114 +17047,6 @@ export default function App() {
         </div>
       )}
 
-      {/* MODAL: LOG EXECUTIVE VISIT FEEDBACK */}
-      {showLogSalesFeedbackModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100000, padding: '20px' }}>
-          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', width: '650px', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
-              <div>
-                <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '900' }}>📝 SALES EXECUTIVE VISIT AUDIT</span>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>
-                  ➕ Log Post-Visit Customer Feedback
-                </h3>
-                <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-                  Record customer satisfaction rating, dislike reasons, and buyer intent status.
-                </p>
-              </div>
-              <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowLogSalesFeedbackModal(false)} />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
-                  <input 
-                    type="text"
-                    value={salesFeedbackForm.customerName} 
-                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, customerName: e.target.value })} 
-                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Visited Property *</label>
-                  <input 
-                    type="text"
-                    value={salesFeedbackForm.propertyTitle} 
-                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, propertyTitle: e.target.value })} 
-                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Rating *</label>
-                  <select 
-                    value={salesFeedbackForm.rating} 
-                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, rating: e.target.value })} 
-                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
-                  >
-                    <option value="5">⭐⭐⭐⭐⭐ 5/5 Stars (Highly Interested)</option>
-                    <option value="4">⭐⭐⭐⭐ 4/5 Stars (Interested)</option>
-                    <option value="3">⭐⭐⭐ 3/5 Stars (Neutral / Comparing)</option>
-                    <option value="2">⭐⭐ 2/5 Stars (Not Satisfied)</option>
-                    <option value="1">⭐ 1/5 Star (Rejected / Disliked)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Customer Buying Intent Status *</label>
-                  <select 
-                    value={salesFeedbackForm.buyer_intent} 
-                    onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, buyer_intent: e.target.value })} 
-                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#22c55e', fontWeight: '900', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
-                  >
-                    <option value="🔥 HOT - Booking Lead">🔥 HOT - Booking Lead (Proceed to Agreement)</option>
-                    <option value="⚡ WARM - Needs Alternative">⚡ WARM - Needs Alternative Property</option>
-                    <option value="⚡ WARM - Comparing Options">⚡ WARM - Comparing Options</option>
-                    <option value="❄️ COLD - On Hold">❄️ COLD - On Hold</option>
-                    <option value="❌ DROP - Disinterested">❌ DROP - Disinterested</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Objection / Dislike Reason (If Any)</label>
-                <input 
-                  type="text"
-                  value={salesFeedbackForm.dislike_reason} 
-                  onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, dislike_reason: e.target.value })} 
-                  placeholder="e.g. Over Budget by ₹15L, Layout issue..."
-                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Sales Executive Detailed Remarks</label>
-                <textarea 
-                  rows={2}
-                  value={salesFeedbackForm.executive_notes} 
-                  onChange={(e) => setSalesFeedbackForm({ ...salesFeedbackForm, executive_notes: e.target.value })} 
-                  style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.82rem' }}
-                />
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
-                <button onClick={() => setShowLogSalesFeedbackModal(false)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
-                <button 
-                  onClick={() => {
-                    alert(`✅ Saved Visit Feedback for ${salesFeedbackForm.customerName}!\n\nRating: ${salesFeedbackForm.rating}/5 Stars\nStatus: ${salesFeedbackForm.buyer_intent}\n\nLogged into Customer Master Profile & Sales Audit Trail.`);
-                    setShowLogSalesFeedbackModal(false);
-                  }} 
-                  style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}
-                >
-                  💾 Save Executive Feedback
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

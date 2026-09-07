@@ -1,5 +1,5 @@
-import React from 'react';
-import { BookmarkCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookmarkCheck, Edit3, CheckCircle2, X } from 'lucide-react';
 
 interface BookingManagementViewProps {
   currentRole?: string;
@@ -39,6 +39,46 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
   syncAllToMongoDB,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+
+  const [showEditBookingModal, setShowEditBookingModal] = useState<any | null>(null);
+  const [editBookingForm, setEditBookingForm] = useState<any>({});
+
+  const handleSaveEditBooking = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!editBookingForm || !setBookings) return;
+
+    const agrValNum = Number(editBookingForm.agreement_value_input || editBookingForm.agreement_value_num || 5114880);
+    const tokAmt = Number(editBookingForm.token_amount_input !== undefined ? editBookingForm.token_amount_input : (editBookingForm.token_amount || 100000));
+    const brokPct = Number(editBookingForm.brokerage_percent || 2.0);
+    const brokAmt = Math.round(agrValNum * (brokPct / 100));
+
+    const updatedBooking = {
+      ...editBookingForm,
+      agreement_value: `₹${agrValNum.toLocaleString('en-IN')}`,
+      agreement_value_num: agrValNum,
+      token_amount: tokAmt,
+      brokerage_amount: brokAmt
+    };
+
+    const updatedBookings = (bookings || []).map((b: any) => {
+      if (b.id === editBookingForm.id || (b.booking_code && b.booking_code === editBookingForm.booking_code)) {
+        return updatedBooking;
+      }
+      return b;
+    });
+
+    setBookings(updatedBookings);
+    try {
+      localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(updatedBookings));
+    } catch (err) {}
+
+    if (syncAllToMongoDB) {
+      syncAllToMongoDB({ bookings: updatedBookings });
+    }
+
+    setShowEditBookingModal(null);
+    alert(`🎉 Booking ${editBookingForm.booking_code} updated successfully!`);
+  };
 
   const handleTransferToBilling = (b: any) => {
     const rawBookingCode = b.booking_code || 'SRM-BKG-2026-000087';
@@ -135,9 +175,9 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
       cgst_amount: cgst,
       sgst_amount: sgst,
       total_invoice_amount: totalAmt,
-      payment_status: 'PAID_SETTLED',
-      payment_mode: b.payment_mode || 'UPI / Online Bank Transfer',
-      payment_ref: b.payment_ref || `TXN-SRM-${Math.floor(100000 + Math.random() * 900000)}`,
+      payment_status: 'UNPAID_PENDING',
+      payment_mode: undefined,
+      payment_ref: undefined,
       created_date: new Date().toISOString().split('T')[0],
       sales_executive: b.sales_executive || 'Ramesh Pawar'
     };
@@ -181,15 +221,36 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
       cgst_amount: cgst,
       sgst_amount: sgst,
       total_invoice_amount: totalAmt,
-      payment_status: 'PAID_SETTLED',
-      payment_mode: b.payment_mode || 'UPI / Online Bank Transfer',
-      payment_ref: b.payment_ref || `TXN-DEV-${Math.floor(100000 + Math.random() * 900000)}`,
+      payment_status: 'UNPAID_PENDING',
+      payment_mode: undefined,
+      payment_ref: undefined,
       created_date: new Date().toISOString().split('T')[0],
       sales_executive: b.sales_executive || 'Ramesh Pawar'
     };
 
-    const updatedInvoices = [developerInvoiceObj, customerInvoiceObj, ...(invoices || [])];
-    const updatedBookings = (bookings || []).filter((item: any) => item.id !== b.id && item.booking_code !== b.booking_code);
+    const registeredBookingObj = {
+      ...b,
+      approval_status: 'REGISTER_DONE',
+      status: 'REGISTER_DONE',
+      registered: true,
+      invoiced: true,
+      registration_date: new Date().toISOString().split('T')[0],
+      developer_invoice_number: generatedDeveloperInvoiceNumber,
+      customer_invoice_number: generatedCustomerInvoiceNumber
+    };
+
+    const updatedInvoices = [developerInvoiceObj, customerInvoiceObj, ...(invoices || []).filter((inv: any) => inv.booking_code !== b.booking_code && inv.invoice_number !== generatedCustomerInvoiceNumber && inv.invoice_number !== generatedDeveloperInvoiceNumber)];
+    
+    const updatedBookings = (bookings || []).map((item: any) => {
+      if (item.id === b.id || item.booking_code === b.booking_code) {
+        return registeredBookingObj;
+      }
+      return item;
+    });
+
+    if (!updatedBookings.some((item: any) => item.booking_code === b.booking_code)) {
+      updatedBookings.unshift(registeredBookingObj);
+    }
 
     if (setInvoices) {
       setInvoices(updatedInvoices);
@@ -220,8 +281,19 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
       setActiveTab('billing_management');
     }
 
-    alert(`💳 BILLING INVOICES GENERATED SUCCESSFULLY!\n\n1. 🏢 Developer Brokerage Invoice: ${generatedDeveloperInvoiceNumber} (Developer: ${devName})\n2. 👤 Customer Tax Invoice: ${generatedCustomerInvoiceNumber} (Customer: ${custName})\n\nProperty: ${propTitle}\nAgreement Value: ₹${Number(agreeVal).toLocaleString('en-IN')}\nTaxable Brokerage: ₹${taxableVal.toLocaleString('en-IN')}\nTotal Invoice (18% GST): ₹${totalAmt.toLocaleString('en-IN')}\n\nBoth records created in Billing Management and permanently removed from Booking Management in Database.`);
+    alert(`🎉 PROPERTY UNIT REGISTRATION COMPLETED!\n\nBooking Code: ${b.booking_code}\nCustomer: ${custName} (${custNum})\nProperty: ${propTitle} (${b.tower_unit || 'Unit 302'})\nAgreement Value: ₹${Number(agreeVal).toLocaleString('en-IN')}\n\nGenerated Billing Invoices:\n1. 🏢 Developer Brokerage: ${generatedDeveloperInvoiceNumber}\n2. 👤 Customer Tax Invoice: ${generatedCustomerInvoiceNumber}\n\nNavigating to Billing Management.`);
   };
+
+  const registeredDoneBookings = (bookings || []).filter((b: any) => 
+    b.approval_status === 'REGISTER_DONE' || 
+    b.status === 'REGISTER_DONE' || 
+    b.registered === true ||
+    (invoices && invoices.some((inv: any) => inv.booking_code === b.booking_code || (b.customer_number && inv.customer_number === b.customer_number)))
+  );
+
+  const pendingApprovalBookings = (bookings || []).filter((b: any) => 
+    b.approval_status === 'APPROVED_LOCKED' && b.approval_status !== 'REGISTER_DONE' && !b.registered && !registeredDoneBookings.some((rb: any) => rb.booking_code === b.booking_code)
+  );
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       
@@ -245,22 +317,15 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
       </div>
 
       {/* SUB-TAB SELECTOR BAR */}
-      <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '2px solid #e2e8f0' : '2px solid #334155', paddingBottom: '12px' }}>
+      <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '2px solid #e2e8f0' : '2px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
         {[
-          { id: 'all_bookings', label: '🏢 All Bookings Vault (' + bookings.length + ')' },
-          { id: 'create_booking', label: '✍️ Register Booking' },
-          { id: 'booking_approvals', label: '⚖️ Approvals & Token Lock (' + bookings.filter(b => b.approval_status === 'APPROVED_LOCKED').length + ')' },
-          { id: 'allotment_letters', label: '📄 Allotment Letters' }
+          { id: 'all_bookings', label: `🏢 All Bookings Vault (${bookings.length})` },
+          { id: 'register_done', label: `✅ Register Done (${registeredDoneBookings.length})` },
+          { id: 'booking_approvals', label: `⚖️ Approvals & Token Lock (${pendingApprovalBookings.length})` }
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => {
-              if (tab.id === 'create_booking') {
-                setShowNewBookingModal(true);
-              } else {
-                setActiveBookingSubTab(tab.id as any);
-              }
-            }}
+            onClick={() => setActiveBookingSubTab(tab.id as any)}
             style={{
               padding: '10px 18px',
               borderRadius: '8px',
@@ -269,7 +334,8 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
               fontSize: '0.85rem',
               fontWeight: '800',
               background: activeBookingSubTab === tab.id ? 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)' : (isLight ? '#f1f5f9' : '#0f172a'),
-              color: activeBookingSubTab === tab.id ? '#ffffff' : (isLight ? '#475569' : '#94a3b8')
+              color: activeBookingSubTab === tab.id ? '#ffffff' : (isLight ? '#475569' : '#94a3b8'),
+              boxShadow: activeBookingSubTab === tab.id ? '0 4px 12px rgba(2, 132, 199, 0.3)' : 'none'
             }}
           >
             {tab.label}
@@ -369,11 +435,25 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
                           📄 Allotment PDF
                         </button>
                         <button 
+                          onClick={() => {
+                            setEditBookingForm({
+                              ...b,
+                              agreement_value_input: b.agreement_value_num || String(b.agreement_value || '').replace(/\D/g, '') || 5114880,
+                              token_amount_input: b.token_amount || 100000
+                            });
+                            setShowEditBookingModal(b);
+                          }} 
+                          style={{ background: '#f59e0b', color: '#0f172a', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 6px rgba(245, 158, 11, 0.3)' }}
+                          title="Edit booking particulars and customer details"
+                        >
+                          <Edit3 size={13} /> Edit
+                        </button>
+                        <button 
                           onClick={() => handleTransferToBilling(b)} 
                           style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 6px rgba(16, 185, 129, 0.3)' }}
-                          title="Generate Tax Invoice, remove from Booking Management, and transfer to Billing Management"
+                          title="Confirm unit registration done, generate Tax Invoice, and transfer to Billing Management"
                         >
-                          💳 Billing
+                          <CheckCircle2 size={13} /> Register Done
                         </button>
                         {isSuperAdmin && (
                           <button 
@@ -413,7 +493,7 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 3: BOOKING APPROVALS & TOKEN LOCK */}
+      {/* SUB-TAB 2: BOOKING APPROVALS & TOKEN LOCK */}
       {activeBookingSubTab === 'booking_approvals' && (
         <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>⚖️ Manager Token Verification & Unit Lock Approval Queue</h3>
@@ -429,26 +509,98 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
         </div>
       )}
 
-      {/* SUB-TAB 4: ALLOTMENT LETTERS */}
-      {activeBookingSubTab === 'allotment_letters' && (
-        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <h3 style={{ fontSize: '1.1rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>📄 Automated Corporate Unit Allotment Letters</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '12px' }}>
-            {bookings.map((b: any) => (
-              <div key={b.id} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: '800', fontFamily: 'monospace' }}>{b.booking_code}</span>
-                  <h4 style={{ fontSize: '1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>{b.customer_name}</h4>
-                  <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px' }}>{b.project_name} • {b.tower_unit}</p>
-                </div>
-                <button 
-                  onClick={() => setShowAllotmentModal({ open: true, booking: b })} 
-                  style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}
-                >
-                  📄 Print Allotment PDF
-                </button>
+
+
+      {/* MODAL: EDIT BOOKING DETAILS */}
+      {showEditBookingModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #38bdf8', borderRadius: '16px', width: '100%', maxWidth: '650px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Edit3 size={20} color="#38bdf8" /> Edit Property Unit Booking ({showEditBookingModal.booking_code})
+                </h3>
+                <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8' }}>Update customer booking parameters, property details, and locked financial values.</p>
               </div>
-            ))}
+              <button onClick={() => setShowEditBookingModal(null)} style={{ background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', fontSize: '1.2rem', cursor: 'pointer', fontWeight: '900' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveEditBooking} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Name *</label>
+                  <input type="text" value={editBookingForm.customer_name || ''} onChange={(e) => setEditBookingForm({ ...editBookingForm, customer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Customer Mobile *</label>
+                  <input type="text" value={editBookingForm.customer_mobile || ''} onChange={(e) => setEditBookingForm({ ...editBookingForm, customer_mobile: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Project Name *</label>
+                  <input type="text" value={editBookingForm.project_name || ''} onChange={(e) => setEditBookingForm({ ...editBookingForm, project_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Developer / Builder *</label>
+                  <input type="text" value={editBookingForm.developer_name || ''} onChange={(e) => setEditBookingForm({ ...editBookingForm, developer_name: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Tower, Floor & Unit Number *</label>
+                <input type="text" value={editBookingForm.tower_unit || ''} onChange={(e) => setEditBookingForm({ ...editBookingForm, tower_unit: e.target.value })} placeholder="e.g. Block A - Unit 302" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Total Agreement Value (₹) *</label>
+                  <input type="number" value={editBookingForm.agreement_value_input || ''} onChange={(e) => setEditBookingForm({ ...editBookingForm, agreement_value_input: e.target.value })} placeholder="5114880" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Advance Token Amount Paid (₹) *</label>
+                  <input type="number" value={editBookingForm.token_amount_input !== undefined ? editBookingForm.token_amount_input : ''} onChange={(e) => setEditBookingForm({ ...editBookingForm, token_amount_input: e.target.value })} placeholder="100000" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} required />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Payment Mode *</label>
+                  <select value={editBookingForm.payment_mode || 'UPI / Online Bank Transfer'} onChange={(e) => setEditBookingForm({ ...editBookingForm, payment_mode: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    <option value="UPI / Online Bank Transfer">UPI / Online Bank Transfer</option>
+                    <option value="Bank Transfer / NEFT">Bank Transfer / NEFT</option>
+                    <option value="Cheque / RTGS">Cheque / RTGS</option>
+                    <option value="Credit Card / POS">Credit Card / POS</option>
+                    <option value="Cash Token Advance">Cash Token Advance</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Payment Reference / Transaction ID</label>
+                  <input type="text" value={editBookingForm.payment_ref || ''} onChange={(e) => setEditBookingForm({ ...editBookingForm, payment_ref: e.target.value })} placeholder="TXN-SRM-576683" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Sales Executive</label>
+                  <input type="text" value={editBookingForm.sales_executive || ''} onChange={(e) => setEditBookingForm({ ...editBookingForm, sales_executive: e.target.value })} placeholder="Ramesh Pawar" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Approval Status</label>
+                  <select value={editBookingForm.approval_status || 'APPROVED_LOCKED'} onChange={(e) => setEditBookingForm({ ...editBookingForm, approval_status: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
+                    <option value="APPROVED_LOCKED">✓ APPROVED_LOCKED</option>
+                    <option value="PENDING_MANAGER_APPROVAL">⏳ PENDING_MANAGER_APPROVAL</option>
+                    <option value="REGISTER_DONE">🏆 REGISTER_DONE</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px' }}>
+                <button type="button" onClick={() => setShowEditBookingModal(null)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', cursor: 'pointer' }}>Cancel</button>
+                <button type="submit" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '6px', fontWeight: '900', cursor: 'pointer' }}>✓ Save Changes</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
