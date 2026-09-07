@@ -1420,32 +1420,46 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
       const completedCount = completedVisits.length;
       const completedPercent = totalVisitsCount > 0 ? Math.min(100, Number(((completedCount / totalVisitsCount) * 100).toFixed(1))).toFixed(1) : '0.0';
 
-      // 3. Relevant Feedbacks
+      // 3. Relevant Feedbacks with Mutually Exclusive Categorization
       const relevantFeedbacks = (visitFeedbacks || []).filter((fb: any) => {
         if (analyticsExecFilter !== 'ALL' && fb.exec !== analyticsExecFilter) return false;
         return true;
       });
 
-      const hotFeedbackCount = relevantFeedbacks.filter((fb: any) => 
-        (fb.intent && fb.intent.includes('HOT')) || 
-        (Number(fb.rating) >= 4) ||
-        (fb.satisfaction && fb.satisfaction.includes('Highly Satisfied'))
-      ).length;
+      const getFeedbackSentiment = (fb: any): 'HOT' | 'WARM' | 'COLD' => {
+        const intent = (fb.intent || fb.buyerIntent || '').toString().toUpperCase();
+        const satisfaction = (fb.satisfaction || '').toString().toLowerCase();
+        const rating = Number(fb.rating || fb.feedbackRating) || 0;
 
-      const warmFeedbackCount = relevantFeedbacks.filter((fb: any) => 
-        (fb.intent && fb.intent.includes('WARM')) || 
-        (Number(fb.rating) === 3)
-      ).length;
+        if (intent.includes('HOT') || satisfaction.includes('highly satisfied')) {
+          return 'HOT';
+        }
+        if (intent.includes('COLD') || intent.includes('DROP') || intent.includes('NOT INTERESTED') || satisfaction.includes('dissatisfied') || satisfaction.includes('budget gap')) {
+          return 'COLD';
+        }
+        if (intent.includes('WARM') || intent.includes('COMPARING') || satisfaction.includes('moderately satisfied')) {
+          return 'WARM';
+        }
+        if (rating >= 4) return 'HOT';
+        if (rating === 3) return 'WARM';
+        if (rating > 0 && rating <= 2) return 'COLD';
+        return 'WARM';
+      };
 
-      const coldDropCount = relevantFeedbacks.filter((fb: any) => 
-        (fb.intent && (fb.intent.includes('COLD') || fb.intent.includes('DROP'))) || 
-        (Number(fb.rating) <= 2)
-      ).length;
+      const hotFeedbackCount = relevantFeedbacks.filter((fb: any) => getFeedbackSentiment(fb) === 'HOT').length;
+      const warmFeedbackCount = relevantFeedbacks.filter((fb: any) => getFeedbackSentiment(fb) === 'WARM').length;
+      const coldDropCount = relevantFeedbacks.filter((fb: any) => getFeedbackSentiment(fb) === 'COLD').length;
 
-      const totalInterestedCount = Math.max(
-        hotFeedbackCount + warmFeedbackCount,
-        filteredVisits.filter((v: any) => (v.feedbackRating && v.feedbackRating >= 3) || (v.buyerIntent && (v.buyerIntent.includes('HOT') || v.buyerIntent.includes('WARM')))).length
-      );
+      const totalInterestedCount = relevantFeedbacks.length > 0
+        ? (hotFeedbackCount + warmFeedbackCount)
+        : Math.min(
+            totalVisitsCount,
+            filteredVisits.filter((v: any) => {
+              const r = Number(v.feedbackRating) || 0;
+              const int = (v.buyerIntent || '').toString().toUpperCase();
+              return r >= 3 || int.includes('HOT') || int.includes('WARM');
+            }).length
+          );
 
       // 4. Active Negotiations in Pipeline
       const negotiatingCount = (customers || []).filter((c: any) => 
@@ -1453,7 +1467,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
         c.stage === 'Token Pending' || 
         c.status === 'Negotiation' ||
         (c.notes && c.notes.toLowerCase().includes('negotiation'))
-      ).length || (totalInterestedCount > 0 ? Math.min(totalInterestedCount, Math.max(1, Math.round(totalInterestedCount * 0.6))) : 0);
+      ).length || (totalInterestedCount > 0 ? Math.min(totalInterestedCount, totalVisitsCount) : 0);
 
       // 5. Bookings & Brokerage
       const filteredBookings = (bookings || []).filter((b: any) => {
@@ -1502,7 +1516,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
         const execFbs = (visitFeedbacks || []).filter((fb: any) => fb.exec === execName);
         const fbCount = execFbs.length;
         const avgStars = fbCount > 0 ? (execFbs.reduce((s: number, f: any) => s + (Number(f.rating) || 5), 0) / fbCount).toFixed(1) : (vCount > 0 ? '4.5' : '-');
-        const hotLeads = execFbs.filter((f: any) => (f.intent && f.intent.includes('HOT')) || Number(f.rating) >= 4).length;
+        const hotLeads = execFbs.filter((f: any) => getFeedbackSentiment(f) === 'HOT').length;
         const execBkgs = (bookings || []).filter((b: any) => (b.sales_executive || b.exec || b.executive) === execName);
         const bkgCount = execBkgs.length;
         const bkgBrokerage = execBkgs.reduce((sum: number, b: any) => sum + (parseFloat(String(b.brokerage_amount || 0).replace(/[^0-9.]/g, '')) || 0), 0);
@@ -1532,7 +1546,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
         const vCount = propVisits.length;
         const propFbs = (visitFeedbacks || []).filter((fb: any) => fb.propTitle === propTitle || (fb.propTitle && fb.propTitle.includes(propTitle)));
         const avgStars = propFbs.length > 0 ? (propFbs.reduce((s: number, f: any) => s + (Number(f.rating) || 5), 0) / propFbs.length).toFixed(1) : (vCount > 0 ? '4.7' : '-');
-        const hotCount = propFbs.filter((f: any) => (f.intent && f.intent.includes('HOT')) || Number(f.rating) >= 4).length;
+        const hotCount = propFbs.filter((f: any) => getFeedbackSentiment(f) === 'HOT').length;
         const propBkgs = (bookings || []).filter((b: any) => b.property_title === propTitle || b.property === propTitle || (b.unit_name && b.unit_name.includes(propTitle)));
         const bkgCount = propBkgs.length;
         const convPct = vCount > 0 ? ((bkgCount / vCount) * 100).toFixed(1) : (bkgCount > 0 ? '100.0' : '0.0');

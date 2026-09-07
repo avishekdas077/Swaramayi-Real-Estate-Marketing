@@ -297,6 +297,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       ? linkedCostSheets 
       : (cust?.costSheetData ? [cust.costSheetData] : []);
 
+    // 1. Linked Agreements (Deduplicated)
     const rawAgreements = (agreements || []).filter((a: any) =>
       matchesCustomer(a.customerNumber || a.customerId || a.id, a.party_name || a.customerName || a.name, a.party_contact || a.mobile || a.phone)
     ).map((a: any) => ({
@@ -309,8 +310,20 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       matchesCustomer(pva.customerNumber || pva.customerId || pva.id, pva.customerName || pva.name, pva.mobile || pva.customerMobile || pva.phone)
     );
 
-    const linkedAgreements = [...rawPvas, ...rawAgreements];
+    const seenAgrIds = new Set<string>();
+    const linkedAgreements: any[] = [];
+    [...rawPvas, ...rawAgreements].forEach((a: any) => {
+      const aId = (a.projectVisitAgreementId || a.agreement_code || a.pvaId || a.id || '').toString().trim();
+      if (!aId) return;
+      const cleanId = aId.toLowerCase();
+      // If we already have a specific agreement, avoid generic duplicate 000001
+      if (!seenAgrIds.has(cleanId)) {
+        seenAgrIds.add(cleanId);
+        linkedAgreements.push(a);
+      }
+    });
 
+    // 2. Linked Visits (Deduplicated & Real Visits Prioritized)
     const visitPlansMapped = (visitPlans || []).map((p: any) => ({
       visitId: p.visitPlanId || p.visitScheduleId || 'SRM-VS-2026-000087',
       customerNumber: p.customerNumber,
@@ -324,6 +337,10 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       feedbackRating: '5-STAR HIGH'
     })).filter((v: any) => matchesCustomer(v.customerNumber, v.customerName, v.mobile));
 
+    const rawVisits = (scheduledVisits || []).filter((v: any) =>
+      matchesCustomer(v.customerNumber || v.customerId || v.id, v.customerName || v.name, v.mobile || v.phone)
+    );
+
     const pvaVisitsMapped = linkedAgreements.filter((a: any) => (a.projectVisitAgreementId || a.agreement_code || '').toString().startsWith('SRM-PVA')).map((a: any) => ({
       visitId: a.visitScheduleId || `SRM-VS-${(a.projectVisitAgreementId || a.agreement_code || '000087').replace(/\D/g, '').slice(-6) || '2026-000087'}`,
       propertyTitle: a.projectTitle || a.property_details || 'Verified Site Visit',
@@ -334,21 +351,79 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       feedbackRating: '5-STAR HIGH'
     }));
 
-    const rawVisits = (scheduledVisits || []).filter((v: any) =>
-      matchesCustomer(v.customerNumber || v.customerId || v.id, v.customerName || v.name, v.mobile || v.phone)
-    );
+    const candidateVisits = [...rawVisits, ...visitPlansMapped];
+    const finalCandidateVisits = candidateVisits.length > 0 ? candidateVisits : pvaVisitsMapped;
 
-    const linkedVisits = [...rawVisits, ...visitPlansMapped, ...pvaVisitsMapped];
+    const seenVisitKeys = new Set<string>();
+    const linkedVisits: any[] = [];
+    finalCandidateVisits.forEach((v: any) => {
+      const vId = (v.visitId || v.id || v.visitPlanId || '').toString().trim();
+      const cleanVId = vId.toLowerCase();
+      const propKey = (v.propertyTitle || v.propertyCode || '').toString().toLowerCase().trim();
+      const key = cleanVId || propKey;
+      if (key && !seenVisitKeys.has(key)) {
+        seenVisitKeys.add(key);
+        if (cleanVId) seenVisitKeys.add(cleanVId);
+        linkedVisits.push(v);
+      }
+    });
 
     const linkedBookings = (bookings || []).filter((b: any) =>
       matchesCustomer(b.customer_number || b.customer_id || b.id, b.customer_name || b.name, b.customer_mobile || b.mobile || b.phone)
     );
 
-    const linkedInvoices = (invoices || []).filter((inv: any) =>
-      matchesCustomer(inv.customer_number || inv.customer_id, inv.party_name || inv.customer_name || inv.name, inv.mobile || inv.phone)
-    );
+    const rawInvoices = (invoices || []).filter((inv: any) => {
+      if (matchesCustomer(
+        inv.customer_number || inv.customer_id || inv.customerId || inv.customerNumber, 
+        inv.customer_name || inv.party_name || inv.customerName || inv.name, 
+        inv.customer_mobile || inv.mobile || inv.phone || inv.customerMobile
+      )) {
+        return true;
+      }
+      if (linkedBookings.some((b: any) => (b.booking_code && inv.booking_code === b.booking_code) || (b.id && inv.booking_id === b.id))) {
+        return true;
+      }
+      return false;
+    });
 
-    // Dynamic Lists for Items 5 through 13
+    // Prioritize customer tax invoices (SRM-INV-...) over developer brokerage invoices (SRM-DEV-INV-...)
+    const custTaxInvoices = rawInvoices.filter((inv: any) => 
+      inv.invoice_type === 'CUSTOMER_TAX_INVOICE' || 
+      inv.invoice_type === 'CUSTOMER' || 
+      (inv.invoice_number && inv.invoice_number.startsWith('SRM-INV-')) ||
+      (inv.invoice_number && !inv.invoice_number.startsWith('SRM-DEV-INV-'))
+    );
+    const candidateInvoices = custTaxInvoices.length > 0 ? custTaxInvoices : rawInvoices;
+
+    const seenInvIds = new Set<string>();
+    const linkedInvoices: any[] = [];
+    candidateInvoices.forEach((inv: any) => {
+      const invId = (inv.invoice_number || inv.id || '').toString().trim();
+      if (!invId) return;
+      const cleanId = invId.toLowerCase();
+      if (!seenInvIds.has(cleanId)) {
+        seenInvIds.add(cleanId);
+        linkedInvoices.push(inv);
+      }
+    });
+
+    // Helper to evaluate if an invoice is marked as paid strictly according to Billing Management
+    const isInvPaid = (inv: any) => {
+      if (!inv) return false;
+      const pStatus = (inv.payment_status || '').toString().trim().toUpperCase();
+      if (pStatus === 'PAID_SETTLED' || pStatus === 'PAID') {
+        return true;
+      }
+      if (pStatus === 'UNPAID_PENDING' || pStatus === 'UNPAID' || pStatus === 'PENDING') {
+        return false;
+      }
+      if ((inv.status || '').toString().trim().toUpperCase() === 'PAID_SETTLED') {
+        return true;
+      }
+      return false;
+    };
+
+    // Dynamic Lists for Items 5 through 17 (Clean & Deduplicated)
     const propList = allLinkedCostSheets.length > 0 
       ? allLinkedCostSheets.map((cs: any, i: number) => ({ 
           id: cs.propertyCode || cs.propertyId || cs.propertySnapshot?.propertyCode || cs.propertySnapshot?.propertyId || `SRM-PROP-2026-00042${i + 1}`, 
@@ -406,7 +481,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
     }));
 
     const agrList = linkedAgreements.map((pva: any) => ({
-      id: pva.projectVisitAgreementId || pva.pvaId || pva.id,
+      id: pva.projectVisitAgreementId || pva.pvaId || pva.id || pva.agreement_code,
       name: pva.projectTitle || pva.projectName || 'PVA Protection Agreement',
       status: 'EXECUTED SIGNED'
     }));
@@ -417,17 +492,64 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       status: b.status || 'CONFIRMED'
     }));
 
-    const payList = linkedBookings.map((b: any) => ({
-      id: `SRM-PAY-${(b.booking_code || b.id).slice(-6)}`,
-      name: `Token Payment for ${b.booking_code || b.id}`,
-      status: 'RECEIVED'
-    }));
+    // Dynamic Invoice List (Item 16)
+    const invList = linkedInvoices.map((inv: any) => {
+      const paid = isInvPaid(inv);
+      return {
+        id: inv.invoice_number || inv.id,
+        name: inv.project_name || inv.property_title || 'Customer Tax Invoice',
+        status: paid ? 'PAID / SETTLED' : 'UNPAID / PENDING',
+        color: paid ? '#22c55e' : '#fbbf24',
+        payment_status: inv.payment_status || (paid ? 'PAID_SETTLED' : 'UNPAID_PENDING'),
+        payment_mode: inv.payment_mode || 'Online Bank Transfer / UPI',
+        payment_ref: inv.payment_ref,
+        total_invoice_amount: inv.total_invoice_amount || inv.taxable_value,
+        created_date: inv.created_date || inv.date
+      };
+    });
 
-    const invList = linkedInvoices.map((inv: any) => ({
-      id: inv.invoice_number || inv.id,
-      name: inv.project_name || 'Commission Invoice',
-      status: inv.status || 'PAID'
-    }));
+    // Dynamic Payment List (Item 15)
+    const payList = linkedBookings.length > 0
+      ? linkedBookings.map((b: any) => {
+          const matchingInv = linkedInvoices.find((inv: any) => 
+            (b.booking_code && inv.booking_code === b.booking_code) || 
+            (b.id && inv.booking_id === b.id) ||
+            matchesCustomer(inv.customer_number || inv.customer_id, inv.customer_name || inv.party_name || inv.name, inv.customer_mobile || inv.mobile || inv.phone)
+          ) || linkedInvoices[0];
+          
+          const paid = matchingInv 
+            ? isInvPaid(matchingInv) 
+            : (b.payment_status === 'PAID_SETTLED' || b.payment_status === 'PAID' || b.token_paid === true);
+          
+          const payId = matchingInv?.payment_ref 
+            ? `SRM-PAY-${matchingInv.payment_ref.replace(/\D/g, '').slice(-6) || (matchingInv.payment_ref).slice(-6)}` 
+            : `SRM-PAY-${(b.booking_code || b.id).replace(/\D/g, '').slice(-6) || (b.booking_code || b.id).slice(-6)}`;
+          
+          return {
+            id: payId,
+            name: `Token Payment for ${b.booking_code || b.id} (${matchingInv?.payment_mode || b.payment_mode || 'Online'})`,
+            status: paid ? 'PAID / RECEIVED' : 'UNPAID / PENDING',
+            color: paid ? '#22c55e' : '#fbbf24',
+            payment_ref: matchingInv?.payment_ref || b.payment_ref,
+            payment_mode: matchingInv?.payment_mode || b.payment_mode,
+            amount: b.token_amount || (matchingInv?.total_invoice_amount)
+          };
+        })
+      : linkedInvoices.map((inv: any) => {
+          const paid = isInvPaid(inv);
+          const payId = inv.payment_ref 
+            ? `SRM-PAY-${inv.payment_ref.replace(/\D/g, '').slice(-6) || (inv.payment_ref).slice(-6)}` 
+            : `SRM-PAY-${(inv.invoice_number || inv.id).replace(/\D/g, '').slice(-6) || (inv.invoice_number || inv.id).slice(-6)}`;
+          return {
+            id: payId,
+            name: `Payment for ${inv.invoice_number || inv.id} (${inv.payment_mode || 'Online'})`,
+            status: paid ? 'PAID / RECEIVED' : 'UNPAID / PENDING',
+            color: paid ? '#22c55e' : '#fbbf24',
+            payment_ref: inv.payment_ref,
+            payment_mode: inv.payment_mode,
+            amount: inv.total_invoice_amount || inv.taxable_value
+          };
+        });
 
     const broList = (linkedBookings.length > 0 ? linkedBookings : linkedAgreements).map((b: any) => ({
       id: `SRM-BRO-${(b.booking_code || b.projectVisitAgreementId || b.id).slice(-6)}`,
@@ -440,6 +562,16 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
     const reqId = cust?.configuration || cust?.preferredArea ? `SRM-REQ-${custNum.replace(/[^0-9]/g, '').slice(-6) || '000094'}` : 'N/A';
     const matId = linkedMatches.length > 0 ? linkedMatches[0].id || linkedMatches[0].matchId : (propList.length > 0 ? `SRM-MAT-${custNum.replace(/[^0-9]/g, '').slice(-6) || '000421'}` : 'N/A');
 
+    const hasPayments = payList.length > 0;
+    const allPaymentsPaid = hasPayments && payList.every((p: any) => p.status.includes('PAID') || p.status.includes('RECEIVED'));
+    const paymentStatusStr = hasPayments ? (allPaymentsPaid ? 'PAID / RECEIVED' : 'UNPAID / PENDING') : 'NO PAYMENT YET';
+    const paymentColorStr = hasPayments ? (allPaymentsPaid ? '#22c55e' : '#fbbf24') : '#64748b';
+
+    const hasInvoices = invList.length > 0;
+    const allInvoicesPaid = hasInvoices && invList.every((i: any) => i.status.includes('PAID') || i.status.includes('SETTLED'));
+    const invoiceStatusStr = hasInvoices ? (allInvoicesPaid ? 'PAID / SETTLED' : 'UNPAID / PENDING') : 'NO INVOICE YET';
+    const invoiceColorStr = hasInvoices ? (allInvoicesPaid ? '#22c55e' : '#fbbf24') : '#64748b';
+
     return [
       { label: '1. CUSTOMER MASTER ID', id: custNum || 'N/A', status: 'PERMANENT', color: '#38bdf8', items: [{ id: custNum || 'N/A', status: 'PERMANENT' }] },
       { label: '2. LEAD INTAKE ID', id: leadId, status: leadId !== 'N/A' ? 'VERIFIED' : 'N/A', color: '#38bdf8', items: [{ id: leadId, status: leadId !== 'N/A' ? 'VERIFIED' : 'N/A' }] },
@@ -448,16 +580,16 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       { label: '5. PROPERTY MASTER ID', id: propList.length > 0 ? (propList.length === 1 ? propList[0].id : `${propList.length} PROPERTIES`) : '0 RECORDS', status: propList.length > 0 ? `${propList.length} SHORTLISTED` : '0 SHORTLISTED', color: propList.length > 0 ? '#38bdf8' : '#64748b', items: propList },
       { label: '6. COST SHEET ID', id: csList.length > 0 ? (csList.length === 1 ? csList[0].id : `${csList.length} COST SHEETS`) : '0 RECORDS', status: csList.length > 0 ? `${csList.length} ACTIVE` : 'NO COST SHEET YET', color: csList.length > 0 ? '#fbbf24' : '#64748b', items: csList },
       { label: '7. COST SHEET SHARE ID', id: cssList.length > 0 ? (cssList.length === 1 ? cssList[0].id : `${cssList.length} DISPATCHES`) : '0 RECORDS', status: cssList.length > 0 ? `${cssList.length} DELIVERED` : 'NOT SHARED YET', color: cssList.length > 0 ? '#fbbf24' : '#64748b', items: cssList },
-      { label: '8. VISIT SCHEDULE ID', id: vsList.length > 0 ? `${vsList.length} VISITS` : '0 RECORDS', status: vsList.length > 0 ? `${vsList.length} CONFIRMED` : 'NO VISITS YET', color: vsList.length > 0 ? '#4ade80' : '#64748b', items: vsList },
-      { label: '9. OTP VERIFICATION ID', id: otpList.length > 0 ? `${otpList.length} VERIFIED OTPS` : '0 RECORDS', status: otpList.length > 0 ? 'VERIFIED' : 'NOT VERIFIED YET', color: otpList.length > 0 ? '#4ade80' : '#64748b', items: otpList },
-      { label: '10. VISIT CHECK-IN ID', id: vinList.length > 0 ? `${vinList.length} CHECK-INS` : '0 RECORDS', status: vinList.length > 0 ? 'CHECKED_IN' : 'NOT CHECKED IN YET', color: vinList.length > 0 ? '#4ade80' : '#64748b', items: vinList },
-      { label: '11. VISIT DONE ID', id: vdList.length > 0 ? `${vdList.length} VISITS DONE` : '0 RECORDS', status: vdList.length > 0 ? 'COMPLETED' : 'NOT COMPLETED YET', color: vdList.length > 0 ? '#4ade80' : '#64748b', items: vdList },
-      { label: '12. VISIT FEEDBACK ID', id: vfbList.length > 0 ? `${vfbList.length} FEEDBACKS` : '0 RECORDS', status: vfbList.length > 0 ? '5-STAR HIGH' : 'NO FEEDBACK LOGGED', color: vfbList.length > 0 ? '#4ade80' : '#64748b', items: vfbList },
-      { label: '13. AGREEMENT ID', id: agrList.length > 0 ? `${agrList.length} AGREEMENTS` : '0 RECORDS', status: agrList.length > 0 ? 'DRAFT SIGNED' : 'NO AGREEMENT YET', color: agrList.length > 0 ? '#fbbf24' : '#64748b', items: agrList },
+      { label: '8. VISIT SCHEDULE ID', id: vsList.length > 0 ? (vsList.length === 1 ? vsList[0].id : `${vsList.length} VISITS`) : '0 RECORDS', status: vsList.length > 0 ? (vsList.length === 1 ? '1 CONFIRMED' : `${vsList.length} CONFIRMED`) : 'NO VISITS YET', color: vsList.length > 0 ? '#4ade80' : '#64748b', items: vsList },
+      { label: '9. OTP VERIFICATION ID', id: otpList.length > 0 ? (otpList.length === 1 ? otpList[0].id : `${otpList.length} VERIFIED OTPS`) : '0 RECORDS', status: otpList.length > 0 ? 'VERIFIED' : 'NOT VERIFIED YET', color: otpList.length > 0 ? '#4ade80' : '#64748b', items: otpList },
+      { label: '10. VISIT CHECK-IN ID', id: vinList.length > 0 ? (vinList.length === 1 ? vinList[0].id : `${vinList.length} CHECK-INS`) : '0 RECORDS', status: vinList.length > 0 ? 'CHECKED_IN' : 'NOT CHECKED IN YET', color: vinList.length > 0 ? '#4ade80' : '#64748b', items: vinList },
+      { label: '11. VISIT DONE ID', id: vdList.length > 0 ? (vdList.length === 1 ? vdList[0].id : `${vdList.length} VISITS DONE`) : '0 RECORDS', status: vdList.length > 0 ? 'COMPLETED' : 'NOT COMPLETED YET', color: vdList.length > 0 ? '#4ade80' : '#64748b', items: vdList },
+      { label: '12. VISIT FEEDBACK ID', id: vfbList.length > 0 ? (vfbList.length === 1 ? vfbList[0].id : `${vfbList.length} FEEDBACKS`) : '0 RECORDS', status: vfbList.length > 0 ? '5-STAR HIGH' : 'NO FEEDBACK LOGGED', color: vfbList.length > 0 ? '#4ade80' : '#64748b', items: vfbList },
+      { label: '13. AGREEMENT ID', id: agrList.length > 0 ? (agrList.length === 1 ? agrList[0].id : `${agrList.length} AGREEMENTS`) : '0 RECORDS', status: agrList.length > 0 ? 'DRAFT SIGNED' : 'NO AGREEMENT YET', color: agrList.length > 0 ? '#fbbf24' : '#64748b', items: agrList },
       { label: '14. BOOKING ID', id: bkgList.length > 0 ? bkgList[0].id : '0 RECORDS', status: bkgList.length > 0 ? 'CONFIRMED' : 'NO BOOKING YET', color: bkgList.length > 0 ? '#22c55e' : '#64748b', items: bkgList },
-      { label: '15. PAYMENT ID', id: payList.length > 0 ? payList[0].id : '0 RECORDS', status: payList.length > 0 ? 'RECEIVED' : 'NO PAYMENT YET', color: payList.length > 0 ? '#22c55e' : '#64748b', items: payList },
-      { label: '16. INVOICE ID', id: invList.length > 0 ? invList[0].id : '0 RECORDS', status: invList.length > 0 ? 'PAID' : 'NO INVOICE YET', color: invList.length > 0 ? '#22c55e' : '#64748b', items: invList },
-      { label: '17. BROKERAGE ID', id: broList.length > 0 ? broList[0].id : '0 RECORDS', status: broList.length > 0 ? 'PROCESSED' : 'NOT PROCESSED YET', color: broList.length > 0 ? '#22c55e' : '#64748b', items: broList }
+      { label: '15. PAYMENT ID', id: payList.length > 0 ? (payList.length === 1 ? payList[0].id : `${payList.length} PAYMENTS`) : '0 RECORDS', status: paymentStatusStr, color: paymentColorStr, items: payList },
+      { label: '16. INVOICE ID', id: invList.length > 0 ? (invList.length === 1 ? invList[0].id : `${invList.length} INVOICES`) : '0 RECORDS', status: invoiceStatusStr, color: invoiceColorStr, items: invList },
+      { label: '17. BROKERAGE ID', id: broList.length > 0 ? (broList.length === 1 ? broList[0].id : `${broList.length} CLAIMS`) : '0 RECORDS', status: broList.length > 0 ? 'PROCESSED' : 'NOT PROCESSED YET', color: broList.length > 0 ? '#22c55e' : '#64748b', items: broList }
     ];
   };
 
@@ -598,19 +730,19 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       ],
       '15. PAYMENT ID': [
         { label: 'Payment Receipt ID', value: item.id },
-        { label: 'Amount Received', value: '₹5,00,000' },
-        { label: 'Payment Method / Mode', value: 'NEFT Bank Transfer' },
-        { label: 'Bank UTR Ref Number', value: 'UTIB0002941049281' },
-        { label: 'Payment Receipt Status', value: 'CREDITED & VERIFIED' },
-        { label: 'Payment Date', value: '20 Aug 2026, 05:15 PM' }
+        { label: 'Amount Received', value: item.items?.[0]?.amount ? (typeof item.items[0].amount === 'number' ? `₹${item.items[0].amount.toLocaleString('en-IN')}` : item.items[0].amount) : '₹5,00,000' },
+        { label: 'Payment Method / Mode', value: item.items?.[0]?.payment_mode || 'NEFT / Online Bank Transfer' },
+        { label: 'Bank UTR Ref Number', value: item.items?.[0]?.payment_ref || 'UTIB0002941049281' },
+        { label: 'Payment Receipt Status', value: item.status || 'CREDITED & VERIFIED' },
+        { label: 'Payment Date', value: item.items?.[0]?.created_date || '20 Aug 2026, 05:15 PM' }
       ],
       '16. INVOICE ID': [
         { label: 'GST Tax Invoice ID', value: item.id },
-        { label: 'Tax Invoice Amount', value: '₹5,90,000 (Incl. ₹90,000 18% GST)' },
+        { label: 'Tax Invoice Amount', value: item.items?.[0]?.total_invoice_amount ? (typeof item.items[0].total_invoice_amount === 'number' ? `₹${item.items[0].total_invoice_amount.toLocaleString('en-IN')} (Incl. 18% GST)` : item.items[0].total_invoice_amount) : '₹5,90,000 (Incl. ₹90,000 18% GST)' },
         { label: 'Billed To Customer', value: `${custName} (${custNum})` },
         { label: 'Company GSTIN', value: '36AAACS8899K1Z0' },
-        { label: 'Invoice Status', value: 'PAID IN FULL' },
-        { label: 'Invoice Issued Date', value: '20 Aug 2026' }
+        { label: 'Invoice Status', value: item.status || 'PAID IN FULL' },
+        { label: 'Invoice Issued Date', value: item.items?.[0]?.created_date || '20 Aug 2026' }
       ],
       '17. BROKERAGE ID': [
         { label: 'Brokerage Settlement Log ID', value: item.id },
