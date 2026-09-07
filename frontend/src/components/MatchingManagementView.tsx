@@ -1,10 +1,5 @@
-<<<<<<< Updated upstream
 import React, { useState } from 'react';
-import { Zap, Search, X, SearchCode, Eye, FileText } from 'lucide-react';
-=======
-import React from 'react';
-import { Zap, Search, X, Trash2 } from 'lucide-react';
->>>>>>> Stashed changes
+import { Zap, Search, X, SearchCode, Eye, FileText, Trash2 } from 'lucide-react';
 
 interface MatchingManagementViewProps {
   isLight: boolean;
@@ -83,11 +78,12 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
   sourcingRequests = [],
   setSourcingRequests,
 }) => {
-<<<<<<< Updated upstream
   // PROPERTY SOURCING REQUEST MODAL STATES
   const [sourcingModalRequest, setSourcingModalRequest] = useState<any | null>(null);
   const [sourcingReasonInput, setSourcingReasonInput] = useState<string>('');
   const [sourcingError, setSourcingError] = useState<string>('');
+
+  const isSuperAdmin = !currentRole || currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER' || currentRole.toUpperCase().includes('SUPER') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
   // HANDLE CONFIRM MOVE TO PROPERTY SOURCING REQUEST DESK
   const handleConfirmMoveToSourcing = () => {
@@ -166,8 +162,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
     setSourcingError('');
     alert(`🎉 SUCCESS! Customer ${newSourcingObj.customer_name} transferred to Property Sourcing Requests Desk.\n\n• Sourcing ID: ${newSourcingId}\n• Reason: "${sourcingReasonInput.trim()}"`);
     setActiveTab('property_sourcing_requests');
-=======
-  const isSuperAdmin = !currentRole || currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER' || currentRole.toUpperCase().includes('SUPER') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+  };
 
   const handleDeleteMatchingRequest = (req: any) => {
     if (!req) return;
@@ -227,8 +222,8 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
 
       alert(`🗑️ Matching Request & Customer ${custName || reqId} removed successfully!`);
     }
->>>>>>> Stashed changes
   };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
