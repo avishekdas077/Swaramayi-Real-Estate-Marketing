@@ -997,15 +997,13 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
       description: '',
       site_person_name: '',
       site_person_contact: '',
-      status: 'AVAILABLE'
+      architectural_description: ''
     });
-    if (setDevProjectMobile) setDevProjectMobile('');
-    if (setDevProjectAltMobile) setDevProjectAltMobile('');
-    setActiveProjectSubTab('add_property_master');
-  }, [setNewPropertyForm, setDevProjectMobile, setDevProjectAltMobile, setActiveProjectSubTab]);
+  }, [setNewPropertyForm]);
+
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', paddingBottom: '40px' }}>
       
       {/* SYSTEM HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
@@ -1020,8 +1018,17 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button onClick={() => setShowBulkImportPropertyModal(true)} style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: windowWidth <= 640 ? '100%' : 'auto' }}>
-            <Upload size={15} /> 📥 Import Bulk Inventory
+          <button 
+            onClick={() => setShowBulkImportProjectDeveloperModal && setShowBulkImportProjectDeveloperModal(true)} 
+            style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: windowWidth <= 640 ? '100%' : 'auto' }}
+          >
+            <Upload size={15} /> 🏢 📥 Import Bulk Projects & Developers
+          </button>
+          <button 
+            onClick={() => setShowBulkImportPropertyModal(true)} 
+            style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: windowWidth <= 640 ? '100%' : 'auto' }}
+          >
+            <Upload size={15} /> 🏠 📥 Import Bulk Property Stock
           </button>
           <button 
             onClick={handleOpenNewPropertyForm} 
@@ -1035,12 +1042,11 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           >
             🏢 + Add Project & Developer
           </button>
-          <button onClick={() => alert('📄 Generating Property Stock Inventory CSV Report...')} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#4ade80', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button onClick={() => alert('📄 Generating Property Stock Inventory CSV Report...')} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#cbd5e1', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Share2 size={15} /> Export Inventory
           </button>
         </div>
       </div>
-
       {/* SUB-TABS NAVIGATION BAR FOR PROJECT MANAGEMENT */}
       <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
         <button onClick={() => setActiveProjectSubTab('property_master')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'property_master' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'property_master' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>

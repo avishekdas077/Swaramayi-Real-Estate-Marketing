@@ -2394,17 +2394,32 @@ export default function App() {
 
   const [showBulkImportPropertyModal, setShowBulkImportPropertyModal] = useState(false);
   const [bulkPropertyCsvText, setBulkPropertyCsvText] = useState(
-    `Title, Developer, ProjectName, Locality, City, Latitude, Longitude, PropertyType, Configuration, TowerBlock, FloorNumber, UnitNumber, CarpetArea, SuperBuiltupArea, Facing, Furnishing, PossessionStatus, AskingPrice, PricePerSqft, ParkingSlot, KeyAmenities, Status\n` +
-    `"My Home Sayuk 3BHK Residence", "My Home Group", "My Home Sayuk Phase 1", "Tellapur", "Hyderabad", "17.4612", "78.3689", "Apartment", "3BHK", "Tower A", "14th Floor", "Flat 1402", "1850 Sq.Ft.", "2450 Sq.Ft.", "East Facing", "Semi-Furnished", "Ready to Move", "₹1.65 Crore", "₹8918/Sq.Ft.", "2 Covered Slots + EV", "Clubhouse; Swimming Pool; Gym; 100% Power Backup", "AVAILABLE"\n` +
-    `"Madhyamgram 2BHK Apartment", "Dhriti Apartments", "Dhriti Residency", "Madhyamgram", "Kolkata", "22.698021", "88.463723", "Apartment", "2BHK", "Block A", "Top Floor", "Flat 402", "714.75 Sq.Ft.", "950 Sq.Ft.", "East Facing", "Unfurnished", "Ready to Move", "₹35.84 Lakhs", "₹4000/Sq.Ft.", "1 Covered Slot", "Gated Security; Lift; Power Backup", "AVAILABLE"\n` +
-    `"Rajapushpa Imperia 2BHK Suite", "Rajapushpa Properties", "Rajapushpa Imperia Block 2", "Tellapur", "Hyderabad", "17.4401", "78.3489", "Apartment", "2BHK", "Block 2", "8th Floor", "Flat 805", "1350 Sq.Ft.", "1780 Sq.Ft.", "North-East Facing", "Unfurnished", "Ready to Move", "₹1.15 Crore", "₹8518/Sq.Ft.", "1 Covered Slot", "Gated Security; Gym; Children Play Area", "AVAILABLE"\n` +
-    `"Aparna New Heights 4BHK Sky Villa", "Aparna Constructions", "Aparna Zenith Sky Suites", "Gachibowli", "Hyderabad", "17.4478", "78.3789", "Penthouse", "4BHK", "Tower 3", "28th Floor", "Flat 2801", "2800 Sq.Ft.", "3600 Sq.Ft.", "West Facing", "Fully Furnished", "Under Construction Dec 2026", "₹2.75 Crore", "₹9821/Sq.Ft.", "3 Covered Slots + EV Charger", "Private Terrace Pool; Jacuzzi; EV Charger", "AVAILABLE"\n` +
-    `"Jayabheri Peak Luxury Villa", "Jayabheri Properties", "Jayabheri Peak County", "Kokapet", "Hyderabad", "17.4201", "78.3410", "Gated Villa", "5BHK Villa", "Villa Block 5", "G+2 Floor", "Villa 12", "4500 Sq.Ft.", "5800 Sq.Ft.", "East Facing", "Fully Furnished", "Ready to Move", "₹5.20 Crore", "₹11555/Sq.Ft.", "4 Private Parking Slots", "Private Lawn; Private Lift; Solar Power", "AVAILABLE"\n` +
-    `"Lansum Elena 3BHK Premium", "Lansum Properties", "Lansum Elena Residences", "Kokapet", "Hyderabad", "17.4190", "78.3395", "Apartment", "3BHK", "Tower B", "12th Floor", "Flat 1204", "1920 Sq.Ft.", "2550 Sq.Ft.", "North Facing", "Semi-Furnished", "Ready to Move", "₹1.85 Crore", "₹9635/Sq.Ft.", "2 Covered Slots", "Clubhouse; Squash Court; Infinity Pool", "AVAILABLE"\n` +
-    `"Star Horizon 2BHK Smart Home", "Star Builders", "Star Horizon Phase 2", "Madhyamgram", "Kolkata", "22.6955", "88.4610", "Apartment", "2BHK", "Block B", "4th Floor", "Flat 401", "820 Sq.Ft.", "1080 Sq.Ft.", "South-East Facing", "Unfurnished", "Under Construction Jun 2026", "₹42.50 Lakhs", "₹5182/Sq.Ft.", "1 Covered Slot", "Rooftop Garden; Intercom; CCTV", "AVAILABLE"\n` +
-    `"Cyber Towers Commercial Floor", "Cybertech Infra", "Cyber Towers Sector 4", "HITEC City", "Hyderabad", "17.4500", "78.3810", "Commercial Office", "Commercial Unit", "Block C", "4th Floor", "Unit 402", "1500 Sq.Ft.", "2100 Sq.Ft.", "North Facing", "Bare Shell", "Ready to Move", "₹1.75 Crore", "₹11666/Sq.Ft.", "3 Reserved Basement Slots", "24/7 Security; High Speed Elevators; Central AC", "AVAILABLE"\n` +
-    `"Aparna Zenon 3BHK Deluxe", "Aparna Constructions", "Aparna Zenon Nanakramguda", "Nanakramguda", "Hyderabad", "17.4285", "78.3560", "Apartment", "3BHK", "Tower 5", "16th Floor", "Flat 1603", "1680 Sq.Ft.", "2220 Sq.Ft.", "East Facing", "Semi-Furnished", "Ready to Move", "₹1.48 Crore", "₹8809/Sq.Ft.", "2 Covered Slots", "Temperature Controlled Pool; Tennis Court", "AVAILABLE"\n` +
-    `"Prestige High Fields 3BHK Suite", "Prestige Group", "Prestige High Fields Phase 1", "Financial District", "Hyderabad", "17.4350", "78.3490", "Apartment", "3BHK", "Tower 2", "22nd Floor", "Flat 2202", "1740 Sq.Ft.", "2300 Sq.Ft.", "North-East Facing", "Unfurnished", "Ready to Move", "₹1.72 Crore", "₹9885/Sq.Ft.", "2 Covered Slots + EV", "Supermarket; Pharmacy; Badminton Court", "AVAILABLE"`
+    `ProjectID, PropertyTitle, DeveloperName, Locality, City, PropertyCategoryType, BHKConfiguration, SuperBuiltupArea, DeductionPct, CarpetArea, VastuFacing, PossessionStatus, HandoverMonthAndYear, AskingPrice, PricePerSqft, GSTPct, AmenityCharges, ParkingRequired, CarParkingSlot, ParkingPrice, MonthlyMaintenance, StatusInventory, TowerBlock, FloorNumber, TotalFloors, UnitNumber, Furnishing, KeysCustody, ProjectPostingID, ArchitecturalDescription\n` +
+    `"SRM-PROJ-2026-000088", "GAJAPATI APARTMENT 2BHK", "BABLA DUTTA", "Barasat, Kolkata", "Kolkata", "Flat / Apartment (New / Builder)", "2BHK", "1,050 Sq.Ft.", "35%", "700.35 Sq.Ft.", "East Facing", "Under Construction", "June 2027", "₹35,15,900", "₹5,020/Sq.Ft.", "5%", "150000", "YES", "Covered Basement & 1 Slot", "300000", "₹1,500/Month", "AVAILABLE", "Tower A", "3rd Floor", "G+4 Floors", "Flat 302", "Semi-Furnished", "Developer Site Office", "POST-2026-99", "Corner flat with double balcony and cross ventilation"\n` +
+    `"SRM-PROJ-2026-000089", "My Home Sayuk 3BHK Residence", "My Home Group", "Tellapur", "Hyderabad", "Flat / Apartment (New / Builder)", "3BHK", "2,450 Sq.Ft.", "25%", "1,837.50 Sq.Ft.", "East Facing", "Ready to Move In (Immediate)", "Immediate", "₹1.65 Crore", "₹8,918/Sq.Ft.", "0%", "200000", "YES", "2 Covered Slots + EV", "400000", "₹4,500/Month", "AVAILABLE", "Tower A", "14th Floor", "G+29 Floors", "Flat 1402", "Semi-Furnished", "Key in Lockbox at Site", "POST-2026-101", "Premium high-rise apartment with lake view balcony"\n` +
+    `"SRM-PROJ-2026-000090", "Dhriti Residency 2BHK Unit 402", "Dhriti Builders", "Madhyamgram", "Kolkata", "Flat / Apartment (Resale)", "2BHK", "950 Sq.Ft.", "25%", "712.50 Sq.Ft.", "East Facing", "Ready to Move In (Immediate)", "Immediate", "₹35.84 Lakhs", "₹4,000/Sq.Ft.", "0%", "100000", "YES", "1 Covered Slot", "250000", "₹1,200/Month", "AVAILABLE", "Block A", "Top Floor", "G+4 Floors", "Flat 402", "Unfurnished", "Owner Direct Key", "POST-2026-102", "Well maintained 2BHK flat near Madhyamgram station"\n` +
+    `"SRM-PROJ-2026-000091", "Rajapushpa Imperia 2BHK Suite", "Rajapushpa Properties", "Tellapur", "Hyderabad", "Flat / Apartment (New / Builder)", "2BHK", "1,780 Sq.Ft.", "24%", "1,352.80 Sq.Ft.", "North-East Facing", "Ready to Move In (Immediate)", "Immediate", "₹1.15 Crore", "₹8,518/Sq.Ft.", "0%", "175000", "YES", "1 Covered Slot", "350000", "₹3,800/Month", "AVAILABLE", "Block 2", "8th Floor", "G+35 Floors", "Flat 805", "Unfurnished", "Site Manager Custody", "POST-2026-103", "Spacious 2BHK suite facing central club courtyard"\n` +
+    `"SRM-PROJ-2026-000092", "Aparna Zenith 4BHK Sky Villa", "Aparna Constructions", "Gachibowli", "Hyderabad", "Flat / Apartment (New / Builder)", "4BHK", "3,600 Sq.Ft.", "22%", "2,808.00 Sq.Ft.", "West Facing", "Under Construction", "December 2026", "₹2.75 Crore", "₹9,821/Sq.Ft.", "5%", "300000", "YES", "3 Covered Slots + EV Charger", "650000", "₹7,500/Month", "AVAILABLE", "Tower 3", "28th Floor", "G+32 Floors", "Flat 2801", "Fully Furnished", "Builder Sales Desk", "POST-2026-104", "Ultra luxury pent-house sky villa with private terrace garden"\n` +
+    `"SRM-PROJ-2026-000093", "Jayabheri Peak 5BHK Villa 12", "Jayabheri Properties", "Kokapet", "Hyderabad", "Gated Villa (New / Builder)", "Villa", "5,800 Sq.Ft.", "22%", "4,524.00 Sq.Ft.", "East Facing", "Ready to Move In (Immediate)", "Immediate", "₹5.20 Crore", "₹11,555/Sq.Ft.", "0%", "500000", "YES", "4 Private Parking Slots", "750000", "₹12,000/Month", "AVAILABLE", "Villa Block 5", "G+2 Floor", "G+2 Floors", "Villa 12", "Fully Furnished", "Gated Villa Security", "POST-2026-105", "Independent luxury villa with private swimming pool & lift"\n` +
+    `"SRM-PROJ-2026-000094", "Lansum Elena 3BHK Residence", "Lansum Properties", "Kokapet", "Hyderabad", "Flat / Apartment (New / Builder)", "3BHK", "2,550 Sq.Ft.", "25%", "1,912.50 Sq.Ft.", "North Facing", "Ready to Move In (Immediate)", "Immediate", "₹1.85 Crore", "₹9,635/Sq.Ft.", "0%", "220000", "YES", "2 Covered Slots", "400000", "₹5,000/Month", "AVAILABLE", "Tower B", "12th Floor", "G+30 Floors", "Flat 1204", "Semi-Furnished", "Lansum CRM Office", "POST-2026-106", "3BHK corner residence with panoramic Financial District views"\n` +
+    `"SRM-PROJ-2026-000095", "Star Horizon 2BHK Smart Home", "Star Builders", "Madhyamgram", "Kolkata", "Flat / Apartment (New / Builder)", "2BHK", "1,080 Sq.Ft.", "24%", "820.80 Sq.Ft.", "South-East Facing", "Under Construction", "June 2026", "₹42.50 Lakhs", "₹5,182/Sq.Ft.", "5%", "120000", "YES", "1 Covered Slot", "280000", "₹1,400/Month", "AVAILABLE", "Block B", "4th Floor", "G+5 Floors", "Flat 401", "Unfurnished", "Star Builders Office", "POST-2026-107", "Smart home enabled 2BHK unit with biometric entrance"\n` +
+    `"SRM-PROJ-2026-000096", "Cyber Towers Commercial Unit 402", "Cybertech Infra", "HITEC City", "Hyderabad", "Commercial Space (New / Builder)", "1BHK", "2,100 Sq.Ft.", "28%", "1,512.00 Sq.Ft.", "North Facing", "Ready to Move In (Immediate)", "Immediate", "₹1.75 Crore", "₹11,666/Sq.Ft.", "18%", "250000", "YES", "3 Reserved Basement Slots", "600000", "₹8,000/Month", "AVAILABLE", "Block C", "4th Floor", "G+15 Floors", "Unit 402", "Unfurnished", "Facility Manager Office", "POST-2026-108", "Grade A commercial office space in prime HITEC City tech corridor"\n` +
+    `"SRM-PROJ-2026-000097", "Prestige High Fields 3BHK Unit 2202", "Prestige Group", "Financial District", "Hyderabad", "Flat / Apartment (New / Builder)", "3BHK", "2,300 Sq.Ft.", "24%", "1,748.00 Sq.Ft.", "North-East Facing", "Ready to Move In (Immediate)", "Immediate", "₹1.72 Crore", "₹9,885/Sq.Ft.", "0%", "200000", "YES", "2 Covered Slots + EV", "420000", "₹4,800/Month", "AVAILABLE", "Tower 2", "22nd Floor", "G+33 Floors", "Flat 2202", "Unfurnished", "Prestige Club Desk", "POST-2026-109", "3BHK luxury flat with high ceiling and green hill view"`
+  );
+
+  const [showBulkImportProjectDeveloperModal, setShowBulkImportProjectDeveloperModal] = useState(false);
+  const [bulkProjectDevCsvText, setBulkProjectDevCsvText] = useState(
+    `DeveloperName, ProjectTitle, DeveloperMobile, DeveloperAltMobile, Email, Locality, City, FullAddress, Latitude, Longitude, PossessionStatus, HandoverMonthAndYear, TotalCoveredParkingCapacity, CoveredParkingRate, TotalEVParkingCapacity, EVParkingRate, TotalOpenParkingCapacity, OpenParkingRate, SelectedAmenities, BuildingPhotos\n` +
+    `"KRISHNA DAS (SWARAMAYI DEVELOPERS)", "SHIBALAY RESIDENCY", "9883395102", "7044293951", "krishnadas@swaramayi.com", "BARASAT, CHAPADALI", "Kolkata", "Chapadali Bus Terminus Hub, Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124", "22.722361", "88.493403", "Under Construction", "December 2026", "24", "300000", "6", "450000", "12", "150000", "Elevator; Gym; Swimming Pool; 24/7 Security; Power Backup", "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00"\n` +
+    `"My Home Group", "My Home Sayuk Phase 1", "9849088776", "9849088777", "sales@myhomegroup.in", "Tellapur", "Hyderabad", "Tellapur Main Road, Gachibowli Extension, Hyderabad 502324", "17.461200", "78.368900", "Ready to Move", "Immediate", "50", "400000", "10", "600000", "20", "200000", "24/7 Power Backup; Water Supply; Security; Swimming Pool; Clubhouse", "https://images.unsplash.com/photo-1570129477492-45c003edd2be"\n` +
+    `"Dhriti Builders", "Dhriti Residency", "9831012345", "9831054321", "info@dhritibuilders.com", "Madhyamgram", "Kolkata", "Jessore Road, Madhyamgram, Kolkata 700129", "22.698021", "88.463723", "Ready to Move", "Immediate", "15", "250000", "4", "350000", "8", "120000", "Elevator; CCTV cameras; Fire Safety; Security", "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9"\n` +
+    `"Rajapushpa Properties", "Rajapushpa Imperia Block 2", "9121098765", "9121098766", "contact@rajapushpa.in", "Tellapur", "Hyderabad", "Tellapur-Nallagandla Road, Hyderabad 502324", "17.440100", "78.348900", "Ready to Move", "Immediate", "40", "350000", "8", "500000", "15", "180000", "Gymnasium; Swimming Pool; Clubhouse; Children Play Area; Gardens", "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00"\n` +
+    `"Aparna Constructions", "Aparna Zenith Sky Suites", "9000112233", "9000112234", "sales@aparnaconstructions.com", "Gachibowli", "Hyderabad", "Financial District Road, Gachibowli, Hyderabad 500032", "17.447800", "78.378900", "Under Construction", "December 2026", "60", "450000", "15", "650000", "25", "250000", "Yoga Deck; Senior Citizen Park; EV Charging Stations; Luxury Clubhouse", "https://images.unsplash.com/photo-1570129477492-45c003edd2be"\n` +
+    `"Jayabheri Properties", "Jayabheri Peak County", "9888877776", "9888877775", "contact@jayabherigroup.com", "Kokapet", "Hyderabad", "NEOROP Outer Ring Road, Kokapet, Hyderabad 500075", "17.420100", "78.341000", "Ready to Move", "Immediate", "30", "500000", "10", "750000", "10", "300000", "Private Lawn; Private Lift; Solar Power; Swimming Pool; 24/7 Security", "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9"\n` +
+    `"Lansum Properties", "Lansum Elena Residences", "9955443322", "9955443321", "sales@lansum.com", "Kokapet", "Hyderabad", "Golden Mile Layout, Kokapet, Hyderabad 500075", "17.419000", "78.339500", "Ready to Move", "Immediate", "35", "400000", "8", "600000", "12", "200000", "Clubhouse; Squash Court; Infinity Pool; Gymnasium", "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00"\n` +
+    `"Star Builders", "Star Horizon Phase 2", "9830099887", "9830099888", "contact@starbuilders.in", "Madhyamgram", "Kolkata", "Sodalpur Road, Madhyamgram, Kolkata 700129", "22.695500", "88.461000", "Under Construction", "June 2026", "18", "280000", "4", "400000", "8", "130000", "Rooftop Garden; Intercom Facility; CCTV cameras; Power Backup", "https://images.unsplash.com/photo-1570129477492-45c003edd2be"\n` +
+    `"Cybertech Infra", "Cyber Towers Sector 4", "9700012345", "9700012346", "leasing@cybertechinfra.com", "HITEC City", "Hyderabad", "Cyberabad IT Corridor, HITEC City, Hyderabad 500081", "17.450000", "78.381000", "Ready to Move", "Immediate", "50", "450000", "12", "600000", "20", "220000", "24/7 Security; High Speed Elevators; Central AC; 24/7 Power Backup", "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9"\n` +
+    `"Prestige Group", "Prestige High Fields Phase 1", "9010101010", "9010101011", "contact@prestigeconstructions.com", "Financial District", "Hyderabad", "Nanakramguda Main Road, Financial District, Hyderabad 500032", "17.435000", "78.349000", "Ready to Move", "Immediate", "80", "420000", "20", "600000", "30", "220000", "Supermarket; Pharmacy; Badminton Court; Tennis Court; Swimming Pool", "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00"`
   );
 
   const handleOpenLeadModal = () => {
@@ -8427,6 +8442,7 @@ export default function App() {
               generateNextPropertyCode={generateNextPropertyCode}
               handleOpenAddPropertyModal={handleOpenAddPropertyModal}
               setShowBulkImportPropertyModal={setShowBulkImportPropertyModal}
+              setShowBulkImportProjectDeveloperModal={setShowBulkImportProjectDeveloperModal}
               setShowDeveloperIntroductionReportModal={setShowDeveloperIntroductionReportModal}
               setShowPvaDocumentModal={setShowPvaDocumentModal}
               handleStartEditProperty={handleStartEditProperty}
@@ -12435,24 +12451,291 @@ export default function App() {
         </div>
       )}
 
-      {/* BULK PROPERTY INVENTORY IMPORT MODAL */}
-      {showBulkImportPropertyModal && (
+      {/* BULK PROJECTS & DEVELOPERS DATA IMPORT ENGINE MODAL */}
+      {showBulkImportProjectDeveloperModal && (
         <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', color: isLight ? '#0f172a' : '#ffffff', width: '900px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #a855f7', color: isLight ? '#0f172a' : '#ffffff', width: '950px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }}>
             
             {/* MODAL HEADER */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px' }}>
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    📥 BULK PROPERTY INVENTORY DATA IMPORT ENGINE
+                    🏢 📥 BULK PROJECTS & DEVELOPERS DATA IMPORT ENGINE
                   </h3>
-                  <span style={{ background: '#22c55e', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
-                    CSV / EXCEL PARSER READY
+                  <span style={{ background: '#a855f7', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+                    20 MASTER COLUMNS PARSER READY
                   </span>
                 </div>
                 <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
-                  Import hundreds of master property inventory records instantly. Upload a CSV/Excel file or paste tabular inventory rows below.
+                  Import Master Projects & Developer Partner profiles in bulk. Upload a CSV/Excel file or paste tabular project records below.
+                </p>
+              </div>
+
+              <button 
+                onClick={() => setShowBulkImportProjectDeveloperModal(false)}
+                style={{ background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={22} color={isLight ? '#0f172a' : '#ffffff'} />
+              </button>
+            </div>
+
+            {/* TEMPLATE & FILE UPLOAD TOOLBAR */}
+            <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+              <div>
+                <span style={{ fontSize: '0.72rem', color: '#a855f7', fontWeight: '900', textTransform: 'uppercase' }}>📄 NEED SAMPLE PROJECTS & DEVELOPERS FORMAT?</span>
+                <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#cbd5e1', marginTop: '2px', wordBreak: 'break-all' }}>
+                  20 Full Master Columns: <code>DeveloperName, ProjectTitle, DeveloperMobile, DeveloperAltMobile, Email, Locality, City, FullAddress, Latitude, Longitude, PossessionStatus, HandoverMonthAndYear, TotalCoveredParkingCapacity, CoveredParkingRate, TotalEVParkingCapacity, EVParkingRate, TotalOpenParkingCapacity, OpenParkingRate, SelectedAmenities, BuildingPhotos</code>
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button 
+                  onClick={() => {
+                    const csvContent = '\uFEFF' + bulkProjectDevCsvText;
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'Swaramayi_Bulk_Projects_Developers_Sample_Template.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    alert('📥 SAMPLE TEMPLATE DOWNLOADED SUCCESSFULLY!\n\nFile: Swaramayi_Bulk_Projects_Developers_Sample_Template.csv\n• Includes all 20 full project & developer master columns\n• Pre-populated with 10 sample builder & project master records\n• Ready for Excel/Google Sheets editing & bulk upload!');
+                  }}
+                  style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                >
+                  <Share2 size={15} /> 📄 Download Sample CSV Template
+                </button>
+              </div>
+            </div>
+
+            {/* FILE INPUT OR RAW CSV TEXT PASTE AREA */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: '900', color: '#c084fc' }}>
+                📋 Paste Bulk Projects & Developers CSV / Tabular Text Data or Upload File:
+              </label>
+              
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px dashed #a855f7', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <input 
+                  type="file" 
+                  accept=".csv,.txt"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onload = (evt) => {
+                        if (evt.target?.result) {
+                          setBulkProjectDevCsvText(evt.target.result as string);
+                        }
+                      };
+                      reader.readAsText(file);
+                    }
+                  }}
+                  style={{ fontSize: '0.8rem', color: '#c084fc', cursor: 'pointer' }}
+                />
+                <textarea 
+                  rows={6}
+                  value={bulkProjectDevCsvText}
+                  onChange={(e) => setBulkProjectDevCsvText(e.target.value)}
+                  placeholder="DeveloperName, ProjectTitle, DeveloperMobile, DeveloperAltMobile, Email, Locality, City, FullAddress, Latitude, Longitude, PossessionStatus, HandoverMonthAndYear, TotalCoveredParkingCapacity, CoveredParkingRate, TotalEVParkingCapacity, EVParkingRate, TotalOpenParkingCapacity, OpenParkingRate, SelectedAmenities, BuildingPhotos..."
+                  style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '12px', color: isLight ? '#0f172a' : '#ffffff', fontFamily: 'monospace', fontSize: '0.78rem', outline: 'none' }}
+                />
+              </div>
+            </div>
+
+            {/* LIVE PARSED PREVIEW & VALIDATION TABLE */}
+            {(() => {
+              const lines = bulkProjectDevCsvText.trim().split('\n').filter(l => l.trim().length > 0);
+              const rows = lines.slice(1).map((line, idx) => {
+                const parts = parseCSVLine(line);
+                return {
+                  devName: parts[0] || `Sample Developer ${idx + 1}`,
+                  projTitle: parts[1] || `Sample Project ${idx + 1}`,
+                  devMobile: parts[2] || '9883395102',
+                  devAltMobile: parts[3] || '7044293951',
+                  email: parts[4] || 'contact@builder.com',
+                  locality: parts[5] || 'Kolkata',
+                  city: parts[6] || 'Kolkata',
+                  fullAddress: parts[7] || 'Full Address Details',
+                  latitude: parts[8] || '22.722361',
+                  longitude: parts[9] || '88.493403',
+                  possessionStatus: parts[10] || 'Under Construction',
+                  handoverMonthYear: parts[11] || 'December 2026',
+                  totalCoveredParkingCapacity: parts[12] || '24',
+                  coveredParkingRate: parts[13] || '300000',
+                  totalEVParkingCapacity: parts[14] || '6',
+                  evParkingRate: parts[15] || '450000',
+                  totalOpenParkingCapacity: parts[16] || '12',
+                  openParkingRate: parts[17] || '150000',
+                  selectedAmenities: parts[18] ? parts[18].split(';').map(s => s.trim()) : [],
+                  buildingPhotos: parts[19] ? parts[19].split(';').map(s => s.trim()) : []
+                };
+              });
+
+              return (
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>
+                      🔍 LIVE PARSED PREVIEW ({rows.length} Valid Records Ready to Import — 20 Master Columns Mapped)
+                    </h4>
+                    <span style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900' }}>
+                      ✓ AUTO PROJECT IDs & GPS LAT/LONG READY
+                    </span>
+                  </div>
+
+                  <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
+                    <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+                        <thead>
+                          <tr style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                            <th style={{ padding: '8px' }}>Developer Name</th>
+                            <th style={{ padding: '8px' }}>Project Title</th>
+                            <th style={{ padding: '8px' }}>Mobile & Email</th>
+                            <th style={{ padding: '8px' }}>Locality & City</th>
+                            <th style={{ padding: '8px' }}>GPS Lat/Long</th>
+                            <th style={{ padding: '8px' }}>Possession & Handover</th>
+                            <th style={{ padding: '8px' }}>Parking Capacity</th>
+                            <th style={{ padding: '8px' }}>Amenities</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {rows.map((r, i) => (
+                            <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                              <td style={{ padding: '8px', color: '#c084fc', fontWeight: '900' }}>{r.devName}</td>
+                              <td style={{ padding: '8px' }}>
+                                <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{r.projTitle}</strong>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <span style={{ color: '#38bdf8' }}>{r.devMobile}</span>
+                                <br /><span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>{r.email}</span>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{r.locality}</strong>
+                                <br /><span style={{ fontSize: '0.7rem', color: '#38bdf8' }}>{r.city}</span>
+                              </td>
+                              <td style={{ padding: '8px', color: '#4ade80', fontWeight: '800' }}>
+                                📍 {r.latitude}, {r.longitude}
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <span style={{ color: '#eab308', fontWeight: '800' }}>{r.possessionStatus}</span>
+                                <br /><span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>{r.handoverMonthYear}</span>
+                              </td>
+                              <td style={{ padding: '8px', fontSize: '0.7rem' }}>
+                                🚘 Covered: {r.totalCoveredParkingCapacity} (₹{r.coveredParkingRate})
+                                <br />⚡ EV: {r.totalEVParkingCapacity} (₹{r.evParkingRate})
+                              </td>
+                              <td style={{ padding: '8px', fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                {r.selectedAmenities.slice(0, 3).join(', ')}{r.selectedAmenities.length > 3 ? '...' : ''}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* EXECUTE IMPORT BUTTON */}
+                  <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '12px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                    <button 
+                      onClick={() => setShowBulkImportProjectDeveloperModal(false)}
+                      style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      onClick={() => {
+                        let updatedDevsList = [...developers];
+                        rows.forEach((r, idx) => {
+                          const devName = (r.devName || 'Swaramayi Partner').trim();
+                          const projTitle = (r.projTitle || 'Project Master').trim();
+                          const projId = `SRM-PROJ-2026-${String(88 + idx).padStart(6, '0')}`;
+                          const devId = `SRM-DEV-2026-${String(100 + idx).padStart(6, '0')}`;
+
+                          const projObj = {
+                            id: projId,
+                            code: projId,
+                            title: projTitle,
+                            developer: devName,
+                            developer_id: devId,
+                            developer_mobile: r.devMobile,
+                            developer_alt_mobile: r.devAltMobile,
+                            email: r.email,
+                            locality: r.locality,
+                            city: r.city,
+                            full_address: r.fullAddress,
+                            latitude: r.latitude,
+                            longitude: r.longitude,
+                            possession_status: r.possessionStatus,
+                            handover_month_year: r.handoverMonthYear,
+                            total_covered_parking_capacity: parseInt(r.totalCoveredParkingCapacity, 10) || 24,
+                            covered_parking_rate: r.coveredParkingRate,
+                            total_ev_parking_capacity: parseInt(r.totalEVParkingCapacity, 10) || 6,
+                            ev_parking_rate: r.evParkingRate,
+                            total_open_parking_capacity: parseInt(r.totalOpenParkingCapacity, 10) || 12,
+                            open_parking_rate: r.openParkingRate,
+                            amenities: r.selectedAmenities,
+                            building_photos: r.buildingPhotos
+                          };
+
+                          const existingDevIdx = updatedDevsList.findIndex(d => d.name.toLowerCase() === devName.toLowerCase());
+                          if (existingDevIdx >= 0) {
+                            const existingProjs = updatedDevsList[existingDevIdx].projects || [];
+                            if (!existingProjs.some((p: any) => p.title.toLowerCase() === projTitle.toLowerCase())) {
+                              updatedDevsList[existingDevIdx].projects = [...existingProjs, projObj];
+                            }
+                          } else {
+                            updatedDevsList.push({
+                              id: devId,
+                              name: devName,
+                              mobile: r.devMobile || '9849088776',
+                              email: r.email || `${devName.toLowerCase().replace(/\s+/g, '')}@builder.com`,
+                              projects: [projObj]
+                            });
+                          }
+                        });
+
+                        setDevelopers(updatedDevsList);
+                        try {
+                          localStorage.setItem('swaramayi_developers_v1', JSON.stringify(updatedDevsList));
+                        } catch (e) {}
+
+                        setShowBulkImportProjectDeveloperModal(false);
+                        syncAllToMongoDB({ developers: updatedDevsList });
+                        alert(`📥 Successfully imported ${rows.length} Projects & Developers master records into Project Management & MongoDB Atlas!`);
+                      }}
+                      style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
+                    >
+                      🚀 EXECUTE BULK PROJECTS & DEVELOPERS IMPORT ({rows.length} RECORDS)
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
+          </div>
+        </div>
+      )}
+
+      {/* BULK PROPERTY INVENTORY IMPORT MODAL */}
+      {showBulkImportPropertyModal && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.8)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #22c55e', color: isLight ? '#0f172a' : '#ffffff', width: '950px', maxHeight: '90vh', overflowY: 'auto', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 20px 50px rgba(0,0,0,0.8)' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    🏠 📥 BULK PROPERTY INVENTORY DATA IMPORT ENGINE
+                  </h3>
+                  <span style={{ background: '#22c55e', color: '#ffffff', padding: '3px 10px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: '900' }}>
+                    30 FULL PROPERTY FIELDS READY
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
+                  Import hundreds of master property inventory stock units instantly. Upload a CSV/Excel file or paste tabular inventory rows below.
                 </p>
               </div>
 
@@ -12460,7 +12743,7 @@ export default function App() {
                 onClick={() => setShowBulkImportPropertyModal(false)}
                 style={{ background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer', padding: '4px' }}
               >
-                <X size={22} color="#ffffff" />
+                <X size={22} color={isLight ? '#0f172a' : '#ffffff'} />
               </button>
             </div>
 
@@ -12468,8 +12751,8 @@ export default function App() {
             <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: '900', textTransform: 'uppercase' }}>NEED A SAMPLE INVENTORY FORMAT?</span>
-                <p style={{ fontSize: '0.75rem', color: '#cbd5e1', marginTop: '2px', wordBreak: 'break-all' }}>
-                  22 Full Inventory Columns: <code>Title, Developer, ProjectName, Locality, City, Latitude, Longitude, PropertyType, Configuration, TowerBlock, FloorNumber, UnitNumber, CarpetArea, SuperBuiltupArea, Facing, Furnishing, PossessionStatus, AskingPrice, PricePerSqft, ParkingSlot, KeyAmenities, Status</code>
+                <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#cbd5e1', marginTop: '2px', wordBreak: 'break-all' }}>
+                  30 Full Inventory Columns: <code>ProjectID, PropertyTitle, DeveloperName, Locality, City, PropertyCategoryType, BHKConfiguration, SuperBuiltupArea, DeductionPct, CarpetArea, VastuFacing, PossessionStatus, HandoverMonthAndYear, AskingPrice, PricePerSqft, GSTPct, AmenityCharges, ParkingRequired, CarParkingSlot, ParkingPrice, MonthlyMaintenance, StatusInventory, TowerBlock, FloorNumber, TotalFloors, UnitNumber, Furnishing, KeysCustody, ProjectPostingID, ArchitecturalDescription</code>
                 </p>
               </div>
 
@@ -12486,7 +12769,7 @@ export default function App() {
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-                    alert('📥 SAMPLE TEMPLATE DOWNLOADED SUCCESSFULLY!\n\nFile: Swaramayi_Bulk_Property_Inventory_Sample_Template.csv\n• Includes all 22 full inventory columns\n• Populated with 10 complete sample property inventory records\n• Ready for Excel/Google Sheets editing & bulk upload!');
+                    alert('📥 SAMPLE TEMPLATE DOWNLOADED SUCCESSFULLY!\n\nFile: Swaramayi_Bulk_Property_Inventory_Sample_Template.csv\n• Includes all 30 full property inventory columns\n• Populated with 10 complete sample property inventory records\n• Ready for Excel/Google Sheets editing & bulk upload!');
                   }}
                   style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
@@ -12523,7 +12806,7 @@ export default function App() {
                   rows={6}
                   value={bulkPropertyCsvText}
                   onChange={(e) => setBulkPropertyCsvText(e.target.value)}
-                  placeholder="Title, Developer, ProjectName, Locality, City, Latitude, Longitude, PropertyType, Configuration, TowerBlock, FloorNumber, UnitNumber, CarpetArea, SuperBuiltupArea, Facing, Furnishing, PossessionStatus, AskingPrice, PricePerSqft, ParkingSlot, KeyAmenities, Status..."
+                  placeholder="ProjectID, PropertyTitle, DeveloperName, Locality, City, PropertyCategoryType, BHKConfiguration, SuperBuiltupArea, DeductionPct, CarpetArea, VastuFacing, PossessionStatus, HandoverMonthAndYear, AskingPrice, PricePerSqft, GSTPct, AmenityCharges, ParkingRequired, CarParkingSlot, ParkingPrice, MonthlyMaintenance, StatusInventory, TowerBlock, FloorNumber, TotalFloors, UnitNumber, Furnishing, KeysCustody, ProjectPostingID, ArchitecturalDescription..."
                   style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '12px', color: isLight ? '#0f172a' : '#ffffff', fontFamily: 'monospace', fontSize: '0.78rem', outline: 'none' }}
                 />
               </div>
@@ -12536,28 +12819,36 @@ export default function App() {
                 const parts = parseCSVLine(line);
                 return {
                   code: generateNextPropertyCode(idx),
-                  title: parts[0] || `Bulk Property ${idx + 1}`,
-                  developer: parts[1] || 'Swaramayi Developer Partner',
-                  projectName: parts[2] || parts[0] || 'Prime Residence',
-                  locality: parts[3] || 'Kondapur / Madhyamgram',
-                  city: parts[4] || 'Hyderabad',
-                  latitude: parts[5] || '17.44008',
-                  longitude: parts[6] || '78.34891',
-                  propertyType: parts[7] || 'Apartment',
-                  configuration: parts[8] || '3BHK',
-                  towerBlock: parts[9] || 'Tower 1',
-                  floorNumber: parts[10] || '10th Floor',
-                  unitNumber: parts[11] || `Flat ${1001 + idx}`,
-                  carpet_area: parts[12] || '1,650 Sq.Ft.',
-                  superBuiltupArea: parts[13] || '2,200 Sq.Ft.',
-                  facing: parts[14] || 'East Facing',
-                  furnishing: parts[15] || 'Semi-Furnished',
-                  possessionStatus: parts[16] || 'Ready to Move',
-                  final_price: parts[17] || '₹1.50 Crore',
-                  price_sqft: parts[18] || '₹9,200/Sq.Ft.',
-                  parkingSlot: parts[19] || '2 Covered Slots',
-                  keyAmenities: parts[20] || 'Clubhouse, Gym, Swimming Pool',
-                  status: parts[21] || 'AVAILABLE'
+                  projectId: parts[0] || 'SRM-PROJ-2026-000088',
+                  title: parts[1] || `Bulk Property ${idx + 1}`,
+                  developer: parts[2] || 'Swaramayi Developer Partner',
+                  locality: parts[3] || 'Barasat, Kolkata',
+                  city: parts[4] || 'Kolkata',
+                  propertyType: parts[5] || 'Flat / Apartment (New / Builder)',
+                  configuration: parts[6] || '2BHK',
+                  superBuiltupArea: parts[7] || '1,050 Sq.Ft.',
+                  deductionPct: parts[8] || '35%',
+                  carpet_area: parts[9] || '700.35 Sq.Ft.',
+                  facing: parts[10] || 'East Facing',
+                  possessionStatus: parts[11] || 'Under Construction',
+                  handoverMonthYear: parts[12] || 'June 2027',
+                  final_price: parts[13] || '₹35,15,900',
+                  price_sqft: parts[14] || '₹5,020/Sq.Ft.',
+                  gstPct: parts[15] || '5%',
+                  amenityCharges: parts[16] || '150000',
+                  parkingRequired: parts[17] || 'YES',
+                  parkingSlot: parts[18] || 'Covered Basement & 1 Slot',
+                  parkingPrice: parts[19] || '300000',
+                  monthlyMaintenance: parts[20] || '₹1,500/Month',
+                  status: parts[21] || 'AVAILABLE',
+                  towerBlock: parts[22] || 'Tower A',
+                  floorNumber: parts[23] || '3rd Floor',
+                  totalFloors: parts[24] || 'G+4 Floors',
+                  unitNumber: parts[25] || 'Flat 302',
+                  furnishing: parts[26] || 'Semi-Furnished',
+                  keysCustody: parts[27] || 'Developer Site Office',
+                  projectPostingId: parts[28] || 'POST-2026-99',
+                  architecturalDesc: parts[29] || ''
                 };
               });
 
@@ -12565,71 +12856,71 @@ export default function App() {
                 <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h4 style={{ fontSize: '0.9rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>
-                      🔍 LIVE PARSED PREVIEW ({rows.length} Valid Records Ready to Import — 22 Inventory Columns Mapped with GPS)
+                      🔍 LIVE PARSED PREVIEW ({rows.length} Valid Records Ready to Import — 30 Inventory Columns Mapped)
                     </h4>
                     <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '2px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '900' }}>
-                      ✓ AUTO PROPERTY CODES & GPS LAT/LONG READY
+                      ✓ AUTO PROPERTY CODES & PROJECT LINKING READY
                     </span>
                   </div>
 
                   <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
                     <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-<table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
-                      <thead>
-                        <tr style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                          <th style={{ padding: '8px' }}>Auto Code</th>
-                          <th style={{ padding: '8px' }}>Property Title & Project</th>
-                          <th style={{ padding: '8px' }}>Developer & City</th>
-                          <th style={{ padding: '8px' }}>Locality & GPS Coordinates</th>
-                          <th style={{ padding: '8px' }}>Config & Unit</th>
-                          <th style={{ padding: '8px' }}>Carpet / Super Area</th>
-                          <th style={{ padding: '8px' }}>Facing & Possession</th>
-                          <th style={{ padding: '8px' }}>Asking Price & Rate</th>
-                          <th style={{ padding: '8px' }}>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {rows.map((r, i) => (
-                          <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
-                            <td style={{ padding: '8px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{r.code}</td>
-                            <td style={{ padding: '8px' }}>
-                              <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.8rem' }}>{r.title}</strong>
-                              <br /><span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>{r.projectName}</span>
-                            </td>
-                            <td style={{ padding: '8px' }}>
-                              <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{r.developer}</span>
-                              <br /><span style={{ fontSize: '0.7rem', color: '#38bdf8' }}>{r.city}</span>
-                            </td>
-                            <td style={{ padding: '8px' }}>
-                              <strong style={{ color: '#38bdf8' }}>{r.locality}</strong>
-                              <br /><span style={{ fontSize: '0.68rem', color: '#4ade80', fontWeight: '800' }}>📍 {r.latitude}, {r.longitude}</span>
-                            </td>
-                            <td style={{ padding: '8px' }}>
-                              <span style={{ color: '#fbbf24', fontWeight: '800' }}>{r.configuration}</span>
-                              <br /><span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>{r.towerBlock} {r.unitNumber}</span>
-                            </td>
-                            <td style={{ padding: '8px' }}>
-                              <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{r.carpet_area}</span>
-                              <br /><span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Super: {r.superBuiltupArea}</span>
-                            </td>
-                            <td style={{ padding: '8px' }}>
-                              <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{r.facing}</span>
-                              <br /><span style={{ fontSize: '0.7rem', color: '#4ade80' }}>{r.possessionStatus}</span>
-                            </td>
-                            <td style={{ padding: '8px' }}>
-                              <strong style={{ color: '#4ade80', fontSize: '0.85rem' }}>{r.final_price}</strong>
-                              <br /><span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>{r.price_sqft}</span>
-                            </td>
-                            <td style={{ padding: '8px' }}>
-                              <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>
-                                {r.status}
-                              </span>
-                            </td>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+                        <thead>
+                          <tr style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                            <th style={{ padding: '8px' }}>Auto Code</th>
+                            <th style={{ padding: '8px' }}>Project ID</th>
+                            <th style={{ padding: '8px' }}>Property Title</th>
+                            <th style={{ padding: '8px' }}>Developer & City</th>
+                            <th style={{ padding: '8px' }}>Locality</th>
+                            <th style={{ padding: '8px' }}>Config & Unit</th>
+                            <th style={{ padding: '8px' }}>Carpet / Super Area</th>
+                            <th style={{ padding: '8px' }}>Facing & Possession</th>
+                            <th style={{ padding: '8px' }}>Asking Price & Rate</th>
+                            <th style={{ padding: '8px' }}>Status</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-</div>
+                        </thead>
+                        <tbody>
+                          {rows.map((r, i) => (
+                            <tr key={i} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                              <td style={{ padding: '8px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{r.code}</td>
+                              <td style={{ padding: '8px', fontFamily: 'monospace', color: '#a855f7', fontWeight: '800' }}>{r.projectId}</td>
+                              <td style={{ padding: '8px' }}>
+                                <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.8rem' }}>{r.title}</strong>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{r.developer}</span>
+                                <br /><span style={{ fontSize: '0.7rem', color: '#38bdf8' }}>{r.city}</span>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <strong style={{ color: '#38bdf8' }}>{r.locality}</strong>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <span style={{ color: '#fbbf24', fontWeight: '800' }}>{r.configuration}</span>
+                                <br /><span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>{r.towerBlock} {r.unitNumber}</span>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{r.carpet_area}</span>
+                                <br /><span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>Super: {r.superBuiltupArea} ({r.deductionPct})</span>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <span style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{r.facing}</span>
+                                <br /><span style={{ fontSize: '0.7rem', color: '#4ade80' }}>{r.possessionStatus} ({r.handoverMonthYear})</span>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <strong style={{ color: '#4ade80', fontSize: '0.85rem' }}>{r.final_price}</strong>
+                                <br /><span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>{r.price_sqft}</span>
+                              </td>
+                              <td style={{ padding: '8px' }}>
+                                <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>
+                                  {r.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   {/* EXECUTE IMPORT BUTTON */}
@@ -12645,24 +12936,39 @@ export default function App() {
                         const newProps = rows.map((r, i) => ({
                           id: `PROP-${Date.now()}-${i}`,
                           property_code: r.code,
+                          project_id: r.projectId,
                           title: r.title,
                           developer: r.developer,
                           locality: r.locality,
+                          city: r.city,
+                          property_type: r.propertyType,
                           configuration: r.configuration,
+                          super_builtup_area: r.superBuiltupArea,
+                          deduction_pct: r.deductionPct,
                           carpet_area: r.carpet_area,
+                          facing: r.facing,
+                          possession_status: r.possessionStatus,
+                          handover_month_year: r.handoverMonthYear,
                           final_price: r.final_price,
                           price_sqft: r.price_sqft,
+                          gst_pct: r.gstPct,
+                          amenity_charges: r.amenityCharges,
+                          parking_required: r.parkingRequired,
+                          car_parking: r.parkingSlot,
+                          parking_price: r.parkingPrice,
+                          monthly_maintenance: r.monthlyMaintenance,
                           status: r.status,
-                          property_type: r.propertyType,
                           tower_block: r.towerBlock,
                           floor_number: r.floorNumber,
+                          unit_floor: r.floorNumber,
+                          total_floors: r.totalFloors,
                           unit_number: r.unitNumber,
-                          facing: r.facing,
                           furnishing: r.furnishing,
-                          possession_status: r.possessionStatus,
-                          amenities: r.keyAmenities,
-                          latitude: r.latitude,
-                          longitude: r.longitude,
+                          keys_custody: r.keysCustody,
+                          project_posting_id: r.projectPostingId,
+                          architectural_description: r.architectDesc,
+                          latitude: '22.722361',
+                          longitude: '88.493403',
                           map_x: 35 + Math.random() * 30,
                           map_y: 35 + Math.random() * 30
                         }));
@@ -12671,11 +12977,11 @@ export default function App() {
                         let updatedDevsList = [...developers];
                         rows.forEach((r, idx) => {
                           const devName = (r.developer || 'Swaramayi Partner').trim();
-                          const projTitle = (r.projectName || r.title || 'Project').trim();
+                          const projTitle = (r.title || 'Project Master').trim();
                           const existingIdx = updatedDevsList.findIndex(d => d.name.toLowerCase() === devName.toLowerCase());
                           const projObj = {
-                            id: `SRM-PROJ-2026-${String(88 + idx).padStart(6, '0')}`,
-                            code: `SRM-PROJ-2026-${String(88 + idx).padStart(6, '0')}`,
+                            id: r.projectId || `SRM-PROJ-2026-${String(88 + idx).padStart(6, '0')}`,
+                            code: r.projectId || `SRM-PROJ-2026-${String(88 + idx).padStart(6, '0')}`,
                             title: projTitle,
                             locality: r.locality || 'Kolkata'
                           };
@@ -12703,11 +13009,11 @@ export default function App() {
                         setProperties(updatedProps);
                         setShowBulkImportPropertyModal(false);
                         syncAllToMongoDB({ properties: updatedProps, developers: updatedDevsList });
-                        alert(`📥 Successfully imported ${newProps.length} rich bulk property & developer inventory records into Project Management & MongoDB Atlas!`);
+                        alert(`📥 Successfully imported ${newProps.length} full bulk property inventory records into Project Management & MongoDB Atlas!`);
                       }}
                       style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '10px 24px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '8px' }}
                     >
-                      🚀 EXECUTE BULK INVENTORY IMPORT ({rows.length} RICH RECORDS)
+                      🚀 EXECUTE BULK PROPERTY INVENTORY IMPORT ({rows.length} FULL RECORDS)
                     </button>
                   </div>
                 </div>
