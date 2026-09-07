@@ -1,5 +1,5 @@
 import React from 'react';
-import { Upload, Building2, Share2, ArrowRightLeft, Compass, Navigation, Camera, Video, Search, X } from 'lucide-react';
+import { Upload, Building2, Share2, ArrowRightLeft, Compass, Navigation, Camera, Video, Search, X, Download } from 'lucide-react';
 
 interface ProjectManagementViewProps {
   currentRole?: string;
@@ -46,6 +46,8 @@ interface ProjectManagementViewProps {
   detectLocalityFromCoords?: (lat: string, lng: string) => Promise<{ locality: string; fullAddress: string; rawDetails: any }>;
   setPropertyUnits?: React.Dispatch<React.SetStateAction<any[]>>;
   setProperties?: React.Dispatch<React.SetStateAction<any[]>>;
+  developers?: any[];
+  setDevelopers?: React.Dispatch<React.SetStateAction<any[]>>;
   syncAllToMongoDB?: (overrideData?: any) => void;
 }
 
@@ -57,6 +59,8 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   setActiveProjectSubTab,
   properties = [],
   setProperties,
+  developers = [],
+  setDevelopers,
   syncAllToMongoDB,
   propertyUnits = [],
   projectVisitAgreements = [],
@@ -82,6 +86,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   generateNextPropertyCode,
   handleOpenAddPropertyModal,
   setShowBulkImportPropertyModal,
+  setShowBulkImportProjectDeveloperModal,
   setShowDeveloperIntroductionReportModal,
   setShowPvaDocumentModal,
   handleStartEditProperty,
@@ -98,39 +103,101 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
   // DEVELOPER MASTER ID REGISTRY STATE & PERSISTENCE
   const PROJECT_GPS_MAP: Record<string, { lat: string; lng: string }> = {
-    'TILOTTAMA APPARTMENT': { lat: '22.722361', lng: '88.493403' },
-    'My Home Bhooja': { lat: '17.440081', lng: '78.377625' },
-    'My Home Sayuk': { lat: '17.462100', lng: '78.291200' },
-    'My Home Tarkshya': { lat: '17.465400', lng: '78.361200' },
-    'Dhriti Apartments': { lat: '17.468000', lng: '78.358000' },
-    'Dhriti Heights': { lat: '17.442000', lng: '78.349000' },
-    'Aparna Zenon': { lat: '17.468200', lng: '78.354100' },
-    'Aparna Sarovar Zicon': { lat: '17.478900', lng: '78.318000' },
-    'Jayabheri The Peak': { lat: '17.419800', lng: '78.341200' }
+    'SHIBALAY RESIDENCY': { lat: '22.722361', lng: '88.493403' },
+    'GAJAPATI APARTMENT': { lat: '22.722361', lng: '88.493403' },
+    'My Home Sayuk': { lat: '17.4612', lng: '78.3689' },
+    'Dhriti Residency': { lat: '22.698021', lng: '88.463723' },
+    'Rajapushpa Imperia': { lat: '17.4401', lng: '78.3489' },
+    'Aparna Zenith': { lat: '17.4478', lng: '78.3789' },
+    'Jayabheri Peak': { lat: '17.4201', lng: '78.3410' },
+    'Lansum Elena': { lat: '17.4190', lng: '78.3395' },
+    'Star Horizon': { lat: '22.6955', lng: '88.4610' },
+    'Cyber Towers': { lat: '17.4500', lng: '78.3810' },
+    'Aparna Zenon': { lat: '17.4285', lng: '78.3560' },
+    'Prestige High Fields': { lat: '17.4350', lng: '78.3490' }
   };
 
-  const getGpsForProject = (projTitle: string, defaultLat?: string, defaultLng?: string) => {
+  const getGpsForProject = (projTitle?: string, defaultLat?: string, defaultLng?: string) => {
     const cleanTitle = (projTitle || '').trim();
+    if (!cleanTitle) return { lat: defaultLat || '22.722361', lng: defaultLng || '88.493403' };
     if (PROJECT_GPS_MAP[cleanTitle]) return PROJECT_GPS_MAP[cleanTitle];
     const foundKey = Object.keys(PROJECT_GPS_MAP).find(k => k.toLowerCase().includes(cleanTitle.toLowerCase()) || cleanTitle.toLowerCase().includes(k.toLowerCase()));
     if (foundKey) return PROJECT_GPS_MAP[foundKey];
     return { lat: defaultLat || '22.722361', lng: defaultLng || '88.493403' };
   };
 
-  const DEFAULT_DEVELOPERS: any[] = [];
+  const downloadImage = (url: string, filename: string) => {
+    if (!url) return;
+    try {
+      if (url.startsWith('data:')) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        return;
+      }
+      fetch(url)
+        .then(response => response.blob())
+        .then(blob => {
+          const blobUrl = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = blobUrl;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        })
+        .catch(() => {
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          a.target = '_blank';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        });
+    } catch (e) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  };
 
   const [developerMasterList, setDeveloperMasterList] = React.useState<any[]>(() => {
+    if (developers && Array.isArray(developers) && developers.length > 0) return developers;
     try {
       const saved = localStorage.getItem('swaramayi_developers_v1');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
     } catch {
       console.error('Error reading developers from localStorage');
     }
     return [];
   });
+
+  // SYNC DEVELOPER MASTER LIST WITH DEVELOPERS PROP AND LOCALSTORAGE
+  React.useEffect(() => {
+    if (developers && Array.isArray(developers) && developers.length > 0) {
+      setDeveloperMasterList(developers);
+    } else {
+      try {
+        const saved = localStorage.getItem('swaramayi_developers_v1');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) setDeveloperMasterList(parsed);
+        }
+      } catch (e) {}
+    }
+  }, [developers]);
 
   // AUTOMATIC CLEANUP EFFECT: Ensure every project in developerMasterList has a UNIQUE project code
   React.useEffect(() => {
@@ -997,9 +1064,16 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
       description: '',
       site_person_name: '',
       site_person_contact: '',
-      architectural_description: ''
+      architectural_description: '',
+      rera_id: '',
+      hera_no: '',
+      layout_photos: [],
+      layout_photo: '',
+      floor_plan_photos: [],
+      floor_plan_photo: ''
     });
-  }, [setNewPropertyForm]);
+    setActiveProjectSubTab('add_property_master');
+  }, [setNewPropertyForm, setActiveProjectSubTab]);
 
 
   return (
@@ -1019,18 +1093,6 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button 
-            onClick={() => setShowBulkImportProjectDeveloperModal && setShowBulkImportProjectDeveloperModal(true)} 
-            style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: windowWidth <= 640 ? '100%' : 'auto' }}
-          >
-            <Upload size={15} /> 🏢 📥 Import Bulk Projects & Developers
-          </button>
-          <button 
-            onClick={() => setShowBulkImportPropertyModal(true)} 
-            style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: windowWidth <= 640 ? '100%' : 'auto' }}
-          >
-            <Upload size={15} /> 🏠 📥 Import Bulk Property Stock
-          </button>
-          <button 
             onClick={handleOpenNewPropertyForm} 
             style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
@@ -1042,6 +1104,18 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           >
             🏢 + Add Project & Developer
           </button>
+          <button 
+            onClick={() => setShowBulkImportProjectDeveloperModal && setShowBulkImportProjectDeveloperModal(true)} 
+            style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: windowWidth <= 640 ? '100%' : 'auto' }}
+          >
+            <Upload size={15} /> 🏢 📥 Import Bulk Projects & Developers
+          </button>
+          <button 
+            onClick={() => setShowBulkImportPropertyModal(true)} 
+            style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: windowWidth <= 640 ? '100%' : 'auto' }}
+          >
+            <Upload size={15} /> 🏠 📥 Import Bulk Property Stock
+          </button>
           <button onClick={() => alert('📄 Generating Property Stock Inventory CSV Report...')} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#cbd5e1', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Share2 size={15} /> Export Inventory
           </button>
@@ -1051,18 +1125,6 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
       <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
         <button onClick={() => setActiveProjectSubTab('property_master')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'property_master' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'property_master' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
           🏠 Property Master Stock ({properties.length})
-        </button>
-        <button 
-          onClick={handleOpenNewProjectDeveloperForm} 
-          style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_project_developer' ? '#a855f7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_project_developer' ? '#ffffff' : '#a855f7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          🏢 Add Project & Developer
-        </button>
-        <button 
-          onClick={handleOpenNewPropertyForm} 
-          style={{ padding: '8px 14px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === 'add_property_master' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === 'add_property_master' ? '#ffffff' : '#0284c7', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-        >
-          🏠 Add Property
         </button>
         <button onClick={() => setActiveProjectSubTab('introduction_register' as any)} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeProjectSubTab === ('introduction_register' as any) ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeProjectSubTab === ('introduction_register' as any) ? '#ffffff' : '#a855f7', border: activeProjectSubTab === ('introduction_register' as any) ? '1px solid #0284c7' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155') }}>
           🛡️ Customer Introduction Register ({projectVisitAgreements.length})
@@ -1316,6 +1378,30 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     placeholder="e.g. Kondapur Hub / HITEC City Sector / BARASAT" 
                     style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
                     required 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>🏛️ RERA Registration No. (RERA ID)</label>
+                  <input 
+                    type="text" 
+                    value={newPropertyForm.rera_id || ''} 
+                    onChange={(e) => setNewPropertyForm({ ...newPropertyForm, rera_id: e.target.value })} 
+                    placeholder="e.g. WBRERA/P/NOR/2024/000842 or P02400001234" 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontFamily: 'monospace', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>📜 HERA Registration No. (HERA ID)</label>
+                  <input 
+                    type="text" 
+                    value={newPropertyForm.hera_no || ''} 
+                    onChange={(e) => setNewPropertyForm({ ...newPropertyForm, hera_no: e.target.value })} 
+                    placeholder="e.g. WBHERA/P/KOL/2023/000150 or HERA-2024-9981" 
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#a855f7', fontFamily: 'monospace', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
                   />
                 </div>
               </div>
@@ -2145,9 +2231,32 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                 <>
                   {/* SECTION 2: PROPERTY SPECIFICATIONS & UNIT DETAILS */}
                   <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#d97706' : '#fbbf24', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
-                  2. Property Specifications & Unit Details
-                </h4>
+                    <h4 style={{ fontSize: '0.95rem', fontWeight: '800', color: isLight ? '#d97706' : '#fbbf24', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '8px' }}>
+                      2. Property Specifications & Unit Details
+                    </h4>
+                    <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>🏛️ RERA Registration No. (RERA ID)</label>
+                    <input 
+                      type="text" 
+                      value={newPropertyForm.rera_id || ''} 
+                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, rera_id: e.target.value })} 
+                      placeholder="e.g. WBRERA/P/NOR/2024/000842 or P02400001234" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontFamily: 'monospace', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>📜 HERA Registration No. (HERA ID)</label>
+                    <input 
+                      type="text" 
+                      value={newPropertyForm.hera_no || ''} 
+                      onChange={(e) => setNewPropertyForm({ ...newPropertyForm, hera_no: e.target.value })} 
+                      placeholder="e.g. WBHERA/P/KOL/2023/000150 or HERA-2024-9981" 
+                      style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#a855f7', fontFamily: 'monospace', fontWeight: '800', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }} 
+                    />
+                  </div>
+                </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(1, 1fr)' : 'repeat(2, 1fr)', gap: '14px' }}>
                   <div>
@@ -2432,11 +2541,19 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   </div>
                 </div>
 
-                {/* SECTION 2 MULTIPLE UNIT INTERIOR, FLOOR PLAN PHOTO & LIVE VIDEO CAPTURE WIDGET */}
+                {/* SECTION 2 MULTIPLE UNIT INTERIOR, LAYOUT, FLOOR PLAN PHOTO & LIVE VIDEO CAPTURE WIDGET */}
                 {(() => {
                   const unitPhotosList: string[] = Array.isArray(newPropertyForm.unit_photos) 
                     ? newPropertyForm.unit_photos 
                     : (newPropertyForm.unit_photo ? [newPropertyForm.unit_photo] : []);
+
+                  const layoutPhotosList: string[] = Array.isArray(newPropertyForm.layout_photos) 
+                    ? newPropertyForm.layout_photos 
+                    : (newPropertyForm.layout_photo ? [newPropertyForm.layout_photo] : []);
+
+                  const floorPlanPhotosList: string[] = Array.isArray(newPropertyForm.floor_plan_photos) 
+                    ? newPropertyForm.floor_plan_photos 
+                    : (newPropertyForm.floor_plan_photo ? [newPropertyForm.floor_plan_photo] : []);
 
                   const unitVideosList: string[] = Array.isArray(newPropertyForm.unit_videos)
                     ? newPropertyForm.unit_videos
@@ -2464,6 +2581,50 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     }
                   };
 
+                  const handleProcessLayoutPhotoFiles = (files: FileList | null) => {
+                    if (files && files.length > 0) {
+                      const fileArray = Array.from(files);
+                      const readPromises = fileArray.map(file => {
+                        return new Promise<string>((resolve) => {
+                          const reader = new FileReader();
+                          reader.onload = (evt) => resolve(evt.target?.result as string || '');
+                          reader.readAsDataURL(file);
+                        });
+                      });
+                      Promise.all(readPromises).then(base64Results => {
+                        const validResults = base64Results.filter(b => b);
+                        const updatedList = [...layoutPhotosList, ...validResults];
+                        setNewPropertyForm((prev: any) => ({
+                          ...prev,
+                          layout_photos: updatedList,
+                          layout_photo: updatedList[0] || ''
+                        }));
+                      });
+                    }
+                  };
+
+                  const handleProcessFloorPlanPhotoFiles = (files: FileList | null) => {
+                    if (files && files.length > 0) {
+                      const fileArray = Array.from(files);
+                      const readPromises = fileArray.map(file => {
+                        return new Promise<string>((resolve) => {
+                          const reader = new FileReader();
+                          reader.onload = (evt) => resolve(evt.target?.result as string || '');
+                          reader.readAsDataURL(file);
+                        });
+                      });
+                      Promise.all(readPromises).then(base64Results => {
+                        const validResults = base64Results.filter(b => b);
+                        const updatedList = [...floorPlanPhotosList, ...validResults];
+                        setNewPropertyForm((prev: any) => ({
+                          ...prev,
+                          floor_plan_photos: updatedList,
+                          floor_plan_photo: updatedList[0] || ''
+                        }));
+                      });
+                    }
+                  };
+
                   const handleProcessUnitVideoFiles = (files: FileList | null) => {
                     if (files && files.length > 0) {
                       const fileArray = Array.from(files);
@@ -2486,242 +2647,341 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                   };
 
                   return (
-                    <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #38bdf8', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                        <div>
-                          <span style={{ fontSize: '0.86rem', color: '#38bdf8', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <Camera size={18} color="#38bdf8" /> 📸 Unit Interior, Room Layout, Floor Plan Photos & Walkthrough Videos
-                          </span>
-                          <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '3px 0 0 0' }}>
-                            Capture & upload flat interiors, room layouts, floor plans, and record live unit walkthrough videos.
-                          </p>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                          {/* LIVE CAMERA CAPTURE PHOTO BUTTON */}
-                          <label style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(22, 163, 74, 0.35)' }}>
-                            <Camera size={15} color="#ffffff" />
-                            📸 CAPTURE CAMERA PHOTO
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              capture="environment"
-                              style={{ display: 'none' }}
-                              onChange={(e) => handleProcessUnitPhotoFiles(e.target.files)}
-                            />
-                          </label>
-
-                          {/* UPLOAD MULTIPLE PHOTOS BUTTON */}
-                          <label style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.35)' }}>
-                            <Upload size={15} color="#ffffff" />
-                            🩵 UPLOAD UNIT PHOTOS
-                            <input 
-                              type="file" 
-                              accept="image/*" 
-                              multiple
-                              style={{ display: 'none' }}
-                              onChange={(e) => handleProcessUnitPhotoFiles(e.target.files)}
-                            />
-                          </label>
-
-                          {/* LIVE CAMERA CAPTURE VIDEO BUTTON */}
-                          <label style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#0f172a', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(234, 179, 8, 0.35)' }}>
-                            <Video size={15} color="#0f172a" />
-                            🎥 CAPTURE CAMERA VIDEO
-                            <input 
-                              type="file" 
-                              accept="video/*" 
-                              capture="environment"
-                              style={{ display: 'none' }}
-                              onChange={(e) => handleProcessUnitVideoFiles(e.target.files)}
-                            />
-                          </label>
-
-                          {/* UPLOAD VIDEO FILE BUTTON */}
-                          <label style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(168, 85, 247, 0.35)' }}>
-                            <Video size={15} color="#ffffff" />
-                            🔮 UPLOAD UNIT VIDEO FILE
-                            <input 
-                              type="file" 
-                              accept="video/*" 
-                              multiple
-                              style={{ display: 'none' }}
-                              onChange={(e) => handleProcessUnitVideoFiles(e.target.files)}
-                            />
-                          </label>
-
-                          {/* LIVE RECORD VIDEO WEBCAM BUTTON */}
-                          <button
-                            type="button"
-                            onClick={isRecordingVideo ? stopLiveVideoRecording : startLiveVideoRecording}
-                            style={{ background: isRecordingVideo ? '#ef4444' : '#22c55e', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: isRecordingVideo ? '0 0 12px rgba(239, 68, 68, 0.8)' : '0 2px 10px rgba(34, 197, 94, 0.35)' }}
-                          >
-                            <Video size={15} color="#ffffff" />
-                            {isRecordingVideo ? `⏹️ STOP & SAVE VIDEO (${recordingSeconds}s)` : '🔴 LIVE WEBCAM RECORDER'}
-                          </button>
-
-                          {/* SAMPLE PRESET GALLERY BUTTON */}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const sampleUnitPhotos = [
-                                'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
-                                'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=800&q=80',
-                                'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80',
-                                'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80'
-                              ];
-                              const updatedList = Array.from(new Set([...unitPhotosList, ...sampleUnitPhotos]));
-                              setNewPropertyForm((prev: any) => ({
-                                ...prev,
-                                unit_photos: updatedList,
-                                unit_photo: updatedList[0] || ''
-                              }));
-                            }}
-                            style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: '1.5px solid #38bdf8', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}
-                          >
-                            🖼️ Preset Unit Interiors
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* LIVE VIDEO CAMERA VIEWFINDER OVERLAY WHEN RECORDING */}
-                      {isRecordingVideo && (
-                        <div style={{ background: '#000000', border: '2px solid #ef4444', borderRadius: '12px', padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                            <span style={{ color: '#ef4444', fontWeight: '900', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              🔴 RECORDING LIVE WALKTHROUGH VIDEO ({recordingSeconds} SECONDS)
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                      
+                      {/* CARD 1: 📐 PROPERTY LAYOUT & MASTER SITE PLAN UPLOAD */}
+                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #a855f7', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.86rem', color: '#a855f7', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              📐 Property Layout & Master Site Plan Diagram Upload
                             </span>
-                            <button 
+                            <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '3px 0 0 0' }}>
+                              Upload master layout plan, site plan blueprint, and land plot boundary diagrams for this project/property.
+                            </p>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <label style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', padding: '7px 12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Upload size={14} color="#ffffff" />
+                              📐 UPLOAD LAYOUT PLAN
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                multiple
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleProcessLayoutPhotoFiles(e.target.files)}
+                              />
+                            </label>
+
+                            <button
                               type="button"
-                              onClick={stopLiveVideoRecording}
-                              style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer' }}
+                              onClick={() => {
+                                const sampleLayouts = [
+                                  'https://images.unsplash.com/photo-1524813686514-a57563d77965?auto=format&fit=crop&w=800&q=80',
+                                  'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80'
+                                ];
+                                const updatedList = Array.from(new Set([...layoutPhotosList, ...sampleLayouts]));
+                                setNewPropertyForm((prev: any) => ({
+                                  ...prev,
+                                  layout_photos: updatedList,
+                                  layout_photo: updatedList[0] || ''
+                                }));
+                              }}
+                              style={{ background: isLight ? '#f8fafc' : '#0f172a', color: '#a855f7', border: '1.5px solid #a855f7', padding: '7px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.76rem', cursor: 'pointer' }}
                             >
-                              ⏹️ Stop Recording
+                              🖼️ Preset Master Layouts
                             </button>
                           </div>
-                          <video 
-                            ref={videoPreviewRef} 
-                            muted 
-                            playsInline 
-                            style={{ width: '100%', maxHeight: '240px', borderRadius: '8px', background: '#0f172a', objectFit: 'cover' }} 
-                          />
                         </div>
-                      )}
 
-                      {/* ADD CUSTOM PHOTO & VIDEO URL INPUTS */}
-                      <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '1fr 1fr', gap: '10px' }}>
+                        {/* LAYOUT PLAN URL INPUT */}
                         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                           <input 
                             type="text" 
-                            id="newUnitPhotoUrlInput"
-                            placeholder="Paste interior / floor plan photo URL"
+                            id="newLayoutPhotoUrlInput"
+                            placeholder="Paste Master Site Plan / Property Layout diagram URL"
                             style={{ flex: 1, background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.84rem' }} 
                           />
                           <button
                             type="button"
                             onClick={() => {
-                              const el = document.getElementById('newUnitPhotoUrlInput') as HTMLInputElement;
+                              const el = document.getElementById('newLayoutPhotoUrlInput') as HTMLInputElement;
                               if (el && el.value.trim()) {
                                 const val = el.value.trim();
-                                const updatedList = [...unitPhotosList, val];
+                                const updatedList = [...layoutPhotosList, val];
                                 setNewPropertyForm((prev: any) => ({
                                   ...prev,
-                                  unit_photos: updatedList,
-                                  unit_photo: updatedList[0] || ''
-                                }));
-                                el.value = '';
-                              }
-                            }}
-                            style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '8px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                          >
-                            ➕ Add Photo URL
-                          </button>
-                        </div>
-
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <input 
-                            type="text" 
-                            id="newUnitVideoUrlInput"
-                            placeholder="Paste video walkthrough URL / YouTube link"
-                            style={{ flex: 1, background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.84rem' }} 
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const el = document.getElementById('newUnitVideoUrlInput') as HTMLInputElement;
-                              if (el && el.value.trim()) {
-                                const val = el.value.trim();
-                                const updatedList = [...unitVideosList, val];
-                                setNewPropertyForm((prev: any) => ({
-                                  ...prev,
-                                  unit_videos: updatedList
+                                  layout_photos: updatedList,
+                                  layout_photo: updatedList[0] || ''
                                 }));
                                 el.value = '';
                               }
                             }}
                             style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
                           >
-                            📹 Add Video URL
+                            ➕ Add Layout URL
                           </button>
                         </div>
-                      </div>
 
-                      {/* MULTIPLE UNIT PHOTOS GALLERY GRID */}
-                      {unitPhotosList.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid rgba(56, 189, 248, 0.4)', borderRadius: '10px', padding: '12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.76rem', color: '#38bdf8', fontWeight: '900' }}>
-                              🖼️ UPLOADED UNIT & INTERIOR PHOTO GALLERY ({unitPhotosList.length} Photo{unitPhotosList.length > 1 ? 's' : ''})
-                            </span>
-                            <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-                              Photo #1 will be shown on matching cost sheets
-                            </span>
-                          </div>
-
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
-                            {unitPhotosList.map((photoUrl, idx) => (
-                              <div key={idx} style={{ position: 'relative', background: isLight ? '#ffffff' : '#1e293b', border: idx === 0 ? '2px solid #22c55e' : '1px solid #334155', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <img 
-                                  src={photoUrl} 
-                                  alt={`Unit Photo ${idx + 1}`} 
-                                  style={{ width: '100%', height: '110px', objectFit: 'cover', borderRadius: '6px' }} 
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                                  <span style={{ fontSize: '0.66rem', fontWeight: '900', color: idx === 0 ? '#4ade80' : '#38bdf8' }}>
-                                    {idx === 0 ? '⭐ Primary Unit' : `Unit Photo #${idx + 1}`}
+                        {/* UPLOADED LAYOUT PHOTOS PREVIEW GRID */}
+                        {layoutPhotosList.length > 0 && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', background: isLight ? '#f8fafc' : '#0f172a', padding: '10px', borderRadius: '8px', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
+                            {layoutPhotosList.map((photoUrl, idx) => (
+                              <div key={`layout_${idx}`} style={{ position: 'relative', background: isLight ? '#ffffff' : '#1e293b', border: idx === 0 ? '2px solid #a855f7' : '1px solid #334155', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <img src={photoUrl} alt={`Property Layout ${idx + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '6px' }} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '0.64rem', fontWeight: '900', color: '#a855f7' }}>
+                                    {idx === 0 ? '⭐ Primary Layout' : `Layout #${idx + 1}`}
                                   </span>
-                                  <button 
-                                    type="button" 
-                                    onClick={() => {
-                                      const updatedList = unitPhotosList.filter((_, i) => i !== idx);
-                                      setNewPropertyForm((prev: any) => ({
-                                        ...prev,
-                                        unit_photos: updatedList,
-                                        unit_photo: updatedList[0] || ''
-                                      }));
-                                    }}
-                                    style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', padding: '3px 8px', borderRadius: '4px', fontSize: '0.66rem', fontWeight: '800', cursor: 'pointer' }}
-                                  >
-                                    🗑️ Remove
-                                  </button>
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button type="button" onClick={() => downloadImage(photoUrl, `layout_diagram_${idx + 1}.jpg`)} style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#a855f7', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
+                                      <Download size={10} />
+                                    </button>
+                                    <button type="button" onClick={() => {
+                                      const updatedList = layoutPhotosList.filter((_, i) => i !== idx);
+                                      setNewPropertyForm((prev: any) => ({ ...prev, layout_photos: updatedList, layout_photo: updatedList[0] || '' }));
+                                    }} style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
+                                      🗑️
+                                    </button>
+                                  </div>
                                 </div>
                               </div>
                             ))}
                           </div>
-                        </div>
-                      )}
+                        )}
+                      </div>
 
-                      {/* UPLOADED UNIT WALKTHROUGH VIDEO GALLERY GRID */}
-                      {unitVideosList.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.76rem', color: '#a855f7', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Video size={16} color="#a855f7" /> 🎬 UPLOADED UNIT WALKTHROUGH VIDEO GALLERY ({unitVideosList.length} Video{unitVideosList.length > 1 ? 's' : ''})
+                      {/* CARD 2: 🗺️ ARCHITECTURAL UNIT FLOOR PLAN UPLOAD */}
+                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #eab308', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.86rem', color: '#eab308', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              🗺️ Architectural Unit Floor Plan Diagram Upload
                             </span>
-                            <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-                              Full HD video playback enabled
-                            </span>
+                            <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '3px 0 0 0' }}>
+                              Upload 2D/3D unit floor plan drawings, room dimension blueprints, and structural unit layouts.
+                            </p>
                           </div>
+
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            <label style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#0f172a', padding: '7px 12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Upload size={14} color="#0f172a" />
+                              🗺️ UPLOAD FLOOR PLAN
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                multiple
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleProcessFloorPlanPhotoFiles(e.target.files)}
+                              />
+                            </label>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const sampleFloorPlans = [
+                                  'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80',
+                                  'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=800&q=80'
+                                ];
+                                const updatedList = Array.from(new Set([...floorPlanPhotosList, ...sampleFloorPlans]));
+                                setNewPropertyForm((prev: any) => ({
+                                  ...prev,
+                                  floor_plan_photos: updatedList,
+                                  floor_plan_photo: updatedList[0] || ''
+                                }));
+                              }}
+                              style={{ background: isLight ? '#f8fafc' : '#0f172a', color: '#eab308', border: '1.5px solid #eab308', padding: '7px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.76rem', cursor: 'pointer' }}
+                            >
+                              🖼️ Preset Floor Plans
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* FLOOR PLAN URL INPUT */}
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <input 
+                            type="text" 
+                            id="newFloorPlanPhotoUrlInput"
+                            placeholder="Paste 2D/3D Architectural Unit Floor Plan diagram URL"
+                            style={{ flex: 1, background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.84rem' }} 
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const el = document.getElementById('newFloorPlanPhotoUrlInput') as HTMLInputElement;
+                              if (el && el.value.trim()) {
+                                const val = el.value.trim();
+                                const updatedList = [...floorPlanPhotosList, val];
+                                setNewPropertyForm((prev: any) => ({
+                                  ...prev,
+                                  floor_plan_photos: updatedList,
+                                  floor_plan_photo: updatedList[0] || ''
+                                }));
+                                el.value = '';
+                              }
+                            }}
+                            style={{ background: '#eab308', color: '#0f172a', border: 'none', padding: '8px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          >
+                            ➕ Add Floor Plan URL
+                          </button>
+                        </div>
+
+                        {/* UPLOADED FLOOR PLAN PHOTOS PREVIEW GRID */}
+                        {floorPlanPhotosList.length > 0 && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', background: isLight ? '#f8fafc' : '#0f172a', padding: '10px', borderRadius: '8px', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
+                            {floorPlanPhotosList.map((photoUrl, idx) => (
+                              <div key={`floor_${idx}`} style={{ position: 'relative', background: isLight ? '#ffffff' : '#1e293b', border: idx === 0 ? '2px solid #eab308' : '1px solid #334155', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <img src={photoUrl} alt={`Floor Plan ${idx + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '6px' }} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '0.64rem', fontWeight: '900', color: '#eab308' }}>
+                                    {idx === 0 ? '⭐ Primary Floor Plan' : `Floor Plan #${idx + 1}`}
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button type="button" onClick={() => downloadImage(photoUrl, `floor_plan_diagram_${idx + 1}.jpg`)} style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#eab308', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
+                                      <Download size={10} />
+                                    </button>
+                                    <button type="button" onClick={() => {
+                                      const updatedList = floorPlanPhotosList.filter((_, i) => i !== idx);
+                                      setNewPropertyForm((prev: any) => ({ ...prev, floor_plan_photos: updatedList, floor_plan_photo: updatedList[0] || '' }));
+                                    }} style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
+                                      🗑️
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* CARD 3: 📸 UNIT INTERIOR & LIVE VIDEO CAPTURE WIDGET */}
+                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #38bdf8', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                          <div>
+                            <span style={{ fontSize: '0.86rem', color: '#38bdf8', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Camera size={18} color="#38bdf8" /> 📸 Unit Interior Photos & Walkthrough Videos
+                            </span>
+                            <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '3px 0 0 0' }}>
+                              Capture & upload flat interiors, room layouts, and record live unit walkthrough videos.
+                            </p>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {/* LIVE CAMERA CAPTURE PHOTO BUTTON */}
+                            <label style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(22, 163, 74, 0.35)' }}>
+                              <Camera size={15} color="#ffffff" />
+                              📸 CAPTURE CAMERA PHOTO
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                capture="environment"
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleProcessUnitPhotoFiles(e.target.files)}
+                              />
+                            </label>
+
+                            {/* UPLOAD MULTIPLE PHOTOS BUTTON */}
+                            <label style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.35)' }}>
+                              <Upload size={15} color="#ffffff" />
+                              🩵 UPLOAD UNIT PHOTOS
+                              <input 
+                                type="file" 
+                                accept="image/*" 
+                                multiple
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleProcessUnitPhotoFiles(e.target.files)}
+                              />
+                            </label>
+
+                            {/* LIVE CAMERA CAPTURE VIDEO BUTTON */}
+                            <label style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#0f172a', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(234, 179, 8, 0.35)' }}>
+                              <Video size={15} color="#0f172a" />
+                              🎥 CAPTURE CAMERA VIDEO
+                              <input 
+                                type="file" 
+                                accept="video/*" 
+                                capture="environment"
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleProcessUnitVideoFiles(e.target.files)}
+                              />
+                            </label>
+
+                            {/* UPLOAD VIDEO FILE BUTTON */}
+                            <label style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 2px 10px rgba(168, 85, 247, 0.35)' }}>
+                              <Video size={15} color="#ffffff" />
+                              🔮 UPLOAD UNIT VIDEO FILE
+                              <input 
+                                type="file" 
+                                accept="video/*" 
+                                multiple
+                                style={{ display: 'none' }}
+                                onChange={(e) => handleProcessUnitVideoFiles(e.target.files)}
+                              />
+                            </label>
+
+                            {/* SAMPLE PRESET GALLERY BUTTON */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const sampleUnitPhotos = [
+                                  'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80',
+                                  'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=800&q=80',
+                                  'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80',
+                                  'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=800&q=80'
+                                ];
+                                const updatedList = Array.from(new Set([...unitPhotosList, ...sampleUnitPhotos]));
+                                setNewPropertyForm((prev: any) => ({
+                                  ...prev,
+                                  unit_photos: updatedList,
+                                  unit_photo: updatedList[0] || ''
+                                }));
+                              }}
+                              style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: '1.5px solid #38bdf8', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}
+                            >
+                              🖼️ Preset Unit Interiors
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* UPLOADED UNIT PHOTOS PREVIEW GRID */}
+                        {unitPhotosList.length > 0 && (
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', background: isLight ? '#f8fafc' : '#0f172a', padding: '10px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                            {unitPhotosList.map((photoUrl, idx) => (
+                              <div key={`unit_${idx}`} style={{ position: 'relative', background: isLight ? '#ffffff' : '#1e293b', border: idx === 0 ? '2px solid #38bdf8' : '1px solid #334155', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <img src={photoUrl} alt={`Unit Interior ${idx + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '6px' }} />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontSize: '0.64rem', fontWeight: '900', color: '#38bdf8' }}>
+                                    {idx === 0 ? '⭐ Primary Photo' : `Unit Photo #${idx + 1}`}
+                                  </span>
+                                  <div style={{ display: 'flex', gap: '4px' }}>
+                                    <button type="button" onClick={() => downloadImage(photoUrl, `unit_photo_${idx + 1}.jpg`)} style={{ background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
+                                      <Download size={10} />
+                                    </button>
+                                    <button type="button" onClick={() => {
+                                      const updatedList = unitPhotosList.filter((_, i) => i !== idx);
+                                      setNewPropertyForm((prev: any) => ({ ...prev, unit_photos: updatedList, unit_photo: updatedList[0] || '' }));
+                                    }} style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
+                                      🗑️
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* UPLOADED UNIT WALKTHROUGH VIDEO GALLERY GRID */}
+                        {unitVideosList.length > 0 && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid rgba(168, 85, 247, 0.4)', borderRadius: '10px', padding: '12px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.76rem', color: '#a855f7', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Video size={16} color="#a855f7" /> 🎬 UPLOADED UNIT WALKTHROUGH VIDEO GALLERY ({unitVideosList.length} Video{unitVideosList.length > 1 ? 's' : ''})
+                              </span>
+                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                Full HD video playback enabled
+                              </span>
+                            </div>
 
                           <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
                             {unitVideosList.map((videoUrl, idx) => (
@@ -2755,8 +3015,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         </div>
                       )}
                     </div>
-                  );
-                })()}
+                  </div>
+                );
+              })()}
               </div>
 
               {/* SECTION 3: COMMERCIALS, PRICING & BROKERAGE */}
@@ -3476,6 +3737,21 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
           ...(Array.isArray(viewPropertyModal.unit_videos) && viewPropertyModal.unit_videos.length > 0 ? viewPropertyModal.unit_videos : [])
         ])).filter(Boolean);
 
+        // 📐 PROPERTY LAYOUT & MASTER SITE PLAN DIAGRAMS
+        const layoutPhotosList: string[] = Array.from(new Set([
+          ...(Array.isArray(viewPropertyModal.layout_photos) && viewPropertyModal.layout_photos.length > 0 ? viewPropertyModal.layout_photos : []),
+          ...(viewPropertyModal.layout_photo ? [viewPropertyModal.layout_photo] : []),
+          ...(matchedMaster?.layout_photos || []),
+          'https://images.unsplash.com/photo-1524813686514-a57563d77965?auto=format&fit=crop&w=800&q=80'
+        ])).filter(Boolean);
+
+        // 🗺️ ARCHITECTURAL UNIT FLOOR PLAN DIAGRAMS
+        const floorPlanPhotosList: string[] = Array.from(new Set([
+          ...(Array.isArray(viewPropertyModal.floor_plan_photos) && viewPropertyModal.floor_plan_photos.length > 0 ? viewPropertyModal.floor_plan_photos : []),
+          ...(viewPropertyModal.floor_plan_photo ? [viewPropertyModal.floor_plan_photo] : []),
+          'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80'
+        ])).filter(Boolean);
+
         const superBuiltupDisp = viewPropertyModal.super_builtup_area 
           ? (viewPropertyModal.super_builtup_area.toString().toLowerCase().includes('sq') ? viewPropertyModal.super_builtup_area : `${viewPropertyModal.super_builtup_area} Sq.Ft.`)
           : '1,283 Sq.Ft.';
@@ -3692,9 +3968,24 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     <h4 style={{ fontSize: '0.9rem', fontWeight: '900', color: '#eab308', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                       🏢 UPLOADED BUILDING & EXTERIOR ELEVATION GALLERY (PROJECT NAME WISE: {viewPropertyModal.title}) ({buildingPhotosList.length} Photos Listed)
                     </h4>
-                    <span style={{ fontSize: '0.72rem', background: 'rgba(234, 179, 8, 0.2)', color: '#eab308', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
-                      📌 Shared Across Project ({viewPropertyModal.title})
-                    </span>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {buildingPhotosList.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            buildingPhotosList.forEach((url, idx) => {
+                              downloadImage(url, `${(viewPropertyModal.title || 'project').replace(/\s+/g, '_')}_exterior_${idx + 1}.jpg`);
+                            });
+                          }}
+                          style={{ background: '#eab308', color: '#000000', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Download size={13} /> 📥 Download All Building Photos
+                        </button>
+                      )}
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(234, 179, 8, 0.2)', color: '#eab308', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                        📌 Shared Across Project ({viewPropertyModal.title})
+                      </span>
+                    </div>
                   </div>
 
                   {buildingPhotosList.length > 0 ? (
@@ -3705,6 +3996,17 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(15, 23, 42, 0.85)', color: '#ffffff', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
                             {idx === 0 ? '⭐ Primary Exterior Cover' : idx === 1 ? '🏢 Building Elevation' : `Exterior #${idx + 1}`}
                           </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              downloadImage(url, `${(viewPropertyModal.title || 'project').replace(/\s+/g, '_')}_exterior_${idx + 1}.jpg`);
+                            }}
+                            title="Download Image"
+                            style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(234, 179, 8, 0.95)', color: '#000000', border: 'none', padding: '3px 7px', borderRadius: '5px', fontSize: '0.68rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
+                          >
+                            <Download size={11} /> Download
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -3721,9 +4023,24 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     <h4 style={{ fontSize: '0.9rem', fontWeight: '900', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
                       📸 UNIT INTERIOR & FLOOR PLAN PHOTOS (PROPERTY CODE WISE: {viewPropertyModal.property_code}) ({unitPhotosList.length} Photos Listed)
                     </h4>
-                    <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
-                      🔑 Scoped to Property Code ({viewPropertyModal.property_code})
-                    </span>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      {unitPhotosList.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            unitPhotosList.forEach((url, idx) => {
+                              downloadImage(url, `${(viewPropertyModal.property_code || 'unit').replace(/\s+/g, '_')}_photo_${idx + 1}.jpg`);
+                            });
+                          }}
+                          style={{ background: '#38bdf8', color: '#0f172a', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                        >
+                          <Download size={13} /> 📥 Download All Unit Photos
+                        </button>
+                      )}
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                        🔑 Scoped to Property Code ({viewPropertyModal.property_code})
+                      </span>
+                    </div>
                   </div>
 
                   {unitPhotosList.length > 0 ? (
@@ -3734,6 +4051,17 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(15, 23, 42, 0.85)', color: '#ffffff', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
                             {idx === 0 ? '🛋️ Living Room Layout' : idx === 1 ? '🛏️ Bedroom Interior' : idx === 2 ? '🍳 Kitchen View' : `Floor Plan #${idx + 1}`}
                           </span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              downloadImage(url, `${(viewPropertyModal.property_code || 'unit').replace(/\s+/g, '_')}_photo_${idx + 1}.jpg`);
+                            }}
+                            title="Download Image"
+                            style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(56, 189, 248, 0.95)', color: '#0f172a', border: 'none', padding: '3px 7px', borderRadius: '5px', fontSize: '0.68rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
+                          >
+                            <Download size={11} /> Download
+                          </button>
                         </div>
                       ))}
                     </div>
@@ -3767,6 +4095,72 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                       </div>
                     </div>
                   )}
+                </div>
+
+                {/* SECTION 7: 📐 PROPERTY LAYOUT & ARCHITECTURAL FLOOR PLAN GALLERY */}
+                <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #a855f7', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <h4 style={{ fontSize: '0.9rem', fontWeight: '900', color: '#a855f7', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                      📐 PROPERTY LAYOUT & ARCHITECTURAL FLOOR PLAN GALLERY ({layoutPhotosList.length + floorPlanPhotosList.length} Diagrams Listed)
+                    </h4>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          [...layoutPhotosList, ...floorPlanPhotosList].forEach((url, idx) => {
+                            downloadImage(url, `${(viewPropertyModal.property_code || 'layout').replace(/\s+/g, '_')}_diagram_${idx + 1}.jpg`);
+                          });
+                        }}
+                        style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Download size={13} /> 📥 Download All Layout & Floor Plans
+                      </button>
+                      <span style={{ fontSize: '0.72rem', background: 'rgba(168, 85, 247, 0.2)', color: '#a855f7', padding: '2px 8px', borderRadius: '4px', fontWeight: '800' }}>
+                        📐 Master Site & Unit Floor Plan Diagrams
+                      </span>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '10px' }}>
+                    {layoutPhotosList.map((url, idx) => (
+                      <div key={`layout_${idx}`} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #a855f7', background: '#000000', cursor: 'pointer', height: '120px' }}>
+                        <img src={url} alt={`Property Layout ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onClick={() => window.open(url, '_blank')} />
+                        <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(15, 23, 42, 0.85)', color: '#a855f7', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
+                          📐 Property Layout #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadImage(url, `${(viewPropertyModal.title || 'layout').replace(/\s+/g, '_')}_master_layout_${idx + 1}.jpg`);
+                          }}
+                          title="Download Layout Image"
+                          style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(168, 85, 247, 0.95)', color: '#ffffff', border: 'none', padding: '3px 7px', borderRadius: '5px', fontSize: '0.68rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
+                        >
+                          <Download size={11} /> Download
+                        </button>
+                      </div>
+                    ))}
+                    {floorPlanPhotosList.map((url, idx) => (
+                      <div key={`floor_${idx}`} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', border: '1.5px solid #38bdf8', background: '#000000', cursor: 'pointer', height: '120px' }}>
+                        <img src={url} alt={`Floor Plan ${idx + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onClick={() => window.open(url, '_blank')} />
+                        <span style={{ position: 'absolute', bottom: '4px', left: '4px', background: 'rgba(15, 23, 42, 0.85)', color: '#38bdf8', fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', fontWeight: '800' }}>
+                          🗺️ Floor Plan #{idx + 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            downloadImage(url, `${(viewPropertyModal.property_code || 'floorplan').replace(/\s+/g, '_')}_floor_plan_${idx + 1}.jpg`);
+                          }}
+                          title="Download Floor Plan Image"
+                          style={{ position: 'absolute', top: '4px', right: '4px', background: 'rgba(56, 189, 248, 0.95)', color: '#0f172a', border: 'none', padding: '3px 7px', borderRadius: '5px', fontSize: '0.68rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 6px rgba(0,0,0,0.5)' }}
+                        >
+                          <Download size={11} /> Download
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {/* SECTION 6: 👤 SITE CONTACT PERSON & PROPERTY HIGHLIGHTS */}

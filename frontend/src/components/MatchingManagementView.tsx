@@ -1,5 +1,5 @@
-import React from 'react';
-import { Zap, Search, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { Zap, Search, X, SearchCode, Eye, FileText } from 'lucide-react';
 
 interface MatchingManagementViewProps {
   isLight: boolean;
@@ -33,6 +33,8 @@ interface MatchingManagementViewProps {
   handleRowLevelCreateCostSheet: (prop: any) => void;
   handleBulkCreateCostSheets: () => void;
   individualCostSheets?: any[];
+  sourcingRequests?: any[];
+  setSourcingRequests?: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
 export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
@@ -67,7 +69,92 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
   handleRowLevelCreateCostSheet,
   handleBulkCreateCostSheets,
   individualCostSheets = [],
+  sourcingRequests = [],
+  setSourcingRequests,
 }) => {
+  // PROPERTY SOURCING REQUEST MODAL STATES
+  const [sourcingModalRequest, setSourcingModalRequest] = useState<any | null>(null);
+  const [sourcingReasonInput, setSourcingReasonInput] = useState<string>('');
+  const [sourcingError, setSourcingError] = useState<string>('');
+
+  // HANDLE CONFIRM MOVE TO PROPERTY SOURCING REQUEST DESK
+  const handleConfirmMoveToSourcing = () => {
+    if (!sourcingModalRequest) return;
+
+    if (!sourcingReasonInput.trim()) {
+      setSourcingError('⚠️ Message Required! Please write why you are sending this customer into Property Sourcing Request.');
+      return;
+    }
+
+    const nextCount = (sourcingRequests || []).length + 105;
+    const newSourcingId = `SRM-SRC-2026-000${nextCount}`;
+    const cust = customers.find(c => c.customer_number === sourcingModalRequest.customerNumber || c.name === sourcingModalRequest.customerName) || {};
+
+    const newSourcingObj = {
+      id: newSourcingId,
+      sourcing_id: newSourcingId,
+      created_at: new Date().toISOString(),
+      customer_name: sourcingModalRequest.customerName || cust.name || 'Customer',
+      customer_number: sourcingModalRequest.customerNumber || cust.customer_number || 'SRM-CUS-2026-000188',
+      mobile: sourcingModalRequest.mobile || cust.mobile || '8876597975',
+      email: cust.email || sourcingModalRequest.email || '',
+      customer_id: sourcingModalRequest.customerNumber || cust.customer_number || 'SRM-CUS-2026-000188',
+      lead_id: sourcingModalRequest.leadId || cust.lead_number || 'SRM-LD-2026-000101',
+      matching_id: sourcingModalRequest.requestId,
+      preferred_locality: sourcingModalRequest.preferredArea || cust.preferredArea || 'Madhamgram',
+      property_type: sourcingModalRequest.propertyCategory || cust.property_type || 'Flat / Apartment',
+      configuration: sourcingModalRequest.configuration || cust.configuration || '2BHK',
+      budget_min: sourcingModalRequest.budget_min || cust.budget_min || '₹50 Lakhs',
+      budget_max: sourcingModalRequest.budget_max || cust.budget_max || '₹1.00 Crore',
+      possession_status: sourcingModalRequest.possessionCondition || cust.possession_status || 'Ready to Move',
+      facing: sourcingModalRequest.facing || cust.facing || 'East Facing',
+      priority: cust.priority || 'HOT',
+      assigned_executive: sourcingModalRequest.assignedExecutive || cust.assigned_employee_name || 'Punita Roy (Sales Exec)',
+      status: 'PENDING_SOURCING',
+      notes: sourcingReasonInput.trim(),
+      sourcing_reason: sourcingReasonInput.trim(),
+      lead_details: {
+        customer_name: sourcingModalRequest.customerName || cust.name || 'Customer',
+        mobile: sourcingModalRequest.mobile || cust.mobile || '8876597975',
+        alternate_mobile: cust.alternate_mobile || '',
+        email: cust.email || '',
+        customer_number: sourcingModalRequest.customerNumber || cust.customer_number || 'SRM-CUS-2026-000188',
+        lead_number: sourcingModalRequest.leadId || cust.lead_number || 'SRM-LD-2026-000101',
+        sourcing_id: newSourcingId,
+        matching_id: sourcingModalRequest.requestId,
+        lead_source: cust.lead_source || 'Meta Ads / Direct Intake',
+        investment_purpose: cust.investment_purpose || 'Self Use / End User',
+        property_type: sourcingModalRequest.propertyCategory || cust.property_type || 'Flat / Apartment',
+        configuration: sourcingModalRequest.configuration || cust.configuration || '2BHK',
+        preferred_locality: sourcingModalRequest.preferredArea || cust.preferredArea || 'Madhamgram',
+        secondary_areas: cust.secondary_areas || 'Hitec City, Gachibowli',
+        budget_min: sourcingModalRequest.budget_min || cust.budget_min || '₹50 Lakhs',
+        budget_max: sourcingModalRequest.budget_max || cust.budget_max || '₹1.00 Crore',
+        budget_range: `${sourcingModalRequest.budget_min || '₹50 Lakhs'} - ${sourcingModalRequest.budget_max || '₹1.00 Crore'}`,
+        possession_status: sourcingModalRequest.possessionCondition || cust.possession_status || 'Ready to Move',
+        facing: sourcingModalRequest.facing || cust.facing || 'North Facing',
+        floor_pref: cust.floor_pref || '10th Floor or Higher',
+        carpet_area_min: cust.carpet_area_min || '800 Sq.Ft.',
+        carpet_area_max: cust.carpet_area_max || '1400 Sq.Ft.',
+        parking: cust.parking || 'Covered Slot + EV Charger',
+        amenities: cust.amenities || 'Gym, Swimming Pool, Clubhouse, Power Backup, Security',
+        loan_required: cust.loan_required || 'Yes',
+        loan_amount: cust.loan_amount || '₹40 Lakhs',
+        loan_status: cust.loan_status || 'Pre-Approved',
+        sourcing_reason: sourcingReasonInput.trim(),
+        created_at: new Date().toISOString()
+      }
+    };
+
+    if (setSourcingRequests) {
+      setSourcingRequests(prev => [newSourcingObj, ...(prev || [])]);
+    }
+    setSourcingModalRequest(null);
+    setSourcingReasonInput('');
+    setSourcingError('');
+    alert(`🎉 SUCCESS! Customer ${newSourcingObj.customer_name} transferred to Property Sourcing Requests Desk.\n\n• Sourcing ID: ${newSourcingId}\n• Reason: "${sourcingReasonInput.trim()}"`);
+    setActiveTab('property_sourcing_requests');
+  };
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
@@ -369,10 +456,13 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                                       setSelectedMatchingId(req.requestId);
                                       const cust = customers.find(c => c.customer_number === req.customerNumber || c.name === req.customerName);
                                       if (cust) setSelectedCust(cust);
+                                      setSourcingModalRequest(req);
+                                      setSourcingReasonInput('');
+                                      setSourcingError('');
                                     }} 
-                                    style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer' }}
+                                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
                                   >
-                                    📂 Open Workspace
+                                    📦 Property Sourcing Request
                                   </button>
                                   <button 
                                     onClick={() => {
@@ -929,6 +1019,104 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
             <button onClick={() => alert(`📧 Email Portfolio dispatched to ${selectedCust.email}`)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}>
               📧 Dispatch via Email
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* PROPERTY SOURCING REQUEST MESSAGE CONTAINER MODAL */}
+      {sourcingModalRequest && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #0284c7', borderRadius: '16px', width: '100%', maxWidth: '580px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)' }}>
+            
+            {/* MODAL HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: 'rgba(2, 132, 199, 0.15)', padding: '8px', borderRadius: '8px' }}>
+                  <SearchCode size={22} color="#38bdf8" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                    MOVE CUSTOMER TO PROPERTY SOURCING REQUEST
+                  </h3>
+                  <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                    Enforced Sourcing Reason Protocol • Mandatory Message Check
+                  </span>
+                </div>
+              </div>
+              <X size={20} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => { setSourcingModalRequest(null); setSourcingError(''); }} />
+            </div>
+
+            {/* CUSTOMER & MATCHING SNAPSHOT */}
+            <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.92rem' }}>
+                  👤 {sourcingModalRequest.customerName}
+                </strong>
+                <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800', fontSize: '0.76rem', background: 'rgba(56, 189, 248, 0.12)', padding: '2px 8px', borderRadius: '4px' }}>
+                  {sourcingModalRequest.requestId}
+                </span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '0.78rem' }}>
+                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Customer ID:</span> <strong style={{ color: '#4ade80', fontFamily: 'monospace' }}>{sourcingModalRequest.customerNumber}</strong></div>
+                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Mobile Phone:</span> <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>{sourcingModalRequest.mobile || sourcingModalRequest.customerPhone || 'N/A'}</strong></div>
+                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Requirement:</span> <strong style={{ color: '#fbbf24' }}>{sourcingModalRequest.configuration} {sourcingModalRequest.propertyCategory || 'Flat'}</strong></div>
+                <div><span style={{ color: isLight ? '#64748b' : '#94a3b8' }}>Target Budget:</span> <strong style={{ color: '#4ade80' }}>{sourcingModalRequest.budget || `${sourcingModalRequest.budget_min || ''} - ${sourcingModalRequest.budget_max || ''}`}</strong></div>
+              </div>
+            </div>
+
+            {/* MANDATORY MESSAGE INPUT AREA */}
+            <div>
+              <label style={{ fontSize: '0.8rem', color: '#ef4444', fontWeight: '900', display: 'block', marginBottom: '6px' }}>
+                📝 Why are you sending this customer into Property Sourcing Request? * (Mandatory)
+              </label>
+              <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '0 0 8px 0' }}>
+                Without entering a valid message, customer details cannot move to the Property Sourcing Request section.
+              </p>
+              <textarea
+                rows={4}
+                value={sourcingReasonInput}
+                onChange={(e) => {
+                  setSourcingReasonInput(e.target.value);
+                  if (e.target.value.trim()) setSourcingError('');
+                }}
+                placeholder="Enter reason (e.g. Current inventory doesn't match client's exact floor / facing requirement; requesting off-market builder sourcing for 2BHK in Madhamgram)..."
+                style={{
+                  width: '100%',
+                  background: isLight ? '#ffffff' : '#0f172a',
+                  border: sourcingError ? '2px solid #ef4444' : (isLight ? '1px solid #cbd5e1' : '1px solid #334155'),
+                  color: isLight ? '#0f172a' : '#ffffff',
+                  padding: '10px',
+                  borderRadius: '8px',
+                  fontSize: '0.85rem',
+                  outline: 'none',
+                  boxSizing: 'border-box'
+                }}
+              />
+              {sourcingError && (
+                <div style={{ color: '#ef4444', fontSize: '0.76rem', fontWeight: '800', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  ⚠️ {sourcingError}
+                </div>
+              )}
+            </div>
+
+            {/* MODAL ACTION BUTTONS */}
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '6px' }}>
+              <button
+                type="button"
+                onClick={() => { setSourcingModalRequest(null); setSourcingError(''); }}
+                style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmMoveToSourcing()}
+                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.35)' }}
+              >
+                🚀 Confirm & Send to Property Sourcing Desk
+              </button>
+            </div>
+
           </div>
         </div>
       )}

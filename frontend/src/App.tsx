@@ -2655,6 +2655,12 @@ export default function App() {
     title: '',
     developer: 'My Home Constructions',
     developer_mobile: '+91 98490 88778',
+    rera_id: '',
+    hera_no: '',
+    layout_photos: [],
+    layout_photo: '',
+    floor_plan_photos: [],
+    floor_plan_photo: '',
     building_photo: '',
     latitude: '17.4612° N',
     longitude: '78.3689° E',
@@ -8438,6 +8444,8 @@ export default function App() {
               setActiveProjectSubTab={setActiveProjectSubTab}
               properties={properties}
               setProperties={setProperties}
+              developers={developers}
+              setDevelopers={setDevelopers}
               propertyUnits={propertyUnits}
               setPropertyUnits={setPropertyUnits}
               projectVisitAgreements={projectVisitAgreements}
@@ -8595,6 +8603,8 @@ export default function App() {
               handleRowLevelCreateCostSheet={handleRowLevelCreateCostSheet}
               handleBulkCreateCostSheets={handleBulkCreateCostSheets}
               individualCostSheets={individualCostSheets}
+              sourcingRequests={sourcingRequests}
+              setSourcingRequests={setSourcingRequests}
             />
           )}
 

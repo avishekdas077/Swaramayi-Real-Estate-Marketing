@@ -57,6 +57,7 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
   // Modals
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [showUpdateModal, setShowUpdateModal] = useState<{ open: boolean; request: any } | null>(null);
+  const [showLeadDetailsModal, setShowLeadDetailsModal] = useState<{ open: boolean; request: any } | null>(null);
 
   // New Request Form State
   const [newRequestForm, setNewRequestForm] = useState({
@@ -360,9 +361,9 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
                     <tr key={req.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                       <td style={{ padding: '12px' }}>
                         <span 
-                          onClick={() => openIdDetailsModal(req.id, 'SOURCING_ID')}
+                          onClick={() => setShowLeadDetailsModal({ open: true, request: req })}
                           style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', fontSize: '0.84rem', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '3px 8px', borderRadius: '6px', cursor: 'pointer', display: 'inline-block' }}
-                          title="Click to view full sourcing request details"
+                          title="Click to view full lead details & sourcing reason"
                         >
                           🎯 {req.id}
                         </span>
@@ -427,6 +428,13 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
 
                       <td style={{ padding: '12px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => setShowLeadDetailsModal({ open: true, request: req })}
+                            style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.73rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                            title="View complete Create New Lead 360° details & sourcing reason"
+                          >
+                            <Eye size={13} /> Lead Details
+                          </button>
                           <button
                             onClick={() => {
                               setUpdateForm({
@@ -610,6 +618,140 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
           </div>
         </div>
       )}
+
+      {/* COMPLETE LEAD 360° SPECIFICATION & SOURCING DETAILS MODAL */}
+      {showLeadDetailsModal && showLeadDetailsModal.request && (() => {
+        const req = showLeadDetailsModal.request;
+        const details = req.lead_details || {};
+        const custName = req.customer_name || details.customer_name || 'Customer';
+        const mobile = req.mobile || details.mobile || '';
+        const custNo = req.customer_number || details.customer_number || req.customer_id || 'N/A';
+        const leadId = req.lead_id || details.lead_number || 'SRM-LD-2026-000101';
+        const sourcingId = req.id || req.sourcing_id || 'SRM-SRC-2026-000101';
+        const matchingId = req.matching_id || details.matching_id || 'SRM-MAT-2026-000422';
+        const sourcingReason = req.sourcing_reason || req.notes || details.sourcing_reason || 'Property sourcing request initiated.';
+
+        return (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.8)', backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #0284c7', borderRadius: '16px', width: '100%', maxWidth: '780px', maxHeight: '90vh', overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '18px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.4)' }}>
+              
+              {/* MODAL HEADER */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ background: 'rgba(56, 189, 248, 0.15)', padding: '10px', borderRadius: '10px' }}>
+                    <SearchCode size={24} color="#38bdf8" />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.2rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                      PROPERTY SOURCING REQUEST — COMPLETE LEAD 360° DETAILS
+                    </h3>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                      <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', fontSize: '0.74rem', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                        🎯 {sourcingId}
+                      </span>
+                      <span style={{ fontFamily: 'monospace', color: '#4ade80', fontWeight: '900', fontSize: '0.74rem', background: 'rgba(34, 197, 94, 0.12)', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                        👤 {custNo}
+                      </span>
+                      <span style={{ fontFamily: 'monospace', color: '#fbbf24', fontWeight: '900', fontSize: '0.74rem', background: 'rgba(251, 191, 36, 0.12)', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                        📋 {leadId}
+                      </span>
+                      <span style={{ fontFamily: 'monospace', color: '#c084fc', fontWeight: '900', fontSize: '0.74rem', background: 'rgba(192, 132, 252, 0.12)', border: '1px solid rgba(192, 132, 252, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                        ⚡ {matchingId}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <X size={22} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowLeadDetailsModal(null)} />
+              </div>
+
+              {/* HIGHLIGHTED SOURCING REASON (MANDATORY EXECUTIVE MESSAGE) */}
+              <div style={{ background: isLight ? '#fef3c7' : 'rgba(234, 179, 8, 0.12)', border: '1.5px solid #f59e0b', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <span style={{ fontSize: '0.78rem', color: '#d97706', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  📌 MANDATORY SOURCING REASON / EXECUTIVE MESSAGE (WHY SENT TO SOURCING DESK):
+                </span>
+                <p style={{ fontSize: '0.92rem', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', margin: 0, lineHeight: 1.5 }}>
+                  "{sourcingReason}"
+                </p>
+              </div>
+
+              {/* SECTION 1: 👤 CUSTOMER CONTACT & LEAD IDENTITY */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#38bdf8', margin: 0, borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
+                  1. Customer Identity & Intake Profile
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px', fontSize: '0.82rem' }}>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Customer Full Name:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block', fontSize: '0.92rem' }}>{custName}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Primary Mobile Phone:</span> <strong style={{ color: '#38bdf8', fontFamily: 'monospace', display: 'block' }}>📞 {maskPhone(mobile)}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Email Address:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{req.email || details.email || 'N/A'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Lead Acquisition Source:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{details.lead_source || 'Meta Ads / Direct Intake'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Investment Purpose:</span> <strong style={{ color: '#4ade80', display: 'block' }}>{details.investment_purpose || 'Self Use / End User'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Assigned Executive Desk:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{req.assigned_executive || 'Punita Roy (Sales Exec)'}</strong></div>
+                </div>
+              </div>
+
+              {/* SECTION 2: 🏡 PROPERTY REQUIREMENTS & SPECIFICATIONS */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#fbbf24', margin: 0, borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
+                  2. Detailed Property Specifications (Create Lead Intake)
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px', fontSize: '0.82rem' }}>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Property Type:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{req.property_type || 'Flat / Apartment'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>BHK Configuration:</span> <strong style={{ color: '#fbbf24', display: 'block', fontSize: '0.92rem' }}>{req.configuration || '2BHK'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Target Preferred Locality:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>📍 {req.preferred_locality}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Secondary Search Localities:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{details.secondary_areas || 'Hitec City, Gachibowli'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Facing Direction:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>🧭 {req.facing || 'East Facing'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Possession Timeline:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>⌛ {req.possession_status || 'Ready to Move'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Floor Preference:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>🏢 {details.floor_pref || '10th Floor or Higher'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Carpet / Built-up Area:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>📐 {details.carpet_area_min && details.carpet_area_max ? `${details.carpet_area_min} - ${details.carpet_area_max}` : '1000 - 1800 Sq.Ft.'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Parking & Charging:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>🚗 {details.parking || 'Covered Slot + EV Charger'}</strong></div>
+                </div>
+                <div>
+                  <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Required Amenities & Features:</span>
+                  <strong style={{ color: '#38bdf8', display: 'block', fontSize: '0.8rem', marginTop: '2px' }}>
+                    ✨ {details.amenities || 'Gym, Swimming Pool, Clubhouse, Power Backup, 24/7 Security'}
+                  </strong>
+                </div>
+              </div>
+
+              {/* SECTION 3: 💰 BUDGET & FINANCIAL PROFILE */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#4ade80', margin: 0, borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
+                  3. Budget & Financial Qualification
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px', fontSize: '0.82rem' }}>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Target Budget Range:</span> <strong style={{ color: '#4ade80', display: 'block', fontSize: '0.95rem' }}>💰 {req.budget_min && req.budget_max ? `${req.budget_min} - ${req.budget_max}` : (req.budget_max || req.budget_min || '₹50 Lakhs - ₹1.00 Crore')}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Budget Flexibility:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>{details.budget_flexibility || '+10% Negotiable for Prime Location'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Home Loan Status:</span> <strong style={{ color: '#38bdf8', display: 'block' }}>🏦 {details.loan_status || 'Pre-Approved (HDFC Bank)'}</strong></div>
+                </div>
+              </div>
+
+              {/* SECTION 4: 🏢 SOURCING STAGE & AUDIT LOG */}
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <h4 style={{ fontSize: '0.95rem', fontWeight: '900', color: '#c084fc', margin: 0, borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>
+                  4. Sourcing Desk Audit & Status History
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : 'repeat(3, 1fr)', gap: '12px', fontSize: '0.82rem' }}>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Current Sourcing Stage:</span> <strong style={{ color: '#ef4444', display: 'block' }}>⚡ {req.status}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Matched Property Code:</span> <strong style={{ color: '#38bdf8', fontFamily: 'monospace', display: 'block' }}>{req.matched_property_code || 'None yet (Sourcing active)'}</strong></div>
+                  <div><span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>Sourcing Created Date:</span> <strong style={{ color: isLight ? '#0f172a' : '#ffffff', display: 'block' }}>📅 {new Date(req.created_at).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</strong></div>
+                </div>
+              </div>
+
+              {/* MODAL FOOTER */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowLeadDetailsModal(null)}
+                  style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
+                >
+                  Close Specification Modal
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
