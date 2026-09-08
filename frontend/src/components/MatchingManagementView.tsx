@@ -40,6 +40,113 @@ interface MatchingManagementViewProps {
   setSourcingRequests?: React.Dispatch<React.SetStateAction<any[]>>;
 }
 
+export interface CustomerUsedPropertyCodeInfo {
+  propertyCode: string;
+  propertyTitle: string;
+  costSheetId?: string;
+  source: string;
+  date?: string;
+}
+
+export const getCustomerUsedPropertyCodes = (
+  custNumOrId: string = '',
+  custName: string = '',
+  custMobile: string = '',
+  individualCostSheets: any[] = [],
+  costSheetShares: any[] = [],
+  scheduledVisits: any[] = []
+): CustomerUsedPropertyCodeInfo[] => {
+  const cleanId = (custNumOrId || '').toString().toLowerCase().trim();
+  const cleanName = (custName || '').toString().toLowerCase().trim();
+  const cleanMob = (custMobile || '').toString().replace(/\D/g, '');
+
+  const usedMap = new Map<string, CustomerUsedPropertyCodeInfo>();
+
+  (individualCostSheets || []).forEach((cs: any) => {
+    const csCustId = (cs.customerId || cs.customerNumber || cs.customerSnapshot?.customerId || cs.customerSnapshot?.customerNumber || '').toString().toLowerCase().trim();
+    const csName = (cs.customerName || cs.name || cs.customerSnapshot?.customerName || '').toString().toLowerCase().trim();
+    const csMob = (cs.mobile || cs.customerMobile || cs.customerSnapshot?.mobile || cs.customerSnapshot?.alternateMobile || '').toString().replace(/\D/g, '');
+
+    let matches = false;
+    if (cleanId && csCustId && cleanId === csCustId) matches = true;
+    if (cleanMob && csMob && cleanMob.length >= 10 && cleanMob === csMob) matches = true;
+    if (cleanName && csName && cleanName.length > 2 && cleanName === csName) matches = true;
+
+    if (matches) {
+      const pCode = cs.propertyCode || cs.propertyId || cs.propertySnapshot?.propertyCode || cs.propertySnapshot?.propertyId;
+      const pTitle = cs.propertyTitle || cs.propertySnapshot?.propertyTitle || pCode || 'Property';
+      if (pCode) {
+        const uppercaseCode = pCode.toString().trim().toUpperCase();
+        usedMap.set(uppercaseCode, {
+          propertyCode: uppercaseCode,
+          propertyTitle: pTitle,
+          costSheetId: cs.costSheetId || cs.id,
+          source: 'Cost Sheet',
+          date: cs.createdAt || cs.date
+        });
+      }
+    }
+  });
+
+  (costSheetShares || []).forEach((css: any) => {
+    const cssCustId = (css.customerId || css.customerNumber || css.customerSnapshot?.customerId || css.customerSnapshot?.customerNumber || '').toString().toLowerCase().trim();
+    const cssName = (css.customerName || css.name || css.customerSnapshot?.customerName || '').toString().toLowerCase().trim();
+    const cssMob = (css.mobile || css.customerMobile || css.customerSnapshot?.mobile || '').toString().replace(/\D/g, '');
+
+    let matches = false;
+    if (cleanId && cssCustId && cleanId === cssCustId) matches = true;
+    if (cleanMob && cssMob && cleanMob.length >= 10 && cleanMob === cssMob) matches = true;
+    if (cleanName && cssName && cleanName.length > 2 && cleanName === cssName) matches = true;
+
+    if (matches) {
+      const pCode = css.propertyCode || css.propertyId || css.propertySnapshot?.propertyCode;
+      const pTitle = css.propertyTitle || css.propertySnapshot?.propertyTitle || pCode || 'Property';
+      if (pCode) {
+        const uppercaseCode = pCode.toString().trim().toUpperCase();
+        if (!usedMap.has(uppercaseCode)) {
+          usedMap.set(uppercaseCode, {
+            propertyCode: uppercaseCode,
+            propertyTitle: pTitle,
+            costSheetId: css.costSheetId || css.id,
+            source: 'Cost Sheet Share',
+            date: css.createdAt || css.date
+          });
+        }
+      }
+    }
+  });
+
+  (scheduledVisits || []).forEach((v: any) => {
+    const vCustId = (v.customerId || v.customerNumber || v.customerSnapshot?.customerId || v.customerSnapshot?.customerNumber || '').toString().toLowerCase().trim();
+    const vName = (v.customerName || v.name || v.customerSnapshot?.customerName || '').toString().toLowerCase().trim();
+    const vMob = (v.mobile || v.phone || v.customerSnapshot?.mobile || '').toString().replace(/\D/g, '');
+
+    let matches = false;
+    if (cleanId && vCustId && cleanId === vCustId) matches = true;
+    if (cleanMob && vMob && cleanMob.length >= 10 && cleanMob === vMob) matches = true;
+    if (cleanName && vName && cleanName.length > 2 && cleanName === vName) matches = true;
+
+    if (matches) {
+      const pCode = v.propertyCode || v.propCode || v.propertyId;
+      const pTitle = v.propertyTitle || v.propTitle || pCode || 'Property';
+      if (pCode) {
+        const uppercaseCode = pCode.toString().trim().toUpperCase();
+        if (!usedMap.has(uppercaseCode)) {
+          usedMap.set(uppercaseCode, {
+            propertyCode: uppercaseCode,
+            propertyTitle: pTitle,
+            costSheetId: v.costSheetId,
+            source: 'Site Visit Schedule',
+            date: v.scheduledDate || v.date
+          });
+        }
+      }
+    }
+  });
+
+  return Array.from(usedMap.values());
+};
+
 export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
   isLight,
   windowWidth,
@@ -394,6 +501,8 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
 
           const findActualCostSheet = (reqId?: string, custNum?: string, custName?: string, mob?: string) => {
             return (individualCostSheets || []).find((cs: any) => {
+              if (cs.status === 'CONVERTED_TO_VISIT' || cs.status === 'SHIFTED_TO_MATCHING' || cs.status === 'CANCELLED') return false;
+
               const csCustId = (cs.customerId || cs.customerSnapshot?.customerId || cs.customerSnapshot?.customerNumber || cs.customerNumber || '').toString().trim().toLowerCase();
               const csMatchId = (cs.matchingRequestId || cs.matchId || cs.requestId || '').toString().trim().toLowerCase();
               const csName = (cs.customerName || cs.name || cs.customerSnapshot?.customerName || '').toString().toLowerCase().trim();
@@ -420,13 +529,14 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
             if (custNum) seenCustNums.add(custNum);
             if (mob) seenMobiles.add(mob);
 
-            const actualCostSheet = findActualCostSheet(r.requestId, r.customerNumber, r.customerName, r.mobile);
-            const isCreated = !!actualCostSheet;
+            const isPendingExplicit = r.status === 'PENDING' || r.status === 'SHIFTED_TO_MATCHING' || !r.costSheetId;
+            const actualCostSheet = isPendingExplicit ? null : findActualCostSheet(r.requestId, r.customerNumber, r.customerName, r.mobile);
+            const isCreated = !isPendingExplicit && !!actualCostSheet;
 
             list.push({
               ...r,
-              status: isCreated ? 'COST_SHEET_CREATED' : 'PENDING',
-              costSheetId: actualCostSheet?.costSheetId || undefined
+              status: isPendingExplicit ? 'PENDING' : (isCreated ? 'COST_SHEET_CREATED' : (r.status || 'PENDING')),
+              costSheetId: isPendingExplicit ? undefined : (actualCostSheet?.costSheetId || r.costSheetId)
             });
           });
 
@@ -605,6 +715,11 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                           <td style={{ padding: '10px' }}>
                             <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{req.customerName}</strong>
                             <br /><span style={{ fontSize: '0.72rem', color: '#4ade80' }}>{req.mobile}</span>
+                            {(req.handoffNote || (req.notes && req.notes.includes('[Shifted'))) && (
+                              <div style={{ marginTop: '4px', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid #fbbf24', borderRadius: '4px', padding: '3px 6px', fontSize: '0.7rem', color: '#fbbf24', fontWeight: '800', width: 'fit-content' }}>
+                                📌 Shift Note: {req.handoffNote || (req.notes?.split('\n').pop() || '')}
+                              </div>
+                            )}
                           </td>
                           <td style={{ padding: '10px' }}>
                             <span 
@@ -845,6 +960,52 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                     </button>
                   </div>
                 </div>
+
+                {/* ALL PROPERTY CODES CREATED FOR THIS CUSTOMER BANNER */}
+                {(() => {
+                  const usedPropDetails = getCustomerUsedPropertyCodes(
+                    activeMatchingReq.customerNumber || activeMatchingReq.customerId,
+                    activeMatchingReq.customerName || activeMatchingReq.name,
+                    activeMatchingReq.mobile,
+                    individualCostSheets,
+                    costSheetShares,
+                    scheduledVisits
+                  );
+                  return (
+                    <div style={{ background: isLight ? '#f0f9ff' : 'rgba(2, 132, 199, 0.12)', border: '1.5px solid #0284c7', borderRadius: '12px', padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <h4 style={{ color: '#38bdf8', fontWeight: '900', fontSize: '0.88rem', margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          🏢 ALL PROPERTY CODES CREATED IN COST SHEETS FOR {activeMatchingReq.customerName.toUpperCase()} ({usedPropDetails.length})
+                        </h4>
+                        <span style={{ background: '#0284c7', color: '#ffffff', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '800' }}>
+                          🔒 EXCLUDED FROM NEW MATCH SUGGESTIONS
+                        </span>
+                      </div>
+                      {usedPropDetails.length === 0 ? (
+                        <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8', margin: 0, fontStyle: 'italic' }}>
+                          No property code has been used for cost sheet creation yet for this customer.
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '4px' }}>
+                          {usedPropDetails.map((item, idx) => (
+                            <div key={idx} style={{ background: isLight ? '#ffffff' : '#0f172a', border: '1px solid #eab308', borderRadius: '8px', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.78rem' }}>
+                              <span style={{ color: '#fbbf24', fontFamily: 'monospace', fontWeight: '900' }}>🏢 {item.propertyCode}</span>
+                              {item.costSheetId && (
+                                <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontWeight: '800', fontSize: '0.72rem' }}>
+                                  ({item.costSheetId})
+                                </span>
+                              )}
+                              <span style={{ color: isLight ? '#475569' : '#cbd5e1', fontWeight: '700' }}>— {item.propertyTitle}</span>
+                              <span style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', border: '1px solid #eab308', padding: '1px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '900' }}>
+                                CREATED IN COST SHEET
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>
@@ -869,7 +1030,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
                   <div>
                     <h3 style={{ fontSize: '1.1rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>🎯 MATCHED PROPERTIES FOR {activeMatchingReq.requestId} ({activeMatchingReq.customerName})</h3>
-                    <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>{properties.length} Total Inventory Properties • AI Matching & Manual Lookup Active</p>
+                    <p style={{ fontSize: '0.78rem', color: isLight ? '#64748b' : '#94a3b8' }}>{properties.length} Total Inventory Properties • AI Matching & Manual Lookup Active (Already used property codes are excluded from new suggestions)</p>
                   </div>
                   <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '900', border: '1px solid #22c55e' }}>
                     {selectedPropertyIds.length} PROPERTIES SELECTED
@@ -904,27 +1065,51 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                 </div>
 
                 {/* Property Dropdown Picker */}
-                <select 
-                  value="" 
-                  onChange={(e) => {
-                    const selectedCode = e.target.value;
-                    if (selectedCode) {
-                      if (!selectedPropertyIds.includes(selectedCode)) {
-                        setSelectedPropertyIds([...selectedPropertyIds, selectedCode]);
-                        alert(`📌 Selected Property ${selectedCode} for ${activeMatchingReq.customerName}!`);
-                      }
-                      setPropertySearchQuery(selectedCode);
-                    }
-                  }}
-                  style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px', fontSize: '0.82rem', fontWeight: '800', maxWidth: '320px' }}
-                >
-                  <option value="">-- Or Quick Select Property Code --</option>
-                  {properties.map(p => (
-                    <option key={p.property_code} value={p.property_code}>
-                      {p.property_code} — {p.title} ({p.locality})
-                    </option>
-                  ))}
-                </select>
+                {(() => {
+                  const activeCustUsedProps = activeMatchingReq
+                    ? getCustomerUsedPropertyCodes(
+                        activeMatchingReq.customerNumber || activeMatchingReq.customerId,
+                        activeMatchingReq.customerName || activeMatchingReq.name,
+                        activeMatchingReq.mobile,
+                        individualCostSheets,
+                        costSheetShares,
+                        scheduledVisits
+                      )
+                    : [];
+                  const activeCustUsedCodesSet = new Set(activeCustUsedProps.map(p => (p.propertyCode || '').toString().trim().toUpperCase()));
+
+                  return (
+                    <select 
+                      value="" 
+                      onChange={(e) => {
+                        const selectedCode = e.target.value;
+                        if (selectedCode) {
+                          if (activeCustUsedCodesSet.has(selectedCode.toUpperCase())) {
+                            const usedInfo = activeCustUsedProps.find(p => p.propertyCode.toUpperCase() === selectedCode.toUpperCase());
+                            alert(`⚠️ Property Code ${selectedCode} has ALREADY been used for a Cost Sheet for ${activeMatchingReq.customerName} (Cost Sheet ID: ${usedInfo?.costSheetId || 'Active'}). It is excluded from new match suggestions.`);
+                            return;
+                          }
+                          if (!selectedPropertyIds.includes(selectedCode)) {
+                            setSelectedPropertyIds([...selectedPropertyIds, selectedCode]);
+                            alert(`📌 Selected Property ${selectedCode} for ${activeMatchingReq.customerName}!`);
+                          }
+                          setPropertySearchQuery(selectedCode);
+                        }
+                      }}
+                      style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px', fontSize: '0.82rem', fontWeight: '800', maxWidth: '320px' }}
+                    >
+                      <option value="">-- Or Quick Select Property Code --</option>
+                      {properties.map(p => {
+                        const isUsed = activeCustUsedCodesSet.has((p.property_code || '').toString().trim().toUpperCase());
+                        return (
+                          <option key={p.property_code} value={p.property_code} disabled={isUsed}>
+                            {p.property_code} — {p.title} {isUsed ? '🔒 [ALREADY CREATED IN COST SHEET - EXCLUDED]' : `(${p.locality})`}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  );
+                })()}
 
                 {/* Manual Add / Select Button */}
                 <button 
@@ -940,6 +1125,22 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                       p.locality.toLowerCase().includes(queryStr)
                     );
                     if (matchedProp) {
+                      const activeCustUsedProps = activeMatchingReq
+                        ? getCustomerUsedPropertyCodes(
+                            activeMatchingReq.customerNumber || activeMatchingReq.customerId,
+                            activeMatchingReq.customerName || activeMatchingReq.name,
+                            activeMatchingReq.mobile,
+                            individualCostSheets,
+                            costSheetShares,
+                            scheduledVisits
+                          )
+                        : [];
+                      const isUsed = activeCustUsedProps.some(p => p.propertyCode.toUpperCase() === matchedProp.property_code.toUpperCase());
+                      if (isUsed) {
+                        const usedInfo = activeCustUsedProps.find(p => p.propertyCode.toUpperCase() === matchedProp.property_code.toUpperCase());
+                        alert(`⚠️ Property Code ${matchedProp.property_code} has ALREADY been used for a Cost Sheet for ${activeMatchingReq.customerName} (Cost Sheet ID: ${usedInfo?.costSheetId || 'Active'}). Suggestion excluded to prevent duplicate cost sheets.`);
+                        return;
+                      }
                       if (!selectedPropertyIds.includes(matchedProp.property_code)) {
                         setSelectedPropertyIds([...selectedPropertyIds, matchedProp.property_code]);
                         alert(`📌 Manually added & selected Property ${matchedProp.property_code} (${matchedProp.title}) for ${activeMatchingReq.customerName}!`);
@@ -1012,6 +1213,18 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                       displayProps.unshift(fallbackInventory[0]);
                     }
 
+                    const activeCustUsedProps = activeMatchingReq
+                      ? getCustomerUsedPropertyCodes(
+                          activeMatchingReq.customerNumber || activeMatchingReq.customerId,
+                          activeMatchingReq.customerName || activeMatchingReq.name,
+                          activeMatchingReq.mobile,
+                          individualCostSheets,
+                          costSheetShares,
+                          scheduledVisits
+                        )
+                      : [];
+                    const activeCustUsedCodesSet = new Set(activeCustUsedProps.map(p => (p.propertyCode || '').toString().trim().toUpperCase()));
+
                     return displayProps
                       .map(p => {
                         const currentMatchingCust = {
@@ -1040,6 +1253,11 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                         p.configuration.toLowerCase().includes(q);
                     })
                     .sort((a, b) => {
+                      const aIsUsed = activeCustUsedCodesSet.has((a.property_code || '').toString().trim().toUpperCase());
+                      const bIsUsed = activeCustUsedCodesSet.has((b.property_code || '').toString().trim().toUpperCase());
+                      if (!aIsUsed && bIsUsed) return -1;
+                      if (aIsUsed && !bIsUsed) return 1;
+
                       const aIsSelected = selectedPropertyIds.includes(a.property_code);
                       const bIsSelected = selectedPropertyIds.includes(b.property_code);
                       if (aIsSelected && !bIsSelected) return -1;
@@ -1049,12 +1267,17 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                     .map((p) => {
                       const pct = p.matchTotal;
                       const isChecked = selectedPropertyIds.includes(p.property_code);
+                      const isUsedInCostSheet = activeCustUsedCodesSet.has((p.property_code || '').toString().trim().toUpperCase());
+                      const usedObj = activeCustUsedProps.find(up => up.propertyCode.toUpperCase() === (p.property_code || '').toString().trim().toUpperCase());
+
                       return (
-                        <tr key={p.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', background: isChecked ? 'rgba(2, 132, 199, 0.15)' : 'transparent' }}>
+                        <tr key={p.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', background: isUsedInCostSheet ? 'rgba(239, 68, 68, 0.08)' : isChecked ? 'rgba(2, 132, 199, 0.15)' : 'transparent' }}>
                           <td style={{ padding: '12px', textAlign: 'center' }}>
                             <input 
                               type="checkbox" 
                               checked={isChecked} 
+                              disabled={isUsedInCostSheet}
+                              title={isUsedInCostSheet ? "Property code already used for a Cost Sheet for this customer (Excluded)" : ""}
                               onChange={(e) => {
                                 if (e.target.checked) {
                                   setSelectedPropertyIds([...selectedPropertyIds, p.property_code]);
@@ -1062,19 +1285,27 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                                   setSelectedPropertyIds(selectedPropertyIds.filter(id => id !== p.property_code));
                                 }
                               }} 
-                              style={{ width: '18px', height: '18px', cursor: 'pointer' }} 
+                              style={{ width: '18px', height: '18px', cursor: isUsedInCostSheet ? 'not-allowed' : 'pointer', opacity: isUsedInCostSheet ? 0.5 : 1 }} 
                             />
                           </td>
                           <td style={{ padding: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                               <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', fontSize: '0.78rem' }}>{p.property_code}</span>
                               {isChecked && (
                                 <span style={{ background: '#0284c7', color: '#ffffff', padding: '1px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '900' }}>
                                   📌 SELECTED
                                 </span>
                               )}
+                              {isUsedInCostSheet && (
+                                <span style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', border: '1px solid #ef4444', padding: '1px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '900' }}>
+                                  🚫 COST SHEET ALREADY CREATED (EXCLUDED)
+                                </span>
+                              )}
                             </div>
                             <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>{p.title}</h4>
+                            <span style={{ fontSize: '0.68rem', color: '#a855f7', background: 'rgba(168, 85, 247, 0.15)', border: '1px solid #a855f7', padding: '1px 6px', borderRadius: '4px', fontWeight: '800', display: 'inline-block', marginTop: '2px' }}>
+                              🏢 {p.property_type || p.type || 'Flat / Apartment'}
+                            </span>
                           </td>
                           <td style={{ padding: '12px' }}>
                             <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{p.locality}</strong>
@@ -1133,12 +1364,25 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                             </div>
                           </td>
                           <td style={{ padding: '12px', textAlign: 'center' }}>
-                            <button 
-                              onClick={() => handleRowLevelCreateCostSheet(p)} 
-                              style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: '1px solid #38bdf8', padding: '6px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
-                            >
-                              📄 Create Cost Sheet ID
-                            </button>
+                            {isUsedInCostSheet ? (
+                              <button 
+                                onClick={() => {
+                                  setActiveTab('cost_sheet_share');
+                                  setActiveCostSheetShareSubTab('individual_cost_sheets');
+                                  setSearchQuery(usedObj?.costSheetId || p.property_code);
+                                }} 
+                                style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#fbbf24', border: '1px solid #eab308', padding: '6px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
+                              >
+                                🔒 Cost Sheet Created ({usedObj?.costSheetId || 'View'}) →
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => handleRowLevelCreateCostSheet(p)} 
+                                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: '1px solid #38bdf8', padding: '6px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}
+                              >
+                                📄 Create Cost Sheet ID
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Plus, Navigation, MapPin, Trash2, TrendingUp, Users, Building2, CheckCircle2, Award, Calendar, BarChart3, Filter, ArrowUpRight, DollarSign, Target, Star, Flame, Zap, ShieldAlert, Sparkles, RefreshCw } from 'lucide-react';
+import { getCustomerUsedPropertyCodes } from './MatchingManagementView';
 
 interface VisitManagementViewProps {
   currentRole?: string;
@@ -137,7 +138,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
           visitDate: plan.visitDate,
           visitTime: plan.startTime || (firstStop.scheduledTime || '10:00 AM'),
           assignedExecutive: plan.assignedExecutive,
-          transport: plan.transport || '🚗 Chauffeur Cab Pick & Drop Needed',
+          transport: plan.transport || '🚗 Cab Pick & Drop Needed',
           status: plan.status || 'ASSIGNED',
           totalStops: plan.stops ? plan.stops.length : 1,
           stops: plan.stops
@@ -580,6 +581,49 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                   status: 'N/A'
                 };
 
+                const resolveStopCoords = (s: any, idx: number) => {
+                  if (!s) return { lat: '22.722361', lng: '88.493403' };
+                  const pCode = (s.propertyCode || s.propertyId || s.propCode || '').trim();
+                  const pTitle = (s.propertyTitle || s.title || '').trim();
+                  const csId = (s.costSheetId || '').trim();
+
+                  const matched = (properties || []).find((p: any) => 
+                    (pCode && (p.property_code === pCode || p.id === pCode)) ||
+                    (csId && p.costSheetId === csId) ||
+                    (pTitle && p.title && (p.title.toLowerCase().trim() === pTitle.toLowerCase().trim() || p.title.toLowerCase().includes(pTitle.toLowerCase()) || pTitle.toLowerCase().includes(p.title.toLowerCase())))
+                  );
+
+                  if (matched && matched.latitude && matched.longitude) {
+                    const lat = String(matched.latitude).replace(/[^0-9.-]/g, '');
+                    const lng = String(matched.longitude).replace(/[^0-9.-]/g, '');
+                    if (lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+                      return { lat, lng };
+                    }
+                  }
+
+                  if (s.latitude && s.longitude) {
+                    const lat = String(s.latitude).replace(/[^0-9.-]/g, '');
+                    const lng = String(s.longitude).replace(/[^0-9.-]/g, '');
+                    if (lat && lng && !isNaN(parseFloat(lat)) && !isNaN(parseFloat(lng))) {
+                      return { lat, lng };
+                    }
+                  }
+
+                  const t = pTitle.toLowerCase();
+                  if (t.includes('gajapati') || t.includes('star mall') || t.includes('madhyamgram')) return { lat: '22.694318', lng: '88.400659' };
+                  if (t.includes('dhriti') || t.includes('colony') || t.includes('dakbangla')) return { lat: '22.715420', lng: '88.479150' };
+                  if (t.includes('shibalay') || t.includes('chapadali')) return { lat: '22.722361', lng: '88.493403' };
+                  if (t.includes('greenwood') || t.includes('vip road') || t.includes('airport')) return { lat: '22.645200', lng: '88.438500' };
+                  if (t.includes('aparna') || t.includes('zenon') || t.includes('kondapur')) return { lat: '17.461250', lng: '78.368920' };
+
+                  const baseLat = 22.722361;
+                  const baseLng = 88.493403;
+                  return {
+                    lat: (baseLat + (idx * 0.01825)).toFixed(6),
+                    lng: (baseLng + (idx * -0.01540)).toFixed(6)
+                  };
+                };
+
                 return (
                   <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #0284c7', borderRadius: '20px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -606,20 +650,39 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                       </div>
                       <h3 style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900', fontSize: '1.1rem' }}>{currentStop.propertyTitle}</h3>
                       <p style={{ color: '#cbd5e1', fontSize: '0.8rem' }}>📍 Address: {currentStop.address}</p>
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
                         <button 
                           onClick={() => {
-                            const cleanLat = currentStop.latitude.replace(/[^0-9.]/g, '') || '17.4612';
-                            const cleanLng = currentStop.longitude.replace(/[^0-9.]/g, '') || '78.3689';
-                            window.open(`https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`, '_blank');
+                            const resolvedStops = planStops.map((s: any, idx: number) => resolveStopCoords(s, idx));
+                            if (resolvedStops.length > 1) {
+                              const destStop = resolvedStops[resolvedStops.length - 1];
+                              const waypointsStr = resolvedStops.slice(0, resolvedStops.length - 1).map(c => `${c.lat},${c.lng}`).join('|');
+                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${destStop.lat},${destStop.lng}&waypoints=${encodeURIComponent(waypointsStr)}`, '_blank');
+                            } else if (resolvedStops.length === 1) {
+                              const c = resolvedStops[0];
+                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${c.lat},${c.lng}`, '_blank');
+                            }
                           }}
-                          style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
+                          style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          title="Start Turn-by-Turn Google Maps Navigation through ALL stops in the route"
                         >
-                          🚀 START NAVIGATION
+                          🚀 START FULL ROUTE NAVIGATION ({totalStops} STOPS)
                         </button>
+                        {totalStops > 1 && (
+                          <button 
+                            onClick={() => {
+                              const curCoords = resolveStopCoords(currentStop, currentStopIndex);
+                              window.open(`https://www.google.com/maps/dir/?api=1&destination=${curCoords.lat},${curCoords.lng}`, '_blank');
+                            }}
+                            style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
+                            title="Navigate to active current stop only"
+                          >
+                            📍 Current Stop Only (Stop {currentStopIndex + 1})
+                          </button>
+                        )}
                         <button 
                           onClick={() => setShowIndividualStopModal({ open: true, stop: currentStop, plan: currentPlan })}
-                          style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
+                          style={{ background: '#334155', color: '#38bdf8', border: '1px solid #0284c7', padding: '8px 16px', borderRadius: '6px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
                         >
                           👁️ View Stop Details
                         </button>
@@ -700,9 +763,94 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                   const lat = firstStop?.latitude || matchedProp?.latitude || '22.722351';
                   const lng = firstStop?.longitude || matchedProp?.longitude || '88.485484';
                   const matchingPva = getPvaMatch(v);
-                  const isOtpVerified = !!matchingPva || v.status === 'OTP_VERIFIED' || v.status === 'COMPLETED' || v.status === 'VISIT_DONE' || v.status === 'VERIFIED_CHECKIN' || v.otpVerified === true || v.checkedIn === true || (v.stops && v.stops.some((s: any) => s.otpVerified || s.status === 'VISIT_COMPLETED')) || (matchedPlan?.stops && matchedPlan.stops.some((s: any) => s.otpVerified || s.status === 'VISIT_COMPLETED'));
-                  const fallbackPvaId = (v.stops && v.stops.find((s: any) => s.pvaId)?.pvaId) || (matchedPlan?.stops && matchedPlan.stops.find((s: any) => s.pvaId)?.pvaId) || 'SRM-PVA-2026-000001';
+                  const stopsList = (matchedPlan?.stops && matchedPlan.stops.length > 0) 
+                    ? matchedPlan.stops 
+                    : ((v.stops && v.stops.length > 0) ? v.stops : []);
+
+                  const isOtpVerified = !!matchingPva || v.status === 'OTP_VERIFIED' || v.status === 'COMPLETED' || v.status === 'VISIT_DONE' || v.status === 'VERIFIED_CHECKIN' || v.otpVerified === true || v.checkedIn === true || (stopsList && stopsList.some((s: any) => s.otpVerified || s.status === 'VISIT_COMPLETED'));
+                  const fallbackPvaId = (stopsList && stopsList.find((s: any) => s.pvaId)?.pvaId) || 'SRM-PVA-2026-000001';
                   const displayPvaId = matchingPva?.projectVisitAgreementId || fallbackPvaId;
+
+                  const checkStopVerified = (stopItem: any, sIdx: number) => {
+                    if (stopItem.otpVerified || stopItem.status === 'VISIT_COMPLETED' || stopItem.status === 'OTP_VERIFIED') return true;
+                    
+                    const stopPropCode = stopItem.propertyCode || cleanPropCode;
+                    const stopCsId = stopItem.costSheetId || v.costSheetId;
+                    const stopId = stopItem.stopId;
+
+                    const stopPva = (projectVisitAgreements || []).find((p: any) => {
+                      const pVId = (p?.visitScheduleId || '').toLowerCase().trim();
+                      const vId = (v?.visitId || '').toLowerCase().trim();
+                      const pCustNo = (p?.customerId || '').toLowerCase().trim();
+                      const vCustNo = (v?.customerNumber || '').toLowerCase().trim();
+                      const pMob = (p?.customerMobile || '').replace(/\D/g, '');
+                      const vMob = (v?.mobile || '').replace(/\D/g, '');
+
+                      const custMatch = (vId && pVId && (vId === pVId || pVId.includes(vId) || vId.includes(pVId))) ||
+                                        (vCustNo && pCustNo && (vCustNo === pCustNo || vCustNo.includes(pCustNo) || pCustNo.includes(vCustNo))) ||
+                                        (vMob && pMob && (vMob.endsWith(pMob) || pMob.endsWith(vMob)));
+
+                      if (!custMatch) return false;
+
+                      if (stopPropCode && p.propertyId && p.propertyId.toLowerCase() === stopPropCode.toLowerCase()) return true;
+                      if (stopCsId && p.costSheetId && p.costSheetId.toLowerCase() === stopCsId.toLowerCase()) return true;
+                      if (stopId && p.visitStopId && p.visitStopId.toLowerCase() === stopId.toLowerCase()) return true;
+                      return false;
+                    });
+
+                    if (stopPva) return true;
+                    if (stopsList.length <= 1 && isOtpVerified) return true;
+                    return false;
+                  };
+
+                  const getStopPva = (stopItem: any, sIdx: number) => {
+                    const stopPropCode = stopItem.propertyCode || cleanPropCode;
+                    const stopCsId = stopItem.costSheetId || v.costSheetId;
+                    const stopId = stopItem.stopId;
+
+                    const stopPva = (projectVisitAgreements || []).find((p: any) => {
+                      const pVId = (p?.visitScheduleId || '').toLowerCase().trim();
+                      const vId = (v?.visitId || '').toLowerCase().trim();
+                      const pCustNo = (p?.customerId || '').toLowerCase().trim();
+                      const vCustNo = (v?.customerNumber || '').toLowerCase().trim();
+                      const pMob = (p?.customerMobile || '').replace(/\D/g, '');
+                      const vMob = (v?.mobile || '').replace(/\D/g, '');
+
+                      const custMatch = (vId && pVId && (vId === pVId || pVId.includes(vId) || vId.includes(pVId))) ||
+                                        (vCustNo && pCustNo && (vCustNo === pCustNo || vCustNo.includes(pCustNo) || pCustNo.includes(vCustNo))) ||
+                                        (vMob && pMob && (vMob.endsWith(pMob) || pMob.endsWith(vMob)));
+
+                      if (!custMatch) return false;
+
+                      if (stopPropCode && p.propertyId && p.propertyId.toLowerCase() === stopPropCode.toLowerCase()) return true;
+                      if (stopCsId && p.costSheetId && p.costSheetId.toLowerCase() === stopCsId.toLowerCase()) return true;
+                      if (stopId && p.visitStopId && p.visitStopId.toLowerCase() === stopId.toLowerCase()) return true;
+                      return false;
+                    });
+
+                    if (stopPva) return stopPva;
+                    if (matchingPva) return matchingPva;
+
+                    const stopPvaId = stopItem.pvaId || displayPvaId;
+                    return {
+                      projectVisitAgreementId: stopPvaId,
+                      visitScheduleId: v.visitId || 'SRM-VS-2026-000087',
+                      customerId: v.customerNumber || 'SRM-CUS-2026-000188',
+                      customerName: v.customerName || 'Rishita sharma',
+                      customerMobile: v.mobile || '8876597975',
+                      propertyId: stopPropCode,
+                      projectTitle: stopItem.propertyTitle || cleanPropTitle,
+                      locality: stopItem.locality || cleanLocality,
+                      developerName: stopItem.developer || matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
+                      salesPersonName: v.assignedExecutive || 'Punita Roy',
+                      visitDate: v.visitDate || '2026-08-22',
+                      protectionStartDate: v.visitDate || '2026-08-22',
+                      protectionEndDate: '2027-02-22',
+                      customerOtpStatus: 'OTP_VERIFIED',
+                      geofenceStatus: 'GEOFENCE_VERIFIED',
+                      documentUrl: `file:///pva_${stopPvaId}.pdf`
+                    };
+                  };
 
                   return (
                     <tr key={idx} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
@@ -723,31 +871,78 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                           </>
                         )}
                       </td>
-                      <td style={{ padding: '10px' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-                          <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.88rem' }}>
-                            🏢 {cleanPropTitle}
-                          </strong>
-                          {totalStopsCount > 1 && (
-                            <span style={{ background: 'rgba(251, 191, 36, 0.15)', border: '1px solid #fbbf24', color: '#fbbf24', fontSize: '0.68rem', fontWeight: '900', padding: '1px 6px', borderRadius: '4px' }}>
-                              +{totalStopsCount - 1} more
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ marginTop: '3px', marginBottom: '3px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                          <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 7px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
-                            Code: {cleanPropCode}
-                          </span>
-                          <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>
-                            📍 {cleanLocality}
-                          </span>
-                        </div>
-                        <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>
-                          <MapPin size={11} color="#38bdf8" />
-                          <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: '800' }}>
-                            GPS: {lat}, {lng}
-                          </span>
-                        </div>
+                      <td style={{ padding: '10px', minWidth: '280px' }}>
+                        {(() => {
+                          if (stopsList.length <= 1) {
+                            return (
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                  <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.88rem' }}>
+                                    🏢 {cleanPropTitle}
+                                  </strong>
+                                </div>
+                                <div style={{ marginTop: '3px', marginBottom: '3px', display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                  <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 7px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
+                                    Code: {cleanPropCode}
+                                  </span>
+                                  <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.72rem' }}>
+                                    📍 {cleanLocality}
+                                  </span>
+                                </div>
+                                <div style={{ marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px', background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>
+                                  <MapPin size={11} color="#38bdf8" />
+                                  <span style={{ fontSize: '0.68rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: '800' }}>
+                                    GPS: {lat}, {lng}
+                                  </span>
+                                </div>
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              <span style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid #a855f7', padding: '2px 8px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '900', width: 'fit-content' }}>
+                                🚘 MULTI-PROPERTY SCHEDULE ({stopsList.length} STOPS)
+                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                {stopsList.map((stop: any, sIdx: number) => {
+                                  const stopNum = stop.stopNum || stop.stopNo || (sIdx + 1);
+                                  const csId = stop.costSheetId;
+                                  const pTitle = stop.propertyTitle || 'Property Site';
+                                  const pCode = stop.propertyCode || cleanPropCode;
+                                  const loc = stop.locality || cleanLocality;
+                                  const dev = stop.developer;
+
+                                  return (
+                                    <div key={sIdx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '8px', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                        <span style={{ background: '#eab308', color: '#0f172a', padding: '1px 6px', borderRadius: '3px', fontSize: '0.68rem', fontWeight: '900' }}>
+                                          STOP 0{stopNum}
+                                        </span>
+                                        {csId && (
+                                          <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900' }}>
+                                            {csId}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.84rem' }}>
+                                        🏢 {pTitle}
+                                      </strong>
+                                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.7rem', fontWeight: '800', padding: '1px 5px', borderRadius: '3px', fontFamily: 'monospace' }}>
+                                          Code: {pCode}
+                                        </span>
+                                        <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                          📍 {loc} {dev ? `• ${dev}` : ''}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td style={{ padding: '10px', color: '#cbd5e1' }}>
                         <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800' }}>📅 {v.visitDate}</span>
@@ -757,7 +952,40 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                         {v.assignedExecutive}
                       </td>
                       <td style={{ padding: '10px' }}>
-                        {isOtpVerified ? (
+                        {stopsList.length > 1 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            {stopsList.map((stopItem: any, sIdx: number) => {
+                              const stopNum = stopItem.stopNum || stopItem.stopNo || (sIdx + 1);
+                              const verified = checkStopVerified(stopItem, sIdx);
+                              const stopPva = getStopPva(stopItem, sIdx);
+                              const pvaIdToDisplay = stopItem.pvaId || stopPva?.projectVisitAgreementId || displayPvaId;
+
+                              return (
+                                <div key={sIdx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: verified ? '1px solid #22c55e' : '1px solid #f59e0b', borderRadius: '6px', padding: '5px 8px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                    <span style={{ background: '#eab308', color: '#0f172a', padding: '1px 5px', borderRadius: '3px', fontSize: '0.65rem', fontWeight: '900' }}>
+                                      STOP 0{stopNum}
+                                    </span>
+                                    {verified ? (
+                                      <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '2px 6px', borderRadius: '10px', fontSize: '0.68rem', fontWeight: '900' }}>
+                                        ✅ VERIFIED
+                                      </span>
+                                    ) : (
+                                      <span style={{ background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', border: '1px solid #f59e0b', padding: '2px 6px', borderRadius: '10px', fontSize: '0.68rem', fontWeight: '900' }}>
+                                        ⏳ PENDING OTP
+                                      </span>
+                                    )}
+                                  </div>
+                                  {verified && (
+                                    <div style={{ fontSize: '0.65rem', color: '#38bdf8', fontFamily: 'monospace', fontWeight: '800', marginTop: '2px' }}>
+                                      {pvaIdToDisplay}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : isOtpVerified ? (
                           <div>
                             <span style={{ background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', border: '1px solid #22c55e', padding: '3px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: '900', display: 'inline-block' }}>
                               ✅ OTP VERIFIED
@@ -785,7 +1013,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                         </span>
                       </td>
                       <td style={{ padding: '10px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap', flexDirection: stopsList.length > 1 ? 'column' : 'row', alignItems: 'center' }}>
                           <button
                             onClick={() => handleMarkVisitDoneAndNotifyDeveloper(v)}
                             style={{ background: v.status === 'COMPLETED' || v.visitDone ? '#22c55e' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 6px rgba(22, 197, 94, 0.3)' }}
@@ -794,7 +1022,61 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                             {v.status === 'COMPLETED' || v.visitDone ? '✅ VISIT DONE (Resend WA)' : '✅ MARK VISIT DONE & WA DEV'}
                           </button>
 
-                          {isOtpVerified ? (
+                          {stopsList.length > 1 ? (
+                            stopsList.map((stopItem: any, sIdx: number) => {
+                              const stopNum = stopItem.stopNum || stopItem.stopNo || (sIdx + 1);
+                              const verified = checkStopVerified(stopItem, sIdx);
+                              const stopPva = getStopPva(stopItem, sIdx);
+
+                              return (
+                                <div key={sIdx} style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                                  {verified ? (
+                                    <button 
+                                      onClick={() => setShowPvaDocumentModal({ open: true, pva: stopPva })}
+                                      style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', width: '100%' }}
+                                      title={`View PVA PDF for Stop 0${stopNum}`}
+                                    >
+                                      📄 View PVA PDF (Stop 0{stopNum})
+                                    </button>
+                                  ) : (
+                                    <button 
+                                      onClick={() => {
+                                        const matchedCust = (customers || []).find(c => (v.customerNumber && c.custCode === v.customerNumber) || (v.mobile && c.mobile === v.mobile) || (v.customerName && c.custName === v.customerName));
+                                        const matchedPlanObj = matchedPlan || {
+                                          visitPlanId: v.visitId || 'SRM-VP-2026-000001',
+                                          visitScheduleId: v.visitId || 'SRM-VS-2026-000087',
+                                          customerName: v.customerName || matchedCust?.custName || 'Customer',
+                                          customerNumber: v.customerNumber || matchedCust?.custCode || 'SRM-CUS-2026-000185',
+                                          mobile: v.mobile || matchedCust?.mobile || '+91 98490 12345',
+                                          email: v.email || matchedCust?.email || 'customer@gmail.com',
+                                          assignedExecutive: v.assignedExecutive || 'Punita Roy',
+                                          visitDate: v.visitDate || '2026-08-22',
+                                          visitTime: v.visitTime || '10:00 AM',
+                                          stops: stopsList
+                                        };
+                                        const targetStop = {
+                                          stopId: stopItem.stopId || `SRM-VSTOP-2026-00000${stopNum}`,
+                                          costSheetId: stopItem.costSheetId || v.costSheetId || 'SRM-CS-2026-000145',
+                                          propertyCode: stopItem.propertyCode || cleanPropCode,
+                                          propertyTitle: stopItem.propertyTitle || cleanPropTitle,
+                                          locality: stopItem.locality || cleanLocality,
+                                          developer: stopItem.developer || matchedProp?.developerName || matchedProp?.developer || 'Dhriti Builders & Developers',
+                                          latitude: stopItem.latitude || lat,
+                                          longitude: stopItem.longitude || lng,
+                                          status: stopItem.status || 'SCHEDULED'
+                                        };
+                                        setShowPvaVerificationModal({ open: true, plan: matchedPlanObj, stop: targetStop });
+                                      }}
+                                      style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', width: '100%' }}
+                                      title={`Verify OTP for Stop 0${stopNum}`}
+                                    >
+                                      🔐 Verify OTP (Stop 0{stopNum})
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })
+                          ) : isOtpVerified ? (
                             <button 
                               onClick={() => {
                                 const activePva = matchingPva || {
@@ -1156,15 +1438,89 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                           {v.customerNumber && (
                             <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace', display: 'block' }}>{v.customerNumber}</span>
                           )}
+                          {(() => {
+                            const usedProps = getCustomerUsedPropertyCodes(
+                              v.customerNumber || v.customerId,
+                              v.customerName || v.name,
+                              v.mobile,
+                              individualCostSheets
+                            );
+                            if (usedProps.length === 0) return null;
+                            return (
+                              <div style={{ marginTop: '4px', background: 'rgba(2, 132, 199, 0.12)', border: '1px solid #0284c7', borderRadius: '4px', padding: '2px 6px', fontSize: '0.68rem' }}>
+                                <span style={{ color: '#38bdf8', fontWeight: '800' }}>🏢 Cost Sheet Property Codes ({usedProps.length}):</span>
+                                <div style={{ color: '#fbbf24', fontWeight: '900', fontFamily: 'monospace', display: 'flex', gap: '3px', flexWrap: 'wrap', marginTop: '2px' }}>
+                                  {usedProps.map(p => (
+                                    <span key={p.propertyCode} style={{ background: '#0f172a', border: '1px solid #eab308', padding: '1px 4px', borderRadius: '3px' }}>
+                                      {p.propertyCode}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
-                        <td style={{ padding: '12px' }}>
-                          <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{v.propertyTitle}</strong>
-                          <div style={{ marginTop: '2px', marginBottom: '2px' }}>
-                            <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
-                              🏢 Property Code: {v.propertyCode || v.propCode || 'SRM-PROP-2026-000426'}
-                            </span>
-                          </div>
-                          <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>📍 GPS: {v.latitude || '22.722351° N'}, {v.longitude || '88.485484° E'}</span>
+                        <td style={{ padding: '12px', minWidth: '260px' }}>
+                          {(() => {
+                            const stopsList = (v.stops && v.stops.length > 0) ? v.stops : [];
+                            if (stopsList.length <= 1) {
+                              return (
+                                <div>
+                                  <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>{v.propertyTitle}</strong>
+                                  <div style={{ marginTop: '2px', marginBottom: '2px' }}>
+                                    <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', display: 'inline-block' }}>
+                                      🏢 Property Code: {v.propertyCode || v.propCode || 'SRM-PROP-2026-000426'}
+                                    </span>
+                                  </div>
+                                  <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>📍 GPS: {v.latitude || '22.722351° N'}, {v.longitude || '88.485484° E'}</span>
+                                </div>
+                              );
+                            }
+
+                            return (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <span style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', border: '1px solid #a855f7', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', width: 'fit-content' }}>
+                                  🚘 MULTI-PROPERTY SCHEDULE ({stopsList.length} STOPS)
+                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                  {stopsList.map((stop: any, sIdx: number) => {
+                                    const stopNum = stop.stopNum || stop.stopNo || (sIdx + 1);
+                                    const csId = stop.costSheetId;
+                                    const pTitle = stop.propertyTitle || 'Property Site';
+                                    const pCode = stop.propertyCode || v.propertyCode;
+                                    const loc = stop.locality || v.locality;
+                                    const dev = stop.developer;
+
+                                    return (
+                                      <div key={sIdx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '8px', padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                          <span style={{ background: '#eab308', color: '#0f172a', padding: '1px 6px', borderRadius: '3px', fontSize: '0.68rem', fontWeight: '900' }}>
+                                            STOP 0{stopNum}
+                                          </span>
+                                          {csId && (
+                                            <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontSize: '0.72rem', fontWeight: '900' }}>
+                                              {csId}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.84rem' }}>
+                                          🏢 {pTitle}
+                                        </strong>
+                                        <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                          <span style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', color: '#38bdf8', fontSize: '0.7rem', fontWeight: '800', padding: '1px 5px', borderRadius: '3px', fontFamily: 'monospace' }}>
+                                            Code: {pCode}
+                                          </span>
+                                          <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                            📍 {loc} {dev ? `• ${dev}` : ''}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
                         <td style={{ padding: '12px' }}>
                           {isVerified ? (

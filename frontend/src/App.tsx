@@ -45,7 +45,8 @@ function ScheduleVisitModalContent({
   setActiveTab,
   setActiveVisitSubTab,
   setSelectedVisitPlanId,
-  dynamicSalesExecutives = []
+  dynamicSalesExecutives = [],
+  customers = []
 }: any) {
   const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
 
@@ -60,13 +61,28 @@ function ScheduleVisitModalContent({
     initialCS ? [initialCS.costSheetId] : (eligibleCostSheets[0] ? [eligibleCostSheets[0].costSheetId] : [])
   );
 
-  const [pickupAddress, setPickupAddress] = useState<string>('Kondapur, Hyderabad (Near Metro Gate 2)');
+  const targetCust = (customers || []).find((c: any) =>
+    (targetCustomerId && (c.custCode === targetCustomerId || c.customer_number === targetCustomerId || c.id === targetCustomerId)) ||
+    (targetCustMobile && (c.mobile === targetCustMobile || c.custMobile === targetCustMobile)) ||
+    (targetCustName && (c.name === targetCustName || c.custName === targetCustName))
+  );
+
+  const custHomeAddress = 
+    initialCS?.customerSnapshot?.address || 
+    initialCS?.customerSnapshot?.fullAddress || 
+    initialCS?.customerSnapshot?.locality || 
+    targetCust?.address || 
+    targetCust?.fullAddress || 
+    targetCust?.locality || 
+    (targetCustName ? `${targetCustName}'s Residence Address` : 'Customer Residence Address');
+
+  const [pickupAddress, setPickupAddress] = useState<string>(custHomeAddress);
   const [pickupTime, setPickupTime] = useState<string>('10:00 AM');
-  const [dropAddress, setDropAddress] = useState<string>('Kondapur, Hyderabad');
+  const [dropAddress, setDropAddress] = useState<string>(custHomeAddress);
   const [visitDate, setVisitDate] = useState<string>('2026-08-22');
   const [startTime, setStartTime] = useState<string>('10:00 AM');
   const [assignedExec, setAssignedExec] = useState<string>('Ramesh Pawar (Field Exec - Kondapur)');
-  const [transportMode, setTransportMode] = useState<string>('🚗 Chauffeur Cab Pick & Drop Needed');
+  const [transportMode, setTransportMode] = useState<string>('🚗 Cab Pick & Drop Needed');
 
   const [orderedStops, setOrderedStops] = useState<any[]>(() => {
     const initList = initialCS ? [initialCS] : eligibleCostSheets.slice(0, 1);
@@ -483,7 +499,21 @@ function ScheduleVisitModalContent({
 
           <div>
             <label style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', display: 'block', marginBottom: '4px' }}>2. Pickup Time</label>
-            <input type="text" value={pickupTime} onChange={(e) => setPickupTime(e.target.value)} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.82rem' }} />
+            <select 
+              value={pickupTime} 
+              onChange={(e) => setPickupTime(e.target.value)} 
+              style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#fbbf24', fontWeight: '800', padding: '8px 10px', borderRadius: '6px', fontSize: '0.82rem' }}
+            >
+              {[
+                '07:00 AM', '07:30 AM', '08:00 AM', '08:30 AM', '09:00 AM', '09:30 AM',
+                '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
+                '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM', '03:30 PM',
+                '04:00 PM', '04:30 PM', '05:00 PM', '05:30 PM', '06:00 PM', '06:30 PM',
+                '07:00 PM', '07:30 PM', '08:00 PM', '08:30 PM'
+              ].map(t => (
+                <option key={t} value={t}>⏰ {t}</option>
+              ))}
+            </select>
           </div>
 
           <div>
@@ -500,7 +530,7 @@ function ScheduleVisitModalContent({
           <div>
             <label style={{ fontSize: '0.75rem', color: '#4ade80', fontWeight: '900', display: 'block', marginBottom: '4px' }}>4. Transport Logistics Mode</label>
             <select value={transportMode} onChange={(e) => setTransportMode(e.target.value)} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 10px', borderRadius: '6px', fontSize: '0.82rem' }}>
-              <option value="Cab Pick & Drop Needed">🚗 Chauffeur Cab Pick & Drop Needed</option>
+              <option value="Cab Pick & Drop Needed">🚗 Cab Pick & Drop Needed</option>
               <option value="Self Driving / Direct Arrival">🚗 Self Driving / Direct Arrival at Site</option>
               <option value="Executive Escort Needed">🛵 Executive Escort / Pick from Metro</option>
             </select>
@@ -667,7 +697,7 @@ function VisitDetailModalContent({
                 <span style={{ fontSize: '0.7rem', color: isLight ? '#475569' : '#94a3b8', fontWeight: '800' }}>PICKUP & DROP LOGISTICS</span>
                 <p style={{ color: isLight ? '#0f172a' : '#ffffff', marginTop: '2px' }}>🟢 Pickup: <strong>{plan.pickupAddress || 'Kondapur, Hyderabad'}</strong></p>
                 <p style={{ color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>🔴 Drop: <strong>{plan.dropAddress || 'Kondapur, Hyderabad'}</strong></p>
-                <span style={{ color: isLight ? '#b45309' : '#fbbf24', fontSize: '0.75rem', fontWeight: '800', display: 'block', marginTop: '4px' }}>Transport Mode: {plan.transport || 'Chauffeur Cab Pick & Drop'}</span>
+                <span style={{ color: isLight ? '#b45309' : '#fbbf24', fontSize: '0.75rem', fontWeight: '800', display: 'block', marginTop: '4px' }}>Transport Mode: {plan.transport || 'Cab Pick & Drop'}</span>
               </div>
             </div>
           )}
@@ -762,13 +792,27 @@ function VisitDetailModalContent({
                               {isCurrent && !isCompleted && (
                                 <button 
                                   onClick={() => {
-                                    const cleanLat = stop.latitude.replace(/[^0-9.]/g, '') || '17.4612';
-                                    const cleanLng = stop.longitude.replace(/[^0-9.]/g, '') || '78.3689';
-                                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`, '_blank');
+                                    const remainingStops = (plan.stops || []).slice(idx).filter((s: any) => s && (s.latitude || s.longitude));
+                                    if (remainingStops.length > 1) {
+                                      const destStop = remainingStops[remainingStops.length - 1];
+                                      const destLat = (destStop.latitude || '17.4612').replace(/[^0-9.-]/g, '');
+                                      const destLng = (destStop.longitude || '78.3689').replace(/[^0-9.-]/g, '');
+                                      const waypointsStr = remainingStops.slice(0, remainingStops.length - 1).map((s: any) => {
+                                        const lat = (s.latitude || '17.4612').replace(/[^0-9.-]/g, '');
+                                        const lng = (s.longitude || '78.3689').replace(/[^0-9.-]/g, '');
+                                        return `${lat},${lng}`;
+                                      }).join('|');
+                                      window.open(`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&waypoints=${encodeURIComponent(waypointsStr)}`, '_blank');
+                                    } else {
+                                      const cleanLat = (stop.latitude || '17.4612').replace(/[^0-9.-]/g, '');
+                                      const cleanLng = (stop.longitude || '78.3689').replace(/[^0-9.-]/g, '');
+                                      window.open(`https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`, '_blank');
+                                    }
                                   }}
                                   style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}
+                                  title="Navigate multi-stop route starting from this stop"
                                 >
-                                  🚀 Navigate
+                                  🚀 Navigate ({ (plan?.stops?.length || 1) - idx } Stops)
                                 </button>
                               )}
                             </div>
@@ -798,6 +842,29 @@ function VisitDetailModalContent({
           {openSections.navigation && (
             <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: isLight ? '#ffffff' : '#0f172a' }}>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button 
+                  onClick={() => {
+                    const validStops = (plan?.stops || []).filter((s: any) => s && (s.latitude || s.longitude));
+                    if (validStops.length > 1) {
+                      const destStop = validStops[validStops.length - 1];
+                      const destLat = (destStop.latitude || '17.4612').replace(/[^0-9.-]/g, '');
+                      const destLng = (destStop.longitude || '78.3689').replace(/[^0-9.-]/g, '');
+                      const waypointsStr = validStops.slice(0, validStops.length - 1).map((s: any) => {
+                        const lat = (s.latitude || '17.4612').replace(/[^0-9.-]/g, '');
+                        const lng = (s.longitude || '78.3689').replace(/[^0-9.-]/g, '');
+                        return `${lat},${lng}`;
+                      }).join('|');
+                      window.open(`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&waypoints=${encodeURIComponent(waypointsStr)}`, '_blank');
+                    } else if (validStops.length === 1) {
+                      const cleanLat = (validStops[0].latitude || '17.4612').replace(/[^0-9.-]/g, '');
+                      const cleanLng = (validStops[0].longitude || '78.3689').replace(/[^0-9.-]/g, '');
+                      window.open(`https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`, '_blank');
+                    }
+                  }}
+                  style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
+                >
+                  🚀 START FULL MULTI-STOP ROUTE NAVIGATION ({ (plan?.stops || []).length } Stops)
+                </button>
                 <button 
                   onClick={() => {
                     const cleanLat = plan.pickupLat ? plan.pickupLat.replace(/[^0-9.]/g, '') : '17.4478';
@@ -3155,8 +3222,8 @@ export default function App() {
         status: 'LIVE',
         locality: 'Barasat, Kolkata',
         full_address: 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
-        latitude: '22.722361',
-        longitude: '88.493403',
+        latitude: '22.694318',
+        longitude: '88.400659',
         property_type: 'Flat / Apartment',
         tower_block: 'Tower A',
         floor_num: '3rd Floor',
@@ -3181,8 +3248,8 @@ export default function App() {
         status: 'LIVE',
         locality: 'Barasat, Kolkata',
         full_address: 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124, India',
-        latitude: '22.722361',
-        longitude: '88.493403',
+        latitude: '22.715420',
+        longitude: '88.479150',
         property_type: 'Flat / Apartment',
         tower_block: 'Tower A',
         floor_num: '2nd Floor',
@@ -3812,7 +3879,8 @@ export default function App() {
         propertyTitle: prop.title || 'Selected Property',
         projectName: prop.project || prop.title || 'Aparna Zenon',
         developerName: prop.developer || 'Aparna Constructions',
-        propertyType: prop.type || 'Apartment',
+        propertyType: prop.property_type || prop.type || 'Flat / Apartment',
+        property_type: prop.property_type || prop.type || 'Flat / Apartment',
         propertyStatus: prop.status || 'AVAILABLE',
         locality: prop.locality || 'Kondapur',
         address: `${prop.locality || 'Kondapur'}, Gachibowli Road, Hyderabad 500084`,
@@ -4314,7 +4382,7 @@ export default function App() {
     const timestamp = new Date().toLocaleString('en-IN');
     const noteEntry = handoffNote ? `[Shifted to Matching on ${timestamp}]: ${handoffNote}` : `[Shifted to Matching on ${timestamp}]`;
 
-    // 1. Update matching requests queue with handoffNote
+    // 1. Update matching requests queue with handoffNote and set status to 'PENDING'
     setMatchingRequestsQueue((prev: any[]) => {
       let matched = false;
       const updated = prev.map((req: any) => {
@@ -4326,7 +4394,8 @@ export default function App() {
             ...req,
             handoffNote: handoffNote,
             notes: req.notes ? `${req.notes}\n${noteEntry}` : noteEntry,
-            status: 'PENDING_MATCHING',
+            status: 'PENDING',
+            costSheetId: undefined,
             updatedAt: timestamp
           };
         }
@@ -4342,7 +4411,8 @@ export default function App() {
           configuration: '3BHK / 2BHK',
           preferredArea: item.locality || item.propertyTitle || 'Barasat, Kolkata',
           budget: '₹40,00,000 - ₹80,00,000',
-          status: 'PENDING_MATCHING',
+          status: 'PENDING',
+          costSheetId: undefined,
           handoffNote: handoffNote,
           notes: noteEntry,
           date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
@@ -4351,7 +4421,22 @@ export default function App() {
       return updated;
     });
 
-    // 2. Select matching ID and customer
+    // 2. Update individualCostSheets to mark cost sheets for this customer/matchId as SHIFTED_TO_MATCHING
+    setIndividualCostSheets((prev: any[]) => prev.map((cs: any) => {
+      const csCustId = cs.customerId || cs.customerSnapshot?.customerId || cs.customerSnapshot?.customerNumber;
+      const csMatchId = cs.matchingId || cs.requestId;
+      const csMob = cs.customerSnapshot?.mobile || cs.mobile || '';
+      const csCleanMob = csMob.replace(/\D/g, '');
+      if ((custId && csCustId === custId) || (matchId && csMatchId === matchId) || (cleanMob && csCleanMob && csCleanMob === cleanMob)) {
+        return { ...cs, status: 'SHIFTED_TO_MATCHING' };
+      }
+      return cs;
+    }));
+
+    // 3. Set filter to PENDING_ONLY
+    setMatchingVaultFilter('PENDING_ONLY');
+
+    // 4. Select matching ID and customer
     setSelectedMatchingId(matchId);
     let targetCust = customers.find((c: any) => 
       (c.customer_number && c.customer_number === custId) ||
@@ -4362,11 +4447,11 @@ export default function App() {
       setSelectedCust(targetCust);
     }
 
-    // 3. Close modal and switch tab to Matching Management
+    // 5. Close modal and switch tab to Matching Management
     setShowShiftToMatchingModal(null);
     setActiveTab('matching_management');
 
-    alert(`⚡ SHIFTED BACK TO MATCHING MANAGEMENT FOR ${custName} (${matchId})\n\n📌 Handoff Note Logged:\n"${handoffNote || 'No note specified'}"\n\nYou are now in Matching Management workspace.`);
+    alert(`⚡ SHIFTED BACK TO MATCHING MANAGEMENT (PENDING QUEUE) FOR ${custName} (${matchId})\n\n📌 Handoff Note Logged:\n"${handoffNote || 'No note specified'}"\n\nStatus set to PENDING. You are now in Matching Management workspace.`);
   };
 
   // DELETE ALL CURRENT RECORDS INSIDE FUNCTION
@@ -9009,6 +9094,9 @@ export default function App() {
               maskPhone={maskPhone}
               setActiveTab={setActiveTab}
               setSelectedMatchingId={setSelectedMatchingId}
+              individualCostSheets={individualCostSheets}
+              costSheetShares={costSheetShares}
+              scheduledVisits={scheduledVisits}
             />
           )}
 
@@ -13863,6 +13951,7 @@ export default function App() {
                   </h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.82rem' }}>
                     <div><span style={{ color: '#64748b' }}>Property Title:</span> <strong style={{ color: '#0f172a', fontSize: '0.88rem' }}>{showViewIndividualCostSheetModal.costSheet.propertySnapshot?.propertyTitle}</strong></div>
+                    <div><span style={{ color: '#64748b' }}>Property Category Type:</span> <strong style={{ color: '#a855f7', fontWeight: '800' }}>{showViewIndividualCostSheetModal.costSheet.propertySnapshot?.property_type || showViewIndividualCostSheetModal.costSheet.propertySnapshot?.propertyType || showViewIndividualCostSheetModal.costSheet.property_type || 'Flat / Apartment'}</strong></div>
                     <div><span style={{ color: '#64748b' }}>Property Code:</span> <strong style={{ color: '#0369a1', fontFamily: 'monospace' }}>{showViewIndividualCostSheetModal.costSheet.propertySnapshot?.propertyCode}</strong></div>
                     <div><span style={{ color: '#64748b' }}>Project & Developer:</span> <strong style={{ color: '#0f172a' }}>{showViewIndividualCostSheetModal.costSheet.propertySnapshot?.projectName} ({showViewIndividualCostSheetModal.costSheet.propertySnapshot?.developerName})</strong></div>
                     <div><span style={{ color: '#64748b' }}>Tower / Floor / Unit:</span> <strong style={{ color: '#0f172a' }}>{showViewIndividualCostSheetModal.costSheet.propertySnapshot?.tower}, {showViewIndividualCostSheetModal.costSheet.propertySnapshot?.floor}, Unit {showViewIndividualCostSheetModal.costSheet.propertySnapshot?.unitNumber}</strong></div>
@@ -14344,6 +14433,7 @@ export default function App() {
             setActiveTab={setActiveTab}
             setActiveVisitSubTab={setActiveVisitSubTab}
             dynamicSalesExecutives={dynamicSalesExecutives}
+            customers={customers}
           />
         );
       })()}
@@ -14687,8 +14777,31 @@ export default function App() {
 
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
-              <button onClick={() => setShowRouteMapModal(null)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}>Close Map</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px', flexWrap: 'wrap', gap: '10px' }}>
+              <button 
+                onClick={() => {
+                  const validStops = (showRouteMapModal.plan.stops || []).filter((s: any) => s && (s.latitude || s.longitude));
+                  if (validStops.length > 1) {
+                    const destStop = validStops[validStops.length - 1];
+                    const destLat = (destStop.latitude || '17.4612').replace(/[^0-9.-]/g, '');
+                    const destLng = (destStop.longitude || '78.3689').replace(/[^0-9.-]/g, '');
+                    const waypointsStr = validStops.slice(0, validStops.length - 1).map((s: any) => {
+                      const lat = (s.latitude || '17.4612').replace(/[^0-9.-]/g, '');
+                      const lng = (s.longitude || '78.3689').replace(/[^0-9.-]/g, '');
+                      return `${lat},${lng}`;
+                    }).join('|');
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${destLat},${destLng}&waypoints=${encodeURIComponent(waypointsStr)}`, '_blank');
+                  } else if (validStops.length === 1) {
+                    const cleanLat = (validStops[0].latitude || '17.4612').replace(/[^0-9.-]/g, '');
+                    const cleanLng = (validStops[0].longitude || '78.3689').replace(/[^0-9.-]/g, '');
+                    window.open(`https://www.google.com/maps/dir/?api=1&destination=${cleanLat},${cleanLng}`, '_blank');
+                  }
+                }}
+                style={{ background: '#22c55e', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontWeight: '900', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                🚀 START GOOGLE MAPS NAVIGATION ({ (showRouteMapModal.plan.stops || []).length } STOPS)
+              </button>
+              <button onClick={() => setShowRouteMapModal(null)} style={{ background: '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontWeight: '800', cursor: 'pointer', fontSize: '0.85rem' }}>Close Map</button>
             </div>
           </div>
         </div>

@@ -184,6 +184,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
     return [];
   });
 
+  const [editingDevId, setEditingDevId] = React.useState<string | null>(null);
+  const [editDevForm, setEditDevForm] = React.useState<{ id: string; name: string; mobile: string; email: string }>({ id: '', name: '', mobile: '', email: '' });
+
   // SYNC DEVELOPER MASTER LIST WITH DEVELOPERS PROP AND LOCALSTORAGE
   React.useEffect(() => {
     if (developers && Array.isArray(developers) && developers.length > 0) {
@@ -331,6 +334,52 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   const [newDevAltMobileInput, setNewDevAltMobileInput] = React.useState<string>('');
   const [newDevProjectTitleInput, setNewDevProjectTitleInput] = React.useState<string>('');
   const [viewPropertyModal, setViewPropertyModal] = React.useState<any | null>(null);
+
+  const handleStartEditProjectDeveloper = React.useCallback((p: any) => {
+    if (!p) return;
+    const devMobile = p.developer_mobile || p.mobile || '9883395102';
+    const altMobile = p.developer_alt_mobile || p.altMobile || '7044293951';
+
+    setNewPropertyForm((prev: any) => ({
+      ...prev,
+      project_id: p.project_id || p.project_code || p.code || p.id || 'SRM-PROJ-2026-000088',
+      property_code: p.property_code || p.code || '',
+      developer_id: p.developer_id || p.developerId || 'SRM-DEV-2026-000105',
+      developer: p.developer || p.developer_name || p.name || 'KRISHNA DAS (SWARAMAYI DEVELOPERS)',
+      title: p.title || p.project_name || 'SHIBALAY RESIDENCY',
+      locality: p.locality || 'BARASAT, CHAPADALI',
+      city: p.city || 'Kolkata',
+      full_address: p.full_address || p.address || 'Chapadali Bus Terminus Hub, Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124',
+      latitude: p.latitude || '22.722361',
+      longitude: p.longitude || '88.493403',
+      possession_status: p.possession_status || 'Under Construction',
+      handover_month: p.handover_month || 'December',
+      handover_year: p.handover_year || '2026',
+      handover_month_year: p.handover_month_year || 'December 2026',
+      total_covered_parking_capacity: p.total_covered_parking_capacity || 24,
+      covered_parking_rate: p.covered_parking_rate || '300000',
+      total_ev_parking_capacity: p.total_ev_parking_capacity || 6,
+      ev_parking_rate: p.ev_parking_rate || '450000',
+      total_open_parking_capacity: p.total_open_parking_capacity || 12,
+      open_parking_rate: p.open_parking_rate || '150000',
+      selected_amenities: Array.isArray(p.selected_amenities) ? p.selected_amenities : ['Elevator', 'Gym', '24/7 Security'],
+      building_photos: Array.isArray(p.building_photos) ? p.building_photos : (p.building_photo ? [p.building_photo] : []),
+      building_photo: p.building_photo || '',
+      rera_id: p.rera_id || '',
+      hera_no: p.hera_no || '',
+      description: p.description || ''
+    }));
+
+    if (setDevProjectMobile) setDevProjectMobile(devMobile);
+    if (setDevProjectAltMobile) setDevProjectAltMobile(altMobile);
+    if (setDevProjectOtpVerified) setDevProjectOtpVerified(true);
+    if (setDevProjectOtpSent) setDevProjectOtpSent(true);
+
+    setViewPropertyModal(null);
+    setShowDevVaultModal(false);
+    setActiveProjectSubTab('add_project_developer');
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [setNewPropertyForm, setDevProjectMobile, setDevProjectAltMobile, setDevProjectOtpVerified, setDevProjectOtpSent, setActiveProjectSubTab]);
 
   // MULTIPLE PROPERTY UNITS BUILDER & SLIDER STATE
   const [showMultipleUnitsSlider, setShowMultipleUnitsSlider] = React.useState<{ open: boolean; project?: any } | null>(null);
@@ -2648,212 +2697,6 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
                   return (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                      
-                      {/* CARD 1: 📐 PROPERTY LAYOUT & MASTER SITE PLAN UPLOAD */}
-                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #a855f7', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                          <div>
-                            <span style={{ fontSize: '0.86rem', color: '#a855f7', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              📐 Property Layout & Master Site Plan Diagram Upload
-                            </span>
-                            <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '3px 0 0 0' }}>
-                              Upload master layout plan, site plan blueprint, and land plot boundary diagrams for this project/property.
-                            </p>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <label style={{ background: 'linear-gradient(135deg, #a855f7 0%, #7e22ce 100%)', color: '#ffffff', padding: '7px 12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Upload size={14} color="#ffffff" />
-                              📐 UPLOAD LAYOUT PLAN
-                              <input 
-                                type="file" 
-                                accept="image/*" 
-                                multiple
-                                style={{ display: 'none' }}
-                                onChange={(e) => handleProcessLayoutPhotoFiles(e.target.files)}
-                              />
-                            </label>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const sampleLayouts = [
-                                  'https://images.unsplash.com/photo-1524813686514-a57563d77965?auto=format&fit=crop&w=800&q=80',
-                                  'https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=800&q=80'
-                                ];
-                                const updatedList = Array.from(new Set([...layoutPhotosList, ...sampleLayouts]));
-                                setNewPropertyForm((prev: any) => ({
-                                  ...prev,
-                                  layout_photos: updatedList,
-                                  layout_photo: updatedList[0] || ''
-                                }));
-                              }}
-                              style={{ background: isLight ? '#f8fafc' : '#0f172a', color: '#a855f7', border: '1.5px solid #a855f7', padding: '7px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.76rem', cursor: 'pointer' }}
-                            >
-                              🖼️ Preset Master Layouts
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* LAYOUT PLAN URL INPUT */}
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <input 
-                            type="text" 
-                            id="newLayoutPhotoUrlInput"
-                            placeholder="Paste Master Site Plan / Property Layout diagram URL"
-                            style={{ flex: 1, background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.84rem' }} 
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const el = document.getElementById('newLayoutPhotoUrlInput') as HTMLInputElement;
-                              if (el && el.value.trim()) {
-                                const val = el.value.trim();
-                                const updatedList = [...layoutPhotosList, val];
-                                setNewPropertyForm((prev: any) => ({
-                                  ...prev,
-                                  layout_photos: updatedList,
-                                  layout_photo: updatedList[0] || ''
-                                }));
-                                el.value = '';
-                              }
-                            }}
-                            style={{ background: '#a855f7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                          >
-                            ➕ Add Layout URL
-                          </button>
-                        </div>
-
-                        {/* UPLOADED LAYOUT PHOTOS PREVIEW GRID */}
-                        {layoutPhotosList.length > 0 && (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', background: isLight ? '#f8fafc' : '#0f172a', padding: '10px', borderRadius: '8px', border: '1px solid rgba(168, 85, 247, 0.3)' }}>
-                            {layoutPhotosList.map((photoUrl, idx) => (
-                              <div key={`layout_${idx}`} style={{ position: 'relative', background: isLight ? '#ffffff' : '#1e293b', border: idx === 0 ? '2px solid #a855f7' : '1px solid #334155', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <img src={photoUrl} alt={`Property Layout ${idx + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '6px' }} />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontSize: '0.64rem', fontWeight: '900', color: '#a855f7' }}>
-                                    {idx === 0 ? '⭐ Primary Layout' : `Layout #${idx + 1}`}
-                                  </span>
-                                  <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button type="button" onClick={() => downloadImage(photoUrl, `layout_diagram_${idx + 1}.jpg`)} style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#a855f7', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
-                                      <Download size={10} />
-                                    </button>
-                                    <button type="button" onClick={() => {
-                                      const updatedList = layoutPhotosList.filter((_, i) => i !== idx);
-                                      setNewPropertyForm((prev: any) => ({ ...prev, layout_photos: updatedList, layout_photo: updatedList[0] || '' }));
-                                    }} style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
-                                      🗑️
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* CARD 2: 🗺️ ARCHITECTURAL UNIT FLOOR PLAN UPLOAD */}
-                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #eab308', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                          <div>
-                            <span style={{ fontSize: '0.86rem', color: '#eab308', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              🗺️ Architectural Unit Floor Plan Diagram Upload
-                            </span>
-                            <p style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', margin: '3px 0 0 0' }}>
-                              Upload 2D/3D unit floor plan drawings, room dimension blueprints, and structural unit layouts.
-                            </p>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            <label style={{ background: 'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', color: '#0f172a', padding: '7px 12px', borderRadius: '8px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Upload size={14} color="#0f172a" />
-                              🗺️ UPLOAD FLOOR PLAN
-                              <input 
-                                type="file" 
-                                accept="image/*" 
-                                multiple
-                                style={{ display: 'none' }}
-                                onChange={(e) => handleProcessFloorPlanPhotoFiles(e.target.files)}
-                              />
-                            </label>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const sampleFloorPlans = [
-                                  'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80',
-                                  'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?auto=format&fit=crop&w=800&q=80'
-                                ];
-                                const updatedList = Array.from(new Set([...floorPlanPhotosList, ...sampleFloorPlans]));
-                                setNewPropertyForm((prev: any) => ({
-                                  ...prev,
-                                  floor_plan_photos: updatedList,
-                                  floor_plan_photo: updatedList[0] || ''
-                                }));
-                              }}
-                              style={{ background: isLight ? '#f8fafc' : '#0f172a', color: '#eab308', border: '1.5px solid #eab308', padding: '7px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.76rem', cursor: 'pointer' }}
-                            >
-                              🖼️ Preset Floor Plans
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* FLOOR PLAN URL INPUT */}
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                          <input 
-                            type="text" 
-                            id="newFloorPlanPhotoUrlInput"
-                            placeholder="Paste 2D/3D Architectural Unit Floor Plan diagram URL"
-                            style={{ flex: 1, background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.84rem' }} 
-                          />
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const el = document.getElementById('newFloorPlanPhotoUrlInput') as HTMLInputElement;
-                              if (el && el.value.trim()) {
-                                const val = el.value.trim();
-                                const updatedList = [...floorPlanPhotosList, val];
-                                setNewPropertyForm((prev: any) => ({
-                                  ...prev,
-                                  floor_plan_photos: updatedList,
-                                  floor_plan_photo: updatedList[0] || ''
-                                }));
-                                el.value = '';
-                              }
-                            }}
-                            style={{ background: '#eab308', color: '#0f172a', border: 'none', padding: '8px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                          >
-                            ➕ Add Floor Plan URL
-                          </button>
-                        </div>
-
-                        {/* UPLOADED FLOOR PLAN PHOTOS PREVIEW GRID */}
-                        {floorPlanPhotosList.length > 0 && (
-                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px', background: isLight ? '#f8fafc' : '#0f172a', padding: '10px', borderRadius: '8px', border: '1px solid rgba(234, 179, 8, 0.3)' }}>
-                            {floorPlanPhotosList.map((photoUrl, idx) => (
-                              <div key={`floor_${idx}`} style={{ position: 'relative', background: isLight ? '#ffffff' : '#1e293b', border: idx === 0 ? '2px solid #eab308' : '1px solid #334155', borderRadius: '8px', padding: '6px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <img src={photoUrl} alt={`Floor Plan ${idx + 1}`} style={{ width: '100%', height: '100px', objectFit: 'cover', borderRadius: '6px' }} />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <span style={{ fontSize: '0.64rem', fontWeight: '900', color: '#eab308' }}>
-                                    {idx === 0 ? '⭐ Primary Floor Plan' : `Floor Plan #${idx + 1}`}
-                                  </span>
-                                  <div style={{ display: 'flex', gap: '4px' }}>
-                                    <button type="button" onClick={() => downloadImage(photoUrl, `floor_plan_diagram_${idx + 1}.jpg`)} style={{ background: 'rgba(234, 179, 8, 0.2)', color: '#eab308', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
-                                      <Download size={10} />
-                                    </button>
-                                    <button type="button" onClick={() => {
-                                      const updatedList = floorPlanPhotosList.filter((_, i) => i !== idx);
-                                      setNewPropertyForm((prev: any) => ({ ...prev, floor_plan_photos: updatedList, floor_plan_photo: updatedList[0] || '' }));
-                                    }} style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: '800', cursor: 'pointer' }}>
-                                      🗑️
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
 
                       {/* CARD 3: 📸 UNIT INTERIOR & LIVE VIDEO CAPTURE WIDGET */}
                       <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #38bdf8', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -3381,7 +3224,12 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                     return (
                       <tr key={p.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                         <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800' }}>{p.property_code}</td>
-                        <td style={{ padding: '12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{p.title}</td>
+                        <td style={{ padding: '12px', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
+                          <div>{p.title}</div>
+                          <span style={{ fontSize: '0.7rem', color: '#a855f7', background: 'rgba(168, 85, 247, 0.15)', border: '1px solid #a855f7', padding: '2px 6px', borderRadius: '4px', fontWeight: '800', marginTop: '3px', display: 'inline-block' }}>
+                            🏢 {p.property_type || p.type || 'Flat / Apartment'}
+                          </span>
+                        </td>
                         <td style={{ padding: '12px' }}>
                           <div style={{ fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>{p.developer}</div>
                           <span style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', border: '1px solid #a855f7', padding: '2px 6px', borderRadius: '4px', fontSize: '0.72rem', fontWeight: '900', fontFamily: 'monospace', marginTop: '4px', display: 'inline-block' }} title="Master Project Code">
@@ -3574,50 +3422,157 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
               ) : (
                 developerMasterList.map((dev) => (
                   <div key={dev.id} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                      <div>
-                        <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', fontFamily: 'monospace', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
-                          🆔 {dev.id}
-                        </span>
-                        <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>
-                          🏢 {dev.name}
-                        </h4>
-                      </div>
-                      <div style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'right' }}>
-                        <div>📱 Phone (for OTP): <strong style={{ color: '#4ade80' }}>{dev.mobile}</strong></div>
-                        <div>📧 Email: {dev.email}</div>
-                        {isSuperAdmin && (
-                          <button
-                            onClick={() => {
-                              if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Developer ${dev.id} (${dev.name})?`)) {
-                                const nextList = developerMasterList.filter((d: any) => d.id !== dev.id && d.name !== dev.name);
-                                setDeveloperMasterList(nextList);
-                                try {
-                                  const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-                                  fetch(`http://${host}:5000/api/v1/crm/sync`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ developers: nextList })
-                                  }).catch(() => {});
-                                } catch (e) {}
-                                alert(`🗑️ Developer ${dev.name} permanently deleted.`);
-                              }
-                            }}
-                            style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.73rem', cursor: 'pointer', marginTop: '6px' }}
-                            title="Super Admin Only: Delete developer profile"
-                          >
-                            🗑️ Delete Developer
+                    {editingDevId === dev.id ? (
+                      <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #f59e0b', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.8rem', color: '#fbbf24', fontWeight: '900', fontFamily: 'monospace' }}>
+                            ✏️ EDIT DEVELOPER PROFILE (ID: {dev.id})
+                          </span>
+                          <button onClick={() => setEditingDevId(null)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                            <X size={18} />
                           </button>
-                        )}
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? '1fr' : '1fr 1fr 1fr', gap: '10px' }}>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>Developer / Builder Name *</label>
+                            <input 
+                              type="text" 
+                              value={editDevForm.name} 
+                              onChange={(e) => setEditDevForm({ ...editDevForm, name: e.target.value })} 
+                              style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '700', marginTop: '3px' }} 
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>Mobile Phone (for OTP) *</label>
+                            <input 
+                              type="text" 
+                              value={editDevForm.mobile} 
+                              onChange={(e) => setEditDevForm({ ...editDevForm, mobile: e.target.value })} 
+                              style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '700', marginTop: '3px' }} 
+                            />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>Email Address</label>
+                            <input 
+                              type="text" 
+                              value={editDevForm.email} 
+                              onChange={(e) => setEditDevForm({ ...editDevForm, email: e.target.value })} 
+                              style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '700', marginTop: '3px' }} 
+                            />
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '4px' }}>
+                          <button 
+                            type="button" 
+                            onClick={() => setEditingDevId(null)}
+                            style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer' }}
+                          >
+                            Cancel
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => {
+                              if (!editDevForm.name || !editDevForm.mobile) {
+                                return alert('Please enter Developer Name & Mobile Phone');
+                              }
+                              const nextList = developerMasterList.map((d: any) => {
+                                if (d.id === dev.id || d.name === dev.name) {
+                                  return {
+                                    ...d,
+                                    name: editDevForm.name,
+                                    mobile: editDevForm.mobile,
+                                    email: editDevForm.email || d.email
+                                  };
+                                }
+                                return d;
+                              });
+                              setDeveloperMasterList(nextList);
+                              if (setDevelopers) {
+                                setDevelopers(nextList);
+                              }
+                              try {
+                                localStorage.setItem('swaramayi_developers_v1', JSON.stringify(nextList));
+                                const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+                                fetch(`http://${host}:5000/api/v1/crm/sync`, {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({ developers: nextList })
+                                }).catch(() => {});
+                              } catch (e) {}
+                              setEditingDevId(null);
+                              alert(`✅ DEVELOPER MASTER UPDATED SUCCESSFULLY!\n\n• Builder Name: ${editDevForm.name}\n• Phone: ${editDevForm.mobile}`);
+                            }}
+                            style={{ background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer' }}
+                          >
+                            💾 Save Changes
+                          </button>
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                        <div>
+                          <span style={{ fontSize: '0.75rem', color: '#fbbf24', fontWeight: '900', fontFamily: 'monospace', background: 'rgba(251, 191, 36, 0.15)', border: '1px solid rgba(251, 191, 36, 0.3)', padding: '2px 8px', borderRadius: '4px' }}>
+                            🆔 {dev.id}
+                          </span>
+                          <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '4px' }}>
+                            🏢 {dev.name}
+                          </h4>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'right' }}>
+                          <div>📱 Phone (for OTP): <strong style={{ color: '#4ade80' }}>{dev.mobile}</strong></div>
+                          <div>📧 Email: {dev.email}</div>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '6px' }}>
+                            <button
+                              onClick={() => {
+                                setEditingDevId(dev.id);
+                                setEditDevForm({
+                                  id: dev.id,
+                                  name: dev.name || '',
+                                  mobile: dev.mobile || '',
+                                  email: dev.email || ''
+                                });
+                              }}
+                              style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.73rem', cursor: 'pointer' }}
+                              title="Edit developer profile details"
+                            >
+                              ✏️ Edit Developer
+                            </button>
+                            {isSuperAdmin && (
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Developer ${dev.id} (${dev.name})?`)) {
+                                    const nextList = developerMasterList.filter((d: any) => d.id !== dev.id && d.name !== dev.name);
+                                    setDeveloperMasterList(nextList);
+                                    if (setDevelopers) setDevelopers(nextList);
+                                    try {
+                                      localStorage.setItem('swaramayi_developers_v1', JSON.stringify(nextList));
+                                      const host = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
+                                      fetch(`http://${host}:5000/api/v1/crm/sync`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ developers: nextList })
+                                      }).catch(() => {});
+                                    } catch (e) {}
+                                    alert(`🗑️ Developer ${dev.name} permanently deleted.`);
+                                  }
+                                }}
+                                style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', fontWeight: '800', fontSize: '0.73rem', cursor: 'pointer' }}
+                                title="Super Admin Only: Delete developer profile"
+                              >
+                                🗑️ Delete Developer
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                   {/* REGISTERED PROJECTS LIST FOR THIS DEVELOPER */}
                   <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px' }}>
                     <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '8px' }}>
                       📁 REGISTERED PROJECTS ({dev.projects?.length || 0}):
                     </span>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {(dev.projects || []).map((p: any, pIdx: number) => {
                         const allMasters = getAllMasterProjects();
                         const matchedMaster = allMasters.find(m => 
@@ -3632,34 +3587,81 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                           (prop.title && p.title && prop.title.toLowerCase().trim() === p.title.toLowerCase().trim())
                         ).length;
 
+                        const matchedProp = properties.find(prop => 
+                          (prop.project_id && (prop.project_id === projCodeStr || prop.project_id === p.code || prop.project_id === p.id)) ||
+                          (prop.property_code && (prop.property_code === projCodeStr || prop.property_code === p.code || prop.property_code === p.id)) ||
+                          (prop.title && p.title && prop.title.toLowerCase().trim() === p.title.toLowerCase().trim())
+                        ) || {
+                          id: projCodeStr,
+                          property_code: projCodeStr,
+                          title: p.title,
+                          developer: dev.name,
+                          developer_id: dev.id,
+                          locality: p.locality || 'Barasat, Kolkata',
+                          full_address: `${p.title}, ${p.locality || 'Barasat'}, North 24 Parganas, Kolkata, West Bengal`,
+                          latitude: matchedMaster?.latitude || '22.722361',
+                          longitude: matchedMaster?.longitude || '88.493403',
+                          configuration: '2BHK',
+                          carpet_area: '700 Sq.Ft.',
+                          final_price: '₹35,00,000',
+                          status: 'LIVE'
+                        };
+
                         return (
                           <div
                             key={p.id || p.title || pIdx}
                             style={{ 
                               background: isLight ? '#ffffff' : '#1e293b', 
                               border: '1px solid #0284c7', 
-                              borderRadius: '6px', 
-                              padding: '5px 10px', 
+                              borderRadius: '8px', 
+                              padding: '8px 12px', 
                               display: 'flex', 
                               alignItems: 'center', 
-                              gap: '6px', 
-                              boxShadow: '0 1px 4px rgba(2, 132, 199, 0.12)'
+                              justify: 'space-between',
+                              gap: '8px', 
+                              flexWrap: 'wrap',
+                              boxShadow: '0 2px 6px rgba(2, 132, 199, 0.15)'
                             }}
                           >
-                            <span style={{ fontSize: '0.66rem', background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', border: '1px solid #0284c7', padding: '1px 5px', borderRadius: '4px', fontWeight: '900', fontFamily: 'monospace' }}>
-                              🔑 {projCodeStr}
-                            </span>
-                            <span style={{ fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
-                              🏢 {p.title}
-                            </span>
-                            {p.locality && (
-                              <span style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-                                ({p.locality})
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span style={{ fontSize: '0.68rem', background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', border: '1px solid #0284c7', padding: '2px 6px', borderRadius: '4px', fontWeight: '900', fontFamily: 'monospace' }}>
+                                🔑 {projCodeStr}
                               </span>
-                            )}
-                            <span style={{ fontSize: '0.66rem', background: 'rgba(34, 197, 94, 0.18)', color: '#22c55e', border: '1px solid #22c55e', padding: '1px 6px', borderRadius: '10px', fontWeight: '900' }}>
-                              🏠 {unitsCount} Unit{unitsCount === 1 ? '' : 's'}
-                            </span>
+                              <span style={{ fontSize: '0.85rem', fontWeight: '800', color: isLight ? '#0f172a' : '#ffffff' }}>
+                                🏢 {p.title}
+                              </span>
+                              {p.locality && (
+                                <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>
+                                  📍 {p.locality}
+                                </span>
+                              )}
+                              <span style={{ fontSize: '0.68rem', background: 'rgba(34, 197, 94, 0.18)', color: '#22c55e', border: '1px solid #22c55e', padding: '2px 8px', borderRadius: '10px', fontWeight: '900' }}>
+                                🏠 {unitsCount} Unit{unitsCount === 1 ? '' : 's'}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '6px' }}>
+                              <button
+                                onClick={() => {
+                                  setShowDevVaultModal(false);
+                                  setViewPropertyModal(matchedProp);
+                                }}
+                                style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                title="View all details for this project"
+                              >
+                                👁️ View Details
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setShowDevVaultModal(false);
+                                  handleStartEditProjectDeveloper(matchedProp);
+                                }}
+                                style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '4px' }}
+                                title="Edit project & developer details"
+                              >
+                                ✏️ Edit Project
+                              </button>
+                            </div>
                           </div>
                         );
                       })}
@@ -4188,16 +4190,27 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
 
               {/* MODAL FOOTER ACTIONS */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: isLight ? '2px solid #e2e8f0' : '2px solid #334155', paddingTop: '16px', flexWrap: 'wrap', gap: '10px' }}>
-                <button 
-                  onClick={() => {
-                    const pToEdit = viewPropertyModal;
-                    setViewPropertyModal(null);
-                    handleStartEditProperty(pToEdit);
-                  }} 
-                  style={{ background: '#f59e0b', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                >
-                  ✏️ Edit This Property Record
-                </button>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                  <button 
+                    onClick={() => {
+                      const pToEdit = viewPropertyModal;
+                      setViewPropertyModal(null);
+                      handleStartEditProperty(pToEdit);
+                    }} 
+                    style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '10px 18px', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    ✏️ Edit Property Details
+                  </button>
+                  <button 
+                    onClick={() => {
+                      const pToEdit = viewPropertyModal;
+                      handleStartEditProjectDeveloper(pToEdit);
+                    }} 
+                    style={{ background: isLight ? '#f1f5f9' : '#0f172a', color: '#a855f7', border: '1.5px solid #a855f7', padding: '10px 18px', borderRadius: '10px', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    🏢 Edit Project & Developer Details
+                  </button>
+                </div>
 
                 <button 
                   onClick={() => setViewPropertyModal(null)} 

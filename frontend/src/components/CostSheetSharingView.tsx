@@ -1,5 +1,6 @@
 import React from 'react';
 import { Share2, Plus, Trash2, Printer, Search, Eye } from 'lucide-react';
+import { getCustomerUsedPropertyCodes } from './MatchingManagementView';
 
 interface CostSheetSharingViewProps {
   currentRole?: string;
@@ -332,6 +333,27 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                             <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.88rem' }}>{item.customerSnapshot?.customerName || 'Avishek Das'}</strong>
                             <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{item.customerSnapshot?.mobile || '9432328947'}</span>
                             <br /><span style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace' }}>{item.customerId}</span>
+                            {(() => {
+                              const usedProps = getCustomerUsedPropertyCodes(
+                                item.customerId || item.customerSnapshot?.customerId,
+                                item.customerSnapshot?.customerName,
+                                item.customerSnapshot?.mobile,
+                                individualCostSheets
+                              );
+                              if (usedProps.length === 0) return null;
+                              return (
+                                <div style={{ marginTop: '4px', background: 'rgba(2, 132, 199, 0.12)', border: '1px solid #0284c7', borderRadius: '4px', padding: '2px 6px', fontSize: '0.68rem' }}>
+                                  <span style={{ color: '#38bdf8', fontWeight: '800' }}>🏢 Customer Property Codes ({usedProps.length}):</span>
+                                  <div style={{ color: '#fbbf24', fontWeight: '900', fontFamily: 'monospace', display: 'flex', gap: '3px', flexWrap: 'wrap', marginTop: '2px' }}>
+                                    {usedProps.map(p => (
+                                      <span key={p.propertyCode} style={{ background: '#0f172a', border: '1px solid #eab308', padding: '1px 4px', borderRadius: '3px' }}>
+                                        {p.propertyCode}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </td>
                           <td style={{ padding: '12px' }}>
                             <span style={{ fontFamily: 'monospace', color: '#fbbf24', fontWeight: '800' }}>{item.matchId}</span>
@@ -344,6 +366,10 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                             <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '800', fontSize: '0.75rem' }}>{item.propertyCode}</span>
                             <br /><strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.82rem' }}>{item.propertySnapshot?.propertyTitle || item.propertyCode}</strong>
                             <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{item.propertySnapshot?.locality} • {item.propertySnapshot?.developerName} ({item.propertySnapshot?.bhk})</span>
+                            <br />
+                            <span style={{ fontSize: '0.68rem', color: '#a855f7', background: 'rgba(168, 85, 247, 0.15)', border: '1px solid #a855f7', padding: '1px 6px', borderRadius: '4px', fontWeight: '800', marginTop: '3px', display: 'inline-block' }}>
+                              🏢 {item.propertySnapshot?.property_type || item.propertySnapshot?.propertyType || item.propertyType || 'Flat / Apartment'}
+                            </span>
                           </td>
                           <td style={{ padding: '12px' }}>
                             <span style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>Asking Base: </span>

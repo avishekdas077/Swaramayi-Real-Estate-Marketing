@@ -4,6 +4,7 @@ import {
   Building2, User, Phone, MapPin, ArrowUpRight, Sparkles, X, Check,
   Edit3, Trash2, Tag, Eye, RefreshCw, Send, AlertTriangle
 } from 'lucide-react';
+import { getCustomerUsedPropertyCodes } from './MatchingManagementView';
 
 interface PropertySourcingRequestsViewProps {
   isLight: boolean;
@@ -18,6 +19,9 @@ interface PropertySourcingRequestsViewProps {
   maskPhone: (phone: string) => string;
   setActiveTab: (tab: string) => void;
   setSelectedMatchingId?: (id: string) => void;
+  individualCostSheets?: any[];
+  costSheetShares?: any[];
+  scheduledVisits?: any[];
 }
 
 export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsViewProps> = ({
@@ -32,7 +36,10 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
   openIdDetailsModal,
   maskPhone,
   setActiveTab,
-  setSelectedMatchingId
+  setSelectedMatchingId,
+  individualCostSheets = [],
+  costSheetShares = [],
+  scheduledVisits = []
 }) => {
   // Sourcing Requests Queue with LocalStorage Persistence & Dynamic Fallback
   const [internalSourcingRequests, setInternalSourcingRequests] = useState<any[]>(() => {
@@ -451,6 +458,29 @@ export const PropertySourcingRequestsView: React.FC<PropertySourcingRequestsView
                         <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: '800', fontFamily: 'monospace' }}>
                           📞 {maskPhone(req.mobile)}
                         </span>
+                        {(() => {
+                          const usedProps = getCustomerUsedPropertyCodes(
+                            req.customer_number || req.customerId,
+                            req.customer_name || req.customerName,
+                            req.mobile,
+                            individualCostSheets,
+                            costSheetShares,
+                            scheduledVisits
+                          );
+                          if (usedProps.length === 0) return null;
+                          return (
+                            <div style={{ marginTop: '4px', background: 'rgba(2, 132, 199, 0.12)', border: '1px solid #0284c7', borderRadius: '4px', padding: '3px 6px', fontSize: '0.7rem' }}>
+                              <span style={{ color: '#38bdf8', fontWeight: '800' }}>🏢 Cost Sheet Property Codes ({usedProps.length}):</span>
+                              <div style={{ color: '#fbbf24', fontWeight: '900', fontFamily: 'monospace', display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+                                {usedProps.map(p => (
+                                  <span key={p.propertyCode} style={{ background: '#0f172a', border: '1px solid #eab308', padding: '1px 4px', borderRadius: '3px' }}>
+                                    {p.propertyCode}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          );
+                        })()}
                       </td>
 
                       <td style={{ padding: '12px' }}>
