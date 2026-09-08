@@ -31,6 +31,7 @@ interface CustomerManagementViewProps {
   agreements: any[];
   bookings: any[];
   invoices?: any[];
+  setInvoices?: React.Dispatch<React.SetStateAction<any[]>>;
   matchingRequestsQueue?: any[];
   openIdDetailsModal: (id: string, type: string) => void;
   maskPhone: (phone: string) => string;
@@ -40,6 +41,9 @@ interface CustomerManagementViewProps {
   scheduledVisits?: any[];
   visitPlans?: any[];
   properties?: any[];
+  setActiveTab?: (tab: string) => void;
+  setBillingInvoiceCategory?: (cat: string) => void;
+  setSearchQuery?: (q: string) => void;
 }
 
 export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
@@ -72,6 +76,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
   agreements = [],
   bookings = [],
   invoices = [],
+  setInvoices,
   matchingRequestsQueue = [],
   scheduledVisits = [],
   visitPlans = [],
@@ -81,10 +86,66 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
   handleStartEditCustomer,
   setShowPvaDocumentModal,
   setShowViewIndividualCostSheetModal,
+  setActiveTab,
+  setBillingInvoiceCategory,
+  setSearchQuery,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
   const [selectedTransactionPdf, setSelectedTransactionPdf] = useState<any | null>(null);
+
+  const handleToggleInvoiceSettled = (invIdOrNum: string, currentIsSettled: boolean, targetCust?: any) => {
+    const activeTargetCust = targetCust || selectedCust;
+    const newStatus = currentIsSettled ? 'UNPAID_PENDING' : 'PAID_SETTLED';
+    if (setInvoices) {
+      setInvoices((prev: any[]) => {
+        let updated = false;
+        const targetCleanNum = (activeTargetCust?.customer_number || activeTargetCust?.customer_id || '').toString().toLowerCase().trim();
+        const targetCleanMob = (activeTargetCust?.mobile || '').toString().replace(/\D/g, '');
+
+        const nextInvoices = prev.map((inv: any) => {
+          const invNo = (inv.invoice_number || inv.id || '').toString().trim();
+          const invCustNum = (inv.customer_number || inv.customer_id || inv.customerNumber || '').toString().toLowerCase().trim();
+          const invCustMob = (inv.customer_mobile || inv.mobile || '').toString().replace(/\D/g, '');
+          const isTargetMatch = (invNo && invIdOrNum && invNo.toLowerCase() === invIdOrNum.toLowerCase()) ||
+            (targetCleanNum && invCustNum && (invCustNum === targetCleanNum || invCustNum.includes(targetCleanNum))) ||
+            (targetCleanMob && invCustMob && invCustMob.length >= 7 && invCustMob.slice(-10) === targetCleanMob.slice(-10));
+
+          if (isTargetMatch) {
+            updated = true;
+            return {
+              ...inv,
+              payment_status: newStatus,
+              status: newStatus,
+              payment_mode: currentIsSettled ? (inv.payment_mode || 'Online Bank Transfer / UPI') : 'Online Bank Transfer / UPI',
+              payment_ref: currentIsSettled ? inv.payment_ref : (inv.payment_ref || `UTR-${Date.now().toString().slice(-8)}`)
+            };
+          }
+          return inv;
+        });
+
+        if (!updated) {
+          const custNum = activeTargetCust?.customer_number || activeTargetCust?.customer_id || 'SRM-CUS-2026-000188';
+          const newInv = {
+            id: invIdOrNum || `SRM-INV-2026-${custNum.replace(/[^0-9]/g, '').slice(-6) || '000087'}`,
+            invoice_number: invIdOrNum || `SRM-INV-2026-${custNum.replace(/[^0-9]/g, '').slice(-6) || '000087'}`,
+            customer_number: custNum,
+            customer_name: activeTargetCust?.name || activeTargetCust?.full_name || 'Ruksha Roy',
+            customer_mobile: activeTargetCust?.mobile || '6646577673',
+            party_name: activeTargetCust?.name || activeTargetCust?.full_name || 'Ruksha Roy',
+            total_invoice_amount: 590000,
+            payment_status: newStatus,
+            status: newStatus,
+            payment_mode: 'Online Bank Transfer / UPI',
+            payment_ref: `UTR-${Date.now().toString().slice(-8)}`,
+            created_date: new Date().toISOString().split('T')[0]
+          };
+          return [newInv, ...prev];
+        }
+        return nextInvoices;
+      });
+    }
+  };
 
   const allActiveCustomers = React.useMemo(() => {
     const list: any[] = [];
@@ -498,7 +559,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       return {
         id: inv.invoice_number || inv.id,
         name: inv.project_name || inv.property_title || 'Customer Tax Invoice',
-        status: paid ? 'PAID / SETTLED' : 'UNPAID / PENDING',
+        status: paid ? 'SETTLED' : 'NOT SETTLED',
         color: paid ? '#22c55e' : '#fbbf24',
         payment_status: inv.payment_status || (paid ? 'PAID_SETTLED' : 'UNPAID_PENDING'),
         payment_mode: inv.payment_mode || 'Online Bank Transfer / UPI',
@@ -528,7 +589,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
           return {
             id: payId,
             name: `Token Payment for ${b.booking_code || b.id} (${matchingInv?.payment_mode || b.payment_mode || 'Online'})`,
-            status: paid ? 'PAID / RECEIVED' : 'UNPAID / PENDING',
+            status: paid ? 'SETTLED / RECEIVED' : 'UNPAID / NOT SETTLED',
             color: paid ? '#22c55e' : '#fbbf24',
             payment_ref: matchingInv?.payment_ref || b.payment_ref,
             payment_mode: matchingInv?.payment_mode || b.payment_mode,
@@ -543,7 +604,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
           return {
             id: payId,
             name: `Payment for ${inv.invoice_number || inv.id} (${inv.payment_mode || 'Online'})`,
-            status: paid ? 'PAID / RECEIVED' : 'UNPAID / PENDING',
+            status: paid ? 'SETTLED / RECEIVED' : 'UNPAID / NOT SETTLED',
             color: paid ? '#22c55e' : '#fbbf24',
             payment_ref: inv.payment_ref,
             payment_mode: inv.payment_mode,
@@ -563,13 +624,13 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
     const matId = linkedMatches.length > 0 ? linkedMatches[0].id || linkedMatches[0].matchId : (propList.length > 0 ? `SRM-MAT-${custNum.replace(/[^0-9]/g, '').slice(-6) || '000421'}` : 'N/A');
 
     const hasPayments = payList.length > 0;
-    const allPaymentsPaid = hasPayments && payList.every((p: any) => p.status.includes('PAID') || p.status.includes('RECEIVED'));
-    const paymentStatusStr = hasPayments ? (allPaymentsPaid ? 'PAID / RECEIVED' : 'UNPAID / PENDING') : 'NO PAYMENT YET';
+    const allPaymentsPaid = hasPayments && payList.every((p: any) => p.status.includes('SETTLED') && !p.status.includes('NOT SETTLED'));
+    const paymentStatusStr = hasPayments ? (allPaymentsPaid ? 'SETTLED / RECEIVED' : 'UNPAID / NOT SETTLED') : 'NO PAYMENT YET';
     const paymentColorStr = hasPayments ? (allPaymentsPaid ? '#22c55e' : '#fbbf24') : '#64748b';
 
     const hasInvoices = invList.length > 0;
-    const allInvoicesPaid = hasInvoices && invList.every((i: any) => i.status.includes('PAID') || i.status.includes('SETTLED'));
-    const invoiceStatusStr = hasInvoices ? (allInvoicesPaid ? 'PAID / SETTLED' : 'UNPAID / PENDING') : 'NO INVOICE YET';
+    const allInvoicesPaid = hasInvoices && invList.every((i: any) => i.status === 'SETTLED');
+    const invoiceStatusStr = hasInvoices ? (allInvoicesPaid ? 'SETTLED' : 'NOT SETTLED') : 'NO INVOICE YET';
     const invoiceColorStr = hasInvoices ? (allInvoicesPaid ? '#22c55e' : '#fbbf24') : '#64748b';
 
     return [
@@ -733,7 +794,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
         { label: 'Amount Received', value: item.items?.[0]?.amount ? (typeof item.items[0].amount === 'number' ? `₹${item.items[0].amount.toLocaleString('en-IN')}` : item.items[0].amount) : '₹5,00,000' },
         { label: 'Payment Method / Mode', value: item.items?.[0]?.payment_mode || 'NEFT / Online Bank Transfer' },
         { label: 'Bank UTR Ref Number', value: item.items?.[0]?.payment_ref || 'UTIB0002941049281' },
-        { label: 'Payment Receipt Status', value: item.status || 'CREDITED & VERIFIED' },
+        { label: 'Payment Receipt Status', value: item.status ? (item.status.includes('UNPAID') ? 'UNPAID / PENDING' : 'CREDITED & VERIFIED') : 'UNPAID / PENDING' },
         { label: 'Payment Date', value: item.items?.[0]?.created_date || '20 Aug 2026, 05:15 PM' }
       ],
       '16. INVOICE ID': [
@@ -741,7 +802,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
         { label: 'Tax Invoice Amount', value: item.items?.[0]?.total_invoice_amount ? (typeof item.items[0].total_invoice_amount === 'number' ? `₹${item.items[0].total_invoice_amount.toLocaleString('en-IN')} (Incl. 18% GST)` : item.items[0].total_invoice_amount) : '₹5,90,000 (Incl. ₹90,000 18% GST)' },
         { label: 'Billed To Customer', value: `${custName} (${custNum})` },
         { label: 'Company GSTIN', value: '36AAACS8899K1Z0' },
-        { label: 'Invoice Status', value: item.status || 'PAID IN FULL' },
+        { label: 'Invoice Status', value: item.status ? (item.status.includes('UNPAID') ? 'UNPAID / PENDING' : 'PAID IN FULL') : 'UNPAID / PENDING' },
         { label: 'Invoice Issued Date', value: item.items?.[0]?.created_date || '20 Aug 2026' }
       ],
       '17. BROKERAGE ID': [
@@ -1327,8 +1388,24 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
 
                               {/* 6. BILLING / INVOICE STAGE */}
                               {matchingInvoice ? (
-                                <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', borderRadius: '4px', padding: '3px 8px', color: '#4ade80', fontWeight: '900' }}>
-                                  💳 Billing: Invoice Generated ({matchingInvoice.invoice_number || matchingInvoice.invoice_id || matchingInvoice.id})
+                                <div 
+                                  onClick={() => {
+                                    const isDev = (matchingInvoice.invoice_category || matchingInvoice.invoice_type) === 'DEVELOPER' || 
+                                                  (matchingInvoice.invoice_number && matchingInvoice.invoice_number.startsWith('SRM-DEV-INV-'));
+                                    if (setBillingInvoiceCategory) {
+                                      setBillingInvoiceCategory(isDev ? 'DEVELOPER' : 'CUSTOMER');
+                                    }
+                                    if (setSearchQuery) {
+                                      setSearchQuery(matchingInvoice.invoice_number || c.name || c.customer_number);
+                                    }
+                                    if (setActiveTab) {
+                                      setActiveTab('billing_management');
+                                    }
+                                  }}
+                                  style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', borderRadius: '4px', padding: '3px 8px', color: '#4ade80', fontWeight: '900', cursor: 'pointer' }}
+                                  title="Click to view this invoice in Billing Management"
+                                >
+                                  💳 Billing: Invoice Generated ({matchingInvoice.invoice_number || matchingInvoice.invoice_id || matchingInvoice.id}) ↗
                                 </div>
                               ) : (
                                 <div style={{ background: isLight ? '#f1f5f9' : '#0f172a', border: isLight ? '1px dashed #cbd5e1' : '1px dashed #334155', borderRadius: '4px', padding: '3px 8px', color: isLight ? '#94a3b8' : '#64748b', fontWeight: '700' }}>
@@ -1511,16 +1588,19 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
                       </span>
                     </div>
 
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedTransactionPdf(getTransactionPdfPayload(item, selectedCust));
-                      }}
-                      style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px', marginTop: '8px', width: 'fit-content' }}
-                      title={`View Official Printable PDF Certificate for ${item.label}`}
-                    >
-                      📄 View PDF {hasMultiple ? `(${item.items.length} Items)` : ''}
-                    </button>
+                    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', marginTop: '8px', flexWrap: 'wrap' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedTransactionPdf(getTransactionPdfPayload(item, activeCust));
+                        }}
+                        style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.68rem', display: 'flex', alignItems: 'center', gap: '3px' }}
+                        title={`View Official Printable PDF Certificate for ${item.label}`}
+                      >
+                        📄 View PDF {hasMultiple ? `(${item.items.length} Items)` : ''}
+                      </button>
+
+                    </div>
                   </div>
                 );
               })}
@@ -1803,12 +1883,25 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
                 >
                   <Download size={14} /> Download PDF
                 </button>
-                <button 
-                  onClick={() => alert(`📲 Shared Transaction Certificate ${selectedTransactionPdf.item.id} PDF link to ${selectedTransactionPdf.custName} (${selectedTransactionPdf.custPhone})!`)} 
-                  style={{ background: '#25D366', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
-                >
-                  💬 WhatsApp PDF Link
-                </button>
+                {selectedTransactionPdf.item.label === '16. INVOICE ID' && (
+                  <button 
+                    onClick={() => {
+                      const currentIsSettled = selectedTransactionPdf.item.status === 'SETTLED';
+                      const targetInvId = selectedTransactionPdf.item.items?.[0]?.id || selectedTransactionPdf.item.id;
+                      handleToggleInvoiceSettled(targetInvId, currentIsSettled, activeCust);
+                      setSelectedTransactionPdf((prev: any) => prev ? {
+                        ...prev,
+                        item: {
+                          ...prev.item,
+                          status: currentIsSettled ? 'NOT SETTLED' : 'SETTLED'
+                        }
+                      } : null);
+                    }} 
+                    style={{ background: selectedTransactionPdf.item.status === 'SETTLED' ? '#d97706' : '#059669', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
+                  >
+                    {selectedTransactionPdf.item.status === 'SETTLED' ? '⚡ Mark NOT SETTLED' : '⚡ Mark SETTLED'}
+                  </button>
+                )}
                 <X size={22} color="#94a3b8" style={{ cursor: 'pointer', marginLeft: '6px' }} onClick={() => setSelectedTransactionPdf(null)} />
               </div>
             </div>
@@ -1835,7 +1928,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
                   <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: '#0284c7', fontFamily: 'monospace', margin: 0 }}>
                     {selectedTransactionPdf.item.id}
                   </h3>
-                  <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', display: 'inline-block', marginTop: '4px' }}>
+                  <span style={{ background: (selectedTransactionPdf.item.status === 'SETTLED' || selectedTransactionPdf.item.status === 'PAID / RECEIVED') ? '#dcfce7' : '#fef3c7', color: (selectedTransactionPdf.item.status === 'SETTLED' || selectedTransactionPdf.item.status === 'PAID / RECEIVED') ? '#15803d' : '#b45309', padding: '2px 8px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: '900', display: 'inline-block', marginTop: '4px' }}>
                     ● {selectedTransactionPdf.item.status}
                   </span>
                 </div>

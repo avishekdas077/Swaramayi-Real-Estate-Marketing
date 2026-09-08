@@ -390,34 +390,95 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
           </div>
         )}
 
-        {/* PERIOD METRICS SUMMARY RIBBON */}
+        {/* PERIOD METRICS SUMMARY RIBBON & CROSS-CATEGORY SEARCH BANNER */}
         {(() => {
+          const matchInvoiceEnhanced = (inv: any, q: string) => {
+            if (!q || !q.trim()) return true;
+            if (matchesSearchQuery(inv, q)) return true;
+
+            const query = q.trim().toLowerCase();
+            const custName = (inv.customer_name || '').toLowerCase();
+            const custNum = (inv.customer_number || '').toLowerCase();
+            const custMobile = (inv.customer_mobile || '').toLowerCase();
+            const propTitle = (inv.property_title || '').toLowerCase();
+            const devName = (inv.developer_name || '').toLowerCase();
+            const invNum = (inv.invoice_number || '').toLowerCase();
+            const costSheetCode = (inv.cost_sheet_code || inv.costSheetId || '').toLowerCase();
+            const bkgCode = (inv.booking_code || inv.booking_id || '').toLowerCase();
+
+            if (custName.includes(query) || custNum.includes(query) || custMobile.includes(query) || propTitle.includes(query) || devName.includes(query) || invNum.includes(query) || costSheetCode.includes(query) || bkgCode.includes(query)) {
+              return true;
+            }
+
+            const linkedBkg = (bookings || []).find((b: any) => 
+              b.booking_code === inv.booking_code || b.customer_number === inv.customer_number || b.id === inv.booking_id
+            );
+            if (linkedBkg && matchesSearchQuery(linkedBkg, q)) {
+              return true;
+            }
+
+            const linkedCust = (customers || []).find((c: any) => 
+              c.customer_number === inv.customer_number || (c.name && inv.customer_name && c.name.toLowerCase() === inv.customer_name.toLowerCase())
+            );
+            if (linkedCust && matchesSearchQuery(linkedCust, q)) {
+              return true;
+            }
+
+            return false;
+          };
+
+          const otherCategory = billingInvoiceCategory === 'DEVELOPER' ? 'CUSTOMER' : 'DEVELOPER';
           const categoryInvoices = invoices.filter(i => (billingInvoiceCategory === 'DEVELOPER' ? i.invoice_category === 'DEVELOPER' : (i.invoice_category === 'CUSTOMER' || !i.invoice_category)));
-          const filteredInvoices = categoryInvoices.filter(i => matchesSearchQuery(i, searchQuery) && isDateInPeriod(i.created_date));
+          const otherCategoryInvoices = invoices.filter(i => (otherCategory === 'DEVELOPER' ? i.invoice_category === 'DEVELOPER' : (i.invoice_category === 'CUSTOMER' || !i.invoice_category)));
+          
+          const filteredInvoices = categoryInvoices.filter(i => matchInvoiceEnhanced(i, searchQuery) && isDateInPeriod(i.created_date));
+          const otherCategoryMatches = searchQuery.trim() ? otherCategoryInvoices.filter(i => matchInvoiceEnhanced(i, searchQuery)) : [];
+
           const totalBilled = filteredInvoices.reduce((acc, curr) => acc + Number(curr.total_invoice_amount || 0), 0);
           const taxableRevenue = filteredInvoices.reduce((acc, curr) => acc + Number(curr.taxable_value || 0), 0);
           const gstCollected = filteredInvoices.reduce((acc, curr) => acc + (Number(curr.cgst_amount || 0) + Number(curr.sgst_amount || 0)), 0);
 
           return (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px', paddingTop: '4px' }}>
-              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px' }}>
-                <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL INVOICES</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#38bdf8' }}>{filteredInvoices.length} Records</div>
-              </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', paddingTop: '4px' }}>
+              
+              {/* SMART CROSS-CATEGORY SEARCH ALERT BANNER */}
+              {searchQuery.trim() !== '' && otherCategoryMatches.length > 0 && (
+                <div style={{ background: 'rgba(56, 189, 248, 0.15)', border: '1px solid #0284c7', borderRadius: '10px', padding: '12px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '1rem' }}>💡</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: '800', color: isLight ? '#0369a1' : '#38bdf8' }}>
+                      Found {otherCategoryMatches.length} matching invoice(s) under "{otherCategory === 'DEVELOPER' ? 'Developer Brokerage Invoices' : 'Customer Tax Invoices'}"!
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setBillingInvoiceCategory(otherCategory)}
+                    style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 14px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: '800', cursor: 'pointer', boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)' }}
+                  >
+                    View {otherCategory === 'DEVELOPER' ? 'Developer Brokerage Invoices' : 'Customer Tax Invoices'} ({otherCategoryMatches.length}) →
+                  </button>
+                </div>
+              )}
 
-              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px' }}>
-                <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL BILLED AMOUNT</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#4ade80' }}>₹{totalBilled.toLocaleString('en-IN')}</div>
-              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '10px' }}>
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px' }}>
+                  <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL INVOICES</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#38bdf8' }}>{filteredInvoices.length} Records</div>
+                </div>
 
-              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px' }}>
-                <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TAXABLE REVENUE</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#fbbf24' }}>₹{taxableRevenue.toLocaleString('en-IN')}</div>
-              </div>
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px' }}>
+                  <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TOTAL BILLED AMOUNT</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#4ade80' }}>₹{totalBilled.toLocaleString('en-IN')}</div>
+                </div>
 
-              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px' }}>
-                <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>GST COLLECTED (18%)</div>
-                <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#a855f7' }}>₹{gstCollected.toLocaleString('en-IN')}</div>
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px' }}>
+                  <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>TAXABLE REVENUE</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#fbbf24' }}>₹{taxableRevenue.toLocaleString('en-IN')}</div>
+                </div>
+
+                <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '8px 12px' }}>
+                  <div style={{ fontSize: '0.7rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>GST COLLECTED (18%)</div>
+                  <div style={{ fontSize: '1.1rem', fontWeight: '900', color: '#a855f7' }}>₹{gstCollected.toLocaleString('en-IN')}</div>
+                </div>
               </div>
             </div>
           );
@@ -440,11 +501,47 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
               </tr>
             </thead>
             <tbody>
-              {invoices
-                .filter(i => (billingInvoiceCategory === 'DEVELOPER' ? i.invoice_category === 'DEVELOPER' : (i.invoice_category === 'CUSTOMER' || !i.invoice_category)))
-                .filter(i => matchesSearchQuery(i, searchQuery))
-                .filter(i => isDateInPeriod(i.created_date))
-                .map((i, rowIdx) => (
+              {(() => {
+                const matchInvoiceEnhanced = (inv: any, q: string) => {
+                  if (!q || !q.trim()) return true;
+                  if (matchesSearchQuery(inv, q)) return true;
+
+                  const query = q.trim().toLowerCase();
+                  const custName = (inv.customer_name || '').toLowerCase();
+                  const custNum = (inv.customer_number || '').toLowerCase();
+                  const custMobile = (inv.customer_mobile || '').toLowerCase();
+                  const propTitle = (inv.property_title || '').toLowerCase();
+                  const devName = (inv.developer_name || '').toLowerCase();
+                  const invNum = (inv.invoice_number || '').toLowerCase();
+                  const costSheetCode = (inv.cost_sheet_code || inv.costSheetId || '').toLowerCase();
+                  const bkgCode = (inv.booking_code || inv.booking_id || '').toLowerCase();
+
+                  if (custName.includes(query) || custNum.includes(query) || custMobile.includes(query) || propTitle.includes(query) || devName.includes(query) || invNum.includes(query) || costSheetCode.includes(query) || bkgCode.includes(query)) {
+                    return true;
+                  }
+
+                  const linkedBkg = (bookings || []).find((b: any) => 
+                    b.booking_code === inv.booking_code || b.customer_number === inv.customer_number || b.id === inv.booking_id
+                  );
+                  if (linkedBkg && matchesSearchQuery(linkedBkg, q)) {
+                    return true;
+                  }
+
+                  const linkedCust = (customers || []).find((c: any) => 
+                    c.customer_number === inv.customer_number || (c.name && inv.customer_name && c.name.toLowerCase() === inv.customer_name.toLowerCase())
+                  );
+                  if (linkedCust && matchesSearchQuery(linkedCust, q)) {
+                    return true;
+                  }
+
+                  return false;
+                };
+
+                return invoices
+                  .filter(i => (billingInvoiceCategory === 'DEVELOPER' ? i.invoice_category === 'DEVELOPER' : (i.invoice_category === 'CUSTOMER' || !i.invoice_category)))
+                  .filter(i => matchInvoiceEnhanced(i, searchQuery))
+                  .filter(i => isDateInPeriod(i.created_date))
+                  .map((i, rowIdx) => (
                   <tr key={i.id ? `${i.id}-${rowIdx}` : `inv-${rowIdx}`} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
                     <td style={{ padding: '12px' }}>
                       <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', background: 'rgba(56, 189, 248, 0.12)', border: '1px solid rgba(56, 189, 248, 0.3)', padding: '2px 8px', borderRadius: '6px', display: 'inline-block' }}>
@@ -543,26 +640,73 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                           )}
                         </span>
 
-                        <button
-                          onClick={() => {
-                            setShowRecordPaymentModal(i);
-                            setPaymentStatusInput(i.payment_status || 'PAID_SETTLED');
-                            setPaymentModeInput(i.payment_mode || 'ONLINE');
-                            setPaymentRefInput(i.payment_ref || '');
-                          }}
-                          style={{
-                            background: 'transparent',
-                            border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
-                            color: isLight ? '#0284c7' : '#38bdf8',
-                            fontSize: '0.7rem',
-                            fontWeight: '800',
-                            borderRadius: '4px',
-                            padding: '2px 8px',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          ⚡ Update Payment
-                        </button>
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => {
+                              if (!setInvoices) return;
+                              const isCurrentlyPaid = i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED';
+                              const newStatus = isCurrentlyPaid ? 'UNPAID_PENDING' : 'PAID_SETTLED';
+                              const updated = invoices.map(inv => {
+                                if (inv.id === i.id || (inv.invoice_number && inv.invoice_number === i.invoice_number)) {
+                                  return {
+                                    ...inv,
+                                    payment_status: newStatus,
+                                    status: newStatus,
+                                    payment_mode: isCurrentlyPaid ? (inv.payment_mode || 'ONLINE') : (inv.payment_mode || 'Online Bank Transfer / UPI'),
+                                    payment_ref: isCurrentlyPaid ? inv.payment_ref : (inv.payment_ref || `UTR-${Date.now().toString().slice(-8)}`)
+                                  };
+                                }
+                                return inv;
+                              });
+                              setInvoices(updated);
+                              if (syncAllToMongoDB) {
+                                syncAllToMongoDB({ invoices: updated });
+                              }
+                            }}
+                            style={{
+                              background: (i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED')
+                                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+                                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              fontSize: '0.72rem',
+                              fontWeight: '900',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px',
+                              boxShadow: (i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED')
+                                ? '0 2px 6px rgba(245, 158, 11, 0.3)'
+                                : '0 2px 6px rgba(16, 185, 129, 0.3)'
+                            }}
+                            title={(i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED') ? "Click to Mark Invoice as UNPAID" : "Click to Mark Invoice as SETTLED"}
+                          >
+                            {(i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED') ? '⚡ Mark NOT SETTLED' : '⚡ Mark SETTLED'}
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              setShowRecordPaymentModal(i);
+                              setPaymentStatusInput(i.payment_status || 'PAID_SETTLED');
+                              setPaymentModeInput(i.payment_mode || 'ONLINE');
+                              setPaymentRefInput(i.payment_ref || '');
+                            }}
+                            style={{
+                              background: 'transparent',
+                              border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                              color: isLight ? '#0284c7' : '#38bdf8',
+                              fontSize: '0.7rem',
+                              fontWeight: '800',
+                              borderRadius: '4px',
+                              padding: '2px 8px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ⚡ Update Payment
+                          </button>
+                        </div>
                       </div>
                     </td>
 
@@ -692,11 +836,11 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                           <button 
                             onClick={() => {
                               if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to delete this invoice record for ${i.customer_name || i.developer_name || 'Client'}?`)) {
-                                const remainingInvoices = invoices.filter((item: any, idx: number) => {
-                                  if (i.id && item.id) {
-                                    return item.id !== i.id;
-                                  }
-                                  return (item !== i && idx !== rowIdx);
+                                const remainingInvoices = (invoices || []).filter((item: any) => {
+                                  if (i.id && item.id && item.id === i.id) return false;
+                                  if (i.invoice_number && item.invoice_number && item.invoice_number === i.invoice_number) return false;
+                                  if (item === i) return false;
+                                  return true;
                                 });
                                 if (setInvoices) {
                                   setInvoices(remainingInvoices);
@@ -719,7 +863,8 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                       </div>
                     </td>
                   </tr>
-                ))}
+                ))
+              })()}
             </tbody>
           </table>
         </div>

@@ -2120,7 +2120,6 @@ export default function App() {
         'swaramayi_indiv_cost_sheets_v5_clean',
         'swaramayi_indiv_cost_sheets_v6_clean',
         'swaramayi_bookings_v2',
-        'swaramayi_bookings_v3_clean',
         'swaramayi_agreements_vault_v4',
         'swaramayi_agreements_vault_v5_clean',
         'swaramayi_invoices_v4',
@@ -5096,9 +5095,69 @@ export default function App() {
   }, [verifiedDevProjectsList]);
 
   const [invoices, setInvoices] = useState<any[]>(() => {
+    const defaultInvoices = [
+      {
+        id: 'INV-DEV-000087',
+        invoice_number: 'SRM-DEV-INV-2026-000087',
+        invoice_category: 'DEVELOPER',
+        invoice_type: 'DEVELOPER',
+        created_date: '2026-08-28',
+        customer_name: 'Ruksha Roy',
+        customer_number: 'SRM-CUS-2026-000188',
+        customer_mobile: '+91 65465 77673',
+        customer_email: 'ruksha@gmail.com',
+        cost_sheet_code: 'COST-SHEET-2026-000001',
+        costSheetId: 'COST-SHEET-2026-000001',
+        booking_code: 'SRM-BKG-2026-000087',
+        pva_code: 'SRM-PVA-2026-000001',
+        developer_name: 'Star Builders & Developers',
+        developer_gstin: '19AAACS1234F1Z5',
+        property_title: 'SHIBALAY (BARASAT, CHAPADALI)',
+        property_code: 'SRM-PROP-2026-000425',
+        particulars: '2.0% Developer Channel Partner Success Fee / Brokerage',
+        flat_price: '2080000',
+        parking_price: '0',
+        agreement_value: '2080000',
+        taxable_value: 41600,
+        cgst_rate: 9,
+        sgst_rate: 9,
+        cgst_amount: 3744,
+        sgst_amount: 3744,
+        total_invoice_amount: 49088,
+        payment_status: 'UNPAID_PENDING',
+        payment_mode: 'ONLINE',
+        branch_name: 'Head Office (Kolkata)'
+      },
+      {
+        id: 'INV-CUS-000088',
+        invoice_number: 'SRM-INV-2026-000088',
+        invoice_category: 'CUSTOMER',
+        invoice_type: 'CUSTOMER',
+        created_date: '2026-08-28',
+        customer_name: 'Avishek Das',
+        customer_number: 'SRM-CUS-2026-000189',
+        customer_mobile: '+91 94323 28947',
+        customer_email: 'a@gmail.com',
+        cost_sheet_code: 'COST-SHEET-2026-000002',
+        booking_code: 'SRM-BKG-2026-000088',
+        developer_name: 'Star Builders & Developers',
+        property_title: 'Star Horizon 3BHK Residence',
+        particulars: 'Property Consultation & Service Charges',
+        taxable_value: 50000,
+        cgst_rate: 9,
+        sgst_rate: 9,
+        cgst_amount: 4500,
+        sgst_amount: 4500,
+        total_invoice_amount: 59000,
+        payment_status: 'PAID_SETTLED',
+        payment_mode: 'UPI',
+        branch_name: 'Kolkata Branch'
+      }
+    ];
+
     try {
       const saved = localStorage.getItem('swaramayi_invoices_v6');
-      if (saved) {
+      if (saved !== null) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
           const seen = new Set<string>();
@@ -5118,7 +5177,7 @@ export default function App() {
     } catch (e) {
       console.error('Error reading invoices from localStorage:', e);
     }
-    return [];
+    return defaultInvoices;
   });
 
   useEffect(() => {
@@ -8877,6 +8936,7 @@ export default function App() {
               agreements={agreements}
               bookings={bookings}
               invoices={invoices}
+              setInvoices={setInvoices}
               matchingRequestsQueue={matchingRequestsQueue}
               openIdDetailsModal={openIdDetailsModal}
               maskPhone={maskPhone}
@@ -8886,6 +8946,9 @@ export default function App() {
               scheduledVisits={scheduledVisits}
               visitPlans={visitPlans}
               properties={properties}
+              setActiveTab={setActiveTab}
+              setBillingInvoiceCategory={setBillingInvoiceCategory}
+              setSearchQuery={setSearchQuery}
             />
           )}
 

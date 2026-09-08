@@ -471,12 +471,12 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
                           <button 
                             onClick={() => {
                               if (window.confirm(`⚠️ CONFIRM PERMANENT DELETION:\n\nAre you sure you want to permanently delete Booking record ${b.booking_code || b.id} for ${b.customer_name || 'Customer'} from the system and database?`)) {
-                                const updatedBookings = (bookings || []).filter((item: any) => 
-                                  item.id !== b.id && 
-                                  item.booking_code !== b.booking_code && 
-                                  (!b.id || item.id !== b.id) &&
-                                  (!b.booking_code || item.booking_code !== b.booking_code)
-                                );
+                                const updatedBookings = (bookings || []).filter((item: any) => {
+                                  if (b.id && item.id === b.id) return false;
+                                  if (b.booking_code && item.booking_code === b.booking_code) return false;
+                                  if (b.customer_number && b.property_code && item.customer_number === b.customer_number && item.property_code === b.property_code) return false;
+                                  return true;
+                                });
                                 if (setBookings) {
                                   setBookings(updatedBookings);
                                 }
