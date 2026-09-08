@@ -34,6 +34,7 @@ interface CostSheetSharingViewProps {
   setSelectedMatchingId?: (id: string) => void;
   customers?: any[];
   setSelectedCust?: (cust: any) => void;
+  setShowShiftToMatchingModal?: (val: any) => void;
 }
 
 export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
@@ -69,6 +70,7 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
   setSelectedMatchingId,
   customers = [],
   setSelectedCust,
+  setShowShiftToMatchingModal,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
@@ -82,9 +84,9 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
     (visitPlans || []).length
   );
 
-  // Active Cost Sheets pending in Vault
+  // Active Cost Sheets pending in Vault (excluding records shifted to Visit Schedule)
   const pendingCostSheets = React.useMemo(() => {
-    return individualCostSheets || [];
+    return (individualCostSheets || []).filter(c => c.status !== 'CONVERTED_TO_VISIT');
   }, [individualCostSheets]);
 
   // Active Cost Sheets displayed in Vault
@@ -92,10 +94,14 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
     if (individualCostSheetsStatusFilter === 'CONVERTED_TO_VISIT') {
       return (individualCostSheets || []).filter(c => c.status === 'CONVERTED_TO_VISIT');
     }
+    if (individualCostSheetsStatusFilter === 'ALL_INCLUDING_CONVERTED') {
+      return individualCostSheets || [];
+    }
     if (individualCostSheetsStatusFilter !== 'ALL') {
       return (individualCostSheets || []).filter(c => c.status === individualCostSheetsStatusFilter);
     }
-    return individualCostSheets || [];
+    // Default 'ALL': Display active pending cost sheets, auto-shifting converted ones to Visit Management
+    return (individualCostSheets || []).filter(c => c.status !== 'CONVERTED_TO_VISIT');
   }, [individualCostSheets, individualCostSheetsStatusFilter]);
 
   return (
@@ -262,12 +268,13 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                 onChange={(e) => setIndividualCostSheetsStatusFilter(e.target.value)} 
                 style={{ background: isLight ? '#f8fafc' : '#0f172a', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '6px 12px', borderRadius: '6px', fontSize: '0.82rem', fontWeight: '800' }}
               >
-                <option value="ALL">📋 All Statuses ({displayedCostSheets.length})</option>
+                <option value="ALL">📋 Active Cost Sheets ({pendingCostSheets.length})</option>
                 <option value="GENERATED">🟢 GENERATED</option>
                 <option value="SENT_TO_CUSTOMER">📲 SENT TO CUSTOMER</option>
                 <option value="REVISED">✏️ REVISED</option>
                 <option value="APPROVED">✅ APPROVED</option>
-                <option value="CONVERTED_TO_VISIT">🚘 CONVERTED TO VISIT</option>
+                <option value="CONVERTED_TO_VISIT">🚘 CONVERTED TO VISIT (Shifted to Visit Management)</option>
+                <option value="ALL_INCLUDING_CONVERTED">📁 All Vault Records (Including Converted)</option>
                 <option value="CANCELLED">❌ CANCELLED</option>
               </select>
             </div>
@@ -397,34 +404,31 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                               </button>
                               <button 
                                 onClick={() => {
-                                  const custName = item.customerSnapshot?.customerName || 'Customer';
+                                  const custName = item.customerSnapshot?.customerName || item.customerName || 'Customer';
                                   const custId = item.customerId || item.customerSnapshot?.customerNumber || 'SRM-CUS-2026-000189';
-                                  const mob = item.customerSnapshot?.mobile || '';
+                                  const mob = item.customerSnapshot?.mobile || item.mobile || '';
                                   const cleanMob = mob.replace(/\D/g, '');
                                   const matchId = item.matchId || item.matchingId || item.parentMatchingId || (cleanMob ? `SRM-MAT-2026-${cleanMob.slice(-6)}` : 'SRM-MAT-2026-988588');
+                                  const propTitle = item.propertySnapshot?.propertyTitle || item.propertySnapshot?.projectName || 'Property';
 
-                                  if (setSelectedMatchingId) setSelectedMatchingId(matchId);
-
-                                  let targetCust = null;
-                                  if (customers && customers.length > 0) {
-                                    targetCust = customers.find((c: any) => 
-                                      (c.customer_number && c.customer_number === custId) ||
-                                      (c.name && c.name.toLowerCase() === custName.toLowerCase()) ||
-                                      (cleanMob && c.mobile && c.mobile.replace(/\D/g, '') === cleanMob)
-                                    );
+                                  if (setShowShiftToMatchingModal) {
+                                    setShowShiftToMatchingModal({
+                                      open: true,
+                                      item: item,
+                                      customerName: custName,
+                                      customerNumber: custId,
+                                      mobile: mob,
+                                      matchId: matchId,
+                                      propertyTitle: propTitle,
+                                      note: ''
+                                    });
+                                  } else {
+                                    if (setSelectedMatchingId) setSelectedMatchingId(matchId);
+                                    if (setActiveTab) setActiveTab('matching_management');
                                   }
-                                  if (targetCust && setSelectedCust) {
-                                    setSelectedCust(targetCust);
-                                  }
-
-                                  if (setActiveTab) {
-                                    setActiveTab('matching_management');
-                                  }
-
-                                  alert(`⚡ Shifted back to Matching Management for ${custName} (${custId})\n\nMatching Code preserved: ${matchId}\n\nYou can now browse stock, calculate compatibility scores, and generate cost sheets for OTHER properties!`);
                                 }} 
                                 style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: '1px solid #38bdf8', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}
-                                title="Shift to Matching Management for this customer under the same Matching ID to select & match other properties"
+                                title="Shift to Matching Management for this customer under the same Matching ID to select & match other properties with a note"
                               >
                                 ⚡ Shift to Matching
                               </button>

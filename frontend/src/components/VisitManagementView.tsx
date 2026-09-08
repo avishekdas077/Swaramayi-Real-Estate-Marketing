@@ -55,6 +55,7 @@ interface VisitManagementViewProps {
   setVisitPlans?: React.Dispatch<React.SetStateAction<any[]>>;
   setActiveBookingSubTab?: (tab: any) => void;
   syncAllToMongoDB?: (overrideData?: any) => Promise<void>;
+  setShowShiftToMatchingModal?: (val: any) => void;
 }
 
 export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
@@ -111,6 +112,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
   setVisitPlans,
   setActiveBookingSubTab,
   syncAllToMongoDB,
+  setShowShiftToMatchingModal,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
@@ -185,7 +187,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-          <button onClick={() => alert('🚘 Opening Schedule Site Visit Modal...')} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button onClick={() => setShowScheduleVisitModal && setShowScheduleVisitModal({ open: true, costSheet: (individualCostSheets && individualCostSheets[0]) || null })} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Plus size={15} /> + Schedule Site Visit
           </button>
         </div>
@@ -443,6 +445,29 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                                 title="WhatsApp Customer"
                               >
                                 💬 WA
+                              </button>
+                              <button 
+                                onClick={() => {
+                                  const mob = plan.mobile || plan.customerNumber || '';
+                                  const cleanMob = mob.replace(/\D/g, '');
+                                  const matchId = plan.matchId || plan.matchingId || (cleanMob ? `SRM-MAT-2026-${cleanMob.slice(-6)}` : 'SRM-MAT-2026-988588');
+                                  if (setShowShiftToMatchingModal) {
+                                    setShowShiftToMatchingModal({
+                                      open: true,
+                                      item: plan,
+                                      customerName: plan.customerName || 'Customer',
+                                      customerNumber: plan.customerNumber || mob || 'SRM-CUS-2026',
+                                      mobile: mob,
+                                      matchId: matchId,
+                                      propertyTitle: firstPropTitle,
+                                      note: ''
+                                    });
+                                  }
+                                }}
+                                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: '1px solid #38bdf8', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}
+                                title="Shift customer back to Matching Management with a note to explore other property matches"
+                              >
+                                ⚡ Shift to Matching
                               </button>
                               {isSuperAdmin && (
                                 <button 
@@ -884,6 +909,29 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                             title="Update buyer preferences & requirements on-the-spot"
                           >
                             ✏️ Update Requirement
+                          </button>
+                          <button 
+                            onClick={() => {
+                              const mob = v.mobile || v.customerNumber || '';
+                              const cleanMob = mob.replace(/\D/g, '');
+                              const matchId = v.matchId || v.matchingId || (cleanMob ? `SRM-MAT-2026-${cleanMob.slice(-6)}` : 'SRM-MAT-2026-988588');
+                              if (setShowShiftToMatchingModal) {
+                                setShowShiftToMatchingModal({
+                                  open: true,
+                                  item: v,
+                                  customerName: v.customerName || 'Customer',
+                                  customerNumber: v.customerNumber || mob || 'SRM-CUS-2026',
+                                  mobile: mob,
+                                  matchId: matchId,
+                                  propertyTitle: cleanPropTitle,
+                                  note: ''
+                                });
+                              }
+                            }}
+                            style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: '1px solid #38bdf8', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px', whiteSpace: 'nowrap' }}
+                            title="Shift customer back to Matching Management with a note to explore other property matches"
+                          >
+                            ⚡ Shift to Matching
                           </button>
                           <button 
                             onClick={() => {

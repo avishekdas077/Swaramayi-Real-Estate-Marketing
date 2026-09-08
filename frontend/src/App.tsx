@@ -2928,6 +2928,16 @@ export default function App() {
 
   // Schedule Site Visit Modal State
   const [showScheduleVisitModal, setShowScheduleVisitModal] = useState<{ open: boolean; costSheet?: any } | null>(null);
+  const [showShiftToMatchingModal, setShowShiftToMatchingModal] = useState<{
+    open: boolean;
+    item?: any;
+    customerName?: string;
+    customerNumber?: string;
+    mobile?: string;
+    matchId?: string;
+    propertyTitle?: string;
+    note?: string;
+  } | null>(null);
   const [visitScheduleForm, setVisitScheduleForm] = useState({
     visitDate: '2026-08-22',
     visitTime: '11:00',
@@ -3534,8 +3544,8 @@ export default function App() {
     const ratePerSqftNum = (superAreaNum > 0 && basePriceNum > 0) ? Math.round(basePriceNum / superAreaNum) : 0;
 
     const parsePct = (val: any, fallback: number) => {
-      if (typeof val === 'number') return val;
-      if (!val) return fallback;
+      if (typeof val === 'number') return isNaN(val) ? fallback : val;
+      if (val === null || val === undefined || val === '') return fallback;
       const parsed = parseFloat(String(val).replace(/[^0-9.]/g, ''));
       return isNaN(parsed) ? fallback : parsed;
     };
@@ -4192,6 +4202,8 @@ export default function App() {
     if (form.revInfraLegal !== ((origPs.infrastructureCharge || 0) + (origPs.legalCharge || 0))) changedFields.push('Infra & Legal');
     if (form.revDiscount !== origPs.discountAmount) changedFields.push('Special Discount');
     if (form.revGstPct !== origPs.gstPct) changedFields.push('GST Rate');
+    if (form.revStampDutyPct !== origPs.stampDutyPct) changedFields.push('Stamp Duty Rate');
+    if (form.revRegPct !== origPs.registrationPct) changedFields.push('Registration Fee Rate');
     if (form.customerName && form.customerName !== (costSheet.customerSnapshot?.customerName || costSheet.customerName)) changedFields.push('Customer Name');
     if (form.customerMobile && form.customerMobile !== (costSheet.customerSnapshot?.mobile || costSheet.mobile)) changedFields.push('Customer Mobile');
 
@@ -4288,6 +4300,74 @@ export default function App() {
       costSheet: revisedSheet
     });
     alert(inPlace ? `✏️ Cost Sheet ${costSheet.costSheetId} updated successfully!` : `🚀 New Revision ${newVerCode} for Cost Sheet ${costSheet.costSheetId} created successfully!`);
+  };
+
+  // SHIFT CUSTOMER TO MATCHING MANAGEMENT WITH A NOTE
+  const handleExecuteShiftToMatching = (modalData: any, handoffNote: string) => {
+    if (!modalData) return;
+    const item = modalData.item || {};
+    const custName = modalData.customerName || item.customerName || item.customerSnapshot?.customerName || 'Customer';
+    const custId = modalData.customerNumber || item.customerNumber || item.customerId || item.customerSnapshot?.customerNumber || '';
+    const mob = modalData.mobile || item.mobile || item.customerSnapshot?.mobile || '';
+    const cleanMob = mob.replace(/\D/g, '');
+    const matchId = modalData.matchId || item.matchId || item.matchingId || item.parentMatchingId || (cleanMob ? `SRM-MAT-2026-${cleanMob.slice(-6)}` : 'SRM-MAT-2026-988588');
+
+    const timestamp = new Date().toLocaleString('en-IN');
+    const noteEntry = handoffNote ? `[Shifted to Matching on ${timestamp}]: ${handoffNote}` : `[Shifted to Matching on ${timestamp}]`;
+
+    // 1. Update matching requests queue with handoffNote
+    setMatchingRequestsQueue((prev: any[]) => {
+      let matched = false;
+      const updated = prev.map((req: any) => {
+        const reqMatchId = req.requestId || req.id || req.matchingId;
+        const reqCustNum = req.customerNumber || req.customerId;
+        if (reqMatchId === matchId || (reqCustNum && reqCustNum === custId) || (cleanMob && req.mobile && req.mobile.replace(/\D/g, '') === cleanMob)) {
+          matched = true;
+          return {
+            ...req,
+            handoffNote: handoffNote,
+            notes: req.notes ? `${req.notes}\n${noteEntry}` : noteEntry,
+            status: 'PENDING_MATCHING',
+            updatedAt: timestamp
+          };
+        }
+        return req;
+      });
+
+      if (!matched && (custName || custId)) {
+        updated.unshift({
+          requestId: matchId,
+          customerName: custName,
+          customerNumber: custId || `SRM-CUS-2026-${cleanMob.slice(-6) || '000189'}`,
+          mobile: mob || '+91 9432328947',
+          configuration: '3BHK / 2BHK',
+          preferredArea: item.locality || item.propertyTitle || 'Barasat, Kolkata',
+          budget: '₹40,00,000 - ₹80,00,000',
+          status: 'PENDING_MATCHING',
+          handoffNote: handoffNote,
+          notes: noteEntry,
+          date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+        });
+      }
+      return updated;
+    });
+
+    // 2. Select matching ID and customer
+    setSelectedMatchingId(matchId);
+    let targetCust = customers.find((c: any) => 
+      (c.customer_number && c.customer_number === custId) ||
+      (c.name && c.name.toLowerCase() === custName.toLowerCase()) ||
+      (cleanMob && c.mobile && c.mobile.replace(/\D/g, '') === cleanMob)
+    );
+    if (targetCust) {
+      setSelectedCust(targetCust);
+    }
+
+    // 3. Close modal and switch tab to Matching Management
+    setShowShiftToMatchingModal(null);
+    setActiveTab('matching_management');
+
+    alert(`⚡ SHIFTED BACK TO MATCHING MANAGEMENT FOR ${custName} (${matchId})\n\n📌 Handoff Note Logged:\n"${handoffNote || 'No note specified'}"\n\nYou are now in Matching Management workspace.`);
   };
 
   // DELETE ALL CURRENT RECORDS INSIDE FUNCTION
@@ -8904,6 +8984,7 @@ export default function App() {
               setSelectedMatchingId={setSelectedMatchingId}
               customers={customers}
               setSelectedCust={setSelectedCust}
+              setShowShiftToMatchingModal={setShowShiftToMatchingModal}
             />
           )}
 
@@ -8957,6 +9038,7 @@ export default function App() {
               setUpdateReqForm={setUpdateReqForm}
               setShowUpdateRequirementModal={setShowUpdateRequirementModal}
               setShowLiveRouteTrackingModal={setShowLiveRouteTrackingModal}
+              setShowShiftToMatchingModal={setShowShiftToMatchingModal}
               bookings={bookings}
               setBookings={setBookings}
               setScheduledVisits={setScheduledVisits}
@@ -14054,12 +14136,15 @@ export default function App() {
                     </label>
                     <select 
                       value={showRevisionModal.revGstPct} 
-                      onChange={(e) => setShowRevisionModal({ ...showRevisionModal, revGstPct: parseFloat(e.target.value) || 5 })} 
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setShowRevisionModal({ ...showRevisionModal, revGstPct: isNaN(val) ? 0 : val });
+                      }} 
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem' }}
                     >
                       <option value={5}>5% Standard GST (Under Construction)</option>
                       <option value={1}>1% Affordable Housing GST</option>
-                      <option value={0}>0% Exempted (Ready Completion Cert)</option>
+                      <option value={0}>0% Exempted (Ready Completion Cert / Nil GST)</option>
                     </select>
                   </div>
 
@@ -14070,12 +14155,16 @@ export default function App() {
                     </label>
                     <select 
                       value={showRevisionModal.revStampDutyPct} 
-                      onChange={(e) => setShowRevisionModal({ ...showRevisionModal, revStampDutyPct: parseFloat(e.target.value) || 5 })} 
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setShowRevisionModal({ ...showRevisionModal, revStampDutyPct: isNaN(val) ? 0 : val });
+                      }} 
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem' }}
                     >
                       <option value={5}>5.0% Standard Telangana/AP Rate</option>
                       <option value={6}>6.0% Special Urban Surcharge</option>
                       <option value={4}>4.0% Concessional Rate</option>
+                      <option value={0}>0.0% Exempted (Nil Stamp Duty / Waived)</option>
                     </select>
                   </div>
 
@@ -14086,12 +14175,16 @@ export default function App() {
                     </label>
                     <select 
                       value={showRevisionModal.revRegPct} 
-                      onChange={(e) => setShowRevisionModal({ ...showRevisionModal, revRegPct: parseFloat(e.target.value) || 1 })} 
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value);
+                        setShowRevisionModal({ ...showRevisionModal, revRegPct: isNaN(val) ? 0 : val });
+                      }} 
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 10px', borderRadius: '6px', fontSize: '0.85rem' }}
                     >
                       <option value={1}>1.0% Fixed Transfer Fee</option>
                       <option value={0.5}>0.5% Special Slab</option>
                       <option value={2}>2.0% High Value Property</option>
+                      <option value={0}>0.0% Exempted (Nil Registration / Waived)</option>
                     </select>
                   </div>
 
@@ -14191,6 +14284,85 @@ export default function App() {
           />
         );
       })()}
+
+      {/* MODAL: SHIFT CUSTOMER TO MATCHING MANAGEMENT WITH A NOTE */}
+      {showShiftToMatchingModal && showShiftToMatchingModal.open && (
+        <div style={{ position: 'fixed', inset: 0, background: isLight ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2200, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: '2px solid #38bdf8', width: '92vw', maxWidth: '580px', borderRadius: '16px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)' }}>
+            
+            {/* HEADER */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', padding: '8px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Zap size={22} color="#ffffff" />
+                </div>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>⚡ SHIFT TO MATCHING MANAGEMENT</h3>
+                  <p style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '2px', margin: 0 }}>Re-open matching workspace & record customer handoff note</p>
+                </div>
+              </div>
+              <X size={20} color="#94a3b8" style={{ cursor: 'pointer' }} onClick={() => setShowShiftToMatchingModal(null)} />
+            </div>
+
+            {/* CUSTOMER & PROPERTY BANNER */}
+            <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: '1px solid #0284c7', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.82rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>👤 Customer:</span>
+                <strong style={{ color: isLight ? '#0f172a' : '#ffffff' }}>
+                  {showShiftToMatchingModal.customerName || 'Customer'} ({showShiftToMatchingModal.customerNumber || showShiftToMatchingModal.mobile || ''})
+                </strong>
+              </div>
+              {showShiftToMatchingModal.matchId && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>🎯 Matching Code:</span>
+                  <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontWeight: '900' }}>
+                    {showShiftToMatchingModal.matchId}
+                  </span>
+                </div>
+              )}
+              {showShiftToMatchingModal.propertyTitle && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800' }}>🏢 Target Property / Visit:</span>
+                  <span style={{ color: '#fbbf24', fontWeight: '800' }}>
+                    {showShiftToMatchingModal.propertyTitle}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* HANDOFF NOTE TEXTAREA */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <label style={{ fontSize: '0.8rem', color: '#fbbf24', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                📌 HANDOFF NOTE / REASON FOR RE-MATCHING *
+              </label>
+              <textarea
+                rows={3}
+                value={showShiftToMatchingModal.note || ''}
+                onChange={(e) => setShowShiftToMatchingModal({ ...showShiftToMatchingModal, note: e.target.value })}
+                placeholder="e.g. Customer requested a 3BHK instead of 2BHK after site visit; needs East facing flat within ₹60 Lakhs..."
+                style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', border: '1.5px solid #fbbf24', color: isLight ? '#0f172a' : '#ffffff', padding: '10px', borderRadius: '8px', fontSize: '0.85rem', outline: 'none' }}
+              />
+            </div>
+
+            {/* ACTIONS */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '14px' }}>
+              <button
+                onClick={() => setShowShiftToMatchingModal(null)}
+                style={{ background: isLight ? '#e2e8f0' : '#334155', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleExecuteShiftToMatching(showShiftToMatchingModal, showShiftToMatchingModal.note || '')}
+                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '8px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.4)' }}
+              >
+                <Zap size={16} /> ⚡ Confirm & Shift to Matching
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* MODAL: SKIP PROPERTY STOP */}
       {showSkipStopModal && showSkipStopModal.open && (
