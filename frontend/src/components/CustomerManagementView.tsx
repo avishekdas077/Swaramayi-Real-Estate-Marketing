@@ -96,7 +96,8 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
 
   const handleToggleInvoiceSettled = (invIdOrNum: string, currentIsSettled: boolean, targetCust?: any) => {
     const activeTargetCust = targetCust || selectedCust;
-    const newStatus = currentIsSettled ? 'UNPAID_PENDING' : 'PAID_SETTLED';
+    const newSettlementStatus = currentIsSettled ? 'NOT SETTLED' : 'SETTLED';
+    const newIsSettled = !currentIsSettled;
     if (setInvoices) {
       setInvoices((prev: any[]) => {
         let updated = false;
@@ -115,10 +116,10 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
             updated = true;
             return {
               ...inv,
-              payment_status: newStatus,
-              status: newStatus,
-              payment_mode: currentIsSettled ? (inv.payment_mode || 'Online Bank Transfer / UPI') : 'Online Bank Transfer / UPI',
-              payment_ref: currentIsSettled ? inv.payment_ref : (inv.payment_ref || `UTR-${Date.now().toString().slice(-8)}`)
+              settlement_status: newSettlementStatus,
+              is_settled: newIsSettled,
+              payment_status: newIsSettled ? 'PAID_SETTLED' : (inv.payment_status || 'UNPAID_PENDING'),
+              status: newSettlementStatus
             };
           }
           return inv;
@@ -134,14 +135,25 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
             customer_mobile: activeTargetCust?.mobile || '6646577673',
             party_name: activeTargetCust?.name || activeTargetCust?.full_name || 'Ruksha Roy',
             total_invoice_amount: 590000,
-            payment_status: newStatus,
-            status: newStatus,
+            settlement_status: newSettlementStatus,
+            is_settled: newIsSettled,
+            payment_status: 'PAID_SETTLED',
+            status: newSettlementStatus,
             payment_mode: 'Online Bank Transfer / UPI',
             payment_ref: `UTR-${Date.now().toString().slice(-8)}`,
             created_date: new Date().toISOString().split('T')[0]
           };
-          return [newInv, ...prev];
+          const list = [newInv, ...prev];
+          try {
+            localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(list));
+          } catch (e) {}
+          return list;
         }
+
+        try {
+          localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(nextInvoices));
+        } catch (e) {}
+
         return nextInvoices;
       });
     }
@@ -295,7 +307,6 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
           status: m.costSheetId ? 'COST_SHEET_CREATED' : 'MATCHING_INITIATED',
           priority: m.priority || 'HOT',
           quality_score: m.leadScore || m.completenessScore || m.score || 100,
-          score: m.leadScore || m.completenessScore || m.score || 100,
           source: m.source || 'Lead Intake & AI Matching',
           assigned_salesperson: m.assignedExecutive || 'Abinash Roy (Admin)',
           created_at: m.created_at || m.createdAt || m.date || new Date().toISOString(),
@@ -305,8 +316,52 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       }
     });
 
+    // 5. Auto-incorporate scheduled site visits
+    (scheduledVisits || []).forEach(v => {
+      if (!v) return;
+      const custNum = v.customerNumber || v.customer_number || v.customerId || `SRM-CUS-2026-${String(v.id || v.visitId || '000190').replace(/\D/g, '').slice(-6) || '000190'}`;
+      const custName = v.customerName || v.customer_name || v.name || 'Customer';
+      const custMob = v.mobile || v.phone || v.customerMobile || '';
+      const cleanMob = custMob ? custMob.replace(/\D/g, '') : '';
+      const { keys } = getKeys({ customer_number: custNum, mobile: cleanMob, name: custName, id: `CUS-${custNum}` });
+
+      if (!isDuplicate(keys)) {
+        registerKeys(keys);
+        list.push({
+          id: `CUS-${custNum}`,
+          customer_number: custNum,
+          full_name: custName,
+          name: custName,
+          mobile: custMob,
+          email: v.email || `${custName.toLowerCase().replace(/\s+/g, '.')}@gmail.com`,
+          city: v.city || 'Kolkata',
+          preferred_location: v.locality || v.preferredArea || 'Barasat, Kolkata',
+          preferredArea: v.locality || v.preferredArea || 'Barasat, Kolkata',
+          property_type: 'Flat / Apartment',
+          configuration: '3BHK',
+          budget: '₹50 Lakh - ₹60 Lakh',
+          budget_min: 5000000,
+          budget_max: 6000000,
+          purchase_timeline: 'Immediate (< 30 Days)',
+          loan_required: true,
+          investment_purpose: 'Self / End Use',
+          customer_status: 'SITE_VISIT_SCHEDULED',
+          status: 'SITE_VISIT_SCHEDULED',
+          priority: 'HOT',
+          quality_score: 95,
+          score: 95,
+          source: 'Site Visit Scheduling',
+          assigned_employee_id: v.assignedExecutive || 'Ramesh Pawar',
+          assigned_employee_name: v.assignedExecutive || 'Ramesh Pawar',
+          created_at: v.visitDate || new Date().toISOString(),
+          is_deleted: false,
+          visitData: v
+        });
+      }
+    });
+
     return list;
-  }, [customers, individualCostSheets, leadsList, matchingRequestsQueue]);
+  }, [customers, individualCostSheets, leadsList, matchingRequestsQueue, scheduledVisits]);
 
   const getCustomerTransactionChainItems = (cust: any) => {
     const custNum = (cust?.customer_number || cust?.customer_id || cust?.id || '').toString().trim();
@@ -468,20 +523,29 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       }
     });
 
-    // Helper to evaluate if an invoice is marked as paid strictly according to Billing Management
+    // Helper to evaluate if an invoice payment is received (strictly for Item 15 Payment ID)
     const isInvPaid = (inv: any) => {
       if (!inv) return false;
       const pStatus = (inv.payment_status || '').toString().trim().toUpperCase();
-      if (pStatus === 'PAID_SETTLED' || pStatus === 'PAID') {
-        return true;
-      }
-      if (pStatus === 'UNPAID_PENDING' || pStatus === 'UNPAID' || pStatus === 'PENDING') {
-        return false;
-      }
-      if ((inv.status || '').toString().trim().toUpperCase() === 'PAID_SETTLED') {
+      if (pStatus === 'PAID_SETTLED' || pStatus === 'PAID' || pStatus === 'ONLINE' || pStatus.includes('PAID')) {
+        if (pStatus.includes('UNPAID') || pStatus.includes('NOT') || pStatus.includes('PENDING')) {
+          return false;
+        }
         return true;
       }
       return false;
+    };
+
+    // Helper to evaluate if an invoice accounts settlement is marked settled (strictly for Item 16 Invoice ID)
+    const isInvSettled = (inv: any) => {
+      if (!inv) return false;
+      if (inv.is_settled === true) return true;
+      if (inv.is_settled === false) return false;
+      const sStatus = (inv.settlement_status || '').toString().trim().toUpperCase();
+      if (sStatus === 'SETTLED') return true;
+      if (sStatus === 'NOT SETTLED' || sStatus === 'NOT_SETTLED') return false;
+      const pStatus = (inv.payment_status || '').toString().trim().toUpperCase();
+      return pStatus === 'PAID_SETTLED' || pStatus === 'PAID' || pStatus === 'ONLINE' || pStatus.includes('PAID');
     };
 
     // Dynamic Lists for Items 5 through 17 (Clean & Deduplicated)
@@ -555,13 +619,14 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
 
     // Dynamic Invoice List (Item 16)
     const invList = linkedInvoices.map((inv: any) => {
-      const paid = isInvPaid(inv);
+      const settled = isInvSettled(inv);
       return {
         id: inv.invoice_number || inv.id,
         name: inv.project_name || inv.property_title || 'Customer Tax Invoice',
-        status: paid ? 'SETTLED' : 'NOT SETTLED',
-        color: paid ? '#22c55e' : '#fbbf24',
-        payment_status: inv.payment_status || (paid ? 'PAID_SETTLED' : 'UNPAID_PENDING'),
+        status: settled ? 'SETTLED' : 'NOT SETTLED',
+        color: settled ? '#22c55e' : '#f59e0b',
+        settlement_status: inv.settlement_status || (settled ? 'SETTLED' : 'NOT SETTLED'),
+        payment_status: inv.payment_status || 'UNPAID_PENDING',
         payment_mode: inv.payment_mode || 'Online Bank Transfer / UPI',
         payment_ref: inv.payment_ref,
         total_invoice_amount: inv.total_invoice_amount || inv.taxable_value,
@@ -630,7 +695,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
 
     const hasInvoices = invList.length > 0;
     const allInvoicesPaid = hasInvoices && invList.every((i: any) => i.status === 'SETTLED');
-    const invoiceStatusStr = hasInvoices ? (allInvoicesPaid ? 'SETTLED' : 'NOT SETTLED') : 'NO INVOICE YET';
+    const invoiceStatusStr = hasInvoices ? (allInvoicesPaid ? 'NOT SETTLED' : 'SETTLED') : 'NO INVOICE YET'
     const invoiceColorStr = hasInvoices ? (allInvoicesPaid ? '#22c55e' : '#fbbf24') : '#64748b';
 
     return [
@@ -802,7 +867,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
         { label: 'Tax Invoice Amount', value: item.items?.[0]?.total_invoice_amount ? (typeof item.items[0].total_invoice_amount === 'number' ? `₹${item.items[0].total_invoice_amount.toLocaleString('en-IN')} (Incl. 18% GST)` : item.items[0].total_invoice_amount) : '₹5,90,000 (Incl. ₹90,000 18% GST)' },
         { label: 'Billed To Customer', value: `${custName} (${custNum})` },
         { label: 'Company GSTIN', value: '36AAACS8899K1Z0' },
-        { label: 'Invoice Status', value: item.status ? (item.status.includes('UNPAID') ? 'UNPAID / PENDING' : 'PAID IN FULL') : 'UNPAID / PENDING' },
+        { label: 'Invoice Status', value: item.status || 'SETTLED' },
         { label: 'Invoice Issued Date', value: item.items?.[0]?.created_date || '20 Aug 2026' }
       ],
       '17. BROKERAGE ID': [
@@ -815,7 +880,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       ]
     };
 
-    if (item.id === '0 RECORDS' || !item.id || item.status.includes('NO ') || item.status.includes('NOT ') || item.status === '0 ACTIVE') {
+    if (item.id === '0 RECORDS' || !item.id || item.status.includes('NO ') || item.status.includes('NOT GENERATED') || item.status.includes('NOT VERIFIED') || item.status === '0 ACTIVE') {
       return {
         item,
         custName,
@@ -1583,7 +1648,16 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
                         <h5 style={{ fontSize: '0.85rem', fontFamily: 'monospace', fontWeight: '900', color: '#38bdf8', marginTop: '2px' }}>{item.id}</h5>
                       )}
 
-                      <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: item.color, padding: '2px 6px', borderRadius: '4px', fontSize: '0.68rem', fontWeight: '800', display: 'inline-block', marginTop: '6px' }}>
+                      <span style={{ 
+                        background: item.color === '#22c55e' ? 'rgba(34, 197, 94, 0.15)' : (item.color === '#64748b' ? 'rgba(100, 116, 139, 0.15)' : 'rgba(245, 158, 11, 0.15)'), 
+                        color: item.color, 
+                        padding: '2px 6px', 
+                        borderRadius: '4px', 
+                        fontSize: '0.68rem', 
+                        fontWeight: '800', 
+                        display: 'inline-block', 
+                        marginTop: '6px' 
+                      }}>
                         ● {item.status}
                       </span>
                     </div>
@@ -1883,25 +1957,6 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
                 >
                   <Download size={14} /> Download PDF
                 </button>
-                {selectedTransactionPdf.item.label === '16. INVOICE ID' && (
-                  <button 
-                    onClick={() => {
-                      const currentIsSettled = selectedTransactionPdf.item.status === 'SETTLED';
-                      const targetInvId = selectedTransactionPdf.item.items?.[0]?.id || selectedTransactionPdf.item.id;
-                      handleToggleInvoiceSettled(targetInvId, currentIsSettled, activeCust);
-                      setSelectedTransactionPdf((prev: any) => prev ? {
-                        ...prev,
-                        item: {
-                          ...prev.item,
-                          status: currentIsSettled ? 'NOT SETTLED' : 'SETTLED'
-                        }
-                      } : null);
-                    }} 
-                    style={{ background: selectedTransactionPdf.item.status === 'SETTLED' ? '#d97706' : '#059669', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer' }}
-                  >
-                    {selectedTransactionPdf.item.status === 'SETTLED' ? '⚡ Mark NOT SETTLED' : '⚡ Mark SETTLED'}
-                  </button>
-                )}
                 <X size={22} color="#94a3b8" style={{ cursor: 'pointer', marginLeft: '6px' }} onClick={() => setSelectedTransactionPdf(null)} />
               </div>
             </div>

@@ -3291,43 +3291,124 @@ export default function App() {
   const [propertyUnits, setPropertyUnits] = useState([]);
 
   // 6. CUSTOMERS MASTER VAULT (WITH LOCALSTORAGE PERSISTENCE)
-  const defaultInitialCustomers: any[] = [];
+  const defaultInitialCustomers: any[] = [
+    {
+      id: 'SRM-CUS-2026-000189',
+      customer_number: 'SRM-CUS-2026-000189',
+      customerNumber: 'SRM-CUS-2026-000189',
+      full_name: 'Avishek Das',
+      name: 'Avishek Das',
+      mobile: '9432328947',
+      phone: '9432328947',
+      email: 'a@gmail.com',
+      city: 'Kolkata',
+      preferred_location: 'Madhyamgram',
+      preferredArea: 'Madhyamgram',
+      locality: 'Madhyamgram',
+      budget: '₹45 Lakh - ₹50 Lakh',
+      budget_min: 4500000,
+      budget_max: 5000000,
+      configuration: '3BHK',
+      status: 'HOT',
+      customer_status: 'HOT',
+      priority: 'HOT',
+      quality_score: 100,
+      score: 100,
+      source: 'Lead Ingestion',
+      assigned_employee_id: 'Ramesh Pawar',
+      assigned_employee_name: 'Ramesh Pawar',
+      created_at: '2026-08-28',
+      updated_at: '2026-08-28'
+    },
+    {
+      id: 'SRM-CUS-2026-000190',
+      customer_number: 'SRM-CUS-2026-000190',
+      customerNumber: 'SRM-CUS-2026-000190',
+      full_name: 'sunil verma',
+      name: 'sunil verma',
+      mobile: '5777564356',
+      phone: '5777564356',
+      email: 'sunil.verma@gmail.com',
+      city: 'Kolkata',
+      preferred_location: 'Barasat',
+      preferredArea: 'Barasat, Kolkata',
+      locality: 'Barasat',
+      budget: '₹50 Lakh - ₹60 Lakh',
+      budget_min: 5000000,
+      budget_max: 6000000,
+      configuration: '3BHK',
+      status: 'HOT',
+      customer_status: 'HOT',
+      priority: 'HOT',
+      quality_score: 95,
+      score: 95,
+      source: 'Lead Ingestion',
+      assigned_employee_id: 'Ramesh Pawar',
+      assigned_employee_name: 'Ramesh Pawar (Field Exec - Kondapur)',
+      created_at: '2026-08-22',
+      updated_at: '2026-08-22'
+    }
+  ];
 
   const [customers, setCustomers] = useState<any[]>(() => {
     try {
+      let list: any[] = [];
       const saved = localStorage.getItem('swaramayi_customers_v7_clean');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          const seen = new Set<string>();
-          const deduped: any[] = [];
-          parsed.forEach((c: any) => {
-            if (!c) return;
-            const num = (c.customer_number || c.customerNumber || c.customerId || c.customer_id || '').toString().toLowerCase().trim();
-            const mob = (c.mobile || c.phone || '').toString().replace(/\D/g, '');
-            const id = (c.id || c._id || '').toString().toLowerCase().trim();
-            const name = (c.name || c.full_name || '').toString().toLowerCase().trim();
-
-            if (name.includes('rishita') || mob.includes('8876697975') || num.toUpperCase() === 'SRM-CUS-2026-000188') {
-              return;
-            }
-
-            const key = num || (mob && mob.length >= 7 ? `mob:${mob.slice(-10)}` : '') || (id ? `id:${id}` : `name:${name}`);
-            if (key && !seen.has(key)) {
-              seen.add(key);
-              if (num) seen.add(`num:${num}`);
-              if (mob && mob.length >= 7) seen.add(`mob:${mob.slice(-10)}`);
-              if (id) seen.add(`id:${id}`);
-              deduped.push(c);
-            }
-          });
-          return deduped;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          list = parsed;
         }
       }
+
+      if (list.length === 0) {
+        list = [...defaultInitialCustomers];
+      }
+
+      const hasSunil = list.some((c: any) => 
+        (c.customer_number && c.customer_number.toUpperCase() === 'SRM-CUS-2026-000190') ||
+        (c.name && c.name.toLowerCase().includes('sunil')) ||
+        (c.full_name && c.full_name.toLowerCase().includes('sunil')) ||
+        (c.mobile && c.mobile.includes('5777564356'))
+      );
+
+      const hasAvishek = list.some((c: any) => 
+        (c.customer_number && c.customer_number.toUpperCase() === 'SRM-CUS-2026-000189') ||
+        (c.name && c.name.toLowerCase().includes('avishek')) ||
+        (c.full_name && c.full_name.toLowerCase().includes('avishek')) ||
+        (c.mobile && c.mobile.includes('9432328947'))
+      );
+
+      if (!hasAvishek) list.unshift(defaultInitialCustomers[0]);
+      if (!hasSunil) list.push(defaultInitialCustomers[1]);
+
+      const seen = new Set<string>();
+      const deduped: any[] = [];
+      list.forEach((c: any) => {
+        if (!c) return;
+        const num = (c.customer_number || c.customerNumber || c.customerId || c.customer_id || '').toString().toLowerCase().trim();
+        const mob = (c.mobile || c.phone || '').toString().replace(/\D/g, '');
+        const id = (c.id || c._id || '').toString().toLowerCase().trim();
+        const name = (c.name || c.full_name || '').toString().toLowerCase().trim();
+
+        if (name.includes('rishita') || mob.includes('8876697975') || num.toUpperCase() === 'SRM-CUS-2026-000188') {
+          return;
+        }
+
+        const key = num || (mob && mob.length >= 7 ? `mob:${mob.slice(-10)}` : '') || (id ? `id:${id}` : `name:${name}`);
+        if (key && !seen.has(key)) {
+          seen.add(key);
+          if (num) seen.add(`num:${num}`);
+          if (mob && mob.length >= 7) seen.add(`mob:${mob.slice(-10)}`);
+          if (id) seen.add(`id:${id}`);
+          deduped.push(c);
+        }
+      });
+      return deduped;
     } catch (e) {
       console.error('Error reading customers from localStorage:', e);
     }
-    return [];
+    return defaultInitialCustomers;
   });
 
   useEffect(() => {
@@ -5210,6 +5291,8 @@ export default function App() {
         sgst_amount: 3744,
         total_invoice_amount: 49088,
         payment_status: 'UNPAID_PENDING',
+        settlement_status: 'NOT SETTLED',
+        is_settled: false,
         payment_mode: 'ONLINE',
         branch_name: 'Head Office (Kolkata)'
       },
@@ -5235,6 +5318,8 @@ export default function App() {
         sgst_amount: 4500,
         total_invoice_amount: 59000,
         payment_status: 'PAID_SETTLED',
+        settlement_status: 'SETTLED',
+        is_settled: true,
         payment_mode: 'UPI',
         branch_name: 'Kolkata Branch'
       }
@@ -5254,6 +5339,10 @@ export default function App() {
             if (seen.has(key)) continue;
             if (numKey) seen.add(numKey);
             seen.add(key);
+            if (inv.invoice_number === 'SRM-INV-2026-000088' || inv.customer_number === 'SRM-CUS-2026-000190') {
+              inv.settlement_status = 'SETTLED';
+              inv.is_settled = true;
+            }
             deduped.push(inv);
           }
           return deduped;
@@ -5382,9 +5471,26 @@ export default function App() {
               } catch (e) {}
             }
             if (Array.isArray(mData.customers)) {
-              setCustomers(mData.customers);
+              const mergedCusts = [...mData.customers];
+              const hasSunil = mergedCusts.some((c: any) => 
+                (c.customer_number && c.customer_number.toUpperCase() === 'SRM-CUS-2026-000190') ||
+                (c.name && c.name.toLowerCase().includes('sunil')) ||
+                (c.full_name && c.full_name.toLowerCase().includes('sunil')) ||
+                (c.mobile && c.mobile.includes('5777564356'))
+              );
+              const hasAvishek = mergedCusts.some((c: any) => 
+                (c.customer_number && c.customer_number.toUpperCase() === 'SRM-CUS-2026-000189') ||
+                (c.name && c.name.toLowerCase().includes('avishek')) ||
+                (c.full_name && c.full_name.toLowerCase().includes('avishek')) ||
+                (c.mobile && c.mobile.includes('9432328947'))
+              );
+
+              if (!hasAvishek) mergedCusts.unshift(defaultInitialCustomers[0]);
+              if (!hasSunil) mergedCusts.push(defaultInitialCustomers[1]);
+
+              setCustomers(mergedCusts);
               try {
-                localStorage.setItem('swaramayi_customers_v4_clean', JSON.stringify(mData.customers));
+                localStorage.setItem('swaramayi_customers_v7_clean', JSON.stringify(mergedCusts));
               } catch (e) {}
             }
             if (Array.isArray(mData.leads)) {

@@ -1016,7 +1016,24 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                         <div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap', flexDirection: stopsList.length > 1 ? 'column' : 'row', alignItems: 'center' }}>
                           <button
                             onClick={() => handleMarkVisitDoneAndNotifyDeveloper(v)}
-                            style={{ background: v.status === 'COMPLETED' || v.visitDone ? '#22c55e' : 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '3px', boxShadow: '0 2px 6px rgba(22, 197, 94, 0.3)' }}
+                            style={{ 
+                              background: v.status === 'COMPLETED' || v.visitDone 
+                                ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' 
+                                : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', 
+                              color: '#ffffff', 
+                              border: 'none', 
+                              padding: '4px 8px', 
+                              borderRadius: '4px', 
+                              cursor: 'pointer', 
+                              fontWeight: '900', 
+                              fontSize: '0.72rem', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '3px', 
+                              boxShadow: v.status === 'COMPLETED' || v.visitDone 
+                                ? '0 2px 6px rgba(22, 197, 94, 0.3)' 
+                                : '0 2px 6px rgba(239, 68, 68, 0.4)' 
+                            }}
                             title="Mark Visit Completed & automatically send WhatsApp confirmation to Developer with Customer Name and 7-digit Customer ID"
                           >
                             {v.status === 'COMPLETED' || v.visitDone ? '✅ VISIT DONE (Resend WA)' : '✅ MARK VISIT DONE & WA DEV'}

@@ -232,6 +232,12 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
     });
 
     setInvoices(updated);
+    try {
+      localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(updated));
+    } catch (e) {}
+    if (syncAllToMongoDB) {
+      syncAllToMongoDB({ invoices: updated });
+    }
     setShowRecordPaymentModal(null);
   };
 
@@ -620,15 +626,15 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
 
                     {/* INTERACTIVE PAYMENT STATUS & MODE COLUMN */}
                     <td style={{ padding: '12px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                         <span style={{ 
                           background: i.payment_status === 'PAID_SETTLED' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)', 
                           color: i.payment_status === 'PAID_SETTLED' ? '#4ade80' : '#fbbf24', 
                           border: `1px solid ${i.payment_status === 'PAID_SETTLED' ? '#22c55e' : '#eab308'}`, 
-                          padding: '4px 10px', 
+                          padding: '4px 12px', 
                           borderRadius: '20px', 
                           fontWeight: '900', 
-                          fontSize: '0.74rem', 
+                          fontSize: '0.78rem', 
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px'
@@ -644,27 +650,28 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                           <button
                             onClick={() => {
                               if (!setInvoices) return;
-                              const isCurrentlyPaid = i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED';
-                              const newStatus = isCurrentlyPaid ? 'UNPAID_PENDING' : 'PAID_SETTLED';
+                              const isCurrentlySettled = i.settlement_status === 'SETTLED' || i.is_settled === true || (i.settlement_status === undefined && (i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.payment_status === 'ONLINE' || (i.payment_status || '').includes('PAID')));
+                              const newSettlementStatus = isCurrentlySettled ? 'NOT SETTLED' : 'SETTLED';
                               const updated = invoices.map(inv => {
                                 if (inv.id === i.id || (inv.invoice_number && inv.invoice_number === i.invoice_number)) {
                                   return {
                                     ...inv,
-                                    payment_status: newStatus,
-                                    status: newStatus,
-                                    payment_mode: isCurrentlyPaid ? (inv.payment_mode || 'ONLINE') : (inv.payment_mode || 'Online Bank Transfer / UPI'),
-                                    payment_ref: isCurrentlyPaid ? inv.payment_ref : (inv.payment_ref || `UTR-${Date.now().toString().slice(-8)}`)
+                                    settlement_status: newSettlementStatus,
+                                    is_settled: !isCurrentlySettled
                                   };
                                 }
                                 return inv;
                               });
                               setInvoices(updated);
+                              try {
+                                localStorage.setItem('swaramayi_invoices_v6', JSON.stringify(updated));
+                              } catch (err) {}
                               if (syncAllToMongoDB) {
                                 syncAllToMongoDB({ invoices: updated });
                               }
                             }}
                             style={{
-                              background: (i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED')
+                              background: (i.settlement_status === 'SETTLED' || i.is_settled === true || (i.settlement_status === undefined && (i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.payment_status === 'ONLINE' || (i.payment_status || '').includes('PAID'))))
                                 ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
                                 : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
                               color: '#ffffff',
@@ -677,13 +684,13 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '3px',
-                              boxShadow: (i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED')
+                              boxShadow: (i.settlement_status === 'SETTLED' || i.is_settled === true || (i.settlement_status === undefined && (i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.payment_status === 'ONLINE' || (i.payment_status || '').includes('PAID'))))
                                 ? '0 2px 6px rgba(245, 158, 11, 0.3)'
                                 : '0 2px 6px rgba(16, 185, 129, 0.3)'
                             }}
-                            title={(i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED') ? "Click to Mark Invoice as UNPAID" : "Click to Mark Invoice as SETTLED"}
+                            title={(i.settlement_status === 'SETTLED' || i.is_settled === true || (i.settlement_status === undefined && (i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.payment_status === 'ONLINE' || (i.payment_status || '').includes('PAID')))) ? "Click to Mark Invoice as NOT SETTLED" : "Click to Mark Invoice as SETTLED"}
                           >
-                            {(i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.status === 'PAID_SETTLED') ? '⚡ Mark NOT SETTLED' : '⚡ Mark SETTLED'}
+                            {(i.settlement_status === 'SETTLED' || i.is_settled === true || (i.settlement_status === undefined && (i.payment_status === 'PAID_SETTLED' || i.payment_status === 'PAID' || i.payment_status === 'ONLINE' || (i.payment_status || '').includes('PAID')))) ? '⚡ Mark NOT SETTLED' : '⚡ Mark SETTLED'}
                           </button>
 
                           <button
@@ -697,10 +704,10 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                               background: 'transparent',
                               border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
                               color: isLight ? '#0284c7' : '#38bdf8',
-                              fontSize: '0.7rem',
+                              fontSize: '0.74rem',
                               fontWeight: '800',
-                              borderRadius: '4px',
-                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              padding: '4px 10px',
                               cursor: 'pointer'
                             }}
                           >
