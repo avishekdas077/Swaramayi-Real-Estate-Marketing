@@ -1601,14 +1601,19 @@ function InteractiveLeafletMap({
   selectedProperty,
   setSelectedProperty,
   showAllOnMap,
-  isLight
+  isLight,
+  radiusKm,
+  searchedLocationPin
 }: any) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<{ [key: string]: any }>({});
+  const searchedMarkerRef = useRef<any>(null);
+  const circleRef = useRef<any>(null);
   const [leafletReady, setLeafletReady] = useState<boolean>(false);
   const lastAnimatedIdRef = useRef<string | null>(null);
   const lastShowAllRef = useRef<boolean>(showAllOnMap);
+  const lastSearchedPinKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if ((window as any).L) {
@@ -1668,11 +1673,48 @@ function InteractiveLeafletMap({
 
     const map = mapInstanceRef.current;
 
-    // Clear existing markers
+    // Clear existing property markers
     Object.values(markersRef.current).forEach((m: any) => map.removeLayer(m));
     markersRef.current = {};
 
+    // Clear existing searched location marker
+    if (searchedMarkerRef.current) {
+      map.removeLayer(searchedMarkerRef.current);
+      searchedMarkerRef.current = null;
+    }
+
+    // Clear existing radius circle
+    if (circleRef.current) {
+      map.removeLayer(circleRef.current);
+      circleRef.current = null;
+    }
+
     const bounds: any[] = [];
+
+    // Render Searched Location Pin if present
+    if (searchedLocationPin && searchedLocationPin.lat && searchedLocationPin.lng) {
+      const pinLat = Number(searchedLocationPin.lat);
+      const pinLng = Number(searchedLocationPin.lng);
+      bounds.push([pinLat, pinLng]);
+
+      const searchedIcon = L.divIcon({
+        className: 'leaflet-searched-location-marker-wrapper',
+        html: `
+          <div style="display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -100%); cursor: pointer; z-index: 9999;">
+            <div style="background: linear-gradient(135deg, #0284c7 0%, #0f172a 100%); color: #38bdf8; border: 2px solid #38bdf8; padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 900; white-space: nowrap; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.6); margin-bottom: 2px;">
+              📍 Searched: ${searchedLocationPin.name || 'Location'}
+            </div>
+            <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 3px solid #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
+              <div style="width: 10px; height: 10px; background: #ffffff; border-radius: 50%; transform: rotate(45deg);"></div>
+            </div>
+          </div>
+        `,
+        iconSize: [0, 0],
+        iconAnchor: [0, 0]
+      });
+
+      searchedMarkerRef.current = L.marker([pinLat, pinLng], { icon: searchedIcon }).addTo(map);
+    }
 
     properties.forEach((p: any) => {
       const { lat, lng } = getPropLatLng(p);
@@ -1704,13 +1746,43 @@ function InteractiveLeafletMap({
       markersRef.current[p.id] = marker;
     });
 
+    // Determine center coordinates for radius circle (Searched Location Pin takes priority, else selectedProperty)
+    let circleCenterLat: number | null = null;
+    let circleCenterLng: number | null = null;
+
+    if (searchedLocationPin && searchedLocationPin.lat && searchedLocationPin.lng) {
+      circleCenterLat = Number(searchedLocationPin.lat);
+      circleCenterLng = Number(searchedLocationPin.lng);
+    } else if (selectedProperty) {
+      const { lat, lng } = getPropLatLng(selectedProperty);
+      if (lat && lng) {
+        circleCenterLat = lat;
+        circleCenterLng = lng;
+      }
+    }
+
+    // Draw Radius Circle if active and center exists
+    if (radiusKm && Number(radiusKm) > 0 && circleCenterLat && circleCenterLng) {
+      circleRef.current = L.circle([circleCenterLat, circleCenterLng], {
+        radius: Number(radiusKm) * 1000,
+        color: '#0284c7',
+        fillColor: '#38bdf8',
+        fillOpacity: 0.15,
+        weight: 2,
+        dashArray: '6, 6'
+      }).addTo(map);
+    }
+
     const currentSelectedId = selectedProperty ? selectedProperty.id : null;
+    const currentSearchedPinKey = searchedLocationPin ? `${searchedLocationPin.lat}_${searchedLocationPin.lng}` : null;
+    const isNewSearchedPin = currentSearchedPinKey !== lastSearchedPinKeyRef.current;
     const isNewSelection = currentSelectedId !== lastAnimatedIdRef.current;
     const isToggleShowAll = showAllOnMap !== lastShowAllRef.current;
 
-    // ONLY camera flyTo if the user selected a DIFFERENT property or clicked a toggle button!
-    // NEVER flyTo/zoom out when the user is manually scrolling/zooming or doing normal interactions.
-    if (isNewSelection && selectedProperty) {
+    if (isNewSearchedPin && searchedLocationPin && searchedLocationPin.lat && searchedLocationPin.lng) {
+      map.flyTo([Number(searchedLocationPin.lat), Number(searchedLocationPin.lng)], 14, { duration: 0.8 });
+      lastSearchedPinKeyRef.current = currentSearchedPinKey;
+    } else if (isNewSelection && selectedProperty) {
       const { lat, lng } = getPropLatLng(selectedProperty);
       if (lat && lng) {
         map.flyTo([lat, lng], showAllOnMap ? 14 : 16, { duration: 0.8 });
@@ -1719,6 +1791,8 @@ function InteractiveLeafletMap({
     } else if (isToggleShowAll) {
       if (showAllOnMap && bounds.length > 0) {
         map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+      } else if (searchedLocationPin) {
+        map.flyTo([Number(searchedLocationPin.lat), Number(searchedLocationPin.lng)], 14, { duration: 0.8 });
       } else if (selectedProperty) {
         const { lat, lng } = getPropLatLng(selectedProperty);
         if (lat && lng) {
@@ -1728,7 +1802,7 @@ function InteractiveLeafletMap({
       lastShowAllRef.current = showAllOnMap;
     }
 
-  }, [leafletReady, properties, selectedProperty, showAllOnMap]);
+  }, [leafletReady, properties, selectedProperty, showAllOnMap, radiusKm, searchedLocationPin]);
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -8848,6 +8922,7 @@ export default function App() {
               showAllOnMap={showAllOnMap}
               setShowAllOnMap={setShowAllOnMap}
               filteredProperties={filteredProperties}
+              allProperties={properties}
               setSelectedProperty={setSelectedProperty}
               handleStartEditProperty={handleStartEditProperty}
               handleDeleteProperty={handleDeleteProperty}
