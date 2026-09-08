@@ -27,6 +27,7 @@ import { CustomerManagementView } from './components/CustomerManagementView';
 import { LeadManagementView } from './components/LeadManagementView';
 import { MatchingManagementView } from './components/MatchingManagementView';
 import { PropertySourcingRequestsView } from './components/PropertySourcingRequestsView';
+import { MultiSelectFloorSelector } from './components/MultiSelectFloorSelector';
 
 function ScheduleVisitModalContent({
   isLight = false,
@@ -10606,13 +10607,12 @@ export default function App() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
-                      <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Floor Preference</label>
-                      <select value={newCustomerForm.floor_preference} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, floor_preference: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                        <option value="Low Floor (1-5)">Low Floor (Floors 1 to 5)</option>
-                        <option value="Middle Floor (6-12)">Middle Floor (Floors 6 to 12)</option>
-                        <option value="High Floor (13+)">High Floor / Sky Villa (Floors 13+)</option>
-                        <option value="Any Floor Acceptable">Any Floor Acceptable</option>
-                      </select>
+                      <MultiSelectFloorSelector
+                        isLight={isLight}
+                        value={newCustomerForm.floor_preference || newCustomerForm.floor_pref || ''}
+                        onChange={(val) => setNewCustomerForm({ ...newCustomerForm, floor_preference: val, floor_pref: val })}
+                        label="🏢 Floor Number (Unit Floor) *"
+                      />
                     </div>
 
                     <div>
@@ -11238,28 +11238,22 @@ export default function App() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>
-                      🏢 Preferred Floor (Floor Preference)
-                    </label>
-                    <input 
-                      type="text" 
-                      value={newCustomerForm.floor_pref} 
-                      onChange={(e) => setNewCustomerForm({ ...newCustomerForm, floor_pref: e.target.value })} 
-                      placeholder="e.g. 10th Floor or Higher, Mid Rise" 
-                      style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    <MultiSelectFloorSelector
+                      isLight={isLight}
+                      value={newCustomerForm.floor_pref || ''}
+                      onChange={(val) => setNewCustomerForm({ ...newCustomerForm, floor_pref: val, floor_preference: val })}
+                      label="🏢 Floor Number (Unit Floor) *"
                     />
                   </div>
 
                   <div>
-                    <label style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: '800', display: 'block', marginBottom: '4px' }}>
-                      🚫 Non-Preferred / Avoided Floors (Exclude)
-                    </label>
-                    <input 
-                      type="text" 
-                      value={newCustomerForm.non_preferred_floor} 
-                      onChange={(e) => setNewCustomerForm({ ...newCustomerForm, non_preferred_floor: e.target.value })} 
-                      placeholder="e.g. No Ground Floor, No Top Floor, No Low Floors" 
-                      style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: '1.5px solid #ef4444', color: '#ef4444', padding: '10px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }} 
+                    <MultiSelectFloorSelector
+                      isLight={isLight}
+                      value={newCustomerForm.non_preferred_floor || ''}
+                      onChange={(val) => setNewCustomerForm({ ...newCustomerForm, non_preferred_floor: val, avoided_floors: val })}
+                      label="🚫 Non-Preferred / Avoided Floors (Unit Floor Exclude) *"
+                      placeholder="Click to select Excluded Floors (Multi-Select Supported)..."
+                      isExclude={true}
                     />
                   </div>
                 </div>
@@ -14849,12 +14843,12 @@ export default function App() {
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '4px' }}>Floor Preference</label>
-                  <select value={updateReqForm.floor_pref} onChange={(e) => setUpdateReqForm({ ...updateReqForm, floor_pref: e.target.value })} style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }}>
-                    <option value="10th Floor or Higher">10th Floor or Higher</option>
-                    <option value="5th - 10th Floor">5th - 10th Floor</option>
-                    <option value="Ground / Low Floor">Ground / Low Floor</option>
-                  </select>
+                  <MultiSelectFloorSelector
+                    isLight={isLight}
+                    value={updateReqForm.floor_pref || ''}
+                    onChange={(val) => setUpdateReqForm({ ...updateReqForm, floor_pref: val })}
+                    label="🏢 Floor Number (Unit Floor) *"
+                  />
                 </div>
               </div>
 
