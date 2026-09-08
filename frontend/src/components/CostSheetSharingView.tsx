@@ -30,6 +30,10 @@ interface CostSheetSharingViewProps {
   scheduledVisits?: any[];
   visitPlans?: any[];
   syncAllToMongoDB?: (overrideData?: any) => Promise<void>;
+  selectedMatchingId?: string;
+  setSelectedMatchingId?: (id: string) => void;
+  customers?: any[];
+  setSelectedCust?: (cust: any) => void;
 }
 
 export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
@@ -61,6 +65,10 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
   scheduledVisits = [],
   visitPlans = [],
   syncAllToMongoDB,
+  selectedMatchingId,
+  setSelectedMatchingId,
+  customers = [],
+  setSelectedCust,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
@@ -387,6 +395,39 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                               >
                                 🚘 Visit Schedule
                               </button>
+                              <button 
+                                onClick={() => {
+                                  const custName = item.customerSnapshot?.customerName || 'Customer';
+                                  const custId = item.customerId || item.customerSnapshot?.customerNumber || 'SRM-CUS-2026-000189';
+                                  const mob = item.customerSnapshot?.mobile || '';
+                                  const cleanMob = mob.replace(/\D/g, '');
+                                  const matchId = item.matchId || item.matchingId || item.parentMatchingId || (cleanMob ? `SRM-MAT-2026-${cleanMob.slice(-6)}` : 'SRM-MAT-2026-988588');
+
+                                  if (setSelectedMatchingId) setSelectedMatchingId(matchId);
+
+                                  let targetCust = null;
+                                  if (customers && customers.length > 0) {
+                                    targetCust = customers.find((c: any) => 
+                                      (c.customer_number && c.customer_number === custId) ||
+                                      (c.name && c.name.toLowerCase() === custName.toLowerCase()) ||
+                                      (cleanMob && c.mobile && c.mobile.replace(/\D/g, '') === cleanMob)
+                                    );
+                                  }
+                                  if (targetCust && setSelectedCust) {
+                                    setSelectedCust(targetCust);
+                                  }
+
+                                  if (setActiveTab) {
+                                    setActiveTab('matching_management');
+                                  }
+
+                                  alert(`⚡ Shifted back to Matching Management for ${custName} (${custId})\n\nMatching Code preserved: ${matchId}\n\nYou can now browse stock, calculate compatibility scores, and generate cost sheets for OTHER properties!`);
+                                }} 
+                                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: '1px solid #38bdf8', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}
+                                title="Shift to Matching Management for this customer under the same Matching ID to select & match other properties"
+                              >
+                                ⚡ Shift to Matching
+                              </button>
                               {isSuperAdmin && (
                                 <button 
                                   onClick={() => {
@@ -531,6 +572,39 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                       <td style={{ padding: '12px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
                           <button onClick={() => alert(`📲 Resent Cost Sheet ${item.costSheetId} to ${item.customerName}!`)} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}>Resend</button>
+                          <button 
+                            onClick={() => {
+                              const custName = item.customerName || 'Customer';
+                              const custId = item.customerNumber || 'SRM-CUS-2026-000189';
+                              const mob = item.mobile || '';
+                              const cleanMob = mob.replace(/\D/g, '');
+                              const matchId = item.parentMatchingId || item.matchId || item.matchingId || (cleanMob ? `SRM-MAT-2026-${cleanMob.slice(-6)}` : 'SRM-MAT-2026-988588');
+
+                              if (setSelectedMatchingId) setSelectedMatchingId(matchId);
+
+                              let targetCust = null;
+                              if (customers && customers.length > 0) {
+                                targetCust = customers.find((c: any) => 
+                                  (c.customer_number && c.customer_number === custId) ||
+                                  (c.name && c.name.toLowerCase() === custName.toLowerCase()) ||
+                                  (cleanMob && c.mobile && c.mobile.replace(/\D/g, '') === cleanMob)
+                                );
+                              }
+                              if (targetCust && setSelectedCust) {
+                                setSelectedCust(targetCust);
+                              }
+
+                              if (setActiveTab) {
+                                setActiveTab('matching_management');
+                              }
+
+                              alert(`⚡ Shifted back to Matching Management for ${custName} (${custId})\n\nMatching Code preserved: ${matchId}\n\nYou can now browse stock, calculate compatibility scores, and generate cost sheets for OTHER properties!`);
+                            }} 
+                            style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: '1px solid #38bdf8', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px', whiteSpace: 'nowrap' }}
+                            title="Shift to Matching Management for this customer under the same Matching ID to select & match other properties"
+                          >
+                            ⚡ Shift to Matching
+                          </button>
                           <button onClick={() => alert(`📊 Opened live tracking for Share ${item.shareId}`)} style={{ background: '#334155', color: '#38bdf8', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem' }}>Analytics</button>
                         </div>
                       </td>
