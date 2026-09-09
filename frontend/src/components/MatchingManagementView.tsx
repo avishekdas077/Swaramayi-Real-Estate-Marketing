@@ -38,6 +38,9 @@ interface MatchingManagementViewProps {
   individualCostSheets?: any[];
   sourcingRequests?: any[];
   setSourcingRequests?: React.Dispatch<React.SetStateAction<any[]>>;
+  bookings?: any[];
+  invoices?: any[];
+  agreements?: any[];
 }
 
 export interface CustomerUsedPropertyCodeInfo {
@@ -184,13 +187,78 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
   individualCostSheets = [],
   sourcingRequests = [],
   setSourcingRequests,
+  bookings = [],
+  invoices = [],
+  agreements = [],
 }) => {
+  const roleUpper = (currentRole || '').toUpperCase().replace(/_/g, ' ');
+  const isStrictSuperAdmin = !currentRole || roleUpper.includes('SUPER') || roleUpper.includes('OWNER');
+  const isSuperAdmin = isStrictSuperAdmin || roleUpper.includes('ADMIN');
+
+  // Dynamic property status helper
+  const getDynamicPropertyStatus = (p: any) => {
+    const isSoldOutByBilling = (invoices || []).some((inv: any) => {
+      if (!inv || inv.status === 'CANCELLED' || inv.payment_status === 'CANCELLED') return false;
+      const isCustInvoice = inv.invoice_category === 'CUSTOMER' || (inv.customer_name && (inv.total_invoice_amount > 0 || inv.taxable_value > 0));
+      if (!isCustInvoice) return false;
+
+      const pCode = (p.property_code || p.id || '').toString().toLowerCase().trim();
+      const invCode = (inv.property_code || inv.property_id || '').toString().toLowerCase().trim();
+      return pCode && invCode && pCode === invCode;
+    }) || (agreements || []).some((agr: any) => {
+      if (!agr || agr.status === 'CANCELLED' || agr.agreement_status === 'CANCELLED') return false;
+      const isCustAgr = agr.agreement_category === 'CUSTOMER' || (agr.customer_name && agr.agreement_type !== 'DEVELOPER');
+      if (!isCustAgr) return false;
+
+      const pCode = (p.property_code || p.id || '').toString().toLowerCase().trim();
+      const agrCode = (agr.property_code || agr.property_id || '').toString().toLowerCase().trim();
+      return pCode && agrCode && pCode === agrCode;
+    });
+
+    const isBookedByWorkflow = (bookings || []).some((b: any) => {
+      if (!b || b.status === 'CANCELLED' || b.approval_status === 'REJECTED') return false;
+      const pCode = (p.property_code || p.id || '').toString().toLowerCase().trim();
+      const pTitle = (p.title || '').toString().toLowerCase().trim();
+      const bCode = (b.property_code || b.property_id || '').toString().toLowerCase().trim();
+      const bTitle = (b.project_name || b.property_title || b.propertyTitle || '').toString().toLowerCase().trim();
+      return (pCode && bCode && pCode === bCode) || (pTitle && bTitle && (pTitle === bTitle || pTitle.includes(bTitle) || bTitle.includes(pTitle)));
+    });
+
+    const isUnderConstructionByPossession = (p.possession_status || p.possession || '').toLowerCase().includes('construction');
+
+    let effectiveStatus = p.status || (isUnderConstructionByPossession ? 'UNDER_CONSTRUCTION' : 'LIVE');
+    if (p.status && p.status !== 'AUTO') {
+      effectiveStatus = p.status;
+    } else if (isSoldOutByBilling) {
+      effectiveStatus = 'SOLD_OUT';
+    } else if (isBookedByWorkflow) {
+      effectiveStatus = 'BOOKED';
+    } else if (isUnderConstructionByPossession) {
+      effectiveStatus = 'UNDER_CONSTRUCTION';
+    }
+
+    const rawStatus = (effectiveStatus || 'LIVE').toUpperCase().replace(/\s+/g, '_');
+    const normalizedStatus = rawStatus === 'AVAILABLE' ? 'LIVE' : rawStatus;
+
+    switch (normalizedStatus) {
+      case 'SOLD_OUT':
+        return { label: '🔴 SOLD OUT', border: '#ef4444', bg: 'rgba(239, 68, 68, 0.18)', color: '#f87171' };
+      case 'BOOKED':
+        return { label: '🟡 BOOKED', border: '#fbbf24', bg: 'rgba(234, 179, 8, 0.18)', color: '#fbbf24' };
+      case 'HOLD':
+      case 'RESERVED':
+        return { label: '⚡ HOLD / RESERVED', border: '#f59e0b', bg: 'rgba(245, 158, 11, 0.18)', color: '#fbbf24' };
+      case 'UNDER_CONSTRUCTION':
+        return { label: '🏗️ UNDER CONSTRUCTION', border: '#a855f7', bg: 'rgba(168, 85, 247, 0.18)', color: '#c084fc' };
+      default:
+        return { label: '🟢 LIVE / AVAILABLE', border: '#22c55e', bg: 'rgba(34, 197, 94, 0.18)', color: '#4ade80' };
+    }
+  };
+
   // PROPERTY SOURCING REQUEST MODAL STATES
   const [sourcingModalRequest, setSourcingModalRequest] = useState<any | null>(null);
   const [sourcingReasonInput, setSourcingReasonInput] = useState<string>('');
   const [sourcingError, setSourcingError] = useState<string>('');
-
-  const isSuperAdmin = !currentRole || currentRole === 'SUPER_ADMIN' || currentRole === 'OWNER' || currentRole.toUpperCase().includes('SUPER') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
   // HANDLE CONFIRM MOVE TO PROPERTY SOURCING REQUEST DESK
   const handleConfirmMoveToSourcing = () => {
@@ -794,7 +862,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                                   </button>
                                 </>
                               )}
-                              {isSuperAdmin && (
+                              {isStrictSuperAdmin && (
                                 <button
                                   onClick={() => handleDeleteMatchingRequest(req)}
                                   title={`Delete / Remove ${req.customerName || req.requestId}`}
@@ -950,7 +1018,7 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
 
                   {/* RUN MATCHER & DELETE BUTTONS (SECTION 4) */}
                   <div style={{ borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '8px', flexWrap: 'wrap' }}>
-                    {isSuperAdmin && (
+                    {isStrictSuperAdmin && (
                       <button onClick={() => handleDeleteMatchingRequest(activeMatchingReq)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Trash2 size={15} /> 🗑️ DELETE / REMOVE REQUEST ({activeMatchingReq.requestId})
                       </button>
@@ -1291,6 +1359,22 @@ export const MatchingManagementView: React.FC<MatchingManagementViewProps> = ({
                           <td style={{ padding: '12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                               <span style={{ fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900', fontSize: '0.78rem' }}>{p.property_code}</span>
+                              {(() => {
+                                const st = getDynamicPropertyStatus(p);
+                                return (
+                                  <span style={{ 
+                                    background: st.bg, 
+                                    color: st.color, 
+                                    border: `1px solid ${st.border}`, 
+                                    padding: '1px 6px', 
+                                    borderRadius: '4px', 
+                                    fontSize: '0.65rem', 
+                                    fontWeight: '900' 
+                                  }}>
+                                    {st.label}
+                                  </span>
+                                );
+                              })()}
                               {isChecked && (
                                 <span style={{ background: '#0284c7', color: '#ffffff', padding: '1px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: '900' }}>
                                   📌 SELECTED

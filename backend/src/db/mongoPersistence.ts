@@ -54,62 +54,35 @@ async function syncCollection(model: mongoose.Model<any>, records: any[]) {
       return;
     }
 
-    // Extract valid record identifiers
-    const validIds: string[] = [];
-    const validMongoIds: any[] = [];
+    // Extract valid record identifiers specific to model primary keys
+    const recordConditions: any[] = [];
 
     records.forEach((r: any) => {
-      if (r._id) validMongoIds.push(r._id);
-      if (r.id) validIds.push(String(r.id));
-      if (r.booking_code) validIds.push(String(r.booking_code));
-      if (r.invoice_number) validIds.push(String(r.invoice_number));
-      if (r.agreement_code) validIds.push(String(r.agreement_code));
-      if (r.customer_number) validIds.push(String(r.customer_number));
-      if (r.property_code) validIds.push(String(r.property_code));
-      if (r.lead_number) validIds.push(String(r.lead_number));
-      if (r.costSheetId) validIds.push(String(r.costSheetId));
-      if (r.projectVisitAgreementId) validIds.push(String(r.projectVisitAgreementId));
-      if (r.pvaId) validIds.push(String(r.pvaId));
-      if (r.visitId) validIds.push(String(r.visitId));
-      if (r.visitScheduleId) validIds.push(String(r.visitScheduleId));
-      if (r.visitPlanId) validIds.push(String(r.visitPlanId));
-      if (r.planId) validIds.push(String(r.planId));
-      if (r.requestId) validIds.push(String(r.requestId));
-      if (r.selectionId) validIds.push(String(r.selectionId));
-      if (r.team_name) validIds.push(String(r.team_name));
-      if (r.branch_name) validIds.push(String(r.branch_name));
-      if (r.name) validIds.push(String(r.name));
+      if (r._id) recordConditions.push({ _id: r._id });
+      if (r.id) recordConditions.push({ id: String(r.id) });
+      if (r.invoice_number) recordConditions.push({ invoice_number: String(r.invoice_number) });
+      if (r.booking_code) recordConditions.push({ booking_code: String(r.booking_code) });
+      if (r.agreement_code) recordConditions.push({ agreement_code: String(r.agreement_code) });
+      if (r.customer_number && model.modelName === 'Customer') recordConditions.push({ customer_number: String(r.customer_number) });
+      if (r.property_code && model.modelName === 'Property') recordConditions.push({ property_code: String(r.property_code) });
+      if (r.lead_number && model.modelName === 'Lead') recordConditions.push({ lead_number: String(r.lead_number) });
+      if (r.costSheetId) recordConditions.push({ costSheetId: String(r.costSheetId) });
+      if (r.projectVisitAgreementId) recordConditions.push({ projectVisitAgreementId: String(r.projectVisitAgreementId) });
+      if (r.pvaId) recordConditions.push({ pvaId: String(r.pvaId) });
+      if (r.visitId) recordConditions.push({ visitId: String(r.visitId) });
+      if (r.visitScheduleId) recordConditions.push({ visitScheduleId: String(r.visitScheduleId) });
+      if (r.visitPlanId) recordConditions.push({ visitPlanId: String(r.visitPlanId) });
+      if (r.planId) recordConditions.push({ planId: String(r.planId) });
+      if (r.requestId) recordConditions.push({ requestId: String(r.requestId) });
+      if (r.selectionId) recordConditions.push({ selectionId: String(r.selectionId) });
+      if (r.team_name && model.modelName === 'Team') recordConditions.push({ team_name: String(r.team_name) });
+      if (r.branch_name && model.modelName === 'Branch') recordConditions.push({ branch_name: String(r.branch_name) });
+      if (r.name && (model.modelName === 'User' || model.modelName === 'Developer')) recordConditions.push({ name: String(r.name) });
     });
 
-    const orConditions: any[] = [];
-    if (validIds.length > 0) {
-      orConditions.push({ id: { $in: validIds } });
-      orConditions.push({ booking_code: { $in: validIds } });
-      orConditions.push({ invoice_number: { $in: validIds } });
-      orConditions.push({ agreement_code: { $in: validIds } });
-      orConditions.push({ customer_number: { $in: validIds } });
-      orConditions.push({ property_code: { $in: validIds } });
-      orConditions.push({ lead_number: { $in: validIds } });
-      orConditions.push({ costSheetId: { $in: validIds } });
-      orConditions.push({ projectVisitAgreementId: { $in: validIds } });
-      orConditions.push({ pvaId: { $in: validIds } });
-      orConditions.push({ visitId: { $in: validIds } });
-      orConditions.push({ visitScheduleId: { $in: validIds } });
-      orConditions.push({ visitPlanId: { $in: validIds } });
-      orConditions.push({ planId: { $in: validIds } });
-      orConditions.push({ requestId: { $in: validIds } });
-      orConditions.push({ selectionId: { $in: validIds } });
-      orConditions.push({ team_name: { $in: validIds } });
-      orConditions.push({ branch_name: { $in: validIds } });
-      orConditions.push({ name: { $in: validIds } });
-    }
-    if (validMongoIds.length > 0) {
-      orConditions.push({ _id: { $in: validMongoIds } });
-    }
-
     // Delete records from MongoDB Atlas that are no longer present in CRM
-    if (orConditions.length > 0) {
-      await model.deleteMany({ $nor: orConditions });
+    if (recordConditions.length > 0) {
+      await model.deleteMany({ $nor: recordConditions });
     } else {
       await model.deleteMany({});
     }

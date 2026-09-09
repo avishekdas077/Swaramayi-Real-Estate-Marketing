@@ -54,6 +54,7 @@ interface VisitManagementViewProps {
   setBookings?: React.Dispatch<React.SetStateAction<any[]>>;
   setScheduledVisits?: React.Dispatch<React.SetStateAction<any[]>>;
   setVisitPlans?: React.Dispatch<React.SetStateAction<any[]>>;
+  setProperties?: React.Dispatch<React.SetStateAction<any[]>>;
   setActiveBookingSubTab?: (tab: any) => void;
   syncAllToMongoDB?: (overrideData?: any) => Promise<void>;
   setShowShiftToMatchingModal?: (val: any) => void;
@@ -66,6 +67,8 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
   activeVisitSubTab,
   setActiveVisitSubTab,
   visitPlans = [],
+  properties = [],
+  setProperties,
   matchesSearchQuery,
   searchQuery,
   setSearchQuery,
@@ -85,7 +88,6 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
   setSelectedVisitPlanId,
   setShowIndividualStopModal,
   scheduledVisits = [],
-  properties = [],
   projectVisitAgreements = [],
   handleMarkVisitDoneAndNotifyDeveloper,
   setShowPvaDocumentModal,
@@ -115,7 +117,9 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
   syncAllToMongoDB,
   setShowShiftToMatchingModal,
 }) => {
-  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+  const roleUpper = (currentRole || '').toUpperCase().replace(/_/g, ' ');
+  const isStrictSuperAdmin = !currentRole || roleUpper.includes('SUPER') || roleUpper.includes('OWNER');
+  const isSuperAdmin = isStrictSuperAdmin || roleUpper.includes('ADMIN');
 
   const unifiedVisits = React.useMemo(() => {
     const list: any[] = [...(scheduledVisits || [])];
@@ -1277,6 +1281,22 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                                 localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(updatedBookings));
                               } catch (e) {}
 
+                              let updatedProps: any[] = [];
+                              if (setProperties && properties.length > 0) {
+                                updatedProps = properties.map((p: any) => {
+                                  const pTitle = (p.title || p.project_name || '').toString().toLowerCase();
+                                  const vTitle = (v.propertyTitle || v.project_name || '').toString().toLowerCase();
+                                  if (pTitle && vTitle && (pTitle.includes(vTitle) || vTitle.includes(pTitle))) {
+                                    return { ...p, status: 'BOOKED' };
+                                  }
+                                  return p;
+                                });
+                                setProperties(updatedProps);
+                                try {
+                                  localStorage.setItem('swaramayi_properties_v4_clean', JSON.stringify(updatedProps));
+                                } catch (e) {}
+                              }
+
                               if (setScheduledVisits) {
                                 setScheduledVisits(updatedVisits);
                               }
@@ -1294,7 +1314,8 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                               if (syncAllToMongoDB) {
                                 syncAllToMongoDB({
                                   bookings: updatedBookings,
-                                  site_visits: updatedVisits
+                                  site_visits: updatedVisits,
+                                  properties: updatedProps.length > 0 ? updatedProps : undefined
                                 });
                               }
 
@@ -1789,7 +1810,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                         >
                           📝 Update Requirement
                         </button>
-                        {handleDeleteFeedback && (
+                        {isStrictSuperAdmin && handleDeleteFeedback && (
                           <button 
                             onClick={() => handleDeleteFeedback(fb.id)} 
                             style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '900', fontSize: '0.75rem', display: 'flex', alignItems: 'center' }}
@@ -1915,8 +1936,11 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
         ...(visitFeedbacks || []).map((fb: any) => fb.exec).filter(Boolean),
         ...(bookings || []).map((b: any) => b.sales_executive || b.exec || b.executive).filter(Boolean)
       ]));
-      if (allExecNames.length === 0) {
-        allExecNames.push('Punita Roy (Field Exec)', 'Priya Nair (Sales Exec)', 'Rajesh Verma (Field Exec)');
+      if (allExecNames.length === 0 && users && Array.isArray(users)) {
+        users.forEach((u: any) => {
+          const name = (u.full_name || u.name || u.username || '').replace(/\(.*\)/, '').trim();
+          if (name && !allExecNames.includes(name)) allExecNames.push(name);
+        });
       }
 
       // Executive Leaderboard

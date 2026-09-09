@@ -49,6 +49,9 @@ interface ProjectManagementViewProps {
   developers?: any[];
   setDevelopers?: React.Dispatch<React.SetStateAction<any[]>>;
   syncAllToMongoDB?: (overrideData?: any) => void;
+  bookings?: any[];
+  invoices?: any[];
+  agreements?: any[];
 }
 
 export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
@@ -62,6 +65,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   developers = [],
   setDevelopers,
   syncAllToMongoDB,
+  bookings = [],
+  invoices = [],
+  agreements = [],
   propertyUnits = [],
   projectVisitAgreements = [],
   editingProperty,
@@ -100,7 +106,9 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
   detectLocalityFromCoords,
   setPropertyUnits,
 }) => {
-  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+  const roleUpper = (currentRole || '').toUpperCase().replace(/_/g, ' ');
+  const isStrictSuperAdmin = !currentRole || roleUpper.includes('SUPER') || roleUpper.includes('OWNER');
+  const isSuperAdmin = isStrictSuperAdmin || roleUpper.includes('ADMIN');
   // DEVELOPER MASTER ID REGISTRY STATE & PERSISTENCE
   const PROJECT_GPS_MAP: Record<string, { lat: string; lng: string }> = {
     'SHIBALAY RESIDENCY': { lat: '22.722361', lng: '88.493403' },
@@ -2426,11 +2434,13 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                       value={newPropertyForm.possession_status || newPropertyForm.possession || 'Ready to Move In (Immediate)'} 
                       onChange={(e) => {
                         const val = e.target.value;
+                        const isUnderConst = val.toLowerCase().includes('under construction') || val.toLowerCase().includes('construction');
                         setNewPropertyForm({ 
                           ...newPropertyForm, 
                           possession_status: val, 
                           possession: val,
-                          ...(val.includes('Under Construction') && !newPropertyForm.handover_month_year ? { handover_month: 'December', handover_year: '2026', handover_month_year: 'December 2026' } : {})
+                          status: isUnderConst ? 'UNDER_CONSTRUCTION' : 'LIVE',
+                          ...(isUnderConst && !newPropertyForm.handover_month_year ? { handover_month: 'December', handover_year: '2026', handover_month_year: 'December 2026' } : {})
                         });
                       }} 
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1.5px solid #22c55e', color: '#22c55e', fontWeight: '900', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
@@ -2963,10 +2973,13 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                       value={newPropertyForm.possession_status} 
                       onChange={(e) => {
                         const val = e.target.value;
+                        const isUnderConst = val.toLowerCase().includes('under construction') || val.toLowerCase().includes('construction');
                         setNewPropertyForm({
                           ...newPropertyForm,
                           possession_status: val,
-                          ...(val.includes('Under Construction') && !newPropertyForm.handover_month_year ? { handover_month: 'December', handover_year: '2026', handover_month_year: 'December 2026' } : {})
+                          possession: val,
+                          status: isUnderConst ? 'UNDER_CONSTRUCTION' : 'LIVE',
+                          ...(isUnderConst && !newPropertyForm.handover_month_year ? { handover_month: 'December', handover_year: '2026', handover_month_year: 'December 2026' } : {})
                         });
                       }} 
                       style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem' }}
@@ -3253,7 +3266,47 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                         </td>
                         <td style={{ padding: '12px' }}>
                           {(() => {
-                            const rawStatus = (p.status || 'LIVE').toUpperCase().replace(/\s+/g, '_');
+                            const isSoldOutByBilling = (invoices || []).some((inv: any) => {
+                              if (!inv || inv.status === 'CANCELLED' || inv.payment_status === 'CANCELLED') return false;
+                              const isCustInvoice = inv.invoice_category === 'CUSTOMER' || (inv.customer_name && (inv.total_invoice_amount > 0 || inv.taxable_value > 0));
+                              if (!isCustInvoice) return false;
+
+                              const pCode = (p.property_code || p.id || '').toString().toLowerCase().trim();
+                              const invCode = (inv.property_code || inv.property_id || '').toString().toLowerCase().trim();
+                              return pCode && invCode && pCode === invCode;
+                            }) || (agreements || []).some((agr: any) => {
+                              if (!agr || agr.status === 'CANCELLED' || agr.agreement_status === 'CANCELLED') return false;
+                              const isCustAgr = agr.agreement_category === 'CUSTOMER' || (agr.customer_name && agr.agreement_type !== 'DEVELOPER');
+                              if (!isCustAgr) return false;
+
+                              const pCode = (p.property_code || p.id || '').toString().toLowerCase().trim();
+                              const agrCode = (agr.property_code || agr.property_id || '').toString().toLowerCase().trim();
+                              return pCode && agrCode && pCode === agrCode;
+                            });
+
+                            const isBookedByWorkflow = (bookings || []).some((b: any) => {
+                              if (!b || b.status === 'CANCELLED' || b.approval_status === 'REJECTED') return false;
+                              const pCode = (p.property_code || p.id || '').toString().toLowerCase().trim();
+                              const pTitle = (p.title || '').toString().toLowerCase().trim();
+const bCode = (b.property_code || b.property_id || '').toString().toLowerCase().trim();
+                              const bTitle = (b.project_name || b.property_title || b.propertyTitle || '').toString().toLowerCase().trim();
+                              return (pCode && bCode && pCode === bCode) || (pTitle && bTitle && (pTitle === bTitle || pTitle.includes(bTitle) || bTitle.includes(pTitle)));
+                            });
+
+                            const isUnderConstructionByPossession = (p.possession_status || p.possession || '').toLowerCase().includes('construction');
+
+                            let effectiveStatus = p.status || (isUnderConstructionByPossession ? 'UNDER_CONSTRUCTION' : 'LIVE');
+                            if (p.status && p.status !== 'AUTO') {
+                               effectiveStatus = p.status;
+                             } else if (isSoldOutByBilling) {
+                               effectiveStatus = 'SOLD_OUT';
+                             } else if (isBookedByWorkflow) {
+                               effectiveStatus = 'BOOKED';
+                             } else if (isUnderConstructionByPossession) {
+                               effectiveStatus = 'UNDER_CONSTRUCTION';
+                             }
+
+                            const rawStatus = (effectiveStatus || 'LIVE').toUpperCase().replace(/\s+/g, '_');
                             const normalizedStatus = rawStatus === 'AVAILABLE' ? 'LIVE' : rawStatus;
                             
                             const getStatusBadgeStyle = (statusVal: string) => {
@@ -3278,12 +3331,24 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                                 value={normalizedStatus}
                                 onChange={(e) => {
                                   const newStatus = e.target.value;
+                                  let newPossession = p.possession_status || p.possession || 'Ready to Move In (Immediate)';
+                                  if (newStatus === 'UNDER_CONSTRUCTION') {
+                                    newPossession = 'Under Construction';
+                                  } else if (newStatus === 'READY_TO_MOVE' || newStatus === 'LIVE') {
+                                    newPossession = 'Ready to Move In (Immediate)';
+                                  }
+
                                   let updatedProps: any[] = [];
                                   if (setProperties) {
                                     setProperties((prev: any[]) => {
-                                      updatedProps = prev.map((item: any) => item.id === p.id ? { ...item, status: newStatus } : item);
+                                      updatedProps = prev.map((item: any) => item.id === p.id ? { 
+                                        ...item, 
+                                        status: newStatus,
+                                        possession_status: newPossession,
+                                        possession: newPossession
+                                      } : item);
                                       try {
-                                        localStorage.setItem('swaramayi_properties_v4_clean', JSON.stringify(updatedProps));
+                                        localStorage.setItem('swaramayi_properties_v5_clean', JSON.stringify(updatedProps));
                                       } catch (err) {}
                                       return updatedProps;
                                     });
@@ -3306,10 +3371,10 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                                 }}
                               >
                                 <option value="LIVE" style={{ background: '#0f172a', color: '#4ade80' }}>🟢 LIVE / AVAILABLE</option>
-                                <option value="HOLD" style={{ background: '#0f172a', color: '#fbbf24' }}>⚡ HOLD / RESERVED</option>
                                 <option value="BOOKED" style={{ background: '#0f172a', color: '#fbbf24' }}>🟡 BOOKED</option>
                                 <option value="SOLD_OUT" style={{ background: '#0f172a', color: '#f87171' }}>🔴 SOLD OUT</option>
                                 <option value="UNDER_CONSTRUCTION" style={{ background: '#0f172a', color: '#c084fc' }}>🏗️ UNDER CONSTRUCTION</option>
+                                <option value="HOLD" style={{ background: '#0f172a', color: '#fbbf24' }}>⚡ HOLD / RESERVED</option>
                                 <option value="READY_TO_MOVE" style={{ background: '#0f172a', color: '#38bdf8' }}>🔑 READY TO MOVE</option>
                               </select>
                             );
@@ -3320,7 +3385,7 @@ export const ProjectManagementView: React.FC<ProjectManagementViewProps> = ({
                             <button onClick={() => setShowMultipleUnitsSlider({ open: true, project: p })} style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }} title="Open Multiple Property Units Builder Slider for this project">🏢 Units Slider</button>
                             <button onClick={() => setViewPropertyModal(p)} style={{ background: '#334155', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>👁️ View</button>
                             <button onClick={() => handleStartEditProperty(p)} style={{ background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Edit</button>
-                            {isSuperAdmin && (
+                            {isStrictSuperAdmin && (
                               <button onClick={() => handleDeleteProperty(p.id, p.property_code)} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem' }}>Delete</button>
                             )}
                           </div>

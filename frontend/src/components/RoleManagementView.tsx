@@ -73,7 +73,10 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
   handleDeleteTeam,
   handleOpenSecurityAuditModal
 }) => {
-  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+  const roleUpper = (currentRole || '').toUpperCase().replace(/_/g, ' ');
+  const isStrictSuperAdmin = !currentRole || roleUpper.includes('SUPER') || roleUpper.includes('OWNER');
+  const isSuperAdmin = isStrictSuperAdmin || roleUpper.includes('ADMIN');
+  const canDelete = isStrictSuperAdmin; // STRICT SYSTEM POLICY: All delete options in CRM are only accessible by Super Admin / Owner. Admin has Edit access only.
 
   const [internalSearchQuery, setInternalSearchQuery] = React.useState('');
   const [internalFilterCategory, setInternalFilterCategory] = React.useState('ALL');
@@ -154,6 +157,7 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
   const safeBranches = branches || [];
   const safeTeams = teams || [];
   const safeSessions = activeSessions || [];
+
   const safeApprovals = (approvalRequests && approvalRequests.length > 0 ? approvalRequests : (localApprovals.length > 0 ? localApprovals : [
     { id: 'REQ-01', request_code: 'SRM-REQ-2026-000101', request_type: 'LEAD_TRANSFER', record_id: 'SRM-CUS-2026-000184 (Rohan Deshmukh)', requested_by: 'Priya Nair (Sales Exec)', requested_at: '16 Aug 2026 12:00 PM', old_val: 'Priya Nair (Sales Exec)', new_val: 'Rahul Sharma (Team Lead)', reason: 'Customer requested senior consultant for villa project.', status: 'PENDING', approved_by: '' }
   ]));
@@ -532,21 +536,25 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
         </div>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button onClick={() => handleOpenAddUserModal()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <UserPlus size={15} /> + Add User
-          </button>
-          <button onClick={() => setShowCustomRoleModal(true)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <ShieldCheck size={15} color="#0284c7" /> + Add Custom Role
-          </button>
-          <button onClick={handleResetDefaultRoles} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <RotateCw size={15} color="#38bdf8" /> Reset Scopes
-          </button>
-          <button onClick={() => setShowBranchModal(true)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Building2 size={15} color="#fbbf24" /> + Add Branch
-          </button>
-          <button onClick={() => setShowTeamModal(true)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Users size={15} color="#22c55e" /> + Add Team Squad
-          </button>
+          {isSuperAdmin && (
+            <>
+              <button onClick={() => handleOpenAddUserModal()} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <UserPlus size={15} /> + Add User
+              </button>
+              <button onClick={() => setShowCustomRoleModal(true)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <ShieldCheck size={15} color="#0284c7" /> + Add Custom Role
+              </button>
+              <button onClick={handleResetDefaultRoles} style={{ background: isLight ? '#ffffff' : '#1e293b', color: '#38bdf8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <RotateCw size={15} color="#38bdf8" /> Reset Scopes
+              </button>
+              <button onClick={() => setShowBranchModal(true)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Building2 size={15} color="#fbbf24" /> + Add Branch
+              </button>
+              <button onClick={() => setShowTeamModal(true)} style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Users size={15} color="#22c55e" /> + Add Team Squad
+              </button>
+            </>
+          )}
           <button 
             onClick={() => {
               const nextState = !isLockdown;
@@ -672,15 +680,17 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', borderTop: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingTop: '12px' }}>
                     <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                      <button
-                        onClick={() => handleOpenEditRoleModal(role)}
-                        style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        title="Edit Role Details"
-                      >
-                        <Edit3 size={13} /> Edit
-                      </button>
+                      {isSuperAdmin && (
+                        <button
+                          onClick={() => handleOpenEditRoleModal(role)}
+                          style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                          title="Edit Role Details"
+                        >
+                          <Edit3 size={13} /> Edit
+                        </button>
+                      )}
 
-                      {isSuperAdmin && role.key !== 'SUPER_ADMIN' && role.key !== 'OWNER' && (
+                      {canDelete && role.key !== 'SUPER_ADMIN' && role.key !== 'OWNER' && (
                         <button
                           onClick={() => handleDeleteRole(role.key, role.name)}
                           style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
@@ -756,24 +766,26 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
               </select>
             </div>
 
-            <button
-              onClick={() => handleOpenAddUserModal()}
-              style={{
-                background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
-                color: '#ffffff',
-                border: 'none',
-                padding: '9px 18px',
-                borderRadius: '8px',
-                fontWeight: '900',
-                fontSize: '0.82rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              <UserPlus size={16} /> + Provision New Staff Member
-            </button>
+            {isSuperAdmin && (
+              <button
+                onClick={() => handleOpenAddUserModal()}
+                style={{
+                  background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  fontWeight: '900',
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                <UserPlus size={16} /> + Provision New Staff Member
+              </button>
+            )}
           </div>
 
           {/* USER TABLE */}
@@ -840,16 +852,18 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
 
                       <td style={{ padding: '10px 14px', textAlign: 'center' }}>
                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                          <button
-                            onClick={() => handleOpenEditUserModal(u)}
-                            style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem' }}
-                            title="Edit User Profile"
-                          >
-                            <Edit3 size={13} />
-                          </button>
-                          {isSuperAdmin && u.role !== 'SUPER_ADMIN' && u.id !== 'USR-01' && (
+                          {isSuperAdmin && (
                             <button
-                              onClick={() => handleDeleteUser(u.id)}
+                              onClick={() => handleOpenEditUserModal(u)}
+                              style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem' }}
+                              title="Edit User Profile"
+                            >
+                              <Edit3 size={13} />
+                            </button>
+                          )}
+                          {canDelete && u.role !== 'SUPER_ADMIN' && u.id !== 'USR-01' && (
+                            <button
+                              onClick={() => handleDeleteUser(u.id, u.full_name || u.username)}
                               style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.75rem' }}
                               title="Delete User"
                             >
@@ -884,13 +898,15 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
                     </p>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    <button
-                      onClick={() => handleOpenEditBranchModal(b)}
-                      style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                    >
-                      <Edit3 size={14} /> Edit Branch
-                    </button>
                     {isSuperAdmin && (
+                      <button
+                        onClick={() => handleOpenEditBranchModal(b)}
+                        style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                      >
+                        <Edit3 size={14} /> Edit Branch
+                      </button>
+                    )}
+                    {canDelete && (
                       <button
                         onClick={() => {
                           if (handleDeleteBranch) {
@@ -962,13 +978,15 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
                   </p>
                 </div>
                 <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <button
-                    onClick={() => handleOpenEditTeamModal(t)}
-                    style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
-                  >
-                    <Edit3 size={14} /> Edit Team
-                  </button>
                   {isSuperAdmin && (
+                    <button
+                      onClick={() => handleOpenEditTeamModal(t)}
+                      style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '800', fontSize: '0.78rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    >
+                      <Edit3 size={14} /> Edit Team
+                    </button>
+                  )}
+                  {canDelete && (
                     <button
                       onClick={() => {
                         if (handleDeleteTeam) {

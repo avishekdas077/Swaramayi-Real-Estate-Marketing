@@ -73,7 +73,9 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
   setSelectedCust,
   setShowShiftToMatchingModal,
 }) => {
-  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+  const roleUpper = (currentRole || '').toUpperCase().replace(/_/g, ' ');
+  const isStrictSuperAdmin = !currentRole || roleUpper.includes('SUPER') || roleUpper.includes('OWNER');
+  const isSuperAdmin = isStrictSuperAdmin || roleUpper.includes('ADMIN');
 
   const allEffectiveCostSheets = React.useMemo(() => {
     return individualCostSheets || [];
@@ -128,7 +130,7 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
           >
             <Plus size={16} color="#0f172a" /> + Create Share against ID
           </button>
-          {isSuperAdmin && (
+          {isStrictSuperAdmin && (
             <button onClick={handleDeleteAllCurrentInside} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Trash2 size={15} color="#ffffff" /> 🗑️ Delete All Current Inside
             </button>

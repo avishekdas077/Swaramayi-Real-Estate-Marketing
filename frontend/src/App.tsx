@@ -2220,7 +2220,10 @@ export default function App() {
             const mob = (r.mobile || '').toString().replace(/\D/g, '');
             const custNum = (r.customerNumber || '').toString().toUpperCase();
             const reqId = (r.requestId || r.id || '').toString().toUpperCase();
-            if (name.includes('rishita') || mob.includes('8876697975') || custNum === 'SRM-CUS-2026-000188' || reqId === 'SRM-MAT-2026-000422') {
+            if (
+              name.includes('rishita') || mob.includes('8876697975') || custNum === 'SRM-CUS-2026-000188' || reqId === 'SRM-MAT-2026-000422' ||
+              name.includes('sunil') || mob.includes('5777564356') || custNum === 'SRM-CUS-2026-000190' || reqId === 'SRM-MAT-2026-000190'
+            ) {
               return false;
             }
             return true;
@@ -3053,13 +3056,13 @@ export default function App() {
       console.error('Error reading rolePermissions from localStorage:', e);
     }
     return [
-      { role_key: 'SUPER_ADMIN', role_name: '1. OWNER / SUPER ADMIN', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: true, export: true, approve: true, price_change: true, owner_change: true, brokerage: true },
-      { role_key: 'ADMIN', role_name: '2. ADMIN', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: true, brokerage: false },
-      { role_key: 'BRANCH_MANAGER', role_name: '3. BRANCH MANAGER', data_scope: 'OWN_BRANCH', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: false, brokerage: true },
-      { role_key: 'TELECALLER', role_name: '4. TELECALLER', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
-      { role_key: 'PROPERTY_MANAGEMENT', role_name: '5. PROPERTY MANAGEMENT', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: true, owner_change: true, brokerage: false },
-      { role_key: 'SALES_MANAGEMENT', role_name: '6. SALES MANAGEMENT', data_scope: 'OWN_TEAM', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: true },
-      { role_key: 'SALES_EMPLOYEE', role_name: '7. SALES EMPLOYEE', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false }
+      { role_key: 'SUPER_ADMIN', role_code: 'SUPER_ADMIN', role_name: 'OWNER / SUPER ADMIN', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: true, export: true, approve: true, price_change: true, owner_change: true, brokerage: true },
+      { role_key: 'ADMIN', role_code: 'ADMIN', role_name: 'ADMIN', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: true, brokerage: false },
+      { role_key: 'BRANCH_MANAGER', role_code: 'BRANCH_MANAGER', role_name: 'BRANCH MANAGER', data_scope: 'OWN_BRANCH', view: true, create: true, edit: true, delete: false, export: true, approve: true, price_change: false, owner_change: false, brokerage: true },
+      { role_key: 'TELECALLER', role_code: 'TELECALLER', role_name: 'TELECALLER', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false },
+      { role_key: 'PROPERTY_MANAGEMENT', role_code: 'PROPERTY_MANAGEMENT', role_name: 'PROPERTY MANAGEMENT', data_scope: 'ALL_DATA', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: true, owner_change: true, brokerage: false },
+      { role_key: 'SALES_MANAGEMENT', role_code: 'SALES_MANAGEMENT', role_name: 'SALES MANAGEMENT', data_scope: 'OWN_TEAM', view: true, create: true, edit: true, delete: false, export: true, approve: false, price_change: false, owner_change: false, brokerage: true },
+      { role_key: 'SALES_EMPLOYEE', role_code: 'SALES_EMPLOYEE', role_name: 'SALES EMPLOYEE', data_scope: 'ASSIGNED_ONLY', view: true, create: true, edit: true, delete: false, export: false, approve: false, price_change: false, owner_change: false, brokerage: false }
     ];
   });
 
@@ -3172,7 +3175,7 @@ export default function App() {
         if (Array.isArray(parsed) && parsed.length > 0) {
           return parsed.map((p: any) => ({
             ...p,
-            status: (p.status || '').toUpperCase() === 'AVAILABLE' ? 'LIVE' : (p.status || 'LIVE')
+            status: (p.property_code === 'SRM-PROP-2026-000426' || (p.title && p.title.toLowerCase().includes('gajapati'))) ? 'LIVE' : ((p.status || '').toUpperCase() === 'AVAILABLE' ? 'LIVE' : (p.status || 'LIVE'))
           }));
         }
       }
@@ -3290,6 +3293,34 @@ export default function App() {
   // 5. Property Units Inventory
   const [propertyUnits, setPropertyUnits] = useState([]);
 
+  // Helper function to deduplicate customer objects strictly by customer number, mobile, id, or name
+  const dedupeCustomerList = (list: any[]) => {
+    if (!Array.isArray(list)) return [];
+    const seen = new Set<string>();
+    const deduped: any[] = [];
+    list.forEach((c: any) => {
+      if (!c) return;
+      const num = (c.customer_number || c.customerNumber || c.customerId || c.customer_id || '').toString().toLowerCase().trim();
+      const mob = (c.mobile || c.phone || '').toString().replace(/\D/g, '');
+      const id = (c.id || c._id || '').toString().toLowerCase().trim();
+      const name = (c.name || c.full_name || '').toString().toLowerCase().trim();
+
+      if (name.includes('rishita') || mob.includes('8876697975') || num.toUpperCase() === 'SRM-CUS-2026-000188') {
+        return;
+      }
+
+      const key = num || (mob && mob.length >= 7 ? `mob:${mob.slice(-10)}` : '') || (id ? `id:${id}` : `name:${name}`);
+      if (key && !seen.has(key)) {
+        seen.add(key);
+        if (num) seen.add(`num:${num}`);
+        if (mob && mob.length >= 7) seen.add(`mob:${mob.slice(-10)}`);
+        if (id) seen.add(`id:${id}`);
+        deduped.push(c);
+      }
+    });
+    return deduped;
+  };
+
   // 6. CUSTOMERS MASTER VAULT (WITH LOCALSTORAGE PERSISTENCE)
   const defaultInitialCustomers: any[] = [
     {
@@ -3319,34 +3350,6 @@ export default function App() {
       assigned_employee_name: 'Ramesh Pawar',
       created_at: '2026-08-28',
       updated_at: '2026-08-28'
-    },
-    {
-      id: 'SRM-CUS-2026-000190',
-      customer_number: 'SRM-CUS-2026-000190',
-      customerNumber: 'SRM-CUS-2026-000190',
-      full_name: 'sunil verma',
-      name: 'sunil verma',
-      mobile: '5777564356',
-      phone: '5777564356',
-      email: 'sunil.verma@gmail.com',
-      city: 'Kolkata',
-      preferred_location: 'Barasat',
-      preferredArea: 'Barasat, Kolkata',
-      locality: 'Barasat',
-      budget: '₹50 Lakh - ₹60 Lakh',
-      budget_min: 5000000,
-      budget_max: 6000000,
-      configuration: '3BHK',
-      status: 'HOT',
-      customer_status: 'HOT',
-      priority: 'HOT',
-      quality_score: 95,
-      score: 95,
-      source: 'Lead Ingestion',
-      assigned_employee_id: 'Ramesh Pawar',
-      assigned_employee_name: 'Ramesh Pawar (Field Exec - Kondapur)',
-      created_at: '2026-08-22',
-      updated_at: '2026-08-22'
     }
   ];
 
@@ -3365,11 +3368,13 @@ export default function App() {
         list = [...defaultInitialCustomers];
       }
 
-      const hasSunil = list.some((c: any) => 
-        (c.customer_number && c.customer_number.toUpperCase() === 'SRM-CUS-2026-000190') ||
-        (c.name && c.name.toLowerCase().includes('sunil')) ||
-        (c.full_name && c.full_name.toLowerCase().includes('sunil')) ||
-        (c.mobile && c.mobile.includes('5777564356'))
+      list = list.filter((c: any) => 
+        !(c.customer_number && c.customer_number.toUpperCase() === 'SRM-CUS-2026-000190') &&
+        !(c.id && c.id.toUpperCase() === 'SRM-CUS-2026-000190') &&
+        !(c.name && c.name.toLowerCase().includes('sunil')) &&
+        !(c.full_name && c.full_name.toLowerCase().includes('sunil')) &&
+        !(c.email && c.email.toLowerCase().includes('sunil.verma@gmail.com')) &&
+        !(c.mobile && c.mobile.includes('5777564356'))
       );
 
       const hasAvishek = list.some((c: any) => 
@@ -3380,31 +3385,8 @@ export default function App() {
       );
 
       if (!hasAvishek) list.unshift(defaultInitialCustomers[0]);
-      if (!hasSunil) list.push(defaultInitialCustomers[1]);
 
-      const seen = new Set<string>();
-      const deduped: any[] = [];
-      list.forEach((c: any) => {
-        if (!c) return;
-        const num = (c.customer_number || c.customerNumber || c.customerId || c.customer_id || '').toString().toLowerCase().trim();
-        const mob = (c.mobile || c.phone || '').toString().replace(/\D/g, '');
-        const id = (c.id || c._id || '').toString().toLowerCase().trim();
-        const name = (c.name || c.full_name || '').toString().toLowerCase().trim();
-
-        if (name.includes('rishita') || mob.includes('8876697975') || num.toUpperCase() === 'SRM-CUS-2026-000188') {
-          return;
-        }
-
-        const key = num || (mob && mob.length >= 7 ? `mob:${mob.slice(-10)}` : '') || (id ? `id:${id}` : `name:${name}`);
-        if (key && !seen.has(key)) {
-          seen.add(key);
-          if (num) seen.add(`num:${num}`);
-          if (mob && mob.length >= 7) seen.add(`mob:${mob.slice(-10)}`);
-          if (id) seen.add(`id:${id}`);
-          deduped.push(c);
-        }
-      });
-      return deduped;
+      return dedupeCustomerList(list);
     } catch (e) {
       console.error('Error reading customers from localStorage:', e);
     }
@@ -4615,66 +4597,36 @@ export default function App() {
   const dynamicSalesExecutives = useMemo(() => {
     const execMap = new window.Map<string, any>();
 
-    // 1. From live system users store (users)
-    if (Array.isArray(users)) {
+    // 1. From live system users database store (users)
+    if (Array.isArray(users) && users.length > 0) {
       users.forEach((u: any) => {
-        const name = u.full_name || u.username || u.name;
-        if (name) {
-          const designation = u.designation || (u.role ? String(u.role).replace(/_/g, ' ') : 'Executive');
-          const branch = u.branch_name ? ` (${u.branch_name})` : '';
-          const label = `${name} — ${designation}${branch}`;
-          execMap.set(name, { id: u.id || name, value: name, name, label, designation });
+        const rawName = u.full_name || u.name || u.username;
+        if (rawName) {
+          const cleanName = rawName.replace(/\(.*\)/, '').trim();
+          const roleTitle = u.role ? String(u.role).replace(/_/g, ' ') : '';
+          const desigStr = u.designation || (roleTitle ? roleTitle : 'Executive');
+          const branchStr = u.branch_name ? ` (${u.branch_name})` : '';
+          const label = `${cleanName} — ${desigStr}${branchStr}`;
+          if (!execMap.has(cleanName)) {
+            execMap.set(cleanName, { id: u.id || cleanName, value: cleanName, name: cleanName, label, designation: desigStr });
+          }
         }
       });
     }
 
-    // 2. From active CRM records (customers, leadsList, bookings, scheduledVisits)
-    const allRecordsExecs = [
-      ...(Array.isArray(customers) ? customers.map(c => c.assigned_salesperson || c.assigned_to || c.assigned_employee_name) : []),
-      ...(Array.isArray(leadsList) ? leadsList.map(l => l.assigned_salesperson || l.assignedTo || l.assigned_employee_name) : []),
-      ...(Array.isArray(bookings) ? bookings.map(b => b.sales_executive) : []),
-      ...(Array.isArray(scheduledVisits) ? scheduledVisits.map(v => v.assignedExecutive || v.salesPersonName) : [])
-    ];
-
-    allRecordsExecs.forEach(execName => {
-      if (typeof execName === 'string' && execName.trim()) {
-        const cleanName = execName.replace(/\(.*\)/, '').trim();
-        if (cleanName && !execMap.has(cleanName)) {
-          execMap.set(cleanName, {
-            id: cleanName,
-            value: cleanName,
-            name: cleanName,
-            label: `${cleanName} — Executive`,
-            designation: 'Executive'
-          });
-        }
-      }
-    });
-
-    // 3. Fallback standard list if users store is limited
-    const defaultList = [
-      { name: 'Priya Nair', designation: 'Senior Executive (Kondapur/Gachibowli)' },
-      { name: 'Amit Patel', designation: 'Lead Manager (West Zone)' },
-      { name: 'Rahul Sharma', designation: 'Property Specialist (Luxury Residential)' },
-      { name: 'Sneha Reddy', designation: 'Customer Relationship Manager' },
-      { name: 'Vikram Varma', designation: 'Branch Director' },
-      { name: 'Ramesh Pawar', designation: 'Senior Field Executive' }
-    ];
-
-    defaultList.forEach(def => {
-      if (!execMap.has(def.name)) {
-        execMap.set(def.name, {
-          id: def.name,
-          value: def.name,
-          name: def.name,
-          label: `${def.name} — ${def.designation}`,
-          designation: def.designation
-        });
-      }
-    });
+    // Fallback only if database users store is completely empty
+    if (execMap.size === 0) {
+      execMap.set('Rajesh Varma', {
+        id: 'USR-01',
+        value: 'Rajesh Varma',
+        name: 'Rajesh Varma',
+        label: 'Rajesh Varma — SUPER ADMIN (Head Office)',
+        designation: 'Super Admin'
+      });
+    }
 
     return Array.from(execMap.values());
-  }, [users, customers, leadsList, bookings, scheduledVisits]);
+  }, [users]);
 
 
   // Helper: Auto-Hydrate Previous Customer Details into Wizard
@@ -5339,7 +5291,7 @@ export default function App() {
             if (seen.has(key)) continue;
             if (numKey) seen.add(numKey);
             seen.add(key);
-            if (inv.invoice_number === 'SRM-INV-2026-000088' || inv.customer_number === 'SRM-CUS-2026-000190') {
+            if (inv.invoice_number === 'SRM-INV-2026-000088') {
               inv.settlement_status = 'SETTLED';
               inv.is_settled = true;
             }
@@ -5417,6 +5369,9 @@ export default function App() {
       } catch (e) {}
 
       const payload = {
+        users: overrideData?.users || users,
+        teams: overrideData?.teams || teams,
+        branches: overrideData?.branches || branches,
         properties: overrideData?.properties || properties,
         developers: overrideData?.developers || devList,
         customers: overrideData?.customers || customers,
@@ -5438,7 +5393,7 @@ export default function App() {
     } catch (err) {
       console.warn('MongoDB Live Sync Warning:', err);
     }
-  }, [properties, customers, leadsList, bookings, invoices, agreements, individualCostSheets, matchingRequestsQueue, scheduledVisits]);
+  }, [users, teams, branches, properties, customers, leadsList, bookings, invoices, agreements, individualCostSheets, matchingRequestsQueue, scheduledVisits]);
 
   // Load live records from MongoDB Atlas Cluster on launch
   useEffect(() => {
@@ -5456,28 +5411,34 @@ export default function App() {
             if (Array.isArray(mData.branches) && mData.branches.length > 0) setBranches(mData.branches);
             if (Array.isArray(mData.properties) && mData.properties.length > 0) {
               const sanitizedProps = mData.properties.map((p: any) => {
+                let updated = { ...p };
                 if (p.project_id && p.project_id.startsWith('SRM-DEV-')) {
                   const fixedCode = (p.title || '').toLowerCase().includes('shibalay') ? 'SRM-PROJ-2026-000087' :
                                     (p.title || '').toLowerCase().includes('gajapati') ? 'SRM-PROJ-2026-000088' :
                                     (p.title || '').toLowerCase().includes('dhriti') ? 'SRM-PROJ-2026-000089' :
                                     'SRM-PROJ-2026-000088';
-                  return { ...p, project_id: fixedCode };
+                  updated.project_id = fixedCode;
                 }
-                return p;
+                if (p.property_code === 'SRM-PROP-2026-000426' || (p.title && p.title.toLowerCase().includes('gajapati'))) {
+                  updated.status = 'LIVE';
+                }
+                return updated;
               });
               setProperties(sanitizedProps);
               try {
-                localStorage.setItem('swaramayi_properties_v4_clean', JSON.stringify(sanitizedProps));
+                localStorage.setItem('swaramayi_properties_v5_clean', JSON.stringify(sanitizedProps));
               } catch (e) {}
             }
             if (Array.isArray(mData.customers)) {
-              const mergedCusts = [...mData.customers];
-              const hasSunil = mergedCusts.some((c: any) => 
-                (c.customer_number && c.customer_number.toUpperCase() === 'SRM-CUS-2026-000190') ||
-                (c.name && c.name.toLowerCase().includes('sunil')) ||
-                (c.full_name && c.full_name.toLowerCase().includes('sunil')) ||
-                (c.mobile && c.mobile.includes('5777564356'))
+              let mergedCusts = mData.customers.filter((c: any) => 
+                !(c.customer_number && c.customer_number.toUpperCase() === 'SRM-CUS-2026-000190') &&
+                !(c.id && c.id.toUpperCase() === 'SRM-CUS-2026-000190') &&
+                !(c.name && c.name.toLowerCase().includes('sunil')) &&
+                !(c.full_name && c.full_name.toLowerCase().includes('sunil')) &&
+                !(c.email && c.email.toLowerCase().includes('sunil.verma@gmail.com')) &&
+                !(c.mobile && c.mobile.includes('5777564356'))
               );
+
               const hasAvishek = mergedCusts.some((c: any) => 
                 (c.customer_number && c.customer_number.toUpperCase() === 'SRM-CUS-2026-000189') ||
                 (c.name && c.name.toLowerCase().includes('avishek')) ||
@@ -5486,12 +5447,16 @@ export default function App() {
               );
 
               if (!hasAvishek) mergedCusts.unshift(defaultInitialCustomers[0]);
-              if (!hasSunil) mergedCusts.push(defaultInitialCustomers[1]);
 
-              setCustomers(mergedCusts);
+              const cleanDeduped = dedupeCustomerList(mergedCusts);
+              setCustomers(cleanDeduped);
               try {
-                localStorage.setItem('swaramayi_customers_v7_clean', JSON.stringify(mergedCusts));
+                localStorage.setItem('swaramayi_customers_v7_clean', JSON.stringify(cleanDeduped));
               } catch (e) {}
+
+              if (mData.customers.length !== cleanDeduped.length) {
+                syncAllToMongoDB({ customers: cleanDeduped });
+              }
             }
             if (Array.isArray(mData.leads)) {
               setLeadsList(mData.leads);
@@ -5517,22 +5482,47 @@ export default function App() {
               } catch (e) {}
             }
             if (Array.isArray(mData.bookings)) {
-              setBookings(mData.bookings);
+              const cleanBookings = mData.bookings.filter((b: any) => {
+                const name = (b.customerName || b.customer_name || b.name || '').toString().toLowerCase();
+                const mob = (b.mobile || b.customer_mobile || b.phone || '').toString().replace(/\D/g, '');
+                const custNum = (b.customerNumber || b.customer_number || '').toString().toUpperCase();
+                return !(name.includes('sunil') || mob.includes('5777564356') || custNum === 'SRM-CUS-2026-000190');
+              });
+              setBookings(cleanBookings);
               try {
-                localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(mData.bookings));
+                localStorage.setItem('swaramayi_bookings_v3_clean', JSON.stringify(cleanBookings));
               } catch (e) {}
             }
             if (Array.isArray(mData.site_visits)) {
-              setScheduledVisits(mData.site_visits);
+              const cleanVisits = mData.site_visits.filter((v: any) => {
+                const name = (v.customerName || v.customer_name || v.name || '').toString().toLowerCase();
+                const mob = (v.mobile || v.customer_mobile || v.phone || '').toString().replace(/\D/g, '');
+                const custNum = (v.customerNumber || v.customer_number || '').toString().toUpperCase();
+                return !(name.includes('sunil') || mob.includes('5777564356') || custNum === 'SRM-CUS-2026-000190');
+              });
+              setScheduledVisits(cleanVisits);
             }
             if (Array.isArray(mData.matching_requests) && mData.matching_requests.length > 0) {
-              setMatchingRequestsQueue(mData.matching_requests);
+              const cleanMatching = mData.matching_requests.filter((r: any) => {
+                const name = (r.customerName || r.customer_name || r.name || '').toString().toLowerCase();
+                const mob = (r.mobile || r.customer_mobile || r.phone || '').toString().replace(/\D/g, '');
+                const custNum = (r.customerNumber || r.customer_number || '').toString().toUpperCase();
+                const reqId = (r.requestId || r.id || '').toString().toUpperCase();
+                return !(name.includes('sunil') || mob.includes('5777564356') || custNum === 'SRM-CUS-2026-000190' || reqId === 'SRM-MAT-2026-000190');
+              });
+              setMatchingRequestsQueue(cleanMatching);
               try {
-                localStorage.setItem('swaramayi_matching_queue_v4_clean', JSON.stringify(mData.matching_requests));
+                localStorage.setItem('swaramayi_matching_queue_v7_clean', JSON.stringify(cleanMatching));
               } catch (e) {}
             }
             if (Array.isArray(mData.cost_sheets)) {
-              setIndividualCostSheets(mData.cost_sheets);
+              const cleanCostSheets = mData.cost_sheets.filter((c: any) => {
+                const name = (c.customerName || c.name || '').toString().toLowerCase();
+                const mob = (c.mobile || c.customerMobile || '').toString().replace(/\D/g, '');
+                const custNum = (c.customerNumber || c.customerId || '').toString().toUpperCase();
+                return !(name.includes('sunil') || mob.includes('5777564356') || custNum === 'SRM-CUS-2026-000190');
+              });
+              setIndividualCostSheets(cleanCostSheets);
             }
             if (Array.isArray(mData.pva_agreements)) {
               setProjectVisitAgreements(mData.pva_agreements);
@@ -6287,16 +6277,22 @@ export default function App() {
   const handleSaveEditedProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProfile) return;
-    setUsers(users.map(u => u.id === editingProfile.id ? editingProfile : u));
+    const updatedUsers = users.map(u => u.id === editingProfile.id ? editingProfile : u);
+    setUsers(updatedUsers);
+    syncAllToMongoDB({ users: updatedUsers });
     setShowEditProfileModal(false);
-    setProfileToastMessage(`✅ Profile details for ${editingProfile.full_name} updated successfully!`);
+    setProfileToastMessage(`✅ Profile details for ${editingProfile.full_name} updated successfully in MongoDB Atlas!`);
     setTimeout(() => setProfileToastMessage(null), 5000);
   };
 
-  const handleDeleteUser = (id: string, username: string) => {
-    if (window.confirm(`Are you sure you want to delete User ${username}?`)) {
-      setUsers(users.filter(u => u.id !== id));
-      alert(`🗑️ User ${username} deleted successfully!`);
+  const handleDeleteUser = (id: string, username?: string) => {
+    const targetUser = users.find(u => u.id === id);
+    const displayName = username || targetUser?.full_name || targetUser?.username || id;
+    if (window.confirm(`Are you sure you want to delete User "${displayName}"?`)) {
+      const updatedUsers = users.filter(u => u.id !== id);
+      setUsers(updatedUsers);
+      syncAllToMongoDB({ users: updatedUsers });
+      alert(`🗑️ User "${displayName}" deleted successfully from MongoDB Atlas!`);
     }
   };
 
@@ -6308,19 +6304,32 @@ export default function App() {
 
   const handleOpenAddUserModal = () => {
     setEditingUser(null);
+    const initialRole = customRoles[0]?.key || 'SUPER_ADMIN';
+    const foundMatrix = rolePermissions.find((r: any) => r.role_key === initialRole || r.role_code === initialRole);
+    const initialPerms = foundMatrix ? {
+      perm_view: !!foundMatrix.view,
+      perm_create: !!foundMatrix.create,
+      perm_edit: !!foundMatrix.edit,
+      perm_delete: !!foundMatrix.delete,
+      perm_export: !!foundMatrix.export,
+      perm_approve: !!foundMatrix.approve,
+      perm_price_change: !!foundMatrix.price_change,
+      perm_brokerage: !!foundMatrix.brokerage
+    } : { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false };
+
     setNewUserForm({
       username: '',
       full_name: '',
       email: '',
       password: '',
       mobile: '',
-      role: 'SALES_EXEC',
+      role: initialRole,
       designation: '',
       branch_name: 'Kolkata Branch',
       department: 'Sales Operations',
       team_name: 'Kolkata Expansion Team',
       manager_name: 'Rajesh Varma (Super Admin)',
-      permissions: { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false }
+      permissions: initialPerms
     });
     setShowUserModalPassword(false);
     setShowUserModal(true);
@@ -6328,6 +6337,18 @@ export default function App() {
 
   const handleOpenEditUserModal = (u: any) => {
     setEditingUser(u);
+    const foundMatrix = rolePermissions.find((r: any) => r.role_key === u.role || r.role_code === u.role);
+    const userPerms = u.permissions || (foundMatrix ? {
+      perm_view: !!foundMatrix.view,
+      perm_create: !!foundMatrix.create,
+      perm_edit: !!foundMatrix.edit,
+      perm_delete: !!foundMatrix.delete,
+      perm_export: !!foundMatrix.export,
+      perm_approve: !!foundMatrix.approve,
+      perm_price_change: !!foundMatrix.price_change,
+      perm_brokerage: !!foundMatrix.brokerage
+    } : { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false });
+
     setNewUserForm({
       username: u.username || u.full_name,
       full_name: u.full_name,
@@ -6340,7 +6361,7 @@ export default function App() {
       department: u.department,
       team_name: u.team_name,
       manager_name: u.manager_name,
-      permissions: u.permissions || { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false }
+      permissions: userPerms
     });
     setShowUserModalPassword(false);
     setShowUserModal(true);
@@ -6487,7 +6508,7 @@ export default function App() {
     e.preventDefault();
     const userPermissions = newUserForm.permissions || { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false };
     if (editingUser) {
-      setUsers(users.map(u => u.id === editingUser.id ? {
+      const updatedUsers = users.map(u => u.id === editingUser.id ? {
         ...u,
         username: newUserForm.username,
         full_name: newUserForm.full_name || newUserForm.username,
@@ -6501,8 +6522,10 @@ export default function App() {
         team_name: newUserForm.team_name,
         manager_name: newUserForm.manager_name,
         permissions: userPermissions
-      } : u));
-      alert(`✏️ User ${newUserForm.full_name || newUserForm.username} (${editingUser.id}) updated successfully with custom permissions!`);
+      } : u);
+      setUsers(updatedUsers);
+      syncAllToMongoDB({ users: updatedUsers });
+      alert(`✏️ User ${newUserForm.full_name || newUserForm.username} (${editingUser.id}) updated & saved to MongoDB Atlas successfully!`);
       setEditingUser(null);
     } else {
       const newU = { 
@@ -6522,12 +6545,14 @@ export default function App() {
         is_active: true, 
         user_status: 'ACTIVE' 
       };
-      setUsers([newU, ...users]);
-      alert(`👤 User ${newU.username} created successfully with assigned action permissions!`);
+      const updatedUsers = [newU, ...users];
+      setUsers(updatedUsers);
+      syncAllToMongoDB({ users: updatedUsers });
+      alert(`👤 User ${newU.username} created & saved to MongoDB Atlas successfully!`);
     }
     setShowUserModal(false);
     setEditingUser(null);
-    setNewUserForm({ username: '', full_name: '', email: '', password: '', mobile: '', role: 'SALES_EXEC', branch_name: 'Kolkata Branch', department: 'Sales Operations', team_name: 'Kolkata Expansion Team', manager_name: 'Rajesh Varma (Super Admin)', permissions: { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false } });
+    setNewUserForm({ username: '', full_name: '', email: '', password: '', mobile: '', role: customRoles[0]?.key || 'SUPER_ADMIN', branch_name: 'Kolkata Branch', department: 'Sales Operations', team_name: 'Kolkata Expansion Team', manager_name: 'Rajesh Varma (Super Admin)', permissions: { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false } });
   };
 
   const handleCreateCustomerSubmit = (e: React.FormEvent) => {
@@ -7305,22 +7330,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div>
-                  <label style={{ fontSize: '0.78rem', color: isLight ? '#475569' : '#94a3b8', fontWeight: '800', display: 'block', marginBottom: '6px' }}>
-                    Role Scope Access Level
-                  </label>
-                  <select 
-                    value={currentRole} 
-                    onChange={(e) => setCurrentRole(e.target.value)}
-                    style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#0284c7', padding: '12px 14px', borderRadius: '10px', fontSize: '0.88rem', fontWeight: '800', outline: 'none' }}
-                  >
-                    {customRoles.map((role, idx) => (
-                      <option key={role.key || idx} value={role.key}>
-                        {role.name || `${idx + 1}. ${role.key}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.78rem' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer', fontWeight: '700' }}>
@@ -7916,11 +7926,12 @@ export default function App() {
               {/* 1. TOP-LEVEL INTERACTIVE KPI CARDS GRID (12 CARDS WITH REAL-TIME DYNAMIC DATA & DRILL-DOWN) */}
               {(() => {
                 // Filter customers dynamically based on active filters
-                const filteredCusts = customers.filter(c => {
+                const rawFilteredCusts = customers.filter(c => {
                   if (salespersonFilter !== 'ALL' && c.assigned_salesperson !== salespersonFilter && c.assigned_to !== salespersonFilter) return false;
                   if (branchFilter !== 'ALL' && c.branch && !c.branch.toLowerCase().includes(branchFilter.toLowerCase().replace(' branch', ''))) return false;
                   return true;
                 });
+                const filteredCusts = dedupeCustomerList(rawFilteredCusts);
 
                 const totalCustomers = filteredCusts.length;
 
@@ -9055,6 +9066,9 @@ export default function App() {
               calculateIndividualCostSheet={calculateIndividualCostSheet}
               formatIndianRupees={formatIndianRupees}
               syncAllToMongoDB={syncAllToMongoDB}
+              bookings={bookings}
+              invoices={invoices}
+              agreements={agreements}
             />
           )}
 
@@ -9136,7 +9150,8 @@ export default function App() {
               setShowViewIndividualCostSheetModal={setShowViewIndividualCostSheetModal}
               scheduledVisits={scheduledVisits}
               visitPlans={visitPlans}
-              properties={properties}
+              users={users}
+              syncAllToMongoDB={syncAllToMongoDB}
               setActiveTab={setActiveTab}
               setBillingInvoiceCategory={setBillingInvoiceCategory}
               setSearchQuery={setSearchQuery}
@@ -9182,6 +9197,9 @@ export default function App() {
               individualCostSheets={individualCostSheets}
               sourcingRequests={sourcingRequests}
               setSourcingRequests={setSourcingRequests}
+              bookings={bookings}
+              invoices={invoices}
+              agreements={agreements}
             />
           )}
 
@@ -9301,6 +9319,7 @@ export default function App() {
               setScheduledVisits={setScheduledVisits}
               setVisitPlans={setVisitPlans}
               setActiveBookingSubTab={setActiveBookingSubTab}
+              setProperties={setProperties}
               syncAllToMongoDB={syncAllToMongoDB}
             />
           )}
@@ -10295,17 +10314,40 @@ export default function App() {
               <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <h4 style={{ fontSize: '0.88rem', fontWeight: '800', color: '#0284c7', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '6px' }}>2. Role Scope & Permission Access Level</h4>
                 <div>
-                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>System Access Role ({rolePermissions.length} Active Enterprise Roles) *</label>
+                  <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>System Access Role ({customRoles.length} Active Enterprise Roles) *</label>
                   <select 
                     value={newUserForm.role} 
-                    onChange={(e) => setNewUserForm({ ...newUserForm, role: e.target.value })} 
+                    onChange={(e) => {
+                      const selectedRoleKey = e.target.value;
+                      const foundMatrix = rolePermissions.find((r: any) => r.role_key === selectedRoleKey || r.role_code === selectedRoleKey);
+                      const roleDefaultPerms = foundMatrix ? {
+                        perm_view: !!foundMatrix.view,
+                        perm_create: !!foundMatrix.create,
+                        perm_edit: !!foundMatrix.edit,
+                        perm_delete: !!foundMatrix.delete,
+                        perm_export: !!foundMatrix.export,
+                        perm_approve: !!foundMatrix.approve,
+                        perm_price_change: !!foundMatrix.price_change,
+                        perm_brokerage: !!foundMatrix.brokerage
+                      } : (newUserForm.permissions || { perm_view: true, perm_create: true, perm_edit: true, perm_delete: false, perm_export: true, perm_approve: false, perm_price_change: false, perm_brokerage: false });
+
+                      setNewUserForm({
+                        ...newUserForm,
+                        role: selectedRoleKey,
+                        permissions: roleDefaultPerms
+                      });
+                    }} 
                     style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '9px 12px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '700' }}
                   >
-                    {rolePermissions
-                      .filter(rp => currentRole === 'SUPER_ADMIN' || (rp.role_code !== 'SUPER_ADMIN' && rp.role_key !== 'SUPER_ADMIN'))
-                      .map((rp, i) => (
-                        <option key={i} value={rp.role_code}>{i + 1}. {rp.role_name} ({rp.role_code})</option>
-                    ))}
+                    {customRoles
+                      .filter(r => currentRole === 'SUPER_ADMIN' || (r.key !== 'SUPER_ADMIN' && r.role_code !== 'SUPER_ADMIN'))
+                      .map((role, i) => {
+                        const cleanRoleName = (role.name || role.key || '').replace(/^[\d\.\s]+/, '').trim();
+                        const roleValue = role.key || role.role_code;
+                        return (
+                          <option key={role.key || i} value={roleValue}>{cleanRoleName}</option>
+                        );
+                      })}
                   </select>
                 </div>
               </div>
@@ -11120,7 +11162,28 @@ export default function App() {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                     <div>
                       <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Assigned Sales Executive *</label>
-                      <select value={newCustomerForm.assigned_employee_id || (dynamicSalesExecutives[0]?.value || 'Priya Nair')} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, assigned_employee_id: e.target.value, assigned_employee_name: e.target.value })} style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}>
+                      <select 
+                        value={(() => {
+                          const cur = newCustomerForm.assigned_employee_id || newCustomerForm.assigned_salesperson || newCustomerForm.assigned_employee_name;
+                          if (!cur) return dynamicSalesExecutives[0]?.value || 'Priya Nair';
+                          const match = dynamicSalesExecutives.find((x: any) => 
+                            x.value === cur || x.name === cur || x.id === cur || (x.label && x.label.includes(cur)) || (cur && cur.includes(x.name))
+                          );
+                          return match ? match.value : cur;
+                        })()} 
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const match = dynamicSalesExecutives.find((x: any) => x.value === val || x.name === val);
+                          const displayName = match ? match.name : val;
+                          setNewCustomerForm({ 
+                            ...newCustomerForm, 
+                            assigned_employee_id: val, 
+                            assigned_employee_name: displayName,
+                            assigned_salesperson: displayName
+                          });
+                        }} 
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px 12px', borderRadius: '6px', fontSize: '0.85rem', fontWeight: '700' }}
+                      >
                         {dynamicSalesExecutives.map((exec: any) => (
                           <option key={exec.id || exec.name} value={exec.value}>
                             👤 {exec.label}
@@ -11581,7 +11644,7 @@ export default function App() {
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Email Address</label>
-                    <input type="email" value={newCustomerForm.email} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, email: e.target.value })} placeholder="sumanth@example.com" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
+                    <input type="email" value={newCustomerForm.email || ''} onChange={(e) => setNewCustomerForm({ ...newCustomerForm, email: e.target.value })} placeholder="e.g. sumanth@gmail.com" style={{ width: '100%', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: isLight ? '#0f172a' : '#ffffff', padding: '8px', borderRadius: '6px', fontSize: '0.85rem' }} />
                   </div>
                   <div>
                     <label style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block', marginBottom: '4px' }}>Preferred Language</label>
@@ -12439,8 +12502,25 @@ export default function App() {
                     👤 ASSIGN SALES EXECUTIVE / CLIENT RELATIONSHIP MANAGER *
                   </label>
                   <select 
-                    value={newCustomerForm.assigned_employee_id || (dynamicSalesExecutives[0]?.value || 'Priya Nair (Sales Exec)')} 
-                    onChange={(e) => setNewCustomerForm({ ...newCustomerForm, assigned_employee_id: e.target.value, assigned_employee_name: e.target.value })} 
+                    value={(() => {
+                      const cur = newCustomerForm.assigned_employee_id || newCustomerForm.assigned_salesperson || newCustomerForm.assigned_employee_name;
+                      if (!cur) return dynamicSalesExecutives[0]?.value || 'Priya Nair';
+                      const match = dynamicSalesExecutives.find((x: any) => 
+                        x.value === cur || x.name === cur || x.id === cur || (x.label && x.label.includes(cur)) || (cur && cur.includes(x.name))
+                      );
+                      return match ? match.value : cur;
+                    })()} 
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const match = dynamicSalesExecutives.find((x: any) => x.value === val || x.name === val);
+                      const displayName = match ? match.name : val;
+                      setNewCustomerForm({ 
+                        ...newCustomerForm, 
+                        assigned_employee_id: val, 
+                        assigned_employee_name: displayName,
+                        assigned_salesperson: displayName
+                      });
+                    }} 
                     style={{ width: '100%', background: isLight ? '#ffffff' : '#1e293b', border: '1px solid #0284c7', color: '#38bdf8', fontWeight: '900', padding: '10px 12px', borderRadius: '8px', fontSize: '0.9rem' }}
                   >
                     {dynamicSalesExecutives.map((exec: any) => (

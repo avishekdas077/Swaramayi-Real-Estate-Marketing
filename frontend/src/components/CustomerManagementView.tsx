@@ -44,6 +44,8 @@ interface CustomerManagementViewProps {
   setActiveTab?: (tab: string) => void;
   setBillingInvoiceCategory?: (cat: string) => void;
   setSearchQuery?: (q: string) => void;
+  users?: any[];
+  syncAllToMongoDB?: (overrideData?: any) => void;
 }
 
 export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
@@ -89,10 +91,100 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
   setActiveTab,
   setBillingInvoiceCategory,
   setSearchQuery,
+  users = [],
+  syncAllToMongoDB,
 }) => {
-  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+  const roleUpper = (currentRole || '').toUpperCase().replace(/_/g, ' ');
+  const isStrictSuperAdmin = !currentRole || roleUpper.includes('SUPER') || roleUpper.includes('OWNER');
+  const isSuperAdmin = isStrictSuperAdmin || roleUpper.includes('ADMIN');
 
   const [selectedTransactionPdf, setSelectedTransactionPdf] = useState<any | null>(null);
+
+  const salesExecOptions = React.useMemo(() => {
+    if (users && Array.isArray(users) && users.length > 0) {
+      return users.map((u: any) => {
+        const rawName = u.full_name || u.name || u.username || 'Executive';
+        const cleanName = rawName.replace(/\(.*\)/, '').trim();
+        const roleStr = u.designation || (u.role ? u.role.replace(/_/g, ' ') : 'Sales Executive');
+        const branchStr = u.branch_name ? ` (${u.branch_name})` : '';
+        return {
+          id: u.id || cleanName,
+          value: cleanName,
+          label: `${cleanName} — ${roleStr}${branchStr}`
+        };
+      });
+    }
+    return [];
+  }, [users]);
+
+  const [reassignExecInput, setReassignExecInput] = useState<string>('');
+
+  const handleReassignExecutive = (targetCust: any, newExecValue: string) => {
+    if (!targetCust || !newExecValue) return;
+
+    const updatedExecName = newExecValue;
+
+    let updatedCustomersList: any[] = [];
+    if (setCustomers && customers) {
+      updatedCustomersList = customers.map((c: any) => {
+        if ((c.customer_number && targetCust.customer_number && c.customer_number === targetCust.customer_number) || (c.id && targetCust.id && c.id === targetCust.id)) {
+          return {
+            ...c,
+            assigned_salesperson: updatedExecName,
+            assigned_employee_id: updatedExecName,
+            assignedExecutive: updatedExecName
+          };
+        }
+        return c;
+      });
+      setCustomers(updatedCustomersList);
+      try {
+        localStorage.setItem('swaramayi_customers_master_v3_clean', JSON.stringify(updatedCustomersList));
+      } catch (e) {}
+    }
+
+    if (setSelectedCust) {
+      setSelectedCust((prev: any) => ({
+        ...prev,
+        assigned_salesperson: updatedExecName,
+        assigned_employee_id: updatedExecName,
+        assignedExecutive: updatedExecName
+      }));
+    }
+
+    if (setLeadsList && leadsList) {
+      const updatedLeads = leadsList.map((l: any) => {
+        if ((l.customer_number && targetCust.customer_number && l.customer_number === targetCust.customer_number) || (l.customer_id && targetCust.customer_number && l.customer_id === targetCust.customer_number) || (l.mobile && targetCust.mobile && l.mobile.replace(/\D/g, '') === targetCust.mobile.replace(/\D/g, ''))) {
+          return {
+            ...l,
+            assigned_employee_id: updatedExecName,
+            assigned_employee_name: updatedExecName,
+            assigned_salesperson: updatedExecName
+          };
+        }
+        return l;
+      });
+      setLeadsList(updatedLeads);
+      try {
+        localStorage.setItem('swaramayi_leads_v5_clean', JSON.stringify(updatedLeads));
+      } catch (e) {}
+    }
+
+    if (syncAllToMongoDB) {
+      syncAllToMongoDB({
+        customers: updatedCustomersList.length > 0 ? updatedCustomersList : customers
+      });
+    }
+
+    alert(`👤 Successfully reassigned Customer ${targetCust.name || targetCust.customer_number || 'Record'} to ${updatedExecName}!`);
+  };
+
+  React.useEffect(() => {
+    if (selectedCust) {
+      const cur = selectedCust.assigned_salesperson || selectedCust.assigned_employee_id || selectedCust.assignedExecutive || (salesExecOptions.length > 0 ? salesExecOptions[0].value : '');
+      setReassignExecInput(cur);
+    }
+  }, [selectedCust?.customer_number, selectedCust?.id, salesExecOptions]);
 
   const handleToggleInvoiceSettled = (invIdOrNum: string, currentIsSettled: boolean, targetCust?: any) => {
     const activeTargetCust = targetCust || selectedCust;
@@ -319,7 +411,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
     // 5. Auto-incorporate scheduled site visits
     (scheduledVisits || []).forEach(v => {
       if (!v) return;
-      const custNum = v.customerNumber || v.customer_number || v.customerId || `SRM-CUS-2026-${String(v.id || v.visitId || '000190').replace(/\D/g, '').slice(-6) || '000190'}`;
+      const custNum = v.customerNumber || v.customer_number || v.customerId || `SRM-CUS-2026-${String(v.id || v.visitId || '000189').replace(/\D/g, '').slice(-6) || '000189'}`;
       const custName = v.customerName || v.customer_name || v.name || 'Customer';
       const custMob = v.mobile || v.phone || v.customerMobile || '';
       const cleanMob = custMob ? custMob.replace(/\D/g, '') : '';
@@ -696,7 +788,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
     const hasInvoices = invList.length > 0;
     const allInvoicesPaid = hasInvoices && invList.every((i: any) => i.status === 'SETTLED');
     const invoiceStatusStr = hasInvoices ? (allInvoicesPaid ? 'NOT SETTLED' : 'SETTLED') : 'NO INVOICE YET'
-    const invoiceColorStr = hasInvoices ? (allInvoicesPaid ? '#22c55e' : '#fbbf24') : '#64748b';
+    const invoiceColorStr = hasInvoices ? (allInvoicesPaid ? '#fbbf24' : '#22c55e') : '#64748b';
 
     return [
       { label: '1. CUSTOMER MASTER ID', id: custNum || 'N/A', status: 'PERMANENT', color: '#38bdf8', items: [{ id: custNum || 'N/A', status: 'PERMANENT' }] },
@@ -714,8 +806,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
       { label: '13. AGREEMENT ID', id: agrList.length > 0 ? (agrList.length === 1 ? agrList[0].id : `${agrList.length} AGREEMENTS`) : '0 RECORDS', status: agrList.length > 0 ? 'DRAFT SIGNED' : 'NO AGREEMENT YET', color: agrList.length > 0 ? '#fbbf24' : '#64748b', items: agrList },
       { label: '14. BOOKING ID', id: bkgList.length > 0 ? bkgList[0].id : '0 RECORDS', status: bkgList.length > 0 ? 'CONFIRMED' : 'NO BOOKING YET', color: bkgList.length > 0 ? '#22c55e' : '#64748b', items: bkgList },
       { label: '15. PAYMENT ID', id: payList.length > 0 ? (payList.length === 1 ? payList[0].id : `${payList.length} PAYMENTS`) : '0 RECORDS', status: paymentStatusStr, color: paymentColorStr, items: payList },
-      { label: '16. INVOICE ID', id: invList.length > 0 ? (invList.length === 1 ? invList[0].id : `${invList.length} INVOICES`) : '0 RECORDS', status: invoiceStatusStr, color: invoiceColorStr, items: invList },
-      { label: '17. BROKERAGE ID', id: broList.length > 0 ? (broList.length === 1 ? broList[0].id : `${broList.length} CLAIMS`) : '0 RECORDS', status: broList.length > 0 ? 'PROCESSED' : 'NOT PROCESSED YET', color: broList.length > 0 ? '#22c55e' : '#64748b', items: broList }
+      { label: '16. INVOICE ID', id: invList.length > 0 ? (invList.length === 1 ? invList[0].id : `${invList.length} INVOICES`) : '0 RECORDS', status: invoiceStatusStr, color: invoiceColorStr, items: invList }
     ];
   };
 
@@ -869,14 +960,6 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
         { label: 'Company GSTIN', value: '36AAACS8899K1Z0' },
         { label: 'Invoice Status', value: item.status || 'SETTLED' },
         { label: 'Invoice Issued Date', value: item.items?.[0]?.created_date || '20 Aug 2026' }
-      ],
-      '17. BROKERAGE ID': [
-        { label: 'Brokerage Settlement Log ID', value: item.id },
-        { label: 'Agreed Commission Rate', value: '2.0% of Flat Valuation' },
-        { label: 'Total Commission Amount', value: '₹2,95,312' },
-        { label: 'Payer Party', value: 'DEVELOPER & CUSTOMER AGREED' },
-        { label: 'Payout Approval', value: 'APPROVED BY FINANCE DIRECTOR' },
-        { label: 'Settlement Status', value: 'PROCESSED & RECORDED' }
       ]
     };
 
@@ -976,7 +1059,7 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
           <button onClick={handleOpenAddCustomerModal} style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <UserPlus size={15} /> + Add Customer Master
           </button>
-          {isSuperAdmin && (
+          {isStrictSuperAdmin && (
             <button onClick={handleDeleteAllCurrentInside} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px 14px', borderRadius: '8px', fontWeight: '900', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Trash2 size={15} color="#ffffff" /> 🗑️ Delete All Current Inside
             </button>
@@ -1701,18 +1784,18 @@ export const CustomerManagementView: React.FC<CustomerManagementViewProps> = ({
                 <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: '900' }}>👤 ASSIGNED SALES EXECUTIVE / RELATIONSHIP MANAGER</span>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <select 
-                    defaultValue={activeCust.assigned_salesperson || 'Abinash Roy (Admin)'} 
+                    value={reassignExecInput || activeCust.assigned_salesperson || activeCust.assigned_employee_id || activeCust.assignedExecutive || (salesExecOptions.length > 0 ? salesExecOptions[0].value : '')} 
+                    onChange={(e) => setReassignExecInput(e.target.value)}
                     style={{ flex: 1, background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#38bdf8', fontWeight: '900', padding: '6px 10px', borderRadius: '6px', fontSize: '0.8rem' }}
                   >
-                    <option value="Abinash Roy (Admin)">Abinash Roy — CRM Admin</option>
-                    <option value="Priya Nair (Sales Exec)">Priya Nair — Senior Executive</option>
-                    <option value="Amit Patel (Lead Manager)">Amit Patel — Lead Manager</option>
-                    <option value="Rahul Sharma (Property Specialist)">Rahul Sharma — Property Specialist</option>
-                    <option value="Sneha Reddy (CRM Exec)">Sneha Reddy — CRM Executive</option>
-                    <option value="Vikram Varma (Branch Director)">Vikram Varma — Branch Director</option>
+                    {salesExecOptions.map((opt: any) => (
+                      <option key={opt.id || opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
                   <button 
-                    onClick={() => alert(`👤 Successfully updated executive assignment for ${activeCust.name}!`)} 
+                    onClick={() => handleReassignExecutive(activeCust, reassignExecInput || activeCust.assigned_salesperson || activeCust.assigned_employee_id || activeCust.assignedExecutive || (salesExecOptions.length > 0 ? salesExecOptions[0].value : ''))} 
                     style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', fontWeight: '900', fontSize: '0.78rem', cursor: 'pointer' }}
                   >
                     Reassign

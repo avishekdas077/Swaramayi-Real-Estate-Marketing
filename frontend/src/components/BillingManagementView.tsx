@@ -843,10 +843,20 @@ export const BillingManagementView: React.FC<BillingManagementViewProps> = ({
                           <button 
                             onClick={() => {
                               if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to delete this invoice record for ${i.customer_name || i.developer_name || 'Client'}?`)) {
+                                const targetName = (i.customer_name || i.party_name || i.developer_name || '').toLowerCase().trim();
+                                const targetInvNum = (i.invoice_number || '').toLowerCase().trim();
+                                const targetId = (i.id || '').toLowerCase().trim();
+                                const targetCustNum = (i.customer_number || '').toLowerCase().trim();
+
                                 const remainingInvoices = (invoices || []).filter((item: any) => {
-                                  if (i.id && item.id && item.id === i.id) return false;
-                                  if (i.invoice_number && item.invoice_number && item.invoice_number === i.invoice_number) return false;
                                   if (item === i) return false;
+                                  if (targetId && item.id && item.id.toLowerCase().trim() === targetId) return false;
+                                  if (targetInvNum && item.invoice_number && item.invoice_number.toLowerCase().trim() === targetInvNum) return false;
+                                  if (targetCustNum && item.customer_number && item.customer_number.toLowerCase().trim() === targetCustNum) return false;
+                                  if (targetName && (item.customer_name || item.party_name || item.developer_name)) {
+                                    const itemName = (item.customer_name || item.party_name || item.developer_name || '').toLowerCase().trim();
+                                    if (itemName === targetName) return false;
+                                  }
                                   return true;
                                 });
                                 if (setInvoices) {

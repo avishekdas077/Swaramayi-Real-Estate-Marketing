@@ -68,7 +68,9 @@ export const LocationMapView: React.FC<LocationMapViewProps> = ({
   handleDeleteProperty,
   InteractiveLeafletMap,
 }) => {
-  const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
+  const roleUpper = (currentRole || '').toUpperCase().replace(/_/g, ' ');
+  const isStrictSuperAdmin = !currentRole || roleUpper.includes('SUPER') || roleUpper.includes('OWNER');
+  const isSuperAdmin = isStrictSuperAdmin || roleUpper.includes('ADMIN');
 
   // Search & Radius State
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -656,7 +658,7 @@ export const LocationMapView: React.FC<LocationMapViewProps> = ({
 
             <div style={{ display: 'flex', gap: '8px', paddingTop: '4px' }}>
               <button onClick={() => handleStartEditProperty(selectedProperty)} style={{ flex: 1, background: '#f59e0b', color: isLight ? '#0f172a' : '#ffffff', border: 'none', padding: '8px', borderRadius: '6px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer' }}>Edit Record</button>
-              {isSuperAdmin && (
+              {isStrictSuperAdmin && (
                 <button onClick={() => handleDeleteProperty(selectedProperty?.id, selectedProperty?.property_code)} style={{ flex: 1, background: '#ef4444', color: '#ffffff', border: 'none', padding: '8px', borderRadius: '6px', fontWeight: '700', fontSize: '0.78rem', cursor: 'pointer' }}>Delete</button>
               )}
             </div>
