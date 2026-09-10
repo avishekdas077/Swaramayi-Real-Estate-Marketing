@@ -509,3 +509,184 @@ export async function getSalesPersonPerformanceReport(req: AuthRequest, res: Res
     data: report
   });
 }
+
+// 10. Bulk Upload Leads (CSV / JSON)
+export async function bulkUploadLeads(req: AuthRequest, res: Response) {
+  const { leads, skipDuplicates = true, defaultSource, defaultAssignedEmployeeId } = req.body;
+
+  const leadArray = Array.isArray(leads) ? leads : (Array.isArray(req.body) ? req.body : []);
+
+  if (!leadArray || leadArray.length === 0) {
+    return res.status(400).json({ status: 'ERROR', message: 'No leads provided in payload. `leads` array is required.' });
+  }
+
+  loadData();
+
+  const createdLeads: any[] = [];
+  const skippedDuplicates: any[] = [];
+  const errors: any[] = [];
+
+  for (let index = 0; index < leadArray.length; index++) {
+    const item = leadArray[index];
+    const customer_name = item.customer_name || item['Customer Name'] || item['Full Name'] || item.name;
+    const rawMobile = item.mobile || item['Mobile'] || item['Phone'] || item['Contact Number'];
+    const mobile = rawMobile ? String(rawMobile).trim() : '';
+
+    if (!customer_name || !mobile) {
+      errors.push({
+        row: index + 1,
+        data: item,
+        reason: 'Missing mandatory customer_name or mobile'
+      });
+      continue;
+    }
+
+    const cleanMobile = mobile.replace(/\D/g, '');
+    const altMobile = item.alternate_mobile || item['Alternate Mobile'] || item['Alt Mobile'] || null;
+    const cleanAltMobile = altMobile ? String(altMobile).replace(/\D/g, '') : '';
+    const email = item.email || item['Email'] || item['Email Address'] || '';
+
+    // Check duplicate
+    const existingLead = dbStore.data.leads.find(l => {
+      if (cleanMobile && l.mobile && l.mobile.replace(/\D/g, '') === cleanMobile) return true;
+      if (cleanAltMobile && l.alternate_mobile && l.alternate_mobile.replace(/\D/g, '') === cleanAltMobile) return true;
+      if (email && l.email && l.email.toLowerCase() === email.toLowerCase()) return true;
+      return false;
+    });
+
+    if (existingLead && skipDuplicates) {
+      skippedDuplicates.push({
+        row: index + 1,
+        customer_name,
+        mobile,
+        existing_lead_number: existingLead.lead_number,
+        existing_lead_id: existingLead.id
+      });
+      continue;
+    }
+
+    const source = item.source || item['Source'] || defaultSource || 'CSV Import';
+    const preferred_location = item.preferred_location || item['Preferred Location'] || item['Location'] || 'Hyderabad';
+    const preferred_project = item.preferred_project || item['Preferred Project'] || item['Project'] || 'General Enquiry';
+    const property_type = item.property_type || item['Property Type'] || 'Flat / Apartment';
+    const bhk = item.bhk || item['BHK'] || item['Configuration'] || '3BHK';
+    const budget_min = Number(item.budget_min || item['Budget Min'] || item['Min Budget'] || 0);
+    const budget_max = Number(item.budget_max || item['Budget Max'] || item['Max Budget'] || 8000000);
+    const purpose = item.purpose || item['Purpose'] || item['Investment Purpose'] || 'Self Use';
+    const possession_preference = item.possession_preference || item['Possession Preference'] || item['Timeline'] || 'Immediate (< 30 Days)';
+    const loan_required = Boolean(item.loan_required || item['Loan Required'] || false);
+    const occupation = item.occupation || item['Occupation'] || 'Professional';
+    const assigned_employee_id = item.assigned_employee_id || item['Assigned Employee ID'] || defaultAssignedEmployeeId || req.user?.id || 'USR-07';
+    const campaign = item.campaign || item['Campaign'] || 'Bulk CSV Import 2026';
+    const remarks = item.remarks || item['Remarks'] || 'Imported via Bulk Upload System';
+
+    const leadNumber = generateID('SRM-LEAD');
+    const customerNumber = generateID('SRM-CUS');
+
+    const leadPayload = {
+      ...item,
+      source,
+      budget_min,
+      budget_max,
+      loan_required,
+      possession_preference
+    };
+    const { score, priority } = calculateLeadScoreAndPriority(leadPayload);
+    const leadPriority = item.priority || item['Priority'] || priority;
+
+    const newCustId = uuidv4();
+    const newLeadId = uuidv4();
+
+    const newCustomer = {
+      id: newCustId,
+      customer_number: customerNumber,
+      full_name: customer_name,
+      mobile,
+      alt_mobile: altMobile,
+      alternate_mobile: altMobile,
+      whatsapp_number: item.whatsapp_number || item['WhatsApp Number'] || mobile,
+      email: email,
+      city: item.city || item['City'] || 'Hyderabad',
+      preferred_location,
+      property_type,
+      configuration: bhk,
+      budget_min,
+      budget_max,
+      loan_required,
+      investment_purpose: purpose,
+      purchase_timeline: possession_preference,
+      source,
+      assigned_employee_id,
+      customer_status: 'NEW',
+      status: 'NEW',
+      priority: leadPriority,
+      quality_score: score,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_deleted: false
+    };
+
+    const newLead = {
+      id: newLeadId,
+      lead_number: leadNumber,
+      customer_id: newCustId,
+      customer_number: customerNumber,
+      customer_name,
+      mobile,
+      alternate_mobile: altMobile,
+      whatsapp_number: item.whatsapp_number || item['WhatsApp Number'] || mobile,
+      email,
+      source,
+      campaign,
+      source_details: item.source_details || null,
+      preferred_location,
+      preferred_project,
+      property_type,
+      bhk,
+      budget_min,
+      budget_max,
+      purpose,
+      possession_preference,
+      loan_required,
+      occupation,
+      priority: leadPriority,
+      lead_status: 'NEW',
+      call_disposition: 'NEW_LEAD_CREATED',
+      next_action: 'CONTACT_CUSTOMER',
+      next_followup: new Date(Date.now() + 24 * 3600000).toISOString(),
+      assigned_employee_id,
+      assigned_by: req.user?.id || 'USR-01',
+      created_by: req.user?.id || 'USR-01',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      quality_score: score,
+      remarks
+    };
+
+    dbStore.data.customers.unshift(newCustomer);
+    dbStore.data.leads.unshift(newLead);
+    createdLeads.push(newLead);
+  }
+
+  logAudit(req.user?.id || null, 'CREATE_BULK_LEADS', 'LEAD', `Bulk imported ${createdLeads.length} leads. Skipped ${skippedDuplicates.length} duplicates. Errors ${errors.length}.`, req.ip);
+  saveData();
+
+  try {
+    const { syncToMongoDB } = await import('../db/mongoPersistence.js');
+    await syncToMongoDB(dbStore.data);
+  } catch (err) {
+    console.warn('Bulk import MongoDB sync notice:', err);
+  }
+
+  return res.status(201).json({
+    status: 'SUCCESS',
+    message: `Successfully processed ${leadArray.length} records. Created: ${createdLeads.length}, Skipped Duplicates: ${skippedDuplicates.length}, Errors: ${errors.length}.`,
+    created_count: createdLeads.length,
+    skipped_duplicates_count: skippedDuplicates.length,
+    errors_count: errors.length,
+    skipped_duplicates: skippedDuplicates,
+    errors,
+    data: createdLeads
+  });
+}
+

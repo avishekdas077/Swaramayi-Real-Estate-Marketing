@@ -25,6 +25,7 @@ import { VisitManagementView } from './components/VisitManagementView';
 import { CostSheetSharingView } from './components/CostSheetSharingView';
 import { CustomerManagementView } from './components/CustomerManagementView';
 import { LeadManagementView } from './components/LeadManagementView';
+import { BulkLeadUploadModal } from './components/BulkLeadUploadModal';
 import { MatchingManagementView } from './components/MatchingManagementView';
 import { PropertySourcingRequestsView } from './components/PropertySourcingRequestsView';
 import { MultiSelectFloorSelector } from './components/MultiSelectFloorSelector';
@@ -2150,6 +2151,7 @@ export default function App() {
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [showLeadModal, setShowLeadModal] = useState(false);
+  const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showFullContractModal, setShowFullContractModal] = useState(false);
   const [showCreateShareModal, setShowCreateShareModal] = useState(false);
@@ -9110,6 +9112,7 @@ export default function App() {
               leadViewMode={leadViewMode}
               setLeadViewMode={setLeadViewMode}
               setShowLeadModal={setShowLeadModal}
+              setShowBulkUploadModal={setShowBulkUploadModal}
               leadsList={leadsList}
               leadInboxTab={leadInboxTab}
               setLeadInboxTab={setLeadInboxTab}
@@ -12858,6 +12861,25 @@ export default function App() {
 
           </div>
         </div>
+      )}
+
+      {/* BULK LEAD UPLOAD MODAL */}
+      {showBulkUploadModal && (
+        <BulkLeadUploadModal
+          isLight={isLight}
+          onClose={() => setShowBulkUploadModal(false)}
+          existingLeads={leadsList}
+          existingCustomers={customers}
+          dynamicSalesExecutives={dynamicSalesExecutives}
+          onImportSuccess={(newLeads, newCusts) => {
+            if (newLeads && newLeads.length > 0) {
+              setLeadsList(prev => [...newLeads, ...prev]);
+            }
+            if (newCusts && newCusts.length > 0) {
+              setCustomers(prev => [...newCusts, ...prev]);
+            }
+          }}
+        />
       )}
 
       {/* CREATE COST SHEET SHARE AGAINST ID MODAL */}
