@@ -12,7 +12,7 @@ import {
   Compass, QrCode, Share2, Layers3, Activity, Eye, EyeOff, ThumbsUp, ThumbsDown,
   Upload, FileUp, FileDown, Table, FileSignature, Scale, PenTool, ReceiptText, Calculator, Landmark,
   Grid, List, Columns, Edit3, Trash2, Layers2, Navigation, Map as MapIcon, PieChart, BarChart2,
-  GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck, Camera, Image as ImageIcon, SearchCode
+  GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck, Camera, Image as ImageIcon, SearchCode, Globe, ExternalLink
 } from 'lucide-react';
 import { ProfileView } from './components/ProfileView';
 import { RoleManagementView } from './components/RoleManagementView';
@@ -7480,6 +7480,36 @@ export default function App() {
           </button>
           <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('profile'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'profile' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'profile' ? '#38bdf8' : '#94a3b8', border: activeTab === 'profile' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <User size={18} /> <span>Profile</span>
+          </button>
+          <button 
+            onClick={() => { 
+              if (isMobile) setIsMobileSidebarOpen(false); 
+              const websiteUrl = (import.meta as any).env?.VITE_WEBSITE_URL || 'http://localhost:5173';
+              if (typeof window !== 'undefined') {
+                window.open(websiteUrl, '_blank', 'noopener,noreferrer');
+              }
+            }} 
+            title="Open Customer Website in a new browser tab"
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'space-between', 
+              width: '100%', 
+              padding: '10px 14px', 
+              borderRadius: '8px', 
+              background: isLight ? 'rgba(2, 132, 199, 0.08)' : 'rgba(56, 189, 248, 0.1)', 
+              color: isLight ? '#0284c7' : '#38bdf8', 
+              border: '1px solid rgba(56, 189, 248, 0.3)', 
+              fontSize: '0.875rem', 
+              fontWeight: '800', 
+              cursor: 'pointer', 
+              textAlign: 'left' 
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Globe size={18} /> <span>Go to Website</span>
+            </div>
+            <ExternalLink size={14} style={{ opacity: 0.8 }} />
           </button>
           <button onClick={() => {
     if (isMobile) setIsMobileSidebarOpen(false);
