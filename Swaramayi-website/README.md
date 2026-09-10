@@ -37,7 +37,6 @@ d:\Swaramayi-website\
 │   ├── routes/ (authRoutes, propertyRoutes, projectRoutes, locationRoutes...)
 │   ├── middleware/ (authMiddleware, adminMiddleware, uploadMiddleware, errorMiddleware)
 │   ├── uploads/
-│   ├── seed.js (Kolkata real estate demo data seeder)
 │   └── server.js
 │
 └── frontend/

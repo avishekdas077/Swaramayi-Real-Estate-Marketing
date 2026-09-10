@@ -2,6 +2,42 @@ const Property = require('../models/Property');
 const slugify = require('../utils/slugGenerator');
 const { getPagination, formatPaginatedResponse } = require('../utils/pagination');
 
+// Helper to normalize CRM MongoDB properties for Website frontend display
+const normalizeProperty = (doc) => {
+  if (!doc) return null;
+  const p = typeof doc.toObject === 'function' ? doc.toObject() : doc;
+
+  const rawTitle = p.title || p.property_title || 'Swaramayi Premium Property';
+  const rawPrice = p.price || p.final_price || p.final_estimated_price || p.base_price || 7500000;
+  const rawLocality = p.location || p.locality || p.city || 'Kolkata';
+  const rawArea = p.areaSqft || p.carpet_area_sqft || p.built_up_area_sqft || 1200;
+  const rawType = p.propertyType || p.property_type || 'Apartment';
+  const rawSlug = p.slug || slugify(rawTitle) + '-' + (p.property_code || p._id || Date.now());
+
+  let bhk = p.bedrooms || 0;
+  if (!bhk && p.configuration) {
+    const match = (p.configuration || '').match(/(\d+)\s*BHK/i);
+    if (match) bhk = parseInt(match[1], 10);
+  }
+
+  return {
+    ...p,
+    title: rawTitle,
+    slug: rawSlug,
+    price: Number(rawPrice) || 7500000,
+    location: rawLocality,
+    locality: rawLocality,
+    areaSqft: Number(rawArea) || 1200,
+    propertyType: rawType,
+    bedrooms: bhk || 2,
+    bathrooms: p.bathrooms || Math.max(1, bhk - 1) || 2,
+    images: p.images && p.images.length > 0 ? p.images : ['/images/property-placeholder.jpg'],
+    featured: p.featured !== undefined ? p.featured : true,
+    published: p.published !== undefined ? p.published : true,
+    verified: p.verified !== undefined ? p.verified : true,
+  };
+};
+
 // @desc Get properties with filtering, sorting, pagination
 // @route GET /api/properties
 const getProperties = async (req, res, next) => {
@@ -11,104 +47,70 @@ const getProperties = async (req, res, next) => {
       location,
       locality,
       society,
-      phase,
       category,
       propertyType,
-      listingType,
-      priceType,
       minPrice,
       maxPrice,
       bedrooms,
-      bathrooms,
-      minSqft,
-      maxSqft,
-      furnishing,
-      parking,
-      facing,
-      developer,
-      constructionStatus,
-      possessionStatus,
-      reraApproved,
-      featured,
-      verified,
-      premium,
-      amenities,
       search,
       sort,
     } = req.query;
 
-    const query = { published: true };
+    const query = { is_deleted: { $ne: true } };
 
-    if (city) query.city = new RegExp(city, 'i');
-    if (location) query.location = new RegExp(location, 'i');
-    if (locality) query.locality = new RegExp(locality, 'i');
-    if (society) query.society = new RegExp(society, 'i');
-    if (phase) query.phase = new RegExp(phase, 'i');
+    if (city) query.$or = [{ city: new RegExp(city, 'i') }, { location: new RegExp(city, 'i') }];
+    if (location || locality) {
+      const locStr = location || locality;
+      query.$or = [
+        { location: new RegExp(locStr, 'i') },
+        { locality: new RegExp(locStr, 'i') },
+        { city: new RegExp(locStr, 'i') }
+      ];
+    }
 
     if (category) query.category = category;
-    if (propertyType) query.propertyType = propertyType;
-    if (listingType) query.listingType = listingType;
-    if (priceType) query.priceType = priceType;
+    if (propertyType) {
+      query.$or = [
+        { propertyType: propertyType },
+        { property_type: propertyType }
+      ];
+    }
 
     if (minPrice || maxPrice) {
-      query.price = {};
-      if (minPrice) query.price.$gte = Number(minPrice);
-      if (maxPrice) query.price.$lte = Number(maxPrice);
-    }
-
-    if (bedrooms) query.bedrooms = Number(bedrooms);
-    if (bathrooms) query.bathrooms = Number(bathrooms);
-
-    if (minSqft || maxSqft) {
-      query.areaSqft = {};
-      if (minSqft) query.areaSqft.$gte = Number(minSqft);
-      if (maxSqft) query.areaSqft.$lte = Number(maxSqft);
-    }
-
-    if (furnishing) query.furnishing = furnishing;
-    if (parking) query.parking = parking;
-    if (facing) query.facing = facing;
-    if (developer) query.developer = new RegExp(developer, 'i');
-    if (constructionStatus) query.constructionStatus = constructionStatus;
-    if (possessionStatus) query.possessionStatus = new RegExp(possessionStatus, 'i');
-
-    if (reraApproved === 'true') query.reraApproved = true;
-    if (featured === 'true') query.featured = true;
-    if (verified === 'true') query.verified = true;
-    if (premium === 'true') query.premium = true;
-    if (req.query.isSold === 'true') query.isSold = true;
-    if (req.query.isSold === 'false') query.isSold = false;
-
-    if (amenities) {
-      const amenList = Array.isArray(amenities) ? amenities : amenities.split(',');
-      query.amenities = { $all: amenList };
+      const pMin = minPrice ? Number(minPrice) : 0;
+      const pMax = maxPrice ? Number(maxPrice) : 999999999;
+      query.$or = [
+        { price: { $gte: pMin, $lte: pMax } },
+        { final_price: { $gte: pMin, $lte: pMax } },
+        { base_price: { $gte: pMin, $lte: pMax } }
+      ];
     }
 
     if (search) {
       query.$or = [
         { title: new RegExp(search, 'i') },
+        { property_title: new RegExp(search, 'i') },
         { location: new RegExp(search, 'i') },
-        { society: new RegExp(search, 'i') },
+        { locality: new RegExp(search, 'i') },
         { description: new RegExp(search, 'i') },
       ];
     }
 
-    // Sorting
     let sortOptions = { createdAt: -1 };
     if (sort === 'oldest') sortOptions = { createdAt: 1 };
     if (sort === 'price_asc') sortOptions = { price: 1 };
     if (sort === 'price_desc') sortOptions = { price: -1 };
-    if (sort === 'most_viewed') sortOptions = { views: -1 };
-    if (sort === 'featured') sortOptions = { featured: -1, createdAt: -1 };
 
     const { page, limit, skip } = getPagination(req.query);
 
     const total = await Property.countDocuments(query);
-    const properties = await Property.find(query)
+    const propertiesDocs = await Property.find(query)
       .sort(sortOptions)
       .skip(skip)
       .limit(limit)
       .populate('agent', 'name profileImage phone email designation');
+
+    const properties = propertiesDocs.map(normalizeProperty);
 
     res.json(formatPaginatedResponse(properties, total, page, limit));
   } catch (error) {
@@ -120,19 +122,19 @@ const getProperties = async (req, res, next) => {
 // @route GET /api/properties/:slug
 const getPropertyBySlug = async (req, res, next) => {
   try {
-    const property = await Property.findOne({ slug: req.params.slug }).populate(
-      'agent',
-      'name profileImage phone email designation bio experience'
-    );
-    if (!property) {
+    let propertyDoc = await Property.findOne({ 
+      $or: [{ slug: req.params.slug }, { property_code: req.params.slug }, { _id: req.params.slug }] 
+    }).populate('agent', 'name profileImage phone email designation bio experience');
+
+    if (!propertyDoc) {
       return res.status(404).json({ success: false, message: 'Property not found' });
     }
 
-    // Increment views counter asynchronously
-    property.views += 1;
-    await property.save();
+    propertyDoc.views = (propertyDoc.views || 0) + 1;
+    await propertyDoc.save();
 
-    res.json({ success: true, data: property });
+    const normalized = normalizeProperty(propertyDoc);
+    res.json({ success: true, data: normalized });
   } catch (error) {
     next(error);
   }
@@ -142,10 +144,12 @@ const getPropertyBySlug = async (req, res, next) => {
 // @route GET /api/properties/featured
 const getFeaturedProperties = async (req, res, next) => {
   try {
-    const properties = await Property.find({ featured: true, published: true })
+    const docs = await Property.find({ is_deleted: { $ne: true } })
       .limit(6)
       .sort({ createdAt: -1 })
       .populate('agent', 'name phone email');
+
+    const properties = docs.map(normalizeProperty);
     res.json({ success: true, data: properties });
   } catch (error) {
     next(error);
@@ -156,10 +160,12 @@ const getFeaturedProperties = async (req, res, next) => {
 // @route GET /api/properties/recent
 const getRecentProperties = async (req, res, next) => {
   try {
-    const properties = await Property.find({ published: true })
+    const docs = await Property.find({ is_deleted: { $ne: true } })
       .limit(8)
       .sort({ createdAt: -1 })
       .populate('agent', 'name phone email');
+
+    const properties = docs.map(normalizeProperty);
     res.json({ success: true, data: properties });
   } catch (error) {
     next(error);
@@ -170,10 +176,12 @@ const getRecentProperties = async (req, res, next) => {
 // @route GET /api/properties/sold
 const getSoldProperties = async (req, res, next) => {
   try {
-    const properties = await Property.find({ isSold: true, published: true })
+    const docs = await Property.find({ $or: [{ isSold: true }, { availability_status: 'SOLD' }, { property_status: 'SOLD' }] })
       .limit(6)
       .sort({ updatedAt: -1 })
       .populate('agent', 'name phone email');
+
+    const properties = docs.map(normalizeProperty);
     res.json({ success: true, data: properties });
   } catch (error) {
     next(error);
@@ -185,18 +193,19 @@ const getSoldProperties = async (req, res, next) => {
 const createProperty = async (req, res, next) => {
   try {
     const propertyData = req.body;
-    if (!propertyData.title || !propertyData.price || !propertyData.location || !propertyData.areaSqft) {
-      return res.status(400).json({ success: false, message: 'Please provide title, price, location, and areaSqft' });
+    if (!propertyData.title && !propertyData.property_title) {
+      return res.status(400).json({ success: false, message: 'Please provide property title' });
     }
 
-    let slug = slugify(propertyData.title);
+    const title = propertyData.title || propertyData.property_title;
+    let slug = slugify(title);
     const existing = await Property.findOne({ slug });
     if (existing) {
       slug = `${slug}-${Date.now()}`;
     }
 
-    const property = await Property.create({ ...propertyData, slug });
-    res.status(201).json({ success: true, data: property });
+    const property = await Property.create({ ...propertyData, title, slug });
+    res.status(201).json({ success: true, data: normalizeProperty(property) });
   } catch (error) {
     next(error);
   }
@@ -216,7 +225,7 @@ const updateProperty = async (req, res, next) => {
     }
 
     property = await Property.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
-    res.json({ success: true, data: property });
+    res.json({ success: true, data: normalizeProperty(property) });
   } catch (error) {
     next(error);
   }
