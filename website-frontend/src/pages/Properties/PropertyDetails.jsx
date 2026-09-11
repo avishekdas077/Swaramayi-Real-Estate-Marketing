@@ -289,39 +289,54 @@ export default function PropertyDetails() {
               {/* Agent Card */}
               <div className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm">
                 <div className="text-xs font-bold text-gold-600 uppercase tracking-wider mb-3">Assigned Property Advisor</div>
-                <div className="flex items-center space-x-3 mb-4">
-                  <img
-                    src={property.agent?.profileImage || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80'}
-                    alt={property.agent?.name || 'Swarnamayi Agent'}
-                    className="w-14 h-14 rounded-full object-cover border-2 border-gold-500"
-                  />
-                  <div>
-                    <h4 className="font-bold text-navy-900 text-sm">{property.agent?.name || 'Aritra Sen'}</h4>
-                    <p className="text-xs text-gray-500">{property.agent?.designation || 'Senior Advisor - Kolkata'}</p>
-                    <span className="inline-block mt-1 bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded">
-                      Official Swarnamayi Advisor
-                    </span>
-                  </div>
-                </div>
+                {(() => {
+                  const advisor = property.assignedAdvisor || property.agent || {};
+                  const advisorName = advisor.name || 'Abinash Roy';
+                  const advisorRole = advisor.role || advisor.designation || 'Senior Property Advisor';
+                  const advisorPhone = advisor.phone || advisor.mobile || '+91 98300 12345';
+                  const advisorImage = advisor.profileImage || advisor.image || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80';
 
-                <div className="grid grid-cols-2 gap-2">
-                  <a
-                    href="tel:+919830012345"
-                    className="py-2.5 bg-navy-900 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1 hover:bg-navy-800"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-gold-400" />
-                    <span>Call Advisor</span>
-                  </a>
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="py-2.5 bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1 hover:bg-emerald-600"
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>WhatsApp</span>
-                  </a>
-                </div>
+                  const cleanPhone = advisorPhone.replace(/[^0-9]/g, '');
+                  const waLink = `https://wa.me/${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}?text=${encodeURIComponent(`Hi ${advisorName}, I am interested in ${property.title} (${property.location}). Please share more details.`)}`;
+
+                  return (
+                    <>
+                      <div className="flex items-center space-x-3 mb-4">
+                        <img
+                          src={advisorImage}
+                          alt={advisorName}
+                          className="w-14 h-14 rounded-full object-cover border-2 border-gold-500 shadow-sm"
+                        />
+                        <div>
+                          <h4 className="font-bold text-navy-900 text-sm">{advisorName}</h4>
+                          <p className="text-xs text-gray-500 font-medium">{advisorRole}</p>
+                          <span className="inline-block mt-1 bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded border border-green-200">
+                            Official Swaramayi Advisor
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                        <a
+                          href={`tel:${advisorPhone}`}
+                          className="py-2.5 bg-navy-900 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1 hover:bg-navy-800 transition-colors shadow-sm"
+                        >
+                          <Phone className="w-3.5 h-3.5 text-gold-400" />
+                          <span>Call Advisor</span>
+                        </a>
+                        <a
+                          href={waLink}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="py-2.5 bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1 hover:bg-emerald-600 transition-colors shadow-sm"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>WhatsApp</span>
+                        </a>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
 
               {/* Enquiry Form */}
