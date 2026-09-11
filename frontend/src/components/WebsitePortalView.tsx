@@ -13,7 +13,7 @@ export const WebsitePortalView: React.FC<WebsitePortalViewProps> = ({ isLight, w
   const [viewMode, setViewMode] = useState<'preview' | 'iframe' | 'setup'>('preview');
   const [iframeKey, setIframeKey] = useState<number>(Date.now());
 
-  const websiteUrl = 'http://localhost:5173';
+  const websiteUrl = (import.meta as any).env?.VITE_WEBSITE_URL || 'http://localhost:5001';
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', minHeight: '80vh' }}>
@@ -259,17 +259,15 @@ export const WebsitePortalView: React.FC<WebsitePortalViewProps> = ({ isLight, w
           </div>
 
           <p style={{ fontSize: '0.85rem', color: isLight ? '#64748b' : '#94a3b8' }}>
-            To run the standalone customer website on <code>http://localhost:5173</code>, follow these simple terminal steps:
+            To run the standalone customer website on <code>http://localhost:5001</code>, follow these simple terminal steps:
           </p>
 
           <div style={{ background: '#0f172a', color: '#38bdf8', padding: '16px', borderRadius: '10px', fontFamily: 'monospace', fontSize: '0.85rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <span># Step 1: Navigate to website frontend directory</span>
-            <span style={{ color: '#ffffff' }}>cd Swaramayi-website/frontend</span>
+            <span># Option A: From root workspace folder</span>
+            <span style={{ color: '#4ade80' }}>npm run dev:website</span>
             <br />
-            <span># Step 2: Install dependencies (if first time)</span>
-            <span style={{ color: '#ffffff' }}>npm install</span>
-            <br />
-            <span># Step 3: Start Vite development server</span>
+            <span># Option B: Navigate to website frontend directory</span>
+            <span style={{ color: '#ffffff' }}>cd website-frontend</span>
             <span style={{ color: '#4ade80' }}>npm run dev</span>
           </div>
 
@@ -280,7 +278,7 @@ export const WebsitePortalView: React.FC<WebsitePortalViewProps> = ({ isLight, w
               rel="noopener noreferrer"
               style={{ background: '#0284c7', color: '#ffffff', padding: '10px 16px', borderRadius: '8px', fontWeight: '800', textDecoration: 'none', fontSize: '0.85rem' }}
             >
-              Test http://localhost:5173 Connection 🔗
+              Test http://localhost:5001 Connection 🔗
             </a>
           </div>
         </div>

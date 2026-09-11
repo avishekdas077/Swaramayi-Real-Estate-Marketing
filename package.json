@@ -4,11 +4,13 @@
   "private": true,
   "workspaces": [
     "frontend",
+    "website-frontend",
     "backend"
   ],
   "scripts": {
-    "install:all": "npm install --prefix frontend && npm install --prefix backend",
-    "dev:frontend": "npm run dev --prefix frontend",
+    "install:all": "npm install --prefix frontend && npm install --prefix website-frontend && npm install --prefix backend",
+    "dev:crm": "npm run dev --prefix frontend",
+    "dev:website": "npm run dev --prefix website-frontend",
     "dev:backend": "npm run dev --prefix backend"
   }
 }
