@@ -36,10 +36,14 @@ export default function PropertyCard({ property }) {
     }
   };
 
+  const defaultFallbackImage = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80';
+
   const mainImage =
-    property.images && property.images.length > 0
-      ? property.images[0]
-      : 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80';
+    (property.images && property.images.length > 0 && property.images[0]) ||
+    property.image ||
+    property.building_photo ||
+    property.cover_image ||
+    defaultFallbackImage;
 
   return (
     <div className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:border-gold-500/50 shadow-sm hover:shadow-navy transition-all duration-300 flex flex-col justify-between">
@@ -50,21 +54,38 @@ export default function PropertyCard({ property }) {
           alt={property.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           loading="lazy"
+          onError={(e) => {
+            e.currentTarget.onerror = null;
+            e.currentTarget.src = defaultFallbackImage;
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
 
         {/* Top Badges */}
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5 z-10">
-          {property.isSold && (
+          {property.isSold ? (
             <span className="bg-red-600 text-white text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md shadow animate-pulse">
-              SOLD OUT
+              🔴 SOLD OUT
+            </span>
+          ) : (
+            <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md shadow ${
+              property.constructionStatus?.toLowerCase().includes('under')
+                ? 'bg-purple-600 text-white'
+                : property.constructionStatus?.toLowerCase().includes('booked')
+                ? 'bg-amber-500 text-navy-900'
+                : property.constructionStatus?.toLowerCase().includes('hold')
+                ? 'bg-yellow-600 text-white'
+                : 'bg-emerald-600 text-white'
+            }`}>
+              {property.constructionStatus?.toLowerCase().includes('under') && '🏗️ '}
+              {property.constructionStatus?.toLowerCase().includes('booked') && '🟡 '}
+              {property.constructionStatus?.toLowerCase().includes('hold') && '⚡ '}
+              {(property.constructionStatus?.toLowerCase().includes('ready') || property.constructionStatus?.toLowerCase().includes('live')) && '🟢 '}
+              {property.constructionStatus || 'LIVE / AVAILABLE'}
             </span>
           )}
-          {property.featured && !property.isSold && (
-            <span className="bg-gold-500 text-navy-900 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-md shadow">
-              Featured
-            </span>
-          )}
+
+
           {property.verified && (
             <span className="bg-navy-900 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-md border border-gold-500/40 shadow flex items-center space-x-1">
               <ShieldCheck className="w-3 h-3 text-gold-500" />
@@ -101,11 +122,11 @@ export default function PropertyCard({ property }) {
         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between text-white">
           <div>
             <div className="text-xl font-black text-gold-400 drop-shadow-md">{formatPrice(property.price)}</div>
-            {property.pricePerSqft && (
+            {Boolean(property.pricePerSqft) && Number(property.pricePerSqft) > 0 ? (
               <div className="text-[11px] text-gray-200 font-medium">
-                ₹ {property.pricePerSqft.toLocaleString('en-IN')} / sqft
+                ₹ {Number(property.pricePerSqft).toLocaleString('en-IN')} / sqft
               </div>
-            )}
+            ) : null}
           </div>
           <span className="bg-navy-900/80 backdrop-blur-md text-xs font-semibold px-2.5 py-1 rounded-lg border border-gold-500/30">
             {property.propertyType}

@@ -214,11 +214,15 @@ export default function PropertyDetails() {
                   </div>
                   <div className="p-3 bg-gray-50 rounded-xl">
                     <div className="text-gray-500 font-semibold mb-1">Super Area</div>
-                    <div className="font-bold text-navy-900 text-sm">{property.areaSqft} sqft</div>
+                    <div className="font-bold text-navy-900 text-sm">
+                      {property.superBuiltupArea || property.built_up_area_sqft || property.superArea || property.areaSqft} sqft
+                    </div>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-xl">
                     <div className="text-gray-500 font-semibold mb-1">Carpet Area</div>
-                    <div className="font-bold text-navy-900 text-sm">{property.carpetArea || property.areaSqft} sqft</div>
+                    <div className="font-bold text-navy-900 text-sm">
+                      {property.carpetArea || property.carpet_area_sqft || property.areaSqft} sqft
+                    </div>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-xl">
                     <div className="text-gray-500 font-semibold mb-1">Furnishing</div>
@@ -231,12 +235,18 @@ export default function PropertyDetails() {
                   <div className="p-3 bg-gray-50 rounded-xl">
                     <div className="text-gray-500 font-semibold mb-1">Floor</div>
                     <div className="font-bold text-navy-900 text-sm">
-                      {property.floor ? `${property.floor} of ${property.totalFloors || 'N/A'}` : 'Ground'}
+                      {property.floor
+                        ? (String(property.floor).toLowerCase().includes('floor')
+                            ? property.floor
+                            : `${property.floor}${property.totalFloors ? ` of ${property.totalFloors}` : ''}`)
+                        : 'Ground'}
                     </div>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-xl">
                     <div className="text-gray-500 font-semibold mb-1">Possession</div>
-                    <div className="font-bold text-navy-900 text-sm">{property.possessionStatus}</div>
+                    <div className="font-bold text-navy-900 text-sm">
+                      {property.possessionStatus || property.possession_status || property.possession_date || 'Ready to Move In'}
+                    </div>
                   </div>
                   <div className="p-3 bg-gray-50 rounded-xl">
                     <div className="text-gray-500 font-semibold mb-1">RERA Status</div>

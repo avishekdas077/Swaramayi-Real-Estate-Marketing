@@ -10,6 +10,7 @@ import {
   submitPublicEnquiry,
   schedulePublicSiteVisit,
   getPublicLocations,
+  getPublicLocationBySlug,
   getPublicCities,
   getPublicSocieties,
   getPublicPhases,
@@ -39,6 +40,7 @@ router.get('/locations', getPublicLocations);
 router.get('/locations/cities', getPublicCities);
 router.get('/locations/societies', getPublicSocieties);
 router.get('/locations/phases', getPublicPhases);
+router.get('/locations/:slug', getPublicLocationBySlug);
 
 // Public File & Agent listings
 router.get('/files', getPublicFiles);

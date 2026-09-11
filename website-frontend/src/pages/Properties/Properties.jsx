@@ -27,10 +27,29 @@ export default function Properties() {
     minPrice: searchParams.get('minPrice') || '',
     maxPrice: searchParams.get('maxPrice') || '',
     furnishing: searchParams.get('furnishing') || '',
+    status: searchParams.get('status') || '',
+    isSold: searchParams.get('isSold') || '',
     reraApproved: searchParams.get('reraApproved') || '',
     sort: searchParams.get('sort') || 'newest',
     page: searchParams.get('page') || '1',
   });
+
+  useEffect(() => {
+    setFilters({
+      category: searchParams.get('category') || '',
+      location: searchParams.get('location') || '',
+      propertyType: searchParams.get('propertyType') || '',
+      bedrooms: searchParams.get('bedrooms') || '',
+      minPrice: searchParams.get('minPrice') || '',
+      maxPrice: searchParams.get('maxPrice') || '',
+      furnishing: searchParams.get('furnishing') || '',
+      status: searchParams.get('status') || '',
+      isSold: searchParams.get('isSold') || '',
+      reraApproved: searchParams.get('reraApproved') || '',
+      sort: searchParams.get('sort') || 'newest',
+      page: searchParams.get('page') || '1',
+    });
+  }, [searchParams]);
 
   useEffect(() => {
     fetchProperties();
@@ -54,6 +73,8 @@ export default function Properties() {
     }
   };
 
+  const isSoldView = filters.isSold === 'true' || (filters.status && filters.status.toLowerCase().includes('sold'));
+
   const handleResetFilters = () => {
     const resetObj = {
       category: '',
@@ -63,6 +84,8 @@ export default function Properties() {
       minPrice: '',
       maxPrice: '',
       furnishing: '',
+      status: '',
+      isSold: '',
       reraApproved: '',
       sort: 'newest',
       page: '1',
@@ -83,18 +106,22 @@ export default function Properties() {
   return (
     <>
       <SEO
-        title="Properties for Sale & Rent in Kolkata | Swarnamayi Real Estate"
-        description="Search apartments, flats, sky villas, commercial offices, plots & shops for sale and rent in Kolkata, New Town, Rajarhat, Salt Lake & South Kolkata."
+        title={isSoldView ? "Sold Out Properties in Kolkata | Swarnamayi Real Estate" : "Properties for Sale & Rent in Kolkata | Swarnamayi Real Estate"}
+        description={isSoldView ? "Browse Kolkata properties successfully closed and delivered by Swarnamayi." : "Search apartments, flats, sky villas, commercial offices, plots & shops for sale and rent in Kolkata."}
       />
 
       <div className="bg-light-bg min-h-screen pb-16">
         {/* Top Header Banner */}
         <div className="bg-navy-900 text-white py-10 border-b border-gold-500/30">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <Breadcrumbs items={[{ label: 'Properties in Kolkata' }]} />
-            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mt-1">Properties in Kolkata</h1>
+            <Breadcrumbs items={[{ label: isSoldView ? 'Sold Out Properties' : 'Properties in Kolkata' }]} />
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white mt-1">
+              {isSoldView ? 'Sold Out Properties in Kolkata' : 'Properties in Kolkata'}
+            </h1>
             <p className="text-xs sm:text-sm text-gray-300 mt-1 max-w-2xl">
-              Explore verified residential apartments, independent villas, commercial spaces, and new launches across Kolkata.
+              {isSoldView 
+                ? 'Browse Kolkata properties successfully delivered and closed by Swarnamayi Real Estate.' 
+                : 'Explore verified residential apartments, independent villas, commercial spaces, and new launches across Kolkata.'}
             </p>
           </div>
         </div>

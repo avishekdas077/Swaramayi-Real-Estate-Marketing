@@ -27,6 +27,7 @@ import {
 
 export default function Home() {
   const [featuredProperties, setFeaturedProperties] = useState([]);
+  const [recentProperties, setRecentProperties] = useState([]);
   const [soldProperties, setSoldProperties] = useState([]);
   const [soldStats, setSoldStats] = useState({ totalSold: 150, totalVolumeCr: 250, verifiedPct: 100, satisfactionPct: 98 });
   const [newProjects, setNewProjects] = useState([]);

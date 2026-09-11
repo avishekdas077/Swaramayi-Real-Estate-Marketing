@@ -2,7 +2,8 @@ import React from 'react';
 import {
   ShieldAlert, UserPlus, Building2, Users, CheckCircle2, ShieldCheck, Edit3, Trash2, Search,
   Lock, Shield, XCircle, RotateCw, Check, Briefcase, UserCheck, Activity, FileText, AlertTriangle,
-  Layers, Award, Phone, Building, UserX, RefreshCw, Zap, Eye, Sliders, Server, Cpu, ArrowRight, X, PhoneCall
+  Layers, Award, Phone, Building, UserX, RefreshCw, Zap, Eye, Sliders, Server, Cpu, ArrowRight, X, PhoneCall,
+  Plus, MapPin, Star
 } from 'lucide-react';
 
 interface RoleManagementViewProps {
@@ -38,6 +39,8 @@ interface RoleManagementViewProps {
   handleDeleteTeam?: (teamId: string, teamName: string) => void;
   handleOpenSecurityAuditModal: (user: any) => void;
   setShowExitHandoverModal?: (user: any) => void;
+  properties?: any[];
+  customers?: any[];
 }
 
 export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
@@ -71,7 +74,9 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
   handleDeleteBranch,
   handleOpenEditTeamModal,
   handleDeleteTeam,
-  handleOpenSecurityAuditModal
+  handleOpenSecurityAuditModal,
+  properties = [],
+  customers = []
 }) => {
   const roleUpper = (currentRole || '').toUpperCase().replace(/_/g, ' ');
   const isStrictSuperAdmin = !currentRole || roleUpper.includes('SUPER') || roleUpper.includes('OWNER');
@@ -146,6 +151,164 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
     tokenHijack: true,
     afterHoursLockdown: true
   });
+
+  // Persistent property assignments mapping stored in localStorage
+  const [assignedPropsMap, setAssignedPropsMap] = React.useState<{ [advisorId: string]: any[] }>(() => {
+    try {
+      const stored = localStorage.getItem('swaramayi_assigned_advisor_props_v2');
+      if (stored) {
+        return JSON.parse(stored);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return {};
+  });
+
+  const updateAdvisorProperties = (advisorId: string, updatedList: any[]) => {
+    setAssignedPropsMap(prev => {
+      const nextMap = { ...prev, [advisorId]: updatedList };
+      try {
+        localStorage.setItem('swaramayi_assigned_advisor_props_v2', JSON.stringify(nextMap));
+      } catch (e) {
+        console.error(e);
+      }
+      return nextMap;
+    });
+  };
+
+  // Dynamic Property Advisors list derived strictly from active CRM staff (excluding Super Admin / Owner)
+  const propertyAdvisorsList = React.useMemo(() => {
+    const rawStaffList = (users && users.length > 0) ? users : [
+      { id: 'USR-02', username: 'priya.nair', full_name: 'Priya Nair', role: 'SALES_EXEC', mobile: '+91 98302 34567', email: 'priya.nair@swaramayi.com', branch_name: 'South Kolkata Branch', department: 'Villa Segment' },
+      { id: 'USR-03', username: 'amit.patel', full_name: 'Amit Patel', role: 'SALES_EXEC', mobile: '+91 98303 45678', email: 'amit.patel@swaramayi.com', branch_name: 'Salt Lake Branch', department: 'Commercial' },
+      { id: 'USR-04', username: 'abinash.roy', full_name: 'Abinash Roy', role: 'TEAM_LEAD', mobile: '+91 98304 56789', email: 'abinash.roy@swaramayi.com', branch_name: 'Salt Lake Branch', department: 'Residential Sales' }
+    ];
+
+    const staffList = rawStaffList.filter((u: any) => {
+      const r = String(u.role || '').toUpperCase();
+      return r !== 'SUPER_ADMIN' && r !== 'OWNER' && u.id !== 'USR-01';
+    });
+
+    return staffList.map((u: any, idx: number) => {
+      const uId = u.id || `USR-0${idx + 2}`;
+      
+      let advisorProps = assignedPropsMap[uId];
+      if (!advisorProps) {
+        // Look up properties explicitly assigned to this employee in properties prop
+        const matchedProps = (properties || []).filter((p: any) => 
+          p.assigned_employee_id === uId || 
+          p.assigned_employee_name === u.full_name || 
+          p.assigned_employee_name === u.username
+        );
+
+        advisorProps = matchedProps.map((p: any) => ({
+          code: p.property_code || p.id || 'SRM-PROP-001',
+          title: p.property_title || p.title || 'Property Site',
+          location: p.locality || p.location || 'Kolkata',
+          type: p.property_type || p.propertyType || 'Residential Flat',
+          price: Number(p.final_estimated_price || p.price || p.base_price || 0),
+          isSold: Boolean(p.isSold || p.is_sold || String(p.availability_status).toUpperCase() === 'SOLD' || String(p.availability_status).toUpperCase() === 'BOOKED')
+        }));
+      }
+
+      // Dynamic customer leads assigned count strictly from customers prop
+      const finalLeads = (customers || []).filter((c: any) => 
+        c.assigned_employee_id === uId || 
+        c.assigned_employee_name === u.full_name || 
+        c.assigned_employee_name === u.username ||
+        (c.assigned_employee_id && String(c.assigned_employee_id) === String(uId))
+      ).length;
+
+      const siteVisits = finalLeads > 0 ? Math.round(finalLeads * 0.6) : 0;
+      
+      // Deals closed are strictly for properties marked as sold/booked
+      const closedProperties = advisorProps.filter((p: any) => 
+        p.isSold === true || 
+        p.status === 'CLOSED' || 
+        p.status === 'SOLD' || 
+        String(p.availability_status || '').toUpperCase() === 'SOLD' || 
+        String(p.availability_status || '').toUpperCase() === 'BOOKED'
+      );
+      const dealsClosed = closedProperties.length;
+      
+      // Calculate dynamic closed sales volume sum (strictly 0 if no closed deals)
+      const closedSalesNum = closedProperties.reduce((sum: number, p: any) => sum + (Number(p.price) || 0), 0);
+      let totalSalesStr = '₹ 0 Lakhs';
+      if (closedSalesNum >= 10000000) {
+        totalSalesStr = `₹ ${(closedSalesNum / 10000000).toFixed(2)} Cr`;
+      } else if (closedSalesNum > 0) {
+        totalSalesStr = `₹ ${(closedSalesNum / 100000).toFixed(2)} Lakhs`;
+      }
+
+      return {
+        id: uId,
+        employee_id: u.customer_number || u.employee_id || `SRM-EMP-2026-00${12 + idx * 6}`,
+        full_name: u.full_name || u.username || 'Staff Member',
+        role: u.role || 'Property Advisor',
+        mobile: u.mobile || '+91 98300 12345',
+        email: u.email || `${(u.username || 'staff').toLowerCase()}@swaramayi.com`,
+        branch_name: u.branch_name || u.department || 'Head Office',
+        department: u.department || 'Sales Operations',
+        assigned_properties: advisorProps,
+        assigned_leads: finalLeads,
+        site_visits: siteVisits,
+        deals_closed: dealsClosed,
+        raw_sales_num: closedSalesNum,
+        total_sales: totalSalesStr,
+        rating: (4.7 + (idx % 3) * 0.1).toFixed(1),
+        status: u.is_active !== false ? 'ACTIVE' : 'INACTIVE'
+      };
+    });
+  }, [users, properties, customers, assignedPropsMap]);
+
+  const [showAssignPropertyModal, setShowAssignPropertyModal] = React.useState(false);
+  const [propertySearchFilter, setPropertySearchFilter] = React.useState('');
+  const [assignForm, setAssignForm] = React.useState({
+    advisorId: '',
+    propertyTitle: '',
+    propertyCode: '',
+    location: '',
+    propertyType: 'Residential Flat'
+  });
+
+  const handleSavePropertyAssignment = () => {
+    if (!assignForm.advisorId || !assignForm.propertyTitle) {
+      alert('Please select an Advisor and enter a Property Title.');
+      return;
+    }
+    const currentAdvisor = propertyAdvisorsList.find(a => a.id === assignForm.advisorId);
+    const existingProps = currentAdvisor?.assigned_properties || [];
+
+    const selectedPropInCRM = (properties || []).find((p: any) => (p.id || p.property_code) === assignForm.propertyCode);
+    const propPrice = selectedPropInCRM?.final_estimated_price || selectedPropInCRM?.base_price || selectedPropInCRM?.price || 3500000;
+
+    const propCode = assignForm.propertyCode || selectedPropInCRM?.property_code || `SRM-PROP-2026-000${Math.floor(100 + Math.random() * 900)}`;
+    const newPropObj = {
+      code: propCode,
+      title: assignForm.propertyTitle,
+      location: assignForm.location || selectedPropInCRM?.locality || 'Kolkata',
+      type: assignForm.propertyType || selectedPropInCRM?.property_type || 'Residential Flat',
+      price: Number(propPrice) || 3500000
+    };
+
+    updateAdvisorProperties(assignForm.advisorId, [...existingProps, newPropObj]);
+
+    alert(`✅ Successfully assigned "${assignForm.propertyTitle}" (${propCode}) to ${currentAdvisor?.full_name || 'Property Advisor'}!`);
+    setShowAssignPropertyModal(false);
+    setAssignForm({ advisorId: '', propertyTitle: '', propertyCode: '', location: '', propertyType: 'Residential Flat' });
+  };
+
+  const handleRemovePropertyFromAdvisor = (advisorId: string, propCode: string) => {
+    if (window.confirm(`Unassign property (${propCode}) from this Advisor?`)) {
+      const currentAdvisor = propertyAdvisorsList.find(a => a.id === advisorId);
+      const existingProps = currentAdvisor?.assigned_properties || [];
+      const updatedProps = existingProps.filter((p: any) => p.code !== propCode);
+
+      updateAdvisorProperties(advisorId, updatedProps);
+      alert(`🗑️ Property (${propCode}) unassigned successfully.`);
+    }
+  };
 
   const searchQuery = userRoleScopeSearchQuery ?? internalSearchQuery;
   const setSearchQuery = setUserRoleScopeSearchQuery ?? setInternalSearchQuery;
@@ -595,6 +758,12 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
           style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'employee_directory' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeRoleSubTab === 'employee_directory' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}
         >
           👥 Employee Directory ({safeUsers.filter(u => currentRole === 'SUPER_ADMIN' || (u.role !== 'SUPER_ADMIN' && u.role !== 'OWNER' && u.id !== 'USR-01')).length})
+        </button>
+        <button 
+          onClick={() => setActiveRoleSubTab('assigned_property_advisors')} 
+          style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeRoleSubTab === 'assigned_property_advisors' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeRoleSubTab === 'assigned_property_advisors' ? '#ffffff' : (isLight ? '#0f172a' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}
+        >
+          👨‍💼 Assigned Property Advisor ({propertyAdvisorsList.length})
         </button>
         <button 
           onClick={() => setActiveRoleSubTab('branches_offices')} 
@@ -1440,6 +1609,378 @@ export const RoleManagementView: React.FC<RoleManagementViewProps> = ({
             <button onClick={() => alert('🔒 Reassigned all active CRM records. Exiting user account disabled & active sessions revoked.')} style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '10px 16px', borderRadius: '8px', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer', alignSelf: 'flex-end' }}>
               Execute Employee Exit & Reassign All CRM Records
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* SUB-TAB: ASSIGNED PROPERTY ADVISOR */}
+      {activeRoleSubTab === 'assigned_property_advisors' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* STATS OVERVIEW CARDS */}
+          <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 640 ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '14px' }}>
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(2, 132, 199, 0.15)', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <UserCheck size={22} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Active Advisors</span>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>{propertyAdvisorsList.length} Staff</h4>
+              </div>
+            </div>
+
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Building2 size={22} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Assigned Properties</span>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#22c55e', margin: 0 }}>
+                  {propertyAdvisorsList.reduce((acc, adv) => acc + (adv.assigned_properties?.length || 0), 0)} Projects
+                </h4>
+              </div>
+            </div>
+
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <PhoneCall size={22} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Active Client Leads</span>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#f59e0b', margin: 0 }}>
+                  {propertyAdvisorsList.reduce((acc, adv) => acc + (adv.assigned_leads || 0), 0)} Inquiries
+                </h4>
+              </div>
+            </div>
+
+            <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '16px', display: 'flex', alignItems: 'center', gap: '14px' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'rgba(168, 85, 247, 0.15)', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Award size={22} />
+              </div>
+              <div>
+                <span style={{ fontSize: '0.74rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>Closed Sales Volume</span>
+                <h4 style={{ fontSize: '1.25rem', fontWeight: '900', color: '#a855f7', margin: 0 }}>
+                  {(() => {
+                    const totalClosedSalesSum = propertyAdvisorsList.reduce((acc, adv) => acc + (adv.raw_sales_num || 0), 0);
+                    if (totalClosedSalesSum <= 0) return '₹ 0 Cr';
+                    if (totalClosedSalesSum >= 10000000) return `₹ ${(totalClosedSalesSum / 10000000).toFixed(2)} Cr`;
+                    return `₹ ${(totalClosedSalesSum / 100000).toFixed(2)} Lakhs`;
+                  })()}
+                </h4>
+              </div>
+            </div>
+          </div>
+
+          {/* CONTROLS HEADER */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px', background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: '260px' }}>
+              <Search size={16} color={isLight ? '#64748b' : '#94a3b8'} />
+              <input 
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search Property Advisor by name, phone, email, assigned project..."
+                style={{ width: '100%', background: 'transparent', border: 'none', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.85rem', outline: 'none' }}
+              />
+            </div>
+
+            <button
+              onClick={() => {
+                if (propertyAdvisorsList.length > 0) {
+                  setAssignForm(f => ({ ...f, advisorId: propertyAdvisorsList[0].id }));
+                }
+                setShowAssignPropertyModal(true);
+              }}
+              style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '9px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              <Plus size={16} /> + Assign Property to Advisor
+            </button>
+          </div>
+
+          {/* ADVISORS GRID */}
+          <div style={{ display: 'grid', gridTemplateColumns: windowWidth <= 768 ? '1fr' : 'repeat(2, 1fr)', gap: '16px' }}>
+            {propertyAdvisorsList
+              .filter(adv => !searchQuery || JSON.stringify(adv).toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((adv: any) => (
+                <div key={adv.id} style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '16px' }}>
+                  <div>
+                    {/* ADVISOR PROFILE TOP */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                        <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '900', fontSize: '1.1rem', boxShadow: '0 4px 12px rgba(2, 132, 199, 0.3)' }}>
+                          {adv.full_name.substring(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0 }}>
+                            {adv.full_name}
+                          </h3>
+                          <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: '800' }}>
+                            {adv.role}
+                          </span>
+                          <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', fontFamily: 'monospace', marginTop: '2px' }}>
+                            ID: {adv.employee_id} • {adv.branch_name}
+                          </div>
+                        </div>
+                      </div>
+
+                      <span style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', padding: '4px 10px', borderRadius: '20px', fontSize: '0.72rem', fontWeight: '900' }}>
+                        🟢 {adv.status}
+                      </span>
+                    </div>
+
+                    {/* CONTACT BAR */}
+                    <div style={{ display: 'flex', gap: '16px', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #e2e8f0' : '1px solid #334155', borderRadius: '10px', padding: '10px 14px', fontSize: '0.78rem', marginBottom: '14px', flexWrap: 'wrap' }}>
+                      <span style={{ color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Phone size={13} color="#22c55e" /> {adv.mobile}
+                      </span>
+                      <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700' }}>
+                        ✉️ {adv.email}
+                      </span>
+                    </div>
+
+                    {/* ASSIGNED PROPERTIES SECTION */}
+                    <div style={{ marginBottom: '14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: '900', color: isLight ? '#475569' : '#cbd5e1', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Building2 size={14} color="#0284c7" /> Assigned Properties ({adv.assigned_properties?.length || 0})
+                        </span>
+                        <button
+                          onClick={() => {
+                            setAssignForm(f => ({ ...f, advisorId: adv.id }));
+                            setShowAssignPropertyModal(true);
+                          }}
+                          style={{ background: 'transparent', border: 'none', color: '#0284c7', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer' }}
+                        >
+                          + Add Property
+                        </button>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        {adv.assigned_properties && adv.assigned_properties.length > 0 ? (
+                          adv.assigned_properties.map((prop: any, pIdx: number) => (
+                            <div key={pIdx} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #e2e8f0' : '1px solid #334155', borderRadius: '10px', padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div>
+                                <strong style={{ color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.85rem', display: 'block' }}>
+                                  🏢 {prop.title}
+                                </strong>
+                                <span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                  <MapPin size={11} color="#f59e0b" /> {prop.location} • <span style={{ fontFamily: 'monospace', color: '#38bdf8' }}>{prop.code}</span>
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => handleRemovePropertyFromAdvisor(adv.id, prop.code)}
+                                style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: 'none', padding: '4px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: '800', cursor: 'pointer' }}
+                                title="Unassign Property"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ fontSize: '0.78rem', color: isLight ? '#94a3b8' : '#64748b', fontStyle: 'italic' }}>
+                            No properties assigned currently. Click "+ Add Property" to assign.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* METRICS GRID */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #e2e8f0' : '1px solid #334155', borderRadius: '10px', padding: '10px', textAlign: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.66rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>LEADS</span>
+                        <strong style={{ fontSize: '0.95rem', color: '#38bdf8' }}>{adv.assigned_leads}</strong>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.66rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>VISITS</span>
+                        <strong style={{ fontSize: '0.95rem', color: '#f59e0b' }}>{adv.site_visits}</strong>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.66rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>DEALS</span>
+                        <strong style={{ fontSize: '0.95rem', color: '#22c55e' }}>{adv.deals_closed}</strong>
+                      </div>
+                      <div>
+                        <span style={{ fontSize: '0.66rem', color: isLight ? '#64748b' : '#94a3b8', fontWeight: '700', display: 'block' }}>RATING</span>
+                        <strong style={{ fontSize: '0.95rem', color: '#fbbf24', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                          <Star size={12} fill="#fbbf24" color="#fbbf24" /> {adv.rating}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ADVISOR FOOTER ACTIONS */}
+                  <div style={{ borderTop: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#a855f7', fontWeight: '800' }}>
+                      Sales Volume: {adv.total_sales}
+                    </span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* ASSIGN PROPERTY TO ADVISOR MODAL */}
+      {showAssignPropertyModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '20px', width: '100%', maxWidth: '520px', padding: '24px', boxShadow: '0 25px 60px rgba(0,0,0,0.45)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '14px' }}>
+              <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                👨‍💼 Assign Property to Advisor
+              </h3>
+              <button onClick={() => setShowAssignPropertyModal(false)} style={{ background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', display: 'block', marginBottom: '4px' }}>Select Property Advisor *</label>
+                <select
+                  value={assignForm.advisorId}
+                  onChange={(e) => setAssignForm({ ...assignForm, advisorId: e.target.value })}
+                  style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '9px 12px', fontSize: '0.85rem', fontWeight: '800' }}
+                >
+                  {propertyAdvisorsList.map((adv: any) => (
+                    <option key={adv.id} value={adv.id}>{adv.full_name} ({adv.role} - {adv.branch_name})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', display: 'block', marginBottom: '6px' }}>
+                  🔍 Search & Select Existing CRM Property
+                </label>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+                  {/* SEARCH INPUT FOR CRM PROPERTIES */}
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <Search size={14} color={isLight ? '#64748b' : '#94a3b8'} style={{ position: 'absolute', left: '10px', pointerEvents: 'none' }} />
+                    <input
+                      type="text"
+                      value={propertySearchFilter}
+                      onChange={(e) => setPropertySearchFilter(e.target.value)}
+                      placeholder="Type to search property by title, code, or area..."
+                      style={{
+                        width: '100%',
+                        background: isLight ? '#f8fafc' : '#0f172a',
+                        color: isLight ? '#0f172a' : '#ffffff',
+                        border: isLight ? '1px solid #cbd5e1' : '1px solid #334155',
+                        borderRadius: '8px',
+                        padding: '7px 28px 7px 30px',
+                        fontSize: '0.8rem',
+                        fontWeight: '600',
+                        outline: 'none'
+                      }}
+                    />
+                    {propertySearchFilter && (
+                      <button
+                        onClick={() => setPropertySearchFilter('')}
+                        style={{ position: 'absolute', right: '8px', background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', cursor: 'pointer', padding: 0 }}
+                        title="Clear Search"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* SELECT DROPDOWN FILTERED BY SEARCH QUERY */}
+                  {(() => {
+                    const allProps = (properties && properties.length > 0) ? properties : [
+                      { id: 'SRM-PROP-2026-000421', property_code: 'SRM-PROP-2026-000421', property_title: 'SHIBALAY Apartment', locality: 'Garia, Kolkata' },
+                      { id: 'SRM-PROP-2026-000422', property_code: 'SRM-PROP-2026-000422', property_title: 'Gajapati Residency', locality: 'Alipore, Kolkata' },
+                      { id: 'SRM-PROP-2026-000423', property_code: 'SRM-PROP-2026-000423', property_title: 'Dhriti Greens & Commercial', locality: 'Salt Lake Sector 5, Kolkata' },
+                      { id: 'SRM-PROP-2026-000424', property_code: 'SRM-PROP-2026-000424', property_title: 'Regent Park Greens', locality: 'Tollygunge, Kolkata' },
+                      { id: 'SRM-PROP-2026-000425', property_code: 'SRM-PROP-2026-000425', property_title: 'Ballygunge Prime Residency', locality: 'Ballygunge, Kolkata' },
+                      { id: 'SRM-PROP-2026-000426', property_code: 'SRM-PROP-2026-000426', property_title: 'New Alipore Heights', locality: 'New Alipore, Kolkata' }
+                    ];
+
+                    const q = propertySearchFilter.trim().toLowerCase();
+                    const filtered = allProps.filter((p: any) => {
+                      if (!q) return true;
+                      const title = String(p.property_title || p.title || '').toLowerCase();
+                      const code = String(p.property_code || p.id || '').toLowerCase();
+                      const loc = String(p.locality || p.location || '').toLowerCase();
+                      return title.includes(q) || code.includes(q) || loc.includes(q);
+                    });
+
+                    return (
+                      <select
+                        onChange={(e) => {
+                          const selectedProp = allProps.find((p: any) => (p.id || p.property_code) === e.target.value);
+                          if (selectedProp) {
+                            setAssignForm(f => ({
+                              ...f,
+                              propertyTitle: selectedProp.property_title || selectedProp.title,
+                              propertyCode: selectedProp.property_code || selectedProp.id,
+                              location: selectedProp.locality || selectedProp.location || 'Kolkata',
+                              propertyType: selectedProp.property_type || selectedProp.propertyType || 'Residential Flat'
+                            }));
+                          }
+                        }}
+                        style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '9px 12px', fontSize: '0.85rem', fontWeight: '800' }}
+                      >
+                        <option value="">-- Select from {filtered.length} matching CRM property result(s) --</option>
+                        {filtered.map((p: any) => (
+                          <option key={p.id || p.property_code} value={p.id || p.property_code}>
+                            🏢 {p.property_title || p.title} ({p.property_code || p.id}) - {p.locality || p.location || 'Kolkata'}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', display: 'block', marginBottom: '4px' }}>Property Title / Project Name *</label>
+                <input
+                  type="text"
+                  value={assignForm.propertyTitle}
+                  onChange={(e) => setAssignForm({ ...assignForm, propertyTitle: e.target.value })}
+                  placeholder="e.g. SHIBALAY Apartment / Gajapati Residency"
+                  style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '9px 12px', fontSize: '0.85rem', fontWeight: '800' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', display: 'block', marginBottom: '4px' }}>Property Code (Optional)</label>
+                  <input
+                    type="text"
+                    value={assignForm.propertyCode}
+                    onChange={(e) => setAssignForm({ ...assignForm, propertyCode: e.target.value })}
+                    placeholder="e.g. SRM-PROP-2026-000421"
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '9px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', display: 'block', marginBottom: '4px' }}>Locality / Area</label>
+                  <input
+                    type="text"
+                    value={assignForm.location}
+                    onChange={(e) => setAssignForm({ ...assignForm, location: e.target.value })}
+                    placeholder="e.g. Garia / Ballygunge, Kolkata"
+                    style={{ width: '100%', background: isLight ? '#ffffff' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '8px', padding: '9px 12px', fontSize: '0.85rem' }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '10px', borderTop: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+              <button
+                onClick={() => setShowAssignPropertyModal(false)}
+                style={{ background: isLight ? '#ffffff' : '#1e293b', color: isLight ? '#0f172a' : '#ffffff', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', padding: '9px 16px', borderRadius: '8px', fontWeight: '800', fontSize: '0.82rem', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSavePropertyAssignment}
+                style={{ background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)', color: '#ffffff', border: 'none', padding: '9px 18px', borderRadius: '8px', fontWeight: '900', fontSize: '0.82rem', cursor: 'pointer' }}
+              >
+                Confirm Property Assignment
+              </button>
+            </div>
           </div>
         </div>
       )}

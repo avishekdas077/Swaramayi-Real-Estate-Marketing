@@ -13,13 +13,200 @@ function slugify(text: string): string {
     .replace(/\-\-+/g, '-');
 }
 
+// Helper to check if a property is marked as SOLD / SOLD_OUT in CRM
+function isSoldProperty(p: any): boolean {
+  const s = String(p.status || p.availability_status || p.property_status || '').toUpperCase();
+  return (
+    s === 'SOLD' || 
+    s === 'SOLD_OUT' || 
+    s === 'SOLD OUT' || 
+    p.isSold === true || 
+    p.is_sold === true
+  );
+}
+
+function parsePriceString(val: any): number {
+  if (val === undefined || val === null || val === '') return 0;
+  if (typeof val === 'number') return isNaN(val) || val <= 0 ? 0 : val;
+
+  const str = String(val).trim();
+  if (!str) return 0;
+
+  if (/lakh/i.test(str)) {
+    const cleanStr = str.replace(/[^0-9.]/g, '');
+    const num = parseFloat(cleanStr);
+    return isNaN(num) ? 0 : Math.round(num * 100000);
+  }
+
+  if (/cr|crore/i.test(str)) {
+    const cleanStr = str.replace(/[^0-9.]/g, '');
+    const num = parseFloat(cleanStr);
+    return isNaN(num) ? 0 : Math.round(num * 10000000);
+  }
+
+  const cleaned = str.replace(/[^0-9.]/g, '');
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function parseAreaString(val: any): number {
+  if (val === undefined || val === null || val === '') return 0;
+  if (typeof val === 'number') return isNaN(val) || val <= 0 ? 0 : val;
+  const str = String(val).trim();
+  const cleaned = str.replace(/[^0-9.]/g, '');
+  const parsed = parseFloat(cleaned);
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+function extractPropertyImages(p: any, title: string, id: string): string[] {
+  const candidates: string[] = [];
+
+  const addCandidate = (val: any) => {
+    if (!val) return;
+    if (Array.isArray(val)) {
+      val.forEach(item => addCandidate(item));
+    } else if (typeof val === 'string') {
+      const trimmed = val.trim();
+      if (trimmed.startsWith('http://') || trimmed.startsWith('https://') || trimmed.startsWith('data:image/') || trimmed.startsWith('/')) {
+        if (!candidates.includes(trimmed)) {
+          candidates.push(trimmed);
+        }
+      }
+    }
+  };
+
+  addCandidate(p.images);
+  addCandidate(p.image);
+  addCandidate(p.building_photos);
+  addCandidate(p.building_photo);
+  addCandidate(p.unit_photos);
+  addCandidate(p.photos);
+  addCandidate(p.photo);
+  addCandidate(p.cover_image);
+  addCandidate(p.image_url);
+  addCandidate(p.imageUrl);
+  addCandidate(p.thumbnail);
+  addCandidate(p.picture);
+  addCandidate(p.media);
+
+  if (candidates.length > 0) {
+    return candidates;
+  }
+
+  const defaultImagesSet = [
+    [
+      'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80'
+    ],
+    [
+      'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80'
+    ],
+    [
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=800&q=80'
+    ],
+    [
+      'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80'
+    ]
+  ];
+
+  let hash = 0;
+  const str = id || title || 'default';
+  for (let i = 0; i < str.length; i++) {
+    hash = (hash << 5) - hash + str.charCodeAt(i);
+    hash |= 0;
+  }
+  const setIndex = Math.abs(hash) % defaultImagesSet.length;
+  return defaultImagesSet[setIndex];
+}
+
 // Normalize Property for Public Website Response
 function formatPublicProperty(p: any) {
   const title = p.property_title || p.title || `Property ${p.property_code || p.id}`;
   const slug = p.slug || slugify(`${title}-${p.property_code || p.id}`);
-  const rawPrice = Number(p.final_estimated_price || p.base_price || p.price);
-  const area = Number(p.carpet_area_sqft || p.built_up_area_sqft || p.areaSqft || 1200);
-  const price = rawPrice > 0 ? rawPrice : Math.round(area * 5500);
+
+  const rawPrice = 
+    parsePriceString(p.final_estimated_price) || 
+    parsePriceString(p.final_price) || 
+    parsePriceString(p.base_price) || 
+    parsePriceString(p.price) || 
+    parsePriceString(p.expected_price) || 
+    parsePriceString(p.total_price) ||
+    parsePriceString(p.amount) ||
+    parsePriceString(p.budget) ||
+    parsePriceString(p.asking_price);
+
+  const superBuiltupArea = 
+    parseAreaString(p.super_builtup_area) || 
+    parseAreaString(p.super_built_up_area) || 
+    parseAreaString(p.built_up_area_sqft) || 
+    parseAreaString(p.built_up_area) || 
+    parseAreaString(p.super_area);
+
+  const carpetArea = 
+    parseAreaString(p.carpet_area_sqft) || 
+    parseAreaString(p.carpet_area);
+
+  const fallbackArea = 
+    parseAreaString(p.areaSqft) || 
+    parseAreaString(p.area_sqft) || 
+    parseAreaString(p.area) || 
+    1200;
+
+  const area = superBuiltupArea || carpetArea || fallbackArea;
+  const finalSuperArea = superBuiltupArea || area;
+  const finalCarpetArea = carpetArea || area;
+
+  let price = rawPrice;
+  if (price <= 0) {
+    const titleLower = title.toLowerCase();
+    if (titleLower.includes('shibalay')) {
+      price = 3000000;
+    } else if (titleLower.includes('gajapati')) {
+      price = 3515900;
+    } else if (titleLower.includes('dhriti')) {
+      price = 4250000;
+    } else {
+      const strForHash = p.id || p.property_code || title;
+      let hash = 0;
+      for (let i = 0; i < strForHash.length; i++) {
+        hash = (hash << 5) - hash + strForHash.charCodeAt(i);
+        hash |= 0;
+      }
+      const rate = 3800 + (Math.abs(hash) % 40) * 120;
+      price = Math.round(area * rate);
+    }
+  }
+
+  const explicitSqftRate = 
+    parsePriceString(p.pricePerSqft) || 
+    parsePriceString(p.price_per_sqft) || 
+    parsePriceString(p.price_sqft) || 
+    parsePriceString(p.rate_sqft);
+  
+  const pricePerSqft = explicitSqftRate > 0 ? explicitSqftRate : (area > 0 && price > 0 ? Math.round(price / area) : 0);
+
+  const statusRaw = String(p.status || p.availability_status || p.property_status || 'LIVE').toUpperCase();
+  let constructionStatus = 'LIVE / AVAILABLE';
+  if (statusRaw === 'LIVE' || statusRaw === 'AVAILABLE' || statusRaw.includes('LIVE') || statusRaw.includes('READY') || statusRaw === 'READY_TO_MOVE') {
+    constructionStatus = 'LIVE / AVAILABLE';
+  } else if (statusRaw.includes('UNDER') || statusRaw === 'UNDER_CONSTRUCTION') {
+    constructionStatus = 'Under Construction';
+  } else if (statusRaw.includes('BOOKED')) {
+    constructionStatus = 'Booked';
+  } else if (statusRaw.includes('HOLD')) {
+    constructionStatus = 'Hold / Reserved';
+  } else if (statusRaw.includes('SOLD')) {
+    constructionStatus = 'Sold Out';
+  } else if (p.constructionStatus) {
+    constructionStatus = p.constructionStatus;
+  }
+
+  const isSold = isSoldProperty(p);
+
+  const images = extractPropertyImages(p, title, p.id || p.property_code);
 
   return {
     ...p,
@@ -30,14 +217,14 @@ function formatPublicProperty(p: any) {
     property_title: title,
     slug,
     description: p.description || p.location_address || `${p.configuration || ''} ${p.property_type || 'Property'} available in ${p.locality || ''}, ${p.city || ''}`,
-    category: p.category || (p.transaction_type === 'Rent' ? 'Rent' : 'Buy'),
+    category: (String(p.category || p.transaction_type || 'Buy').toLowerCase().includes('rent')) ? 'Rent' : 'Buy',
     propertyType: p.propertyType || p.property_type || 'Apartment',
     property_type: p.property_type || p.propertyType || 'Apartment',
     listingType: p.listingType || p.transaction_type || 'Sale',
     price,
     base_price: p.base_price || price,
     final_estimated_price: price,
-    pricePerSqft: p.pricePerSqft || p.price_per_sqft || (p.carpet_area_sqft ? Math.round(price / p.carpet_area_sqft) : 0),
+    pricePerSqft,
     city: p.city || 'Kolkata',
     location: p.location || p.locality || 'Kolkata',
     locality: p.locality || p.location || 'Kolkata',
@@ -48,40 +235,72 @@ function formatPublicProperty(p: any) {
     bedrooms: p.bedrooms || (p.configuration ? parseInt(p.configuration) || 3 : 3),
     bathrooms: p.bathrooms || 2,
     balconies: p.balconies || 1,
-    areaSqft: p.areaSqft || p.carpet_area_sqft || 1200,
-    carpet_area_sqft: p.carpet_area_sqft || p.areaSqft || 1200,
+    areaSqft: area,
+    superBuiltupArea: finalSuperArea,
+    carpetArea: finalCarpetArea,
+    carpet_area_sqft: finalCarpetArea,
+    built_up_area_sqft: finalSuperArea,
+    floor: p.floor !== undefined && p.floor !== null && p.floor !== '' ? p.floor : (p.floor_number || p.unit_floor || ''),
+    totalFloors: p.total_floors || p.total_floors_in_building || p.total_floor || '',
+    possessionStatus: p.possession_status || p.possession_date || 'Ready to Move In',
     facing: p.facing || 'East',
     furnishing: p.furnishing || p.furnishing_status || 'Semi-Furnished',
-    parking: p.parking || (p.parking_spaces ? 'Covered' : 'Open'),
-    constructionStatus: p.constructionStatus || (p.availability_status === 'AVAILABLE' ? 'Ready to Move' : 'Under Construction'),
+    parking: p.parking || (p.parking_spaces ? `${p.parking_spaces} Space` : 'Covered'),
+    constructionStatus,
     reraApproved: p.reraApproved !== undefined ? p.reraApproved : true,
     reraNumber: p.reraNumber || 'WBRERA/2026/00192',
     amenities: p.amenities || ['24x7 Security', 'Power Backup', 'Car Parking', 'Gymnasium', 'Swimming Pool', 'Clubhouse'],
-    images: (p.images && p.images.length > 0) ? p.images : [
-      'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80'
-    ],
-    featured: p.featured !== undefined ? p.featured : true,
+    images,
+    image: images[0],
+    building_photo: images[0],
+    cover_image: images[0],
+    featured: Boolean(p.featured),
     verified: p.verified !== undefined ? p.verified : true,
     published: p.published !== undefined ? p.published : true,
-    isSold: p.isSold || p.availability_status === 'SOLD',
+    isSold,
+    availability_status: isSold ? 'SOLD' : (p.availability_status || p.status || 'AVAILABLE'),
     views: (p.views || 0) + 1,
     created_at: p.created_at || new Date().toISOString()
   };
 }
 
-// 1. Get Public Properties List
+// 1. Get Public Properties List (Active properties only - excludes SOLD OUT)
 export async function getPublicProperties(req: Request, res: Response) {
   loadData();
   const { 
     search, type, propertyType, category, listingType, city, location, locality,
-    minPrice, maxPrice, bedrooms, featured, recent
+    minPrice, maxPrice, bedrooms, featured, recent, isSold, status
   } = req.query;
 
-  let properties = dbStore.data.properties.filter(p => !p.is_deleted);
+  const wantsSold = 
+    isSold === 'true' || 
+    String(isSold) === 'true' || 
+    String(status || '').toLowerCase().includes('sold');
+
+  let properties: any[] = [];
+
+  if (wantsSold) {
+    const explicitlySold = dbStore.data.properties.filter(p => !p.is_deleted && isSoldProperty(p));
+    const bookedPropIds = new Set((dbStore.data.bookings || []).map((b: any) => b.property_code || b.property_id || b.unit_id).filter(Boolean));
+    const bookingSold = dbStore.data.properties.filter(p => !p.is_deleted && bookedPropIds.has(p.property_code || p.id));
+    
+    const combinedSoldMap = new Map<string, any>();
+    [...explicitlySold, ...bookingSold].forEach(p => combinedSoldMap.set(p.id || p.property_code, p));
+    properties = Array.from(combinedSoldMap.values());
+  } else {
+    properties = dbStore.data.properties.filter(p => !p.is_deleted && !isSoldProperty(p));
+  }
 
   // Formatting & Mapping
-  let publicList = properties.map(formatPublicProperty);
+  let publicList = properties.map(p => {
+    const formatted = formatPublicProperty(p);
+    if (wantsSold) {
+      formatted.isSold = true;
+      formatted.availability_status = 'SOLD';
+      formatted.constructionStatus = 'Sold Out';
+    }
+    return formatted;
+  });
 
   if (search && typeof search === 'string') {
     const q = search.toLowerCase();
@@ -95,15 +314,48 @@ export async function getPublicProperties(req: Request, res: Response) {
   }
 
   if (type || propertyType) {
-    const filterType = (type || propertyType) as string;
-    publicList = publicList.filter(p => 
-      p.propertyType.toLowerCase() === filterType.toLowerCase() ||
-      p.property_type.toLowerCase() === filterType.toLowerCase()
-    );
+    const filterType = ((type || propertyType) as string).trim().toLowerCase();
+    publicList = publicList.filter(p => {
+      const pt = (p.propertyType || p.property_type || '').toLowerCase();
+      if (pt === filterType) return true;
+      if (pt.includes(filterType) || filterType.includes(pt)) return true;
+
+      const isApartmentFilter = filterType.includes('apartment') || filterType.includes('flat');
+      const isApartmentProperty = pt.includes('apartment') || pt.includes('flat') || pt.includes('residence') || pt.includes('bhk');
+      if (isApartmentFilter && isApartmentProperty) return true;
+
+      const isVillaFilter = filterType.includes('villa') || filterType.includes('house');
+      const isVillaProperty = pt.includes('villa') || pt.includes('house') || pt.includes('bungalow') || pt.includes('duplex');
+      if (isVillaFilter && isVillaProperty) return true;
+
+      const isCommercialFilter = filterType.includes('commercial') || filterType.includes('office') || filterType.includes('shop');
+      const isCommercialProperty = pt.includes('commercial') || pt.includes('office') || pt.includes('shop') || pt.includes('retail');
+      if (isCommercialFilter && isCommercialProperty) return true;
+
+      const isPlotFilter = filterType.includes('plot') || filterType.includes('land');
+      const isPlotProperty = pt.includes('plot') || pt.includes('land');
+      if (isPlotFilter && isPlotProperty) return true;
+
+      return false;
+    });
   }
 
   if (category) {
-    publicList = publicList.filter(p => p.category.toLowerCase() === (category as string).toLowerCase());
+    const catFilter = (category as string).trim().toLowerCase();
+    publicList = publicList.filter(p => {
+      const pCat = (p.category || p.listingType || p.transaction_type || '').toLowerCase();
+      if (catFilter === 'buy' || catFilter === 'sale') {
+        return !pCat || pCat === 'buy' || pCat === 'sale' || pCat.includes('buy') || pCat.includes('sale');
+      }
+      if (catFilter === 'rent') {
+        return pCat.includes('rent') || pCat.includes('lease');
+      }
+      if (catFilter === 'commercial') {
+        const pt = (p.propertyType || p.property_type || '').toLowerCase();
+        return pCat.includes('commercial') || pt.includes('commercial') || pt.includes('office') || pt.includes('shop');
+      }
+      return pCat === catFilter || pCat.includes(catFilter);
+    });
   }
 
   if (city) {
@@ -140,10 +392,13 @@ export async function getPublicProperties(req: Request, res: Response) {
   });
 }
 
-// 2. Get Featured Properties
+// 2. Get Featured Properties (Active properties only)
 export async function getPublicFeaturedProperties(req: Request, res: Response) {
   loadData();
-  const properties = dbStore.data.properties.filter(p => !p.is_deleted).map(formatPublicProperty);
+  const properties = dbStore.data.properties
+    .filter(p => !p.is_deleted && !isSoldProperty(p))
+    .map(formatPublicProperty);
+    
   const featured = properties.filter(p => p.featured);
   const result = featured.length > 0 ? featured : properties.slice(0, 6);
 
@@ -155,11 +410,11 @@ export async function getPublicFeaturedProperties(req: Request, res: Response) {
   });
 }
 
-// 3. Get Recent Properties
+// 3. Get Recent Properties (Active properties only)
 export async function getPublicRecentProperties(req: Request, res: Response) {
   loadData();
   const properties = dbStore.data.properties
-    .filter(p => !p.is_deleted)
+    .filter(p => !p.is_deleted && !isSoldProperty(p))
     .map(formatPublicProperty)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
@@ -175,15 +430,9 @@ export async function getPublicRecentProperties(req: Request, res: Response) {
 export async function getPublicSoldProperties(req: Request, res: Response) {
   loadData();
   
-  // 1. Get properties explicitly marked as SOLD or BOOKED in CRM
+  // 1. Get properties explicitly marked as SOLD or SOLD_OUT in CRM
   let soldProperties = dbStore.data.properties
-    .filter(p => !p.is_deleted && (
-      p.availability_status === 'SOLD' || 
-      p.availability_status === 'BOOKED' || 
-      p.property_status === 'Sold' || 
-      p.isSold || 
-      (p as any).is_sold
-    ))
+    .filter(p => !p.is_deleted && isSoldProperty(p))
     .map(formatPublicProperty);
 
   // 2. Cross-reference with Bookings table in CRM (dbStore.data.bookings)
@@ -201,88 +450,26 @@ export async function getPublicSoldProperties(req: Request, res: Response) {
     });
   }
 
-  // 3. Fallback Dynamic Sold Properties matching Kolkata locations if database has no active sold status yet
-  if (soldProperties.length === 0) {
-    soldProperties = [
-      formatPublicProperty({
-        id: 'SOLD-PROP-01',
-        property_code: 'SRM-PROP-SOLD-001',
-        property_title: 'Shibalay Residency Luxury 3BHK',
-        property_type: 'Apartment',
-        transaction_type: 'Sale',
-        developer_name: 'Shibalay Developers',
-        city: 'Kolkata',
-        locality: 'Barasat',
-        location_address: 'Barasat, Chapadali, Kolkata',
-        carpet_area_sqft: 1450,
-        bedrooms: 3,
-        bathrooms: 2,
-        base_price: 7500000,
-        final_estimated_price: 7500000,
-        availability_status: 'SOLD',
-        isSold: true,
-        images: ['https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80']
-      }),
-      formatPublicProperty({
-        id: 'SOLD-PROP-02',
-        property_code: 'SRM-PROP-SOLD-002',
-        property_title: 'Gajapati Apartment Premium 2BHK',
-        property_type: 'Apartment',
-        transaction_type: 'Sale',
-        developer_name: 'Gajapati Group',
-        city: 'Kolkata',
-        locality: 'Barasat',
-        location_address: 'Barasat, Kolkata, Kolkata',
-        carpet_area_sqft: 1200,
-        bedrooms: 2,
-        bathrooms: 2,
-        base_price: 5200000,
-        final_estimated_price: 5200000,
-        availability_status: 'SOLD',
-        isSold: true,
-        images: ['https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80']
-      }),
-      formatPublicProperty({
-        id: 'SOLD-PROP-03',
-        property_code: 'SRM-PROP-SOLD-003',
-        property_title: 'Dhriti Apartment Executive 2BHK',
-        property_type: 'Apartment',
-        transaction_type: 'Sale',
-        developer_name: 'Dhriti Group',
-        city: 'Kolkata',
-        locality: 'Barasat',
-        location_address: 'Barasat, Kolkata, Kolkata',
-        carpet_area_sqft: 1200,
-        bedrooms: 2,
-        bathrooms: 2,
-        base_price: 4800000,
-        final_estimated_price: 4800000,
-        availability_status: 'SOLD',
-        isSold: true,
-        images: ['https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80']
-      })
-    ];
-  }
-
   // Ensure all returned properties are flagged as sold
   const result = soldProperties.map(sp => ({
     ...sp,
     isSold: true,
-    availability_status: 'SOLD'
+    availability_status: 'SOLD',
+    constructionStatus: 'Sold Out'
   }));
 
   // Dynamic Stats from CRM Data
-  const totalSold = Math.max(result.length, dbStore.data.bookings?.length || 0, 150);
+  const totalSold = Math.max(result.length, dbStore.data.bookings?.length || 0);
   const totalVolume = result.reduce((sum, p) => sum + (p.price || 0), 0) + (dbStore.data.bookings?.reduce((sum: number, b: any) => sum + (b.agreement_value || b.booking_amount || 0), 0) || 0);
-  const totalVolumeCr = Math.max(Math.round((totalVolume / 10000000) * 10) / 10, 250);
+  const totalVolumeCr = Math.max(Math.round((totalVolume / 10000000) * 10) / 10, totalSold > 0 ? 5 : 0);
 
   return res.json({
     status: 'success',
     success: true,
     count: result.length,
     stats: {
-      totalSold,
-      totalVolumeCr,
+      totalSold: totalSold > 0 ? totalSold : 150,
+      totalVolumeCr: totalVolumeCr > 0 ? totalVolumeCr : 250,
       verifiedPct: 100,
       satisfactionPct: 98
     },
@@ -582,13 +769,23 @@ export async function schedulePublicSiteVisit(req: Request, res: Response) {
 // 9. Get Public Locations / Cities
 export async function getPublicLocations(req: Request, res: Response) {
   loadData();
-  const citiesSet = new Set<string>();
-  const locationsSet = new Set<string>();
+  const citiesSet = new Set<string>(['Kolkata', 'Hyderabad', 'Bangalore', 'Mumbai']);
+  const locationsSet = new Set<string>([
+    'Alipore', 'Anwar Shah Road', 'Ashok Nagar Road', 'Ballygunge', 'Bamangachhi', 
+    'Bansdroni', 'Barasat', 'Behala', 'Bhawanipur', 'Bidhan Nagar Road', 'Bira', 
+    'Birati', 'Bisharpara Kodaliya', 'Chetla', 'Dattapukur', 'Dhakuria', 'Dum Dum', 
+    'Dum Dum Cantonment', 'Dum Dum Junction', 'Durganagar', 'EM Bypass', 'Garia', 
+    'Gariahat', 'Golf Green', 'Guma', 'Hazra', 'Howrah', 'Hridaypur', 'Jadavpur', 
+    'Jodhpur Park', 'Kalighat', 'Kasba', 'Kudghat', 'Lake Gardens', 'Lansdowne', 
+    'Madhyamgram', 'Mukundapur', 'Naktala', 'Netaji Nagar', 'New Alipore', 
+    'New Barrackpore', 'New Town', 'Prince Anwar Shah Road', 'Rajarhat', 
+    'Rashbehari Avenue', 'Regent Park', 'Ruby', 'Salt Lake', 'Santoshpur', 
+    'Sarat Bose Road', 'Sealdah', 'Tollygunge'
+  ]);
 
   dbStore.data.properties.forEach(p => {
     if (p.city) citiesSet.add(p.city);
     if (p.locality) locationsSet.add(p.locality);
-    if (p.location_address) locationsSet.add(p.location_address);
   });
 
   const cities = Array.from(citiesSet);
@@ -598,8 +795,44 @@ export async function getPublicLocations(req: Request, res: Response) {
     status: 'success',
     success: true,
     data: {
-      cities: cities.length > 0 ? cities : ['Kolkata', 'Hyderabad', 'Bangalore', 'Mumbai'],
-      locations: locations.length > 0 ? locations : ['New Town', 'Rajarhat', 'EM Bypass', 'Salt Lake', 'Garia']
+      cities,
+      locations
+    }
+  });
+}
+
+export async function getPublicLocationBySlug(req: Request, res: Response) {
+  loadData();
+  const { slug } = req.params;
+  const nameFromSlug = slug.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+  const matchingProperties = dbStore.data.properties
+    .filter(p => !p.is_deleted && !isSoldProperty(p))
+    .map(formatPublicProperty)
+    .filter(p => 
+      p.location.toLowerCase().includes(nameFromSlug.toLowerCase()) ||
+      p.locality.toLowerCase().includes(nameFromSlug.toLowerCase()) ||
+      p.city.toLowerCase().includes(nameFromSlug.toLowerCase()) ||
+      (p.description && p.description.toLowerCase().includes(nameFromSlug.toLowerCase()))
+    );
+
+  const locationObj = {
+    id: slug,
+    name: nameFromSlug,
+    slug: slug,
+    description: `Explore premium residential properties, luxury apartments, and commercial real estate in ${nameFromSlug}, Kolkata.`,
+    connectivity: `Convenient access to metro, major arteries, buses and railway hubs in ${nameFromSlug}.`,
+    schools: `Top reputed schools, colleges and academic institutions in and around ${nameFromSlug}.`,
+    hospitals: `Super-specialty medical centers and multi-specialty hospitals accessible from ${nameFromSlug}.`,
+    shopping: `Shopping malls, local bazaars, hypermarkets and lifestyle destinations in ${nameFromSlug}.`
+  };
+
+  return res.json({
+    status: 'success',
+    success: true,
+    data: {
+      location: locationObj,
+      properties: matchingProperties
     }
   });
 }

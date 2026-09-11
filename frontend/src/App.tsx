@@ -9044,6 +9044,8 @@ export default function App() {
               handleOpenEditTeamModal={handleOpenEditTeamModal}
               handleDeleteTeam={handleDeleteTeam}
               handleOpenSecurityAuditModal={handleOpenSecurityAuditModal}
+              properties={properties}
+              customers={customers}
             />
           )}
 
