@@ -19,6 +19,7 @@ interface AgreementManagementViewProps {
   setShowPvaDocumentModal: (val: any) => void;
   setSelectedAgreement: (val: any) => void;
   setShowFullContractModal: (val: boolean) => void;
+  onRecycleItem?: (itemData: any) => void;
 }
 
 export const AgreementManagementView: React.FC<AgreementManagementViewProps> = ({
@@ -39,6 +40,7 @@ export const AgreementManagementView: React.FC<AgreementManagementViewProps> = (
   setShowPvaDocumentModal,
   setSelectedAgreement,
   setShowFullContractModal,
+  onRecycleItem,
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
   return (
@@ -243,18 +245,28 @@ export const AgreementManagementView: React.FC<AgreementManagementViewProps> = (
                           {isSuperAdmin && (
                             <button 
                               onClick={() => {
-                                if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Agreement record ${a.agreement_code || a.id} for ${a.party_name || 'Customer'}?`)) {
+                                if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to delete Agreement record ${a.agreement_code || a.id} for ${a.party_name || 'Customer'}? It will be moved to Recycle Bin.`)) {
+                                  if (onRecycleItem) {
+                                    onRecycleItem({
+                                      id: a.id || `AGR-${Date.now()}`,
+                                      title: `${a.party_name || a.customer_name || 'Agreement'} (${a.agreement_code || a.id})`,
+                                      category: 'Agreement',
+                                      originalLocation: 'Agreement & PVA Vault',
+                                      details: `Type: ${a.agreement_type || 'PVA Agreement'}, Status: ${a.status || 'Active'}`,
+                                      originalData: a
+                                    });
+                                  }
                                   if (a.pvaData && setProjectVisitAgreements) {
                                     setProjectVisitAgreements((prev: any[]) => (prev || []).filter((pva: any) => (pva.projectVisitAgreementId || pva.id) !== a.id));
                                   }
                                   if (setAgreements) {
                                     setAgreements((prev: any[]) => (prev || []).filter((ag: any) => ag.id !== a.id && ag.agreement_code !== a.agreement_code));
                                   }
-                                  alert(`🗑️ Agreement record ${a.agreement_code || a.id} deleted permanently.`);
+                                  alert(`🗑️ Agreement record ${a.agreement_code || a.id} moved to Recycle Bin.`);
                                 }
                               }}
                               style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                              title="Permanently delete this agreement record"
+                              title="Move this agreement record to Recycle Bin"
                             >
                               🗑️ Delete
                             </button>

@@ -15,6 +15,7 @@ import {
   GitMerge, ArrowDown, Sun, Moon, Menu, LogOut, BookmarkCheck, Camera, Image as ImageIcon, SearchCode, Globe, ExternalLink
 } from 'lucide-react';
 import { ProfileView } from './components/ProfileView';
+import { RecycleBinView } from './components/RecycleBinView';
 import { RoleManagementView } from './components/RoleManagementView';
 import { BillingManagementView } from './components/BillingManagementView';
 import { BookingManagementView } from './components/BookingManagementView';
@@ -1884,7 +1885,7 @@ export default function App() {
   const isMongoLoadedRef = useRef<boolean>(false);
   // 13 Main Navigation Categories
   const [activeTab, setActiveTab] = useState<
-    'main_dashboard' | 'lead_management' | 'customer_management' | 'matching_management' | 'cost_sheet_share' | 'visit_management' | 'project_management' | 'agreement_management' | 'booking_management' | 'billing_management' | 'map_management' | 'role_management' | 'profile'
+    'main_dashboard' | 'lead_management' | 'customer_management' | 'matching_management' | 'cost_sheet_share' | 'visit_management' | 'project_management' | 'agreement_management' | 'booking_management' | 'billing_management' | 'map_management' | 'role_management' | 'profile' | 'recycle_bin'
   >(() => {
     if (typeof window !== 'undefined') {
       try {
@@ -3438,6 +3439,90 @@ export default function App() {
       console.error('Error saving leads to localStorage:', e);
     }
   }, [leadsList]);
+
+  // 6.6. DYNAMIC RECYCLE BIN VAULT (WITH LOCALSTORAGE PERSISTENCE)
+  const [recycledItems, setRecycledItems] = useState<any[]>(() => {
+    try {
+      const saved = localStorage.getItem('swaramayi_recycled_items');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {
+      console.error('Error reading recycled items from localStorage:', e);
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('swaramayi_recycled_items', JSON.stringify(recycledItems));
+    } catch (e) {
+      console.error('Error saving recycled items to localStorage:', e);
+    }
+  }, [recycledItems]);
+
+  const handleRecycleItem = (itemData: {
+    id?: string;
+    title: string;
+    category: 'Lead' | 'Customer' | 'Project' | 'Agreement' | 'Cost Sheet';
+    originalLocation: string;
+    details?: string;
+    originalData: any;
+  }) => {
+    const newItem = {
+      id: itemData.id || `TRASH-${Date.now()}`,
+      title: itemData.title,
+      category: itemData.category,
+      deletedBy: `${currentRole === 'SUPER_ADMIN' ? 'Rajesh Varma (SUPER_ADMIN)' : currentRole}`,
+      deletedAt: new Date().toISOString().replace('T', ' ').slice(0, 16),
+      originalLocation: itemData.originalLocation,
+      details: itemData.details || itemData.title,
+      originalData: itemData.originalData
+    };
+    setRecycledItems(prev => [newItem, ...prev.filter(r => r.id !== newItem.id)]);
+  };
+
+  const handleRestoreRecycledItem = (item: any) => {
+    const data = item.originalData || {};
+    switch (item.category) {
+      case 'Lead':
+        setLeadsList(prev => [data, ...prev.filter(l => l.id !== data.id && l.lead_number !== data.lead_number)]);
+        break;
+      case 'Customer':
+        setCustomers(prev => [data, ...prev.filter(c => c.id !== data.id && c.customer_number !== data.customer_number)]);
+        break;
+      case 'Project':
+        setProperties(prev => [data, ...prev.filter(p => p.id !== data.id && p.property_code !== data.property_code)]);
+        break;
+      case 'Agreement':
+        if (data.pvaData) {
+          setProjectVisitAgreements(prev => [data, ...prev.filter((p: any) => p.id !== data.id)]);
+        } else {
+          setAgreements(prev => [data, ...prev.filter((a: any) => a.id !== data.id)]);
+        }
+        break;
+      case 'Cost Sheet':
+        setIndividualCostSheets(prev => [data, ...prev.filter((c: any) => c.id !== data.id && c.costSheetId !== data.costSheetId)]);
+        break;
+      default:
+        if (data.full_name || data.customer_name) {
+          setCustomers(prev => [data, ...prev]);
+        } else if (data.property_code || data.title) {
+          setProperties(prev => [data, ...prev]);
+        }
+        break;
+    }
+    setRecycledItems(prev => prev.filter(r => r.id !== item.id));
+  };
+
+  const handlePurgeRecycledItem = (item: any) => {
+    setRecycledItems(prev => prev.filter(r => r.id !== item.id));
+  };
+
+  const handleEmptyRecycleBin = () => {
+    setRecycledItems([]);
+  };
 
   // Central Inbox Filter States
   const [leadInboxTab, setLeadInboxTab] = useState<string>('all');
@@ -6026,17 +6111,39 @@ export default function App() {
 
   const handleBulkDeleteProperties = () => {
     if (selectedPropertyIds.length === 0) return alert('Please select at least 1 property to delete.');
-    if (window.confirm(`Are you sure you want to delete ${selectedPropertyIds.length} selected properties?`)) {
+    if (window.confirm(`Are you sure you want to move ${selectedPropertyIds.length} selected properties to Recycle Bin?`)) {
+      const propsToDelete = properties.filter(p => selectedPropertyIds.includes(p.id));
+      propsToDelete.forEach(prop => {
+        handleRecycleItem({
+          id: prop.id || `PROP-${Date.now()}`,
+          title: `${prop.title || 'Property'} (${prop.property_code || prop.id})`,
+          category: 'Project',
+          originalLocation: 'Property Master / Live Inventory',
+          details: `${prop.configuration || ''} ${prop.property_type || ''} at ${prop.locality || ''}`,
+          originalData: prop
+        });
+      });
       setProperties(properties.filter(p => !selectedPropertyIds.includes(p.id)));
       setSelectedPropertyIds([]);
-      alert(`🗑️ Selected properties deleted in bulk!`);
+      alert(`🗑️ Selected properties moved to Recycle Bin!`);
     }
   };
 
   const handleDeleteProperty = (id: string, code: string) => {
-    if (window.confirm(`Are you sure you want to delete Property Master Record ${code}?`)) {
-      setProperties(properties.filter(p => p.id !== id));
-      alert(`🗑️ Property ${code} deleted successfully!`);
+    if (window.confirm(`Are you sure you want to move Property Master Record ${code} to Recycle Bin?`)) {
+      const prop = properties.find(p => p.id === id || p.property_code === code);
+      if (prop) {
+        handleRecycleItem({
+          id: prop.id || `PROP-${Date.now()}`,
+          title: `${prop.title || 'Property'} (${code})`,
+          category: 'Project',
+          originalLocation: 'Property Master / Live Inventory',
+          details: `${prop.configuration || ''} ${prop.property_type || ''} at ${prop.locality || ''}`,
+          originalData: prop
+        });
+      }
+      setProperties(prev => prev.filter(p => p.id !== id && p.property_code !== code));
+      alert(`🗑️ Property ${code} moved to Recycle Bin!`);
     }
   };
 
@@ -6248,14 +6355,25 @@ export default function App() {
   };
 
   const handleDeleteCustomer = (id: string, code: string) => {
-    if (window.confirm(`Are you sure you want to delete Customer Record ${code}?`)) {
+    if (window.confirm(`Are you sure you want to move Customer Record ${code} to Recycle Bin?`)) {
       const cleanCode = (code || '').toLowerCase().trim();
       const cleanId = (id || '').toLowerCase().trim();
+      const cust = customers.find(c => c.id === id || c.customer_number === code);
+      if (cust) {
+        handleRecycleItem({
+          id: cust.id || `CUST-${Date.now()}`,
+          title: `${cust.full_name || cust.customer_name || 'Customer'} (${code})`,
+          category: 'Customer',
+          originalLocation: 'Customer 360 Vault',
+          details: `Mobile: ${cust.mobile || 'N/A'} • Preferred Locality: ${cust.preferred_locality || 'N/A'}`,
+          originalData: cust
+        });
+      }
       setCustomers(prev => prev.filter(c => c.id !== id && (c.customer_number || '').toLowerCase() !== cleanCode));
       setMatchingRequestsQueue(prev => prev.filter(r => (r.customerNumber || '').toLowerCase() !== cleanCode && (r.requestId || '').toLowerCase() !== cleanCode && (r.id || '').toLowerCase() !== cleanId));
       setIndividualCostSheets(prev => prev.filter(cs => (cs.customerId || cs.customerSnapshot?.customerNumber || '').toLowerCase() !== cleanCode));
       setLeadsList(prev => prev.filter(l => (l.customer_number || '').toLowerCase() !== cleanCode && (l.id || '').toLowerCase() !== cleanId));
-      alert(`🗑️ Customer Record ${code} deleted successfully!`);
+      alert(`🗑️ Customer Record ${code} moved to Recycle Bin!`);
     }
   };
 
@@ -7483,6 +7601,9 @@ export default function App() {
           </button>
           <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('profile'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'profile' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'profile' ? '#38bdf8' : '#94a3b8', border: activeTab === 'profile' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
             <User size={18} /> <span>Profile</span>
+          </button>
+          <button onClick={() => { if (isMobile) setIsMobileSidebarOpen(false); setActiveTab('recycle_bin'); }} style={{ display: 'flex', alignItems: 'center', gap: '12px', width: '100%', padding: '10px 14px', borderRadius: '8px', background: activeTab === 'recycle_bin' ? 'rgba(14, 165, 233, 0.15)' : 'transparent', color: activeTab === 'recycle_bin' ? '#38bdf8' : '#94a3b8', border: activeTab === 'recycle_bin' ? '1px solid rgba(56, 189, 248, 0.3)' : '1px solid transparent', fontSize: '0.875rem', fontWeight: '700', cursor: 'pointer', textAlign: 'left' }}>
+            <Trash2 size={18} /> <span>Recycle Bin</span>
           </button>
           <button 
             onClick={() => { 
@@ -9142,6 +9263,7 @@ export default function App() {
               handleOpenLeadModal={handleOpenLeadModal}
               isSuperAdmin={isSuperAdmin}
               setLeadsList={setLeadsList}
+              onRecycleItem={handleRecycleItem}
             />
           )}
 
@@ -9296,6 +9418,7 @@ export default function App() {
               customers={customers}
               setSelectedCust={setSelectedCust}
               setShowShiftToMatchingModal={setShowShiftToMatchingModal}
+              onRecycleItem={handleRecycleItem}
             />
           )}
 
@@ -9399,6 +9522,17 @@ export default function App() {
             />
           )}
 
+          {/* RECYCLE BIN CATEGORY */}
+          {activeTab === 'recycle_bin' && (
+            <RecycleBinView
+              isLight={isLight}
+              recycledItems={recycledItems}
+              onRestoreItem={handleRestoreRecycledItem}
+              onPurgeItem={handlePurgeRecycledItem}
+              onEmptyBin={handleEmptyRecycleBin}
+            />
+          )}
+
           {/* CATEGORY 7: AGREEMENT MANAGEMENT (RESTORED CONTRACT MODAL & TABLE) */}
           {activeTab === 'agreement_management' && (
             <AgreementManagementView
@@ -9419,6 +9553,7 @@ export default function App() {
               setShowPvaDocumentModal={setShowPvaDocumentModal}
               setSelectedAgreement={setSelectedAgreement}
               setShowFullContractModal={setShowFullContractModal}
+              onRecycleItem={handleRecycleItem}
             />
           )}
 
@@ -9441,6 +9576,7 @@ export default function App() {
               customers={customers}
               properties={properties}
               syncAllToMongoDB={syncAllToMongoDB}
+              onRecycleItem={handleRecycleItem}
             />
           )}
 

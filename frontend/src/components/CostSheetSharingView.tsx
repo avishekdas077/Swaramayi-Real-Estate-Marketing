@@ -36,6 +36,7 @@ interface CostSheetSharingViewProps {
   customers?: any[];
   setSelectedCust?: (cust: any) => void;
   setShowShiftToMatchingModal?: (val: any) => void;
+  onRecycleItem?: (itemData: any) => void;
 }
 
 export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
@@ -43,6 +44,7 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
   isLight,
   windowWidth,
   setShowCreateShareModal,
+  onRecycleItem,
   handleDeleteAllCurrentInside,
   newShareForm,
   setNewShareForm,
@@ -463,7 +465,17 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                               {isSuperAdmin && (
                                 <button 
                                   onClick={() => {
-                                    if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to permanently delete Cost Sheet record ${item.costSheetId} for ${item.customerSnapshot?.customerName || 'Customer'} from the system and database?`)) {
+                                    if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to delete Cost Sheet record ${item.costSheetId} for ${item.customerSnapshot?.customerName || 'Customer'}? It will be moved to Recycle Bin.`)) {
+                                      if (onRecycleItem) {
+                                        onRecycleItem({
+                                          id: item.id || item.costSheetId || `CS-${Date.now()}`,
+                                          title: `Cost Sheet - ${item.customerSnapshot?.customerName || 'Customer'} (${item.costSheetId})`,
+                                          category: 'Cost Sheet',
+                                          originalLocation: 'Cost Sheet Sharing Engine',
+                                          details: `Project: ${item.propertySnapshot?.title || 'N/A'}, Total: ${item.grandTotalFormatted || 'N/A'}`,
+                                          originalData: item
+                                        });
+                                      }
                                       const updatedCostSheets = (individualCostSheets || []).filter((c: any) => 
                                         c.costSheetId !== item.costSheetId && 
                                         (!item.id || c.id !== item.id) &&
@@ -481,11 +493,11 @@ export const CostSheetSharingView: React.FC<CostSheetSharingViewProps> = ({
                                           cost_sheets: updatedCostSheets
                                         });
                                       }
-                                      alert(`🗑️ Cost Sheet ${item.costSheetId} has been permanently deleted from database and vault.`);
+                                      alert(`🗑️ Cost Sheet ${item.costSheetId} moved to Recycle Bin.`);
                                     }
                                   }} 
                                   style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '900', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '2px' }}
-                                  title="Permanently delete this cost sheet record from database"
+                                  title="Move this cost sheet record to Recycle Bin"
                                 >
                                   🗑️ Delete
                                 </button>

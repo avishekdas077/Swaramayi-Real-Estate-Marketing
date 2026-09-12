@@ -18,6 +18,7 @@ interface BookingManagementViewProps {
   customers?: any[];
   properties?: any[];
   syncAllToMongoDB?: (overrideData?: any) => Promise<void>;
+  onRecycleItem?: (itemData: any) => void;
 }
 
 export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
@@ -37,6 +38,7 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
   customers = [],
   properties = [],
   syncAllToMongoDB,
+  onRecycleItem
 }) => {
   const isSuperAdmin = !currentRole || currentRole.toUpperCase().includes('SUPER ADMIN') || currentRole.toUpperCase().includes('OWNER') || currentRole.toUpperCase().includes('ADMIN');
 
@@ -470,7 +472,17 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
                         {isSuperAdmin && (
                           <button 
                             onClick={() => {
-                              if (window.confirm(`⚠️ CONFIRM PERMANENT DELETION:\n\nAre you sure you want to permanently delete Booking record ${b.booking_code || b.id} for ${b.customer_name || 'Customer'} from the system and database?`)) {
+                              if (window.confirm(`⚠️ CONFIRM DELETION:\n\nAre you sure you want to delete Booking record ${b.booking_code || b.id} for ${b.customer_name || 'Customer'}? It will be moved to Recycle Bin.`)) {
+                                if (onRecycleItem) {
+                                  onRecycleItem({
+                                    id: b.id || `BKG-${Date.now()}`,
+                                    title: `Booking - ${b.customer_name || 'Client'} (${b.booking_code || b.id})`,
+                                    category: 'Agreement',
+                                    originalLocation: 'Booking & Allotment Vault',
+                                    details: `Project: ${b.project_name || 'N/A'}, Unit: ${b.unit_number || 'N/A'}`,
+                                    originalData: b
+                                  });
+                                }
                                 const updatedBookings = (bookings || []).filter((item: any) => {
                                   if (b.id && item.id === b.id) return false;
                                   if (b.booking_code && item.booking_code === b.booking_code) return false;
@@ -486,11 +498,11 @@ export const BookingManagementView: React.FC<BookingManagementViewProps> = ({
                                 if (syncAllToMongoDB) {
                                   syncAllToMongoDB({ bookings: updatedBookings });
                                 }
-                                alert(`🗑️ Booking record ${b.booking_code || b.id} has been permanently deleted from the database.`);
+                                alert(`🗑️ Booking record ${b.booking_code || b.id} moved to Recycle Bin.`);
                               }
                             }}
                             style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontWeight: '700', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}
-                            title="Permanently delete booking record from database"
+                            title="Move booking record to Recycle Bin"
                           >
                             🗑️ Delete
                           </button>

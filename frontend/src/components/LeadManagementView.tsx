@@ -34,6 +34,7 @@ interface LeadManagementViewProps {
   handleOpenLeadModal?: () => void;
   isSuperAdmin?: boolean;
   setLeadsList?: React.Dispatch<React.SetStateAction<any[]>>;
+  onRecycleItem?: (itemData: any) => void;
 }
 
 export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
@@ -45,6 +46,7 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
   setShowBulkUploadModal,
   leadsList = [],
   setLeadsList,
+  onRecycleItem,
   isSuperAdmin = false,
   leadInboxTab,
   setLeadInboxTab,
@@ -440,14 +442,24 @@ export const LeadManagementView: React.FC<LeadManagementViewProps> = ({
                               {isSuperAdmin && setLeadsList && (
                                 <button
                                   onClick={() => {
-                                    if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to permanently delete Lead ${lead.lead_number || lead.id} for ${lead.customer_name || 'Customer'}?`)) {
+                                    if (window.confirm(`⚠️ SUPER ADMIN CONFIRMATION:\n\nAre you sure you want to delete Lead ${lead.lead_number || lead.id} for ${lead.customer_name || 'Customer'}? It will be moved to Recycle Bin.`)) {
+                                      if (onRecycleItem) {
+                                        onRecycleItem({
+                                          id: lead.id || `LEAD-${Date.now()}`,
+                                          title: `${lead.customer_name || lead.name || 'Lead'} (${lead.lead_number || lead.id})`,
+                                          category: 'Lead',
+                                          originalLocation: 'Lead Management Ingestion Vault',
+                                          details: `BHK: ${lead.bhk_requirement || lead.configuration || 'N/A'}, Locality: ${lead.preferred_locality || 'N/A'}`,
+                                          originalData: lead
+                                        });
+                                      }
                                       const nextList = leadsList.filter((l: any) => l.id !== lead.id && l.lead_number !== lead.lead_number);
                                       setLeadsList(nextList);
-                                      alert(`🗑️ Lead ${lead.lead_number || lead.id} permanently deleted.`);
+                                      alert(`🗑️ Lead ${lead.lead_number || lead.id} moved to Recycle Bin.`);
                                     }
                                   }}
                                   style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontWeight: '800', fontSize: '0.7rem' }}
-                                  title="Super Admin Only: Permanently delete lead record"
+                                  title="Super Admin Only: Move lead record to Recycle Bin"
                                 >
                                   🗑️ Delete
                                 </button>
