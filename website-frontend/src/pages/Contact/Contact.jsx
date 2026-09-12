@@ -11,6 +11,8 @@ export default function Contact() {
     email: '',
     phone: '',
     subject: 'Property Consultation',
+    bhk: '3 BHK',
+    propertyType: 'Apartment',
     message: '',
   });
   const [loading, setLoading] = useState(false);
@@ -24,15 +26,26 @@ export default function Contact() {
     }
     try {
       setLoading(true);
-      // Submit contact form
+      // Submit contact form with BHK and Property Type
       await API.post('/enquiries', {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
-        message: `Subject: ${formData.subject} - ${formData.message}`,
+        subject: formData.subject,
+        bhk: formData.bhk,
+        propertyType: formData.propertyType,
+        message: `[Requirement: ${formData.bhk} | ${formData.propertyType}] Subject: ${formData.subject} - ${formData.message}`,
       });
       setSuccess(true);
-      setFormData({ name: '', email: '', phone: '', subject: 'Property Consultation', message: '' });
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: 'Property Consultation',
+        bhk: '3 BHK',
+        propertyType: 'Apartment',
+        message: '',
+      });
     } catch (err) {
       alert('Failed to send message. Please try calling helpline directly.');
     } finally {
@@ -196,6 +209,40 @@ export default function Contact() {
                           <option value="List My Property">List My Property</option>
                           <option value="Schedule Site Visit">Schedule Site Visit</option>
                           <option value="Commercial Inquiry">Commercial Inquiry</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* BHK & Property Type Requirements */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">BHK Requirement</label>
+                        <select
+                          value={formData.bhk}
+                          onChange={(e) => setFormData({ ...formData, bhk: e.target.value })}
+                          className="w-full bg-gray-50 border border-gray-300 text-navy-900 text-xs rounded-xl p-3 focus:outline-none focus:border-navy-900 font-semibold"
+                        >
+                          <option value="1 BHK">1 BHK</option>
+                          <option value="2 BHK">2 BHK</option>
+                          <option value="3 BHK">3 BHK</option>
+                          <option value="4 BHK">4 BHK</option>
+                          <option value="4+ BHK / Duplex">4+ BHK / Duplex</option>
+                          <option value="Commercial / Plot (N/A)">Commercial / Plot (N/A)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-700 mb-1">Property Type</label>
+                        <select
+                          value={formData.propertyType}
+                          onChange={(e) => setFormData({ ...formData, propertyType: e.target.value })}
+                          className="w-full bg-gray-50 border border-gray-300 text-navy-900 text-xs rounded-xl p-3 focus:outline-none focus:border-navy-900 font-semibold"
+                        >
+                          <option value="Apartment">Apartment</option>
+                          <option value="Sky Penthouse">Sky Penthouse</option>
+                          <option value="Villas & Independent Houses">Villas & Independent Houses</option>
+                          <option value="Commercial Offices">Commercial Offices</option>
+                          <option value="Retail Shops">Retail Shops</option>
+                          <option value="Plots & Land">Plots & Land</option>
                         </select>
                       </div>
                     </div>

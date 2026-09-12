@@ -15,7 +15,12 @@ import {
   getPublicSocieties,
   getPublicPhases,
   getPublicFiles,
-  getPublicAgents
+  getPublicAgents,
+  submitPublicAdvisorRating,
+  getPublicAdvisorRatings,
+  createPublicAdvisorRatingInvite,
+  clearPublicAdvisorRatings,
+  deletePublicAdvisorRatingById
 } from '../controllers/public.controller.js';
 
 const router = Router();
@@ -31,9 +36,14 @@ router.get('/properties/:slug', getPublicPropertyBySlug);
 router.get('/projects', getPublicProjects);
 router.get('/projects/:slug', getPublicProjectBySlug);
 
-// Public Enquiry & Site Visit Submissions (Creates Leads in CRM)
+// Public Enquiry & Site Visit & Advisor Rating Submissions
 router.post('/enquiries', submitPublicEnquiry);
 router.post('/site-visits', schedulePublicSiteVisit);
+router.get('/advisor-rating', getPublicAdvisorRatings);
+router.post('/advisor-rating', submitPublicAdvisorRating);
+router.post('/advisor-rating/invite', createPublicAdvisorRatingInvite);
+router.delete('/advisor-rating', clearPublicAdvisorRatings);
+router.delete('/advisor-rating/:id', deletePublicAdvisorRatingById);
 
 // Public Location listings (specific endpoints BEFORE :slug)
 router.get('/locations', getPublicLocations);

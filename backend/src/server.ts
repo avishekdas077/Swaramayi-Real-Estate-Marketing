@@ -62,6 +62,7 @@ app.use('/api/v1/matching', matchingRoutes);
 
 // Public Website API Routes (accessible without auth)
 app.use('/api/v1/public', publicRoutes);
+app.use('/api/public', publicRoutes);
 app.use('/api', publicRoutes); // Direct `/api/properties`, `/api/projects`, `/api/enquiries`, `/api/site-visits` fallback for website frontend
 
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

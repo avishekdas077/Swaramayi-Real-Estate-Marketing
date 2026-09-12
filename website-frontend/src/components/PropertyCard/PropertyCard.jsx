@@ -145,10 +145,10 @@ export default function PropertyCard({ property }) {
             </span>
           </div>
 
-          {/* Title */}
+          {/* Description instead of Property Name */}
           <Link to={`/properties/${property.slug}`}>
             <h3 className="text-base font-bold text-navy-900 group-hover:text-navy-800 line-clamp-2 transition-colors mb-3">
-              {property.title}
+              {property.description || property.short_description || property.overview || `${property.bedrooms || 3} BHK residential apartment with modern amenities in ${property.location || 'Kolkata'}.`}
             </h3>
           </Link>
 

@@ -254,14 +254,10 @@ export default function Home() {
           </div>
 
           {/* Quick Stats Bar */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10 p-6 bg-navy-800/90 rounded-2xl border border-gold-500/30 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 p-6 bg-navy-800/90 rounded-2xl border border-gold-500/30 text-center max-w-4xl mx-auto">
             <div>
-              <div className="text-2xl sm:text-3xl font-black text-gold-400">{soldStats.totalSold || 150}+</div>
+              <div className="text-2xl sm:text-3xl font-black text-gold-400">100+</div>
               <div className="text-[11px] sm:text-xs text-gray-300 font-medium mt-1">Properties Delivered</div>
-            </div>
-            <div>
-              <div className="text-2xl sm:text-3xl font-black text-gold-400">₹ {soldStats.totalVolumeCr || 250}+ Cr</div>
-              <div className="text-[11px] sm:text-xs text-gray-300 font-medium mt-1">Real Estate Volume Sold</div>
             </div>
             <div>
               <div className="text-2xl sm:text-3xl font-black text-gold-400">{soldStats.verifiedPct || 100}%</div>

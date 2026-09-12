@@ -1970,7 +1970,7 @@ export default function App() {
 
   // Sub-Tabs States across Categories
   const [activeLeadSubTab, setActiveLeadSubTab] = useState<'lead_ingestion' | 'lead_ownership' | 'lead_transfer' | 'lead_scoring'>('lead_ingestion');
-  const [activeVisitSubTab, setActiveVisitSubTab] = useState<'visit_scheduler' | 'visit_route_planner' | 'visit_otp_checkin' | 'visit_feedback' | 'visit_analytics' | 'visit_owner_tracking'>('visit_route_planner');
+  const [activeVisitSubTab, setActiveVisitSubTab] = useState<'visit_scheduler' | 'visit_route_planner' | 'visit_otp_checkin' | 'visit_feedback' | 'visit_analytics' | 'visit_owner_tracking' | 'advisor_ratings'>('visit_route_planner');
   const [activeMatchingSubTab, setActiveMatchingSubTab] = useState<'ai_matching_engine' | 'req_inventory_matrix' | 'portfolio_dispatcher'>('ai_matching_engine');
   const [activeCostSheetShareSubTab, setActiveCostSheetShareSubTab] = useState<'individual_cost_sheets' | 'dispatcher' | 'delivery_analytics' | 'portal_tokens' | 'interest_handoff'>('individual_cost_sheets');
   const [activeRoleSubTab, setActiveRoleSubTab] = useState<'user_directory' | 'permission_matrix' | 'org_hierarchy' | 'teams_directory' | 'approval_queue' | 'session_security' | 'exit_handover'>('user_directory');
@@ -5383,7 +5383,8 @@ export default function App() {
         agreements: overrideData?.agreements || agreements,
         cost_sheets: overrideData?.cost_sheets || individualCostSheets,
         matching_requests: overrideData?.matching_requests || matchingRequestsQueue,
-        site_visits: overrideData?.site_visits || scheduledVisits
+        site_visits: overrideData?.site_visits || scheduledVisits,
+        ...(overrideData?.rating_invites ? { rating_invites: overrideData.rating_invites } : {})
       };
 
       await fetch(apiUrl, {

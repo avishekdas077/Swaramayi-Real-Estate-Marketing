@@ -19,12 +19,12 @@ import {
   Compass,
   ArrowRight,
   Eye,
+  Star,
 } from 'lucide-react';
 
 import SEO from '../../components/Common/SEO';
 import Breadcrumbs from '../../components/Common/Breadcrumbs';
 import EnquiryForm from '../../components/Forms/EnquiryForm';
-import SiteVisitForm from '../../components/Forms/SiteVisitForm';
 import EMICalculator from '../../components/Calculators/EMICalculator';
 import PropertyCard from '../../components/PropertyCard/PropertyCard';
 
@@ -43,9 +43,62 @@ export default function PropertyDetails() {
   const { toggleFavorite, isFavorite } = useFavorites();
   const { toggleCompare, isComparing } = useCompare();
 
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [ratingStars, setRatingStars] = useState(5);
+  const [hoverStars, setHoverStars] = useState(5);
+  const [ratingAdvisorName, setRatingAdvisorName] = useState('');
+  const [ratingCustomerName, setRatingCustomerName] = useState('');
+  const [ratingCustomerPhone, setRatingCustomerPhone] = useState('');
+  const [ratingComment, setRatingComment] = useState('');
+  const [ratingSubmittedSuccess, setRatingSubmittedSuccess] = useState(false);
+
+  const resetRatingForm = () => {
+    setRatingCustomerName('');
+    setRatingCustomerPhone('');
+    setRatingComment('');
+    setRatingStars(5);
+    setHoverStars(5);
+    setRatingSubmittedSuccess(false);
+  };
+
   useEffect(() => {
     fetchDetails();
     window.scrollTo(0, 0);
+
+    const getQueryParam = (paramName) => {
+      let searchParams = new URLSearchParams(window.location.search);
+      let val = searchParams.get(paramName);
+      if (val) return val;
+
+      const hash = window.location.hash || '';
+      const qIndex = hash.indexOf('?');
+      if (qIndex !== -1) {
+        const hashQuery = hash.substring(qIndex + 1);
+        const hashParams = new URLSearchParams(hashQuery);
+        val = hashParams.get(paramName);
+        if (val) return val;
+      }
+      return null;
+    };
+
+    const hash = window.location.hash || '';
+    const urlCustomer = getQueryParam('customer') || getQueryParam('name') || getQueryParam('customerName');
+    const urlAdvisor = getQueryParam('advisor') || getQueryParam('advisorName') || getQueryParam('advisor_name');
+    const urlMobile = getQueryParam('mobile') || getQueryParam('phone') || getQueryParam('customerPhone');
+
+    if (hash.includes('rate-advisor') || getQueryParam('rate') === 'true' || urlCustomer || urlAdvisor) {
+      resetRatingForm();
+      setShowRatingModal(true);
+      if (urlCustomer) {
+        setRatingCustomerName(decodeURIComponent(urlCustomer));
+      }
+      if (urlAdvisor) {
+        setRatingAdvisorName(decodeURIComponent(urlAdvisor));
+      }
+      if (urlMobile) {
+        setRatingCustomerPhone(decodeURIComponent(urlMobile));
+      }
+    }
   }, [slug]);
 
   const fetchDetails = async () => {
@@ -291,10 +344,11 @@ export default function PropertyDetails() {
                 <div className="text-xs font-bold text-gold-600 uppercase tracking-wider mb-3">Assigned Property Advisor</div>
                 {(() => {
                   const advisor = property.assignedAdvisor || property.agent || {};
-                  const advisorName = advisor.name || 'Abinash Roy';
-                  const advisorRole = advisor.role || advisor.designation || 'Senior Property Advisor';
-                  const advisorPhone = advisor.phone || advisor.mobile || '+91 98300 12345';
-                  const advisorImage = advisor.profileImage || advisor.image || 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80';
+                  const advisorName = advisor.name || 'Punita Roy';
+                  const advisorRole = advisor.role || advisor.designation || 'Sales Management';
+                  const advisorPhone = advisor.phone || advisor.mobile || '+91 90513 22932';
+                  const advisorImage = advisor.profileImage || advisor.image || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80';
+                  const advisorRating = advisor.rating || advisor.advisor_rating || (advisorName.toLowerCase().includes('abinash') ? '4.7' : '4.8');
 
                   const cleanPhone = advisorPhone.replace(/[^0-9]/g, '');
                   const waLink = `https://wa.me/${cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone}?text=${encodeURIComponent(`Hi ${advisorName}, I am interested in ${property.title} (${property.location}). Please share more details.`)}`;
@@ -310,13 +364,19 @@ export default function PropertyDetails() {
                         <div>
                           <h4 className="font-bold text-navy-900 text-sm">{advisorName}</h4>
                           <p className="text-xs text-gray-500 font-medium">{advisorRole}</p>
-                          <span className="inline-block mt-1 bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded border border-green-200">
-                            Official Swaramayi Advisor
-                          </span>
+                          <div className="flex items-center space-x-1.5 mt-1.5 flex-wrap gap-y-1">
+                            <span className="inline-flex items-center bg-amber-50 text-amber-900 text-[10px] font-extrabold px-2 py-0.5 rounded border border-amber-300 shadow-xs">
+                              <Star className="w-3 h-3 text-amber-500 fill-amber-500 mr-1" />
+                              ★{advisorRating} Rating
+                            </span>
+                            <span className="inline-block bg-green-100 text-green-800 text-[10px] font-bold px-2 py-0.5 rounded border border-green-200">
+                              Official Swaramayi Advisor
+                            </span>
+                          </div>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-2 mb-2">
                         <a
                           href={`tel:${advisorPhone}`}
                           className="py-2.5 bg-navy-900 text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1 hover:bg-navy-800 transition-colors shadow-sm"
@@ -334,6 +394,19 @@ export default function PropertyDetails() {
                           <span>WhatsApp</span>
                         </a>
                       </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resetRatingForm();
+                          setRatingAdvisorName(advisorName);
+                          setShowRatingModal(true);
+                        }}
+                        className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-navy-950 font-extrabold text-xs rounded-xl flex items-center justify-center space-x-1.5 transition-colors shadow-sm"
+                      >
+                        <Star className="w-3.5 h-3.5 fill-navy-950 text-navy-950" />
+                        <span>Rate Assigned Advisor</span>
+                      </button>
                     </>
                   );
                 })()}
@@ -341,9 +414,6 @@ export default function PropertyDetails() {
 
               {/* Enquiry Form */}
               <EnquiryForm propertyId={property._id} propertyTitle={property.title} />
-
-              {/* Site Visit Form */}
-              <SiteVisitForm propertyId={property._id} propertyTitle={property.title} />
             </div>
           </div>
 
@@ -360,6 +430,197 @@ export default function PropertyDetails() {
           )}
         </div>
       </div>
+
+      {/* CUSTOMER 5-STAR ADVISOR RATING MODAL */}
+      {showRatingModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200 relative animate-fadeIn">
+            <button
+              onClick={() => {
+                setShowRatingModal(false);
+                resetRatingForm();
+              }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-xl font-bold"
+            >
+              ✕
+            </button>
+
+            {ratingSubmittedSuccess ? (
+              <div className="text-center py-6 space-y-3">
+                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-3xl font-extrabold shadow-inner">
+                  ✓
+                </div>
+                <h3 className="text-xl font-bold text-navy-900">Rating Received!</h3>
+                <p className="text-xs text-gray-600 font-medium">
+                  Thank you <strong className="text-navy-900">{ratingCustomerName || 'Valued Customer'}</strong>! Your <strong className="text-amber-600">{ratingStars}-Star Rating</strong> for <strong className="text-navy-900">{ratingAdvisorName || property?.assignedAdvisor?.name || property?.agent?.name || 'Punita Roy'}</strong> has been successfully recorded.
+                </p>
+                <button
+                  onClick={() => {
+                    setShowRatingModal(false);
+                    resetRatingForm();
+                  }}
+                  className="mt-4 px-6 py-2.5 bg-navy-900 text-white font-bold text-xs rounded-xl hover:bg-navy-800 transition-colors shadow-sm"
+                >
+                  Close Window
+                </button>
+              </div>
+            ) : (
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (!ratingCustomerName.trim()) {
+                    alert('Please enter your full name to submit the rating.');
+                    return;
+                  }
+                  const advName = ratingAdvisorName || property?.assignedAdvisor?.name || property?.agent?.name || 'Punita Roy';
+                  const host = window.location.hostname || 'localhost';
+                  const ratingPayload = {
+                    advisorName: advName,
+                    rating: ratingStars,
+                    customerName: ratingCustomerName,
+                    customerPhone: ratingCustomerPhone,
+                    comment: ratingComment,
+                    propertyTitle: property?.title || 'GAJAPATI APARTMENT'
+                  };
+
+                  try {
+                    await fetch(`http://${host}:5000/api/public/advisor-rating`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify(ratingPayload)
+                    });
+                  } catch (err) {
+                    try {
+                      await fetch('/api/public/advisor-rating', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(ratingPayload)
+                      });
+                    } catch (e2) {
+                      console.warn('Backend rating endpoint sync:', e2);
+                    }
+                  }
+
+                  setProperty(prev => {
+                    if (!prev) return prev;
+                    const updatedAdvisor = {
+                      ...(prev.assignedAdvisor || prev.agent || {}),
+                      rating: ratingStars.toFixed(1)
+                    };
+                    return {
+                      ...prev,
+                      assignedAdvisor: updatedAdvisor,
+                      agent: updatedAdvisor
+                    };
+                  });
+
+                  setRatingSubmittedSuccess(true);
+                }}
+                className="space-y-4"
+              >
+                <div className="text-center border-b border-gray-100 pb-3">
+                  <span className="inline-block bg-amber-100 text-amber-800 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full mb-1">
+                    Customer Advisor Feedback
+                  </span>
+                  <h3 className="text-lg font-bold text-navy-900">Rate Your Property Advisor</h3>
+                  <p className="text-xs text-gray-500">
+                    Share your consultation experience with {ratingAdvisorName || property?.assignedAdvisor?.name || property?.agent?.name || 'Punita Roy'}
+                  </p>
+                </div>
+
+                {/* Advisor Banner */}
+                <div className="flex items-center space-x-3 p-3 bg-amber-50/70 rounded-xl border border-amber-200/80">
+                  <img
+                    src={property?.assignedAdvisor?.profileImage || property?.agent?.profileImage || 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80'}
+                    alt="Advisor"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-gold-500 shadow-xs"
+                  />
+                  <div>
+                    <h4 className="font-bold text-navy-900 text-sm">{ratingAdvisorName || property?.assignedAdvisor?.name || property?.agent?.name || 'Punita Roy'}</h4>
+                    <p className="text-xs text-gray-500 font-medium">{property?.assignedAdvisor?.role || property?.agent?.role || 'Sales Management'}</p>
+                    <div className="text-[10px] text-amber-800 font-bold mt-0.5">Official Swaramayi Property Advisor</div>
+                  </div>
+                </div>
+
+                {/* Interactive Star Rating */}
+                <div className="text-center py-2">
+                  <label className="block text-xs font-extrabold text-navy-900 uppercase tracking-wider mb-2">
+                    Select Your Rating (1 - 5 Stars) *
+                  </label>
+                  <div className="flex justify-center space-x-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onMouseEnter={() => setHoverStars(star)}
+                        onMouseLeave={() => setHoverStars(ratingStars)}
+                        onClick={() => setRatingStars(star)}
+                        className="p-1 focus:outline-none transform hover:scale-125 transition-transform"
+                      >
+                        <Star
+                          className={`w-8 h-8 ${
+                            star <= (hoverStars || ratingStars)
+                              ? 'fill-amber-400 text-amber-400 drop-shadow-md'
+                              : 'text-gray-300'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <div className="text-xs font-extrabold text-amber-700 mt-2">
+                    {ratingStars === 5 && '😍 5/5 Stars - Outstanding & Highly Recommended!'}
+                    {ratingStars === 4 && '😊 4/5 Stars - Very Good Consultation'}
+                    {ratingStars === 3 && '😐 3/5 Stars - Average Experience'}
+                    {ratingStars <= 2 && '😕 Needs Improvement'}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-navy-900 mb-1">Your Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Priya Das"
+                    value={ratingCustomerName}
+                    onChange={(e) => setRatingCustomerName(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs text-navy-900 font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-navy-900 mb-1">Your Phone / Mobile Number</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. +91 90513 22932"
+                    value={ratingCustomerPhone}
+                    onChange={(e) => setRatingCustomerPhone(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs text-navy-900 font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-navy-900 mb-1">Feedback Review / Comment (Optional)</label>
+                  <textarea
+                    rows={2}
+                    placeholder="Tell us about your experience..."
+                    value={ratingComment}
+                    onChange={(e) => setRatingComment(e.target.value)}
+                    className="w-full px-3.5 py-2 bg-gray-50 border border-gray-300 rounded-xl text-xs text-navy-900 font-medium focus:ring-2 focus:ring-amber-500 focus:outline-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-navy-950 font-extrabold text-xs uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center justify-center space-x-1.5"
+                >
+                  <Star className="w-4 h-4 fill-navy-950 text-navy-950" />
+                  <span>Submit Advisor Rating & Review</span>
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

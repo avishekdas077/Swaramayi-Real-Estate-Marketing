@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { dbStore, loadData, saveData, generateID, PropertyRecord, CustomerRecord } from '../db/database.js';
+import { syncToMongoDB } from '../db/mongoPersistence.js';
 
 // Helper to generate a URL-friendly slug
 function slugify(text: string): string {
@@ -96,19 +97,19 @@ function extractPropertyImages(p: any, title: string, id: string): string[] {
   const defaultImagesSet = [
     [
       'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80'
-    ],
-    [
-      'https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80'
     ],
     [
-      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80'
+    ],
+    [
+      'https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=800&q=80',
       'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=800&q=80'
     ],
     [
-      'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80'
+      'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=800&q=80'
     ]
   ];
 
@@ -126,66 +127,54 @@ function extractPropertyImages(p: any, title: string, id: string): string[] {
 function formatPublicProperty(p: any) {
   const title = p.property_title || p.title || `Property ${p.property_code || p.id}`;
   const slug = p.slug || slugify(`${title}-${p.property_code || p.id}`);
+  const titleLower = title.toLowerCase();
 
-  const rawPrice = 
-    parsePriceString(p.final_estimated_price) || 
-    parsePriceString(p.final_price) || 
-    parsePriceString(p.base_price) || 
-    parsePriceString(p.price) || 
-    parsePriceString(p.expected_price) || 
-    parsePriceString(p.total_price) ||
-    parsePriceString(p.amount) ||
-    parsePriceString(p.budget) ||
-    parsePriceString(p.asking_price);
+  let crmCode = p.property_code || p.id;
+  let crmDev = p.developer_name || p.developer || 'Swaramayi Developers';
+  let crmPrice = parsePriceString(p.final_estimated_price) || parsePriceString(p.base_price) || parsePriceString(p.price);
+  let crmSuperArea = parseAreaString(p.built_up_area_sqft) || parseAreaString(p.areaSqft) || parseAreaString(p.area);
+  let crmCarpetArea = parseAreaString(p.carpet_area_sqft) || parseAreaString(p.carpetArea);
+  let crmBeds = p.bedrooms || (p.configuration ? parseInt(p.configuration) || 3 : 3);
+  let crmConfig = p.configuration || `${crmBeds}BHK`;
+  let crmLocality = p.locality || p.location || 'Barasat, Kolkata';
+  let crmAddress = p.location_address || p.full_address || 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124';
+  let crmCity = p.city || 'Kolkata';
 
-  const superBuiltupArea = 
-    parseAreaString(p.super_builtup_area) || 
-    parseAreaString(p.super_built_up_area) || 
-    parseAreaString(p.built_up_area_sqft) || 
-    parseAreaString(p.built_up_area) || 
-    parseAreaString(p.super_area);
-
-  const carpetArea = 
-    parseAreaString(p.carpet_area_sqft) || 
-    parseAreaString(p.carpet_area);
-
-  const fallbackArea = 
-    parseAreaString(p.areaSqft) || 
-    parseAreaString(p.area_sqft) || 
-    parseAreaString(p.area) || 
-    1200;
-
-  const area = superBuiltupArea || carpetArea || fallbackArea;
-  const finalSuperArea = superBuiltupArea || area;
-  const finalCarpetArea = carpetArea || area;
-
-  let price = rawPrice;
-  if (price <= 0) {
-    const titleLower = title.toLowerCase();
-    if (titleLower.includes('shibalay')) {
-      price = 3000000;
-    } else if (titleLower.includes('gajapati')) {
-      price = 3515900;
-    } else if (titleLower.includes('dhriti')) {
-      price = 4250000;
-    } else {
-      const strForHash = p.id || p.property_code || title;
-      let hash = 0;
-      for (let i = 0; i < strForHash.length; i++) {
-        hash = (hash << 5) - hash + strForHash.charCodeAt(i);
-        hash |= 0;
-      }
-      const rate = 3800 + (Math.abs(hash) % 40) * 120;
-      price = Math.round(area * rate);
-    }
+  if (titleLower.includes('shibalay')) {
+    crmCode = 'SRM-PROP-2026-000425';
+    crmDev = 'KRISHNA DAS';
+    crmPrice = 2080000;
+    crmSuperArea = 650;
+    crmCarpetArea = 422.5;
+    crmBeds = 3;
+    crmConfig = '3BHK';
+    crmLocality = 'BARASAT, CHAPADALI';
+    crmAddress = 'Chapadali Bus Terminus Hub, Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124';
+  } else if (titleLower.includes('gajapati')) {
+    crmCode = 'SRM-PROP-2026-000426';
+    crmDev = 'BABLA DUTTA';
+    crmPrice = 3515900;
+    crmSuperArea = 771;
+    crmCarpetArea = 700.35;
+    crmBeds = 2;
+    crmConfig = '2BHK';
+    crmLocality = 'Barasat, Kolkata';
+    crmAddress = 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124';
+  } else if (titleLower.includes('dhriti')) {
+    crmCode = 'SRM-PROP-2026-000427';
+    crmDev = 'NANIGOPAL DAS';
+    crmPrice = 3621400;
+    crmSuperArea = 765;
+    crmCarpetArea = 718.25;
+    crmBeds = 2;
+    crmConfig = '2BHK';
+    crmLocality = 'Barasat, Kolkata';
+    crmAddress = 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124';
   }
 
-  const explicitSqftRate = 
-    parsePriceString(p.pricePerSqft) || 
-    parsePriceString(p.price_per_sqft) || 
-    parsePriceString(p.price_sqft) || 
-    parsePriceString(p.rate_sqft);
-  
+  const price = crmPrice > 0 ? crmPrice : 3000000;
+  const area = crmSuperArea > 0 ? crmSuperArea : (crmCarpetArea > 0 ? crmCarpetArea : 1200);
+  const explicitSqftRate = parsePriceString(p.pricePerSqft) || parsePriceString(p.price_per_sqft);
   const pricePerSqft = explicitSqftRate > 0 ? explicitSqftRate : (area > 0 && price > 0 ? Math.round(price / area) : 0);
 
   const statusRaw = String(p.status || p.availability_status || p.property_status || 'LIVE').toUpperCase();
@@ -205,41 +194,45 @@ function formatPublicProperty(p: any) {
   }
 
   const isSold = isSoldProperty(p);
-
-  const images = extractPropertyImages(p, title, p.id || p.property_code);
+  const images = extractPropertyImages(p, title, crmCode);
 
   return {
     ...p,
     id: p.id,
     _id: p.id,
-    property_code: p.property_code || p.id,
+    property_code: crmCode,
     title,
     property_title: title,
     slug,
-    description: p.description || p.location_address || `${p.configuration || ''} ${p.property_type || 'Property'} available in ${p.locality || ''}, ${p.city || ''}`,
+    description: (p.description && p.description.trim().length > 15 && p.description.trim().toLowerCase() !== title.toLowerCase()) 
+      ? p.description 
+      : `${crmConfig} ${p.property_type || p.propertyType || 'Apartment'} with modern amenities, excellent ventilation, and prime location connectivity in ${crmLocality}, ${crmCity}.`,
     category: (String(p.category || p.transaction_type || 'Buy').toLowerCase().includes('rent')) ? 'Rent' : 'Buy',
     propertyType: p.propertyType || p.property_type || 'Apartment',
     property_type: p.property_type || p.propertyType || 'Apartment',
     listingType: p.listingType || p.transaction_type || 'Sale',
     price,
-    base_price: p.base_price || price,
+    base_price: price,
     final_estimated_price: price,
     pricePerSqft,
-    city: p.city || 'Kolkata',
-    location: p.location || p.locality || 'Kolkata',
-    locality: p.locality || p.location || 'Kolkata',
-    society: p.society || p.project_name || '',
-    developer: p.developer || p.developer_name || 'Swaramayi Developers',
-    developer_name: p.developer_name || p.developer || 'Swaramayi Developers',
-    project_name: p.project_name || p.society || '',
-    bedrooms: p.bedrooms || (p.configuration ? parseInt(p.configuration) || 3 : 3),
+    city: crmCity,
+    location: crmLocality,
+    locality: crmLocality,
+    location_address: crmAddress,
+    full_address: crmAddress,
+    society: p.society || p.project_name || title,
+    developer: crmDev,
+    developer_name: crmDev,
+    project_name: p.project_name || title,
+    bedrooms: crmBeds,
+    configuration: crmConfig,
     bathrooms: p.bathrooms || 2,
     balconies: p.balconies || 1,
     areaSqft: area,
-    superBuiltupArea: finalSuperArea,
-    carpetArea: finalCarpetArea,
-    carpet_area_sqft: finalCarpetArea,
-    built_up_area_sqft: finalSuperArea,
+    superBuiltupArea: crmSuperArea,
+    carpetArea: crmCarpetArea,
+    carpet_area_sqft: crmCarpetArea,
+    built_up_area_sqft: crmSuperArea,
     floor: p.floor !== undefined && p.floor !== null && p.floor !== '' ? p.floor : (p.floor_number || p.unit_floor || ''),
     totalFloors: p.total_floors || p.total_floors_in_building || p.total_floor || '',
     possessionStatus: p.possession_status || p.possession_date || 'Ready to Move In',
@@ -271,6 +264,7 @@ function formatPublicProperty(p: any) {
       let phone = u?.mobile || '9051322932';
       let email = u?.email || 'punitagswaramayi.com';
       let img = (u as any)?.avatar || (u as any)?.profileImage;
+      let rating = (u as any)?.rating;
 
       const tLower = title.toLowerCase();
       const codeLower = String(p.property_code || p.id || '').toLowerCase();
@@ -282,25 +276,33 @@ function formatPublicProperty(p: any) {
           phone = '7697098078';
           email = 'abinshggmail.com';
           img = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80';
+          rating = rating || 4.7;
         } else if (tLower.includes('dhriti') || codeLower.includes('427') || codeLower.includes('423') || codeLower.includes('dhriti')) {
           name = 'Punita Roy';
           role = 'Sales Management';
           phone = '9051322932';
           email = 'punitagswaramayi.com';
           img = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80';
+          rating = rating || 4.8;
         } else if (tLower.includes('gajapati') || codeLower.includes('422')) {
           name = 'Punita Roy';
           role = 'Sales Management';
           phone = '9051322932';
           email = 'punitagswaramayi.com';
           img = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80';
+          rating = rating || 4.8;
         } else {
           name = 'Punita Roy';
           role = 'Sales Management';
           phone = '9051322932';
           email = 'punitagswaramayi.com';
           img = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80';
+          rating = rating || 4.8;
         }
+      }
+
+      if (!rating) {
+        rating = (name && name.toLowerCase().includes('abinash')) ? 4.7 : 4.8;
       }
 
       if (!img) {
@@ -317,7 +319,8 @@ function formatPublicProperty(p: any) {
         mobile: phone,
         email,
         profileImage: img,
-        image: img
+        image: img,
+        rating: Number(rating) || 4.8
       };
     })(),
     agent: (() => {
@@ -330,6 +333,7 @@ function formatPublicProperty(p: any) {
       let phone = u?.mobile || '9051322932';
       let email = u?.email || 'punitagswaramayi.com';
       let img = (u as any)?.avatar || (u as any)?.profileImage;
+      let rating = (u as any)?.rating;
 
       const tLower = title.toLowerCase();
       const codeLower = String(p.property_code || p.id || '').toLowerCase();
@@ -341,25 +345,33 @@ function formatPublicProperty(p: any) {
           phone = '7697098078';
           email = 'abinshggmail.com';
           img = 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80';
+          rating = rating || 4.7;
         } else if (tLower.includes('dhriti') || codeLower.includes('427') || codeLower.includes('423') || codeLower.includes('dhriti')) {
           name = 'Punita Roy';
           role = 'Sales Management';
           phone = '9051322932';
           email = 'punitagswaramayi.com';
           img = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80';
+          rating = rating || 4.8;
         } else if (tLower.includes('gajapati') || codeLower.includes('422')) {
           name = 'Punita Roy';
           role = 'Sales Management';
           phone = '9051322932';
           email = 'punitagswaramayi.com';
           img = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80';
+          rating = rating || 4.8;
         } else {
           name = 'Punita Roy';
           role = 'Sales Management';
           phone = '9051322932';
           email = 'punitagswaramayi.com';
           img = 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80';
+          rating = rating || 4.8;
         }
+      }
+
+      if (!rating) {
+        rating = (name && name.toLowerCase().includes('abinash')) ? 4.7 : 4.8;
       }
 
       if (!img) {
@@ -376,9 +388,10 @@ function formatPublicProperty(p: any) {
         mobile: phone,
         email,
         profileImage: img,
-        image: img
+        image: img,
+        rating: Number(rating) || 4.8
       };
-    })()
+    })(),
   };
 }
 
@@ -728,7 +741,7 @@ async function getPublicProjectsData() {
 
 // 7. Submit Public Contact / Property Enquiry -> Creates Enquiry & Lead in CRM
 export async function submitPublicEnquiry(req: Request, res: Response) {
-  const { name, email, phone, message, propertyInterested, propertyTitle, preferredVisitDate, preferredVisitTime } = req.body;
+  const { name, email, phone, message, subject, bhk, propertyType, propertyInterested, propertyTitle, preferredVisitDate, preferredVisitTime } = req.body;
 
   if (!name || !phone) {
     return res.status(400).json({
@@ -742,6 +755,10 @@ export async function submitPublicEnquiry(req: Request, res: Response) {
 
   const customerNum = generateID('SRM-CUS');
   const leadNum = generateID('SRM-LEAD');
+  const reqSubject = subject || 'Property Consultation';
+  const reqBhk = bhk || '3 BHK';
+  const reqType = propertyType || 'Apartment';
+  const reqSource = propertyTitle ? 'Website Property Enquiry Form' : 'Website Contact Form';
 
   const newCustomer: CustomerRecord = {
     id: uuidv4(),
@@ -750,12 +767,16 @@ export async function submitPublicEnquiry(req: Request, res: Response) {
     email: email || '',
     mobile: phone,
     city: 'Kolkata',
-    source: 'Website Contact Form',
+    bhk: reqBhk,
+    bhk_preference: reqBhk,
+    propertyType: reqType,
+    property_type: reqType,
+    source: reqSource,
     priority: 'HOT',
     status: 'New',
     customer_status: 'NEW_LEAD',
     quality_score: 90,
-    remarks: message ? `Website Message: ${message}` : 'Enquiry submitted via Website',
+    remarks: message ? `[Subject: ${reqSubject} | Requirement: ${reqBhk} | ${reqType}] ${message}` : `Website Enquiry [Subject: ${reqSubject} | ${reqBhk} ${reqType}]`,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
     is_deleted: false
@@ -771,12 +792,17 @@ export async function submitPublicEnquiry(req: Request, res: Response) {
     full_name: name,
     phone,
     email,
-    message: message || `Enquiry for ${propertyTitle || 'Property'}`,
-    property_title: propertyTitle || '',
+    subject: reqSubject,
+    bhk: reqBhk,
+    bhk_preference: reqBhk,
+    propertyType: reqType,
+    property_type: reqType,
+    message: message || `[Subject: ${reqSubject}] Enquiry for ${reqBhk} ${reqType}`,
+    property_title: propertyTitle || `${reqBhk} ${reqType}`,
     property_id: propertyInterested || '',
     preferred_visit_date: preferredVisitDate || '',
     preferred_visit_time: preferredVisitTime || '',
-    source: 'Website Contact Form',
+    source: reqSource,
     status: 'NEW_INQUIRY',
     assigned_employee_name: 'Unassigned (Web Lead)',
     created_at: new Date().toISOString()
@@ -993,16 +1019,358 @@ export async function getPublicFiles(req: Request, res: Response) {
 
 export async function getPublicAgents(req: Request, res: Response) {
   loadData();
-  const agents = dbStore.data.users.map(u => ({
+  const agents = dbStore.data.users.map((u, idx) => ({
     id: u.id,
     name: u.full_name || u.username,
     email: u.email,
     phone: u.mobile,
-    role: u.role
+    role: u.role,
+    rating: (u as any)?.rating || (u.full_name?.toLowerCase().includes('abinash') || u.username?.toLowerCase().includes('abinash') ? 4.7 : 4.8)
   }));
   return res.json({
     status: 'success',
     success: true,
     data: agents
+  });
+}
+
+const defaultRatingInvites = [
+  {
+    id: 'SRM-RAT-INV-1789203161327-821',
+    date: 'Sep 12, 2026',
+    customerName: 'akash das',
+    customerMobile: '+91 7676500366',
+    customerPhone: '+91 7676500366',
+    advisorName: 'Abinash Roy',
+    propertyTitle: 'SHIBALAY',
+    rating: 4,
+    feedbackText: 'good',
+    comment: 'good',
+    status: 'VERIFIED_AND_RATED',
+    deliveryChannel: 'WHATSAPP',
+    created_at: '2026-09-12T12:00:00.000Z'
+  },
+  {
+    id: 'SRM-RATING-521664',
+    date: 'Sep 12, 2026',
+    customerName: 'Priya Das',
+    customerMobile: '+91 7870500387',
+    customerPhone: '+91 7870500387',
+    advisorName: 'Punita Roy',
+    propertyTitle: 'GAJAPATI APARTMENT',
+    rating: 5,
+    feedbackText: 'Very good consultation!',
+    comment: 'Very good consultation!',
+    status: 'VERIFIED_AND_RATED',
+    deliveryChannel: 'WHATSAPP',
+    created_at: '2026-09-12T12:00:00.000Z'
+  }
+];
+
+export async function getPublicAdvisorRatings(req: Request, res: Response) {
+  loadData();
+  if (!(dbStore.data as any).rating_invites) {
+    (dbStore.data as any).rating_invites = defaultRatingInvites;
+    saveData();
+  }
+
+  let invites: any[] = (dbStore.data as any).rating_invites || [];
+
+  // Filter out unwanted/test duplicate entries like gfhj / 5677456775
+  invites = invites.filter((item: any) => {
+    const cName = String(item.customerName || '').toLowerCase();
+    const cMob = String(item.customerMobile || item.customerPhone || '');
+    return !cName.includes('gfhj') && !cMob.includes('5677456775');
+  });
+
+  (dbStore.data as any).rating_invites = invites;
+
+  // Recalculate user ratings
+  if (Array.isArray(dbStore.data.users)) {
+    dbStore.data.users.forEach((u: any) => {
+      const uName = (u.full_name || u.username || '').toLowerCase();
+      const uReviews = invites.filter((i: any) => {
+        const advName = (i.advisorName || '').toLowerCase();
+        return (advName.includes(uName) || uName.includes(advName)) && 
+          i.rating !== null && i.rating !== undefined && !isNaN(Number(i.rating));
+      });
+      if (uReviews.length > 0) {
+        const avg = uReviews.reduce((sum: number, r: any) => sum + Number(r.rating), 0) / uReviews.length;
+        u.rating = Number(avg.toFixed(1));
+      } else {
+        if (uName.includes('punita')) u.rating = 5.0;
+        else if (uName.includes('abinash')) u.rating = 4.0;
+      }
+    });
+  }
+
+  saveData();
+
+  return res.json({
+    status: 'success',
+    success: true,
+    data: invites
+  });
+}
+
+export async function createPublicAdvisorRatingInvite(req: Request, res: Response) {
+  loadData();
+  const { id, date, customerName, customerMobile, advisorName, propertyTitle, deliveryChannel, customNote } = req.body;
+
+  if (!(dbStore.data as any).rating_invites) {
+    (dbStore.data as any).rating_invites = [];
+  }
+
+  const newInvite = {
+    id: id || `SRM-RAT-INV-${Math.floor(1000 + Math.random() * 9000)}`,
+    date: date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    customerName: customerName || 'Valued Customer',
+    customerMobile: customerMobile || '+91 90513 22932',
+    customerPhone: customerMobile || '+91 90513 22932',
+    advisorName: advisorName || 'Punita Roy',
+    propertyTitle: propertyTitle || 'GAJAPATI APARTMENT',
+    rating: null,
+    feedbackText: customNote || null,
+    comment: customNote || null,
+    status: 'DELIVERED_PENDING_REVIEW',
+    deliveryChannel: deliveryChannel || 'WHATSAPP',
+    channel: deliveryChannel || 'WHATSAPP',
+    created_at: new Date().toISOString()
+  };
+
+  (dbStore.data as any).rating_invites.unshift(newInvite);
+  saveData();
+  syncToMongoDB(dbStore.data).catch(() => {});
+
+  return res.json({
+    status: 'success',
+    success: true,
+    message: 'Rating invite created',
+    data: newInvite
+  });
+}
+
+export async function submitPublicAdvisorRating(req: Request, res: Response) {
+  loadData();
+  const { advisorName, rating, customerName, customerPhone, comment, propertyTitle } = req.body;
+
+  if (!advisorName || !rating) {
+    return res.status(400).json({
+      status: 'error',
+      success: false,
+      message: 'Advisor name and rating are required.'
+    });
+  }
+
+  const ratingNum = Math.min(5, Math.max(1, Number(rating) || 5));
+
+  if (!(dbStore.data as any).rating_invites) {
+    (dbStore.data as any).rating_invites = [];
+  }
+  const ratingInvites: any[] = (dbStore.data as any).rating_invites;
+
+  // Search if there is a pending invite dispatch for this specific customer and advisor
+  const existingPending = ratingInvites.find((i: any) => {
+    const isSameAdvisor = i.advisorName?.toLowerCase() === String(advisorName).toLowerCase();
+    if (!isSameAdvisor) return false;
+    const isPending = i.status === 'DELIVERED_PENDING_REVIEW' || i.rating === null || i.rating === undefined;
+    if (!isPending) return false;
+
+    const matchesName = customerName && i.customerName && (
+      i.customerName.toLowerCase().trim() === String(customerName).toLowerCase().trim() ||
+      i.customerName.toLowerCase().includes(String(customerName).toLowerCase().trim()) ||
+      String(customerName).toLowerCase().includes(i.customerName.toLowerCase().trim())
+    );
+    const matchesPhone = customerPhone && (i.customerMobile || i.customerPhone) && (
+      String(i.customerMobile || i.customerPhone).includes(String(customerPhone)) ||
+      String(customerPhone).includes(String(i.customerMobile || i.customerPhone))
+    );
+
+    return matchesName || matchesPhone;
+  });
+
+  const uniqueId = `SRM-RAT-INV-${Date.now()}-${Math.floor(100 + Math.random() * 900)}`;
+
+  const newLogItem = {
+    id: existingPending ? existingPending.id : uniqueId,
+    date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+    customerName: customerName || (existingPending ? existingPending.customerName : 'Website Home-Buyer'),
+    customerMobile: customerPhone || (existingPending ? (existingPending.customerMobile || existingPending.customerPhone) : '+91 98300 12345'),
+    customerPhone: customerPhone || (existingPending ? (existingPending.customerPhone || existingPending.customerMobile) : '+91 98300 12345'),
+    advisorName: advisorName,
+    propertyTitle: propertyTitle || (existingPending ? existingPending.propertyTitle : 'GAJAPATI APARTMENT'),
+    rating: ratingNum,
+    feedbackText: comment || 'Rated via Website Consultation Modal',
+    comment: comment || 'Rated via Website Consultation Modal',
+    status: 'VERIFIED_AND_RATED',
+    statusLabel: `RATED ★ ${ratingNum}.0`,
+    deliveryChannel: existingPending ? (existingPending.deliveryChannel || existingPending.channel) : 'DIRECT_WEBSITE_FORM',
+    channel: existingPending ? (existingPending.channel || existingPending.deliveryChannel) : 'DIRECT_WEBSITE_FORM',
+    created_at: new Date().toISOString()
+  };
+
+  if (existingPending) {
+    Object.assign(existingPending, newLogItem);
+  } else {
+    ratingInvites.unshift(newLogItem);
+  }
+
+  // Calculate dynamic average rating for this advisor across all their reviews
+  const advisorReviews = ratingInvites.filter((i: any) => 
+    i.advisorName?.toLowerCase() === String(advisorName).toLowerCase() && 
+    typeof i.rating === 'number' && !isNaN(i.rating)
+  );
+
+  const advisorAvgRating = advisorReviews.length > 0
+    ? Number((advisorReviews.reduce((sum: number, i: any) => sum + i.rating, 0) / advisorReviews.length).toFixed(1))
+    : ratingNum;
+
+  // Update user rating in DB
+  const targetUser = dbStore.data.users.find(u => 
+    (u.full_name && u.full_name.toLowerCase().includes(String(advisorName).toLowerCase())) ||
+    (u.username && u.username.toLowerCase().includes(String(advisorName).toLowerCase()))
+  );
+  if (targetUser) {
+    (targetUser as any).rating = advisorAvgRating;
+  }
+
+  if (!dbStore.data.site_visits) dbStore.data.site_visits = [];
+  dbStore.data.site_visits.unshift({
+    id: uuidv4(),
+    site_visit_code: `SRM-RATING-${Math.floor(100000 + Math.random() * 900000)}`,
+    customer_name: customerName || 'Website Customer',
+    customer_number: customerPhone || '+91 98300 12345',
+    sales_executive: advisorName,
+    visit_status: 'RATED',
+    feedback_notes: `Rating: ${ratingNum}/5 Stars. Feedback: ${comment || 'No comment'}`,
+    created_at: new Date().toISOString()
+  });
+
+  saveData();
+  syncToMongoDB(dbStore.data).catch(() => {});
+
+  return res.status(200).json({
+    status: 'success',
+    success: true,
+    message: 'Advisor rating submitted successfully!',
+    data: {
+      advisorName,
+      rating: ratingNum,
+      advisorAvgRating,
+      customerName,
+      invites: ratingInvites
+    }
+  });
+}
+
+export async function clearPublicAdvisorRatings(req: Request, res: Response) {
+  loadData();
+  (dbStore.data as any).rating_invites = [];
+  if (Array.isArray(dbStore.data.site_visits)) {
+    dbStore.data.site_visits = dbStore.data.site_visits.filter((v: any) => 
+      v.visit_status !== 'RATED' && !String(v.site_visit_code || '').includes('RATING') && !String(v.feedback_notes || '').includes('Rating')
+    );
+  }
+  saveData();
+
+  try {
+    const { RatingInviteModel, SiteVisitModel } = await import('../db/mongoPersistence.js');
+    await RatingInviteModel.deleteMany({});
+    await SiteVisitModel.deleteMany({
+      $or: [
+        { visit_status: 'RATED' },
+        { site_visit_code: { $regex: 'RATING', $options: 'i' } }
+      ]
+    });
+  } catch (err: any) {
+    console.warn('MongoDB clear error:', err?.message);
+  }
+
+  return res.json({
+    status: 'success',
+    success: true,
+    message: 'All advisor rating invites and feedback logs cleared from database and MongoDB Atlas!'
+  });
+}
+
+export async function deletePublicAdvisorRatingById(req: Request, res: Response) {
+  loadData();
+  const { id } = req.params;
+  const targetId = String(id).trim();
+
+  if (!(dbStore.data as any).rating_invites) {
+    (dbStore.data as any).rating_invites = [];
+  }
+
+  // Find target invite details for matching
+  const targetInvite = ((dbStore.data as any).rating_invites || []).find((item: any) => 
+    String(item.id) === targetId || String(item._id) === targetId
+  );
+  const targetName = targetInvite ? String(targetInvite.customerName || '').toLowerCase() : '';
+  const targetMobile = targetInvite ? String(targetInvite.customerMobile || targetInvite.customerPhone || '').replace(/\D/g, '') : '';
+
+  (dbStore.data as any).rating_invites = (dbStore.data as any).rating_invites.filter((item: any) => {
+    const matchId = String(item.id) === targetId || String(item._id) === targetId;
+    const matchName = targetName && String(item.customerName || '').toLowerCase() === targetName;
+    const matchMob = targetMobile && String(item.customerMobile || item.customerPhone || '').replace(/\D/g, '') === targetMobile;
+    return !matchId && !matchName && !matchMob;
+  });
+
+  if (Array.isArray(dbStore.data.site_visits)) {
+    dbStore.data.site_visits = dbStore.data.site_visits.filter((v: any) => {
+      const matchId = String(v.id || v.site_visit_code) === targetId;
+      const matchName = targetName && String(v.customer_name || v.customerName || '').toLowerCase() === targetName;
+      return !matchId && !matchName;
+    });
+  }
+
+  // Recalculate user ratings
+  if (Array.isArray(dbStore.data.users)) {
+    const invites: any[] = (dbStore.data as any).rating_invites;
+    dbStore.data.users.forEach((u: any) => {
+      const uName = (u.full_name || u.username || '').toLowerCase();
+      const uReviews = invites.filter((i: any) => {
+        const advName = (i.advisorName || '').toLowerCase();
+        return (advName.includes(uName) || uName.includes(advName)) && 
+          i.rating !== null && i.rating !== undefined && !isNaN(Number(i.rating));
+      });
+      if (uReviews.length > 0) {
+        const avg = uReviews.reduce((sum: number, r: any) => sum + Number(r.rating), 0) / uReviews.length;
+        u.rating = Number(avg.toFixed(1));
+      } else {
+        if (uName.includes('punita')) u.rating = 5.0;
+        else if (uName.includes('abinash')) u.rating = 4.0;
+      }
+    });
+  }
+
+  saveData();
+
+  try {
+    const { RatingInviteModel, SiteVisitModel } = await import('../db/mongoPersistence.js');
+    await RatingInviteModel.deleteMany({
+      $or: [
+        { id: targetId },
+        { _id: targetId },
+        ...(targetName ? [{ customerName: { $regex: new RegExp(`^${targetName}$`, 'i') } }] : [])
+      ]
+    });
+    if (targetName) {
+      await SiteVisitModel.deleteMany({
+        $or: [
+          { site_visit_code: targetId },
+          { customer_name: { $regex: new RegExp(`^${targetName}$`, 'i') } }
+        ]
+      });
+    }
+  } catch (err: any) {
+    console.warn('MongoDB delete error:', err?.message);
+  }
+
+  return res.json({
+    status: 'success',
+    success: true,
+    message: `Rating invite ${targetId} deleted successfully`,
+    data: (dbStore.data as any).rating_invites
   });
 }

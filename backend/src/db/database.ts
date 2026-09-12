@@ -35,6 +35,9 @@ export interface CustomerRecord {
   budget_max?: number;
   preferred_location?: string;
   property_type?: string;
+  propertyType?: string;
+  bhk?: string;
+  bhk_preference?: string;
   configuration?: string;
   loan_required?: boolean;
   investment_purpose?: string;
@@ -73,7 +76,7 @@ export interface PropertyRecord {
   configuration: string;
   carpet_area_sqft: number;
   built_up_area_sqft: number;
-  plot_area_sqft: number;
+  plot_area_sqft?: number;
   facing: string;
   parking_spaces: number;
   furnishing_status: string;
@@ -87,17 +90,25 @@ export interface PropertyRecord {
   location_address: string;
   city: string;
   locality: string;
-  latitude: number;
-  longitude: number;
-  gps_accuracy_meters: number;
-  verification_status: string;
-  verified_by: string;
-  verified_at: string;
-  completeness_score: number;
+  latitude?: number;
+  longitude?: number;
+  gps_accuracy_meters?: number;
+  verification_status?: string;
+  verified_by?: string;
+  verified_at?: string;
+  completeness_score?: number;
   assigned_employee_id?: string;
   assigned_employee_name?: string;
+  category?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  areaSqft?: number;
+  location?: string;
+  description?: string;
+  images?: string[];
+  image?: string;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   is_deleted: boolean;
 }
 
@@ -414,10 +425,139 @@ const initialData: Schema = {
     { id: 'TEAM-04', team_name: 'Kolkata Admin & Technical Squad', branch_id: 'BR-02', branch_name: 'Kolkata Branch', department: 'System Admin', leader_name: 'Abinash Roy (Admin)', monthly_target: '20 Property Units', created_at: '2026-08-27', members_count: 1 }
   ],
   users: [
-    { id: 'USR-01', username: 'Rajesh Varma (Super Admin)', full_name: 'Rajesh Varma', email: 'admin@swaramayi.com', mobile: '+91 98490 00001', role: 'SUPER_ADMIN', branch_name: 'Head Office (Kolkata)', department: 'Executive Board', team_name: 'Corporate Leadership Squad', manager_name: 'Self', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-01' }
+    { id: 'USR-01', username: 'Rajesh Varma (Super Admin)', full_name: 'Rajesh Varma', email: 'admin@swaramayi.com', mobile: '+91 98490 00001', role: 'SUPER_ADMIN', branch_name: 'Head Office (Kolkata)', department: 'Executive Board', team_name: 'Corporate Leadership Squad', manager_name: 'Self', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-01' },
+    { id: 'USR-02', username: 'punita.roy', full_name: 'Punita Roy', email: 'punita.roy@swaramayi.com', mobile: '+91 90513 22932', role: 'SALES_EXEC', branch_name: 'Kolkata Branch', department: 'Sales Management', team_name: 'Kolkata Expansion Team', manager_name: 'Rajesh Varma (Super Admin)', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-15' },
+    { id: 'USR-03', username: 'abinash.roy', full_name: 'Abinash Roy', email: 'abinash.roy@swaramayi.com', mobile: '+91 76970 90078', role: 'ADMIN', branch_name: 'Kolkata Branch', department: 'Residential Sales', team_name: 'Kolkata Admin & Technical Squad', manager_name: 'Rajesh Varma (Super Admin)', is_active: true, user_status: 'ACTIVE', created_at: '2026-01-15' }
   ],
   customers: [],
-  properties: [],
+  properties: [
+    {
+      id: 'PROP-001',
+      property_code: 'SRM-PROP-2026-000425',
+      property_title: 'SHIBALAY',
+      property_type: 'Apartment',
+      transaction_type: 'Sale',
+      category: 'Buy',
+      developer_name: 'KRISHNA DAS',
+      project_name: 'SHIBALAY',
+      tower_name: 'Block A',
+      floor: 3,
+      unit_number: 'A-302',
+      configuration: '3BHK',
+      bedrooms: 3,
+      bathrooms: 2,
+      carpet_area_sqft: 422.5,
+      built_up_area_sqft: 650,
+      areaSqft: 650,
+      facing: 'East',
+      parking_spaces: 1,
+      furnishing_status: 'Semi-Furnished',
+      possession_date: 'Ready to Move',
+      base_price: 2080000,
+      price_per_sqft: 3200,
+      discount: 0,
+      final_estimated_price: 2080000,
+      property_status: 'Active',
+      availability_status: 'AVAILABLE',
+      location_address: 'Chapadali Bus Terminus Hub, Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124',
+      city: 'Kolkata',
+      locality: 'BARASAT, CHAPADALI',
+      location: 'BARASAT, CHAPADALI',
+      description: 'Spacious 3 BHK residential apartment featuring modern amenities, excellent ventilation, and prime location connectivity in BARASAT, CHAPADALI, Kolkata.',
+      images: [
+        'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?auto=format&fit=crop&w=1200&q=80'
+      ],
+      image: 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80',
+      is_deleted: false,
+      created_at: '2026-01-10T10:00:00.000Z'
+    },
+    {
+      id: 'PROP-002',
+      property_code: 'SRM-PROP-2026-000426',
+      property_title: 'GAJAPATI APARTMENT',
+      property_type: 'Apartment',
+      transaction_type: 'Sale',
+      category: 'Buy',
+      developer_name: 'BABLA DUTTA',
+      project_name: 'GAJAPATI APARTMENT',
+      tower_name: 'Block B',
+      floor: 2,
+      unit_number: 'B-204',
+      configuration: '2BHK',
+      bedrooms: 2,
+      bathrooms: 2,
+      carpet_area_sqft: 700.35,
+      built_up_area_sqft: 771,
+      areaSqft: 771,
+      facing: 'North-East',
+      parking_spaces: 1,
+      furnishing_status: 'Semi-Furnished',
+      possession_date: 'Ready to Move',
+      base_price: 3515900,
+      price_per_sqft: 4560,
+      discount: 0,
+      final_estimated_price: 3515900,
+      property_status: 'Active',
+      availability_status: 'AVAILABLE',
+      location_address: 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124',
+      city: 'Kolkata',
+      locality: 'Barasat, Kolkata',
+      location: 'Barasat, Kolkata',
+      description: 'Premium 2 BHK residential apartment with modern fittings, lift, 24x7 security, and power backup in Barasat, Kolkata.',
+      images: [
+        'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80'
+      ],
+      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=1200&q=80',
+      is_deleted: false,
+      created_at: '2026-02-01T10:00:00.000Z'
+    },
+    {
+      id: 'PROP-003',
+      property_code: 'SRM-PROP-2026-000427',
+      property_title: 'DHRITI APARTMENT',
+      property_type: 'Apartment',
+      transaction_type: 'Sale',
+      category: 'Buy',
+      developer_name: 'NANIGOPAL DAS',
+      project_name: 'DHRITI APARTMENT',
+      tower_name: 'Tower 1',
+      floor: 4,
+      unit_number: '1-401',
+      configuration: '2BHK',
+      bedrooms: 2,
+      bathrooms: 2,
+      carpet_area_sqft: 718.25,
+      built_up_area_sqft: 765,
+      areaSqft: 765,
+      facing: 'East',
+      parking_spaces: 1,
+      furnishing_status: 'Fully Furnished',
+      possession_date: 'Ready to Move',
+      base_price: 3621400,
+      price_per_sqft: 4733,
+      discount: 0,
+      final_estimated_price: 3621400,
+      property_status: 'Active',
+      availability_status: 'AVAILABLE',
+      location_address: 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124',
+      city: 'Kolkata',
+      locality: 'Barasat, Kolkata',
+      location: 'Barasat, Kolkata',
+      description: 'Luxury 2 BHK residence with covered parking, modular kitchen, balcony views, and close proximity to Barasat, Kolkata.',
+      images: [
+        'https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1600585154526-990dced4db0d?auto=format&fit=crop&w=1200&q=80',
+        'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=1200&q=80'
+      ],
+      image: 'https://images.unsplash.com/photo-1567496898669-ee935f5f647a?auto=format&fit=crop&w=1200&q=80',
+      is_deleted: false,
+      created_at: '2026-03-05T10:00:00.000Z'
+    }
+  ],
   property_units: [],
   property_price_history: [],
   property_shares: [],
@@ -525,18 +665,56 @@ export function loadData() {
   dbStore.load();
   loadDataFromMongoDB().then(mongoData => {
     if (mongoData) {
-      if (mongoData.users) dbStore.data.users = mongoData.users as any;
-      if (mongoData.teams) dbStore.data.teams = mongoData.teams as any;
-      if (mongoData.branches) dbStore.data.branches = mongoData.branches as any;
-      if (mongoData.properties) dbStore.data.properties = mongoData.properties as any;
-      if (mongoData.customers) dbStore.data.customers = mongoData.customers as any;
-      if (mongoData.leads) dbStore.data.leads = mongoData.leads as any;
-      if (mongoData.agreements) dbStore.data.agreements = mongoData.agreements as any;
-      if (mongoData.bookings) dbStore.data.bookings = mongoData.bookings as any;
-      if (mongoData.invoices) dbStore.data.invoices = mongoData.invoices as any;
-      if (mongoData.matching_requests) (dbStore.data as any).matching_requests = mongoData.matching_requests as any;
-      if (mongoData.cost_sheets) (dbStore.data as any).cost_sheets = mongoData.cost_sheets as any;
-      if (mongoData.developers) (dbStore.data as any).developers = mongoData.developers as any;
+      if (mongoData.users && mongoData.users.length > 0) {
+        const userMap = new Map<string, any>();
+        initialData.users.forEach((u: any) => userMap.set(u.id, u));
+        mongoData.users.forEach((u: any) => userMap.set(u.id || u.username, { ...(userMap.get(u.id || u.username) || {}), ...u }));
+        dbStore.data.users = Array.from(userMap.values()) as any;
+      } else {
+        dbStore.data.users = initialData.users as any;
+      }
+      if (mongoData.teams && mongoData.teams.length > 0) dbStore.data.teams = mongoData.teams as any;
+      if (mongoData.branches && mongoData.branches.length > 0) dbStore.data.branches = mongoData.branches as any;
+      if (mongoData.properties && mongoData.properties.length > 0) {
+        const realProps = mongoData.properties.filter((p: any) => {
+          const title = String(p.property_title || p.title || '').toLowerCase();
+          const pCode = String(p.property_code || p.id || '').toLowerCase();
+          return !title.includes('sky villa') && 
+                 !title.includes('commercial plaza') && 
+                 !title.includes('greenwood plots') && 
+                 !title.includes('aparna zenon') && 
+                 !title.includes('financial towers') && 
+                 !title.includes('prestige high') && 
+                 !title.includes('silicon county') &&
+                 pCode !== 'prop-04' && pCode !== 'prop-05' && pCode !== 'prop-06';
+        });
+        dbStore.data.properties = realProps.length > 0 ? (realProps as any) : (initialData.properties as any);
+      } else if (!dbStore.data.properties || dbStore.data.properties.length === 0) {
+        dbStore.data.properties = initialData.properties as any;
+      }
+      if (mongoData.customers && mongoData.customers.length > 0) dbStore.data.customers = mongoData.customers as any;
+      if (mongoData.leads && mongoData.leads.length > 0) dbStore.data.leads = mongoData.leads as any;
+      if (mongoData.agreements && mongoData.agreements.length > 0) dbStore.data.agreements = mongoData.agreements as any;
+      if (mongoData.bookings && mongoData.bookings.length > 0) dbStore.data.bookings = mongoData.bookings as any;
+      if (mongoData.invoices && mongoData.invoices.length > 0) dbStore.data.invoices = mongoData.invoices as any;
+      if (mongoData.site_visits && mongoData.site_visits.length > 0) dbStore.data.site_visits = mongoData.site_visits as any;
+      if (mongoData.matching_requests && mongoData.matching_requests.length > 0) (dbStore.data as any).matching_requests = mongoData.matching_requests as any;
+      if (mongoData.developers && mongoData.developers.length > 0) (dbStore.data as any).developers = mongoData.developers as any;
+      if (mongoData.rating_invites && mongoData.rating_invites.length > 0) {
+        const currentInvites: any[] = (dbStore.data as any).rating_invites || [];
+        const inviteMap = new Map<string, any>();
+        mongoData.rating_invites.forEach((mItem: any) => {
+          const k = String(mItem.id || mItem._id);
+          if (k) inviteMap.set(k, mItem);
+        });
+        currentInvites.forEach((cItem: any) => {
+          const k = String(cItem.id || cItem._id);
+          if (k) {
+            inviteMap.set(k, { ...(inviteMap.get(k) || {}), ...cItem });
+          }
+        });
+        (dbStore.data as any).rating_invites = Array.from(inviteMap.values());
+      }
     }
   }).catch(() => {});
 }

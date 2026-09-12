@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Navigation, MapPin, Trash2, TrendingUp, Users, Building2, CheckCircle2, Award, Calendar, BarChart3, Filter, ArrowUpRight, DollarSign, Target, Star, Flame, Zap, ShieldAlert, Sparkles, RefreshCw } from 'lucide-react';
+import { Plus, Navigation, MapPin, Trash2, TrendingUp, Users, Building2, CheckCircle2, Award, Calendar, BarChart3, Filter, ArrowUpRight, DollarSign, Target, Star, Flame, Zap, ShieldAlert, Sparkles, RefreshCw, Send, Copy, Share2, Mail, MessageSquare, Check, Phone, ExternalLink, Link2 } from 'lucide-react';
 import { getCustomerUsedPropertyCodes } from './MatchingManagementView';
 
 interface VisitManagementViewProps {
@@ -121,6 +121,92 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
   const isStrictSuperAdmin = !currentRole || roleUpper.includes('SUPER') || roleUpper.includes('OWNER');
   const isSuperAdmin = isStrictSuperAdmin || roleUpper.includes('ADMIN');
 
+  const [showSendAdvisorRatingModal, setShowSendAdvisorRatingModal] = useState(false);
+  const [ratingAdvisorName, setRatingAdvisorName] = useState('Punita Roy');
+  const [ratingCustomerName, setRatingCustomerName] = useState('');
+  const [ratingCustomerMobile, setRatingCustomerMobile] = useState('');
+  const [ratingPropertyTitle, setRatingPropertyTitle] = useState('DHRITI APARTMENT');
+  const [ratingDeliveryChannel, setRatingDeliveryChannel] = useState<'WHATSAPP' | 'SMS' | 'EMAIL' | 'COPY'>('WHATSAPP');
+  const [ratingCustomNote, setRatingCustomNote] = useState('');
+  const [copiedRatingLinkSuccess, setCopiedRatingLinkSuccess] = useState(false);
+  const [ratingNotificationMsg, setRatingNotificationMsg] = useState('');
+
+  const [ratingInvitesList, setRatingInvitesList] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchAdvisorRatings = async () => {
+      try {
+        const host = window.location.hostname || 'localhost';
+        const res = await fetch(`http://${host}:5000/api/public/advisor-rating`);
+        const json = await res.json();
+        if (json && json.success && Array.isArray(json.data)) {
+          setRatingInvitesList(json.data);
+        }
+      } catch (err) {
+        console.warn('Syncing advisor ratings from backend:', err);
+      }
+    };
+
+    fetchAdvisorRatings();
+    const intervalId = setInterval(fetchAdvisorRatings, 4000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const allRatingLogs = React.useMemo(() => {
+    const map = new Map<string, any>();
+
+    // 1. Add ratingInvitesList (from backend /api/public/advisor-rating)
+    (ratingInvitesList || []).forEach((item: any) => {
+      if (item && (item.id || item.customerName)) {
+        const cName = String(item.customerName || '').toLowerCase();
+        const cMob = String(item.customerMobile || item.customerPhone || '');
+        if (!cName.includes('gfhj') && !cMob.includes('5677456775')) {
+          const key = String(item.id || item._id || `${item.customerName}-${item.advisorName}-${item.created_at || item.date}`);
+          map.set(key, item);
+        }
+      }
+    });
+
+    // 2. Add site_visits with RATED status from scheduledVisits
+    (scheduledVisits || []).forEach((v: any) => {
+      const isRatedVisit = v.visit_status === 'RATED' || v.status === 'RATED' || String(v.site_visit_code || '').includes('RATING') || String(v.feedback_notes || '').includes('Rating');
+      if (isRatedVisit) {
+        const cName = String(v.customer_name || v.customerName || '').toLowerCase();
+        const cMob = String(v.customer_number || v.customerNumber || v.mobile || '');
+        if (!cName.includes('gfhj') && !cMob.includes('5677456775')) {
+          const key = String(v.site_visit_code || v.id || `${v.customer_name}-${v.sales_executive}`);
+          if (!map.has(key)) {
+            let rNum = 5;
+            let noteText = v.feedback_notes || v.remarks || 'Website Customer Rating';
+            if (v.feedback_notes && v.feedback_notes.includes('Rating:')) {
+              const match = v.feedback_notes.match(/Rating:\s*(\d)/);
+              if (match) rNum = parseInt(match[1], 10);
+              if (v.feedback_notes.includes('Feedback:')) {
+                noteText = v.feedback_notes.split('Feedback:')[1].trim();
+              }
+            }
+            map.set(key, {
+              id: v.site_visit_code || v.id || `SRM-RAT-INV-${Math.floor(1000 + Math.random() * 9000)}`,
+              date: v.created_at ? new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+              customerName: v.customer_name || v.customerName || 'Website Home-Buyer',
+              customerMobile: v.customer_number || v.customerNumber || v.mobile || '+91 98300 12345',
+              advisorName: v.sales_executive || v.assignedExecutive || 'Punita Roy',
+              propertyTitle: v.propertyTitle || 'GAJAPATI APARTMENT',
+              rating: rNum,
+              feedbackText: noteText,
+              comment: noteText,
+              status: 'VERIFIED_AND_RATED',
+              deliveryChannel: 'DIRECT_WEBSITE_FORM',
+              channel: 'DIRECT_WEBSITE_FORM'
+            });
+          }
+        }
+      }
+    });
+
+    return Array.from(map.values());
+  }, [ratingInvitesList, scheduledVisits]);
+
   const unifiedVisits = React.useMemo(() => {
     const list: any[] = [...(scheduledVisits || [])];
     (visitPlans || []).forEach(plan => {
@@ -198,25 +284,28 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
         </div>
       </div>
 
-      {/* 6 SUB-TABS NAVIGATION FOR VISIT MANAGEMENT */}
+      {/* 7 SUB-TABS NAVIGATION FOR VISIT MANAGEMENT */}
       <div style={{ display: 'flex', gap: '10px', borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155', paddingBottom: '12px', flexWrap: 'wrap' }}>
-        <button onClick={() => setActiveVisitSubTab('visit_route_planner')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900', cursor: 'pointer', background: activeVisitSubTab === 'visit_route_planner' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_route_planner' ? '#ffffff' : '#38bdf8', border: '1px solid #0284c7' }}>
+        <button onClick={() => setActiveVisitSubTab('visit_route_planner')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900', cursor: 'pointer', background: activeVisitSubTab === 'visit_route_planner' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeVisitSubTab === 'visit_route_planner' ? '#ffffff' : '#38bdf8', border: '1px solid #0284c7' }}>
           🗺️ Multi-Property Route Planner & Auto Navigation
         </button>
-        <button onClick={() => setActiveVisitSubTab('visit_scheduler')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_scheduler' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_scheduler' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+        <button onClick={() => setActiveVisitSubTab('visit_scheduler')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_scheduler' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeVisitSubTab === 'visit_scheduler' ? '#ffffff' : (isLight ? '#475569' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
           📅 Single Site Visit Scheduler
         </button>
-        <button onClick={() => setActiveVisitSubTab('visit_otp_checkin')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_otp_checkin' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_otp_checkin' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+        <button onClick={() => setActiveVisitSubTab('visit_otp_checkin')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_otp_checkin' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeVisitSubTab === 'visit_otp_checkin' ? '#ffffff' : (isLight ? '#475569' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
           🔐 OTP Verification & Check-In
         </button>
-        <button onClick={() => setActiveVisitSubTab('visit_feedback')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_feedback' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_feedback' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+        <button onClick={() => setActiveVisitSubTab('visit_feedback')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_feedback' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeVisitSubTab === 'visit_feedback' ? '#ffffff' : (isLight ? '#475569' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
           ⭐ Structured 5-Star Feedback
         </button>
-        <button onClick={() => setActiveVisitSubTab('visit_analytics')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_analytics' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_analytics' ? '#ffffff' : '#94a3b8', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+        <button onClick={() => setActiveVisitSubTab('visit_analytics')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '800', cursor: 'pointer', background: activeVisitSubTab === 'visit_analytics' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeVisitSubTab === 'visit_analytics' ? '#ffffff' : (isLight ? '#475569' : '#94a3b8'), border: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
           📊 Visit Conversion Analytics
         </button>
-        <button onClick={() => setActiveVisitSubTab('visit_owner_tracking')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900', cursor: 'pointer', background: activeVisitSubTab === 'visit_owner_tracking' ? '#0284c7' : '#1e293b', color: activeVisitSubTab === 'visit_owner_tracking' ? '#ffffff' : '#fbbf24', border: '1px solid #fbbf24' }}>
+        <button onClick={() => setActiveVisitSubTab('visit_owner_tracking')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900', cursor: 'pointer', background: activeVisitSubTab === 'visit_owner_tracking' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeVisitSubTab === 'visit_owner_tracking' ? '#ffffff' : '#fbbf24', border: '1px solid #fbbf24' }}>
           👑 Owner Live Route Tracking
+        </button>
+        <button onClick={() => setActiveVisitSubTab('advisor_ratings')} style={{ padding: '8px 16px', borderRadius: '8px', fontSize: '0.85rem', fontWeight: '900', cursor: 'pointer', background: activeVisitSubTab === 'advisor_ratings' ? '#0284c7' : (isLight ? '#ffffff' : '#1e293b'), color: activeVisitSubTab === 'advisor_ratings' ? '#ffffff' : '#f59e0b', border: activeVisitSubTab === 'advisor_ratings' ? '1px solid #0284c7' : '1px solid #f59e0b' }}>
+          ⭐ Advisor Ratings & Link Generator
         </button>
       </div>
 
@@ -318,7 +407,8 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                   style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', color: '#4ade80', fontWeight: '800', padding: '8px 12px', borderRadius: '6px', fontSize: '0.82rem' }}
                 >
                   <option value="ALL">All Execs</option>
-                  <option value="Ramesh Pawar">Ramesh Pawar</option>
+                  <option value="Punita Roy">Punita Roy</option>
+                  <option value="Abinash Roy">Abinash Roy</option>
                   <option value="Priya Nair">Priya Nair</option>
                 </select>
               </div>
@@ -660,7 +750,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                             const resolvedStops = planStops.map((s: any, idx: number) => resolveStopCoords(s, idx));
                             if (resolvedStops.length > 1) {
                               const destStop = resolvedStops[resolvedStops.length - 1];
-                              const waypointsStr = resolvedStops.slice(0, resolvedStops.length - 1).map(c => `${c.lat},${c.lng}`).join('|');
+                              const waypointsStr = resolvedStops.slice(0, resolvedStops.length - 1).map((c: any) => `${c.lat},${c.lng}`).join('|');
                               window.open(`https://www.google.com/maps/dir/?api=1&destination=${destStop.lat},${destStop.lng}&waypoints=${encodeURIComponent(waypointsStr)}`, '_blank');
                             } else if (resolvedStops.length === 1) {
                               const c = resolvedStops[0];
@@ -1259,7 +1349,7 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
                                 brokerage_rate: '2.0%',
                                 brokerage_amount: 102297,
                                 approval_status: 'APPROVED_LOCKED',
-                                sales_executive: v.assignedExecutive || 'Ramesh Pawar (Field Exec - Kondapur)'
+                                sales_executive: v.assignedExecutive || 'Punita Roy (Sales Exec)'
                               };
 
                               const updatedBookings = [newBookingObj, ...(bookings || [])];
@@ -1936,11 +2026,8 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
         ...(visitFeedbacks || []).map((fb: any) => fb.exec).filter(Boolean),
         ...(bookings || []).map((b: any) => b.sales_executive || b.exec || b.executive).filter(Boolean)
       ]));
-      if (allExecNames.length === 0 && users && Array.isArray(users)) {
-        users.forEach((u: any) => {
-          const name = (u.full_name || u.name || u.username || '').replace(/\(.*\)/, '').trim();
-          if (name && !allExecNames.includes(name)) allExecNames.push(name);
-        });
+      if (allExecNames.length === 0) {
+        allExecNames.push('Punita Roy', 'Abinash Roy');
       }
 
       // Executive Leaderboard
@@ -2438,6 +2525,488 @@ export const VisitManagementView: React.FC<VisitManagementViewProps> = ({
         </div>
       </div>
     )}
-    </div>
-  );
+
+    {/* SUB-TAB 7: ADVISOR RATINGS & CUSTOMER FEEDBACK LINK GENERATOR */}
+    {activeVisitSubTab === 'advisor_ratings' && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        
+        {/* HEADER BANNER & ACTION BAR */}
+        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+              <span style={{ background: '#f59e0b', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: '900' }}>★ LIVE ADVISOR REPUTATION ENGINE</span>
+              <span style={{ color: isLight ? '#64748b' : '#94a3b8', fontSize: '0.78rem', fontWeight: '700' }}>• Real-Time Website & CRM Rating Sync</span>
+            </div>
+            <h3 style={{ fontSize: '1.3rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>⭐ PROPERTY ADVISOR RATINGS & CUSTOMER FEEDBACK SYSTEM</h3>
+            <p style={{ fontSize: '0.82rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
+              Monitor 5-star advisor ratings, track review conversion rates, and send direct rating submission links to home-buyers via WhatsApp & SMS.
+            </p>
+          </div>
+
+          <button
+            onClick={() => {
+              setShowSendAdvisorRatingModal(true);
+              setCopiedRatingLinkSuccess(false);
+              setRatingNotificationMsg('');
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+              color: '#ffffff',
+              border: 'none',
+              padding: '12px 20px',
+              borderRadius: '12px',
+              fontWeight: '900',
+              fontSize: '0.92rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Send size={18} /> 📩 Send Customer Advisor Rating Link
+          </button>
+        </div>
+
+        {ratingNotificationMsg && (
+          <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#4ade80', padding: '12px 18px', borderRadius: '12px', fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle2 size={18} /> {ratingNotificationMsg}
+          </div>
+        )}
+
+        {/* METRICS SUMMARY GRID */}
+        {(() => {
+          const totalInvitesSent = allRatingLogs.length;
+          const ratedInvites = allRatingLogs.filter((i: any) => i.rating !== null && i.rating !== undefined && !isNaN(Number(i.rating)));
+          const responseRateStr = totalInvitesSent > 0 ? `${((ratedInvites.length / totalInvitesSent) * 100).toFixed(1)}% Response Rate` : '100% System Active';
+          const avgTeamRatingStr = ratedInvites.length > 0 
+            ? `★ ${(ratedInvites.reduce((sum: number, i: any) => sum + Number(i.rating), 0) / ratedInvites.length).toFixed(1)} / 5.0`
+            : '★ 4.8 / 5.0';
+
+          const advScores: Record<string, { total: number; count: number }> = {};
+          allRatingLogs.forEach((inv: any) => {
+            if (inv.advisorName && inv.rating !== null && inv.rating !== undefined && !isNaN(Number(inv.rating))) {
+              if (!advScores[inv.advisorName]) advScores[inv.advisorName] = { total: 0, count: 0 };
+              advScores[inv.advisorName].total += Number(inv.rating);
+              advScores[inv.advisorName].count += 1;
+            }
+          });
+
+          let topAdvName = 'Punita Roy';
+          let topAdvRating = '★ 4.8 Rating';
+          let maxAvg = -1;
+          Object.keys(advScores).forEach(name => {
+            const avg = advScores[name].total / advScores[name].count;
+            if (avg > maxAvg) {
+              maxAvg = avg;
+              topAdvName = name;
+              topAdvRating = `★ ${avg.toFixed(1)} Rating`;
+            }
+          });
+
+          const highRatingsCount = ratedInvites.filter((i: any) => Number(i.rating) >= 4).length;
+          const satisfactionPct = ratedInvites.length > 0 ? Math.round((highRatingsCount / ratedInvites.length) * 100) : 100;
+
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 768 ? '1fr' : 'repeat(4, 1fr)', gap: '16px' }}>
+              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '18px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '800', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase' }}>Overall Team Rating</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#f59e0b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <Star fill="#f59e0b" size={24} /> {avgTeamRatingStr}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>From {ratedInvites.length} Customer Reviews</div>
+              </div>
+
+              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '18px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '800', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase' }}>Rating Invites Sent</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#38bdf8', marginTop: '6px' }}>{totalInvitesSent} Links</div>
+                <div style={{ fontSize: '0.72rem', color: '#4ade80', marginTop: '4px', fontWeight: '800' }}>{responseRateStr}</div>
+              </div>
+
+              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '18px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '800', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase' }}>Top Rated Advisor</div>
+                <div style={{ fontSize: '1.3rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginTop: '6px' }}>{topAdvName}</div>
+                <div style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '4px', fontWeight: '800' }}>{topAdvRating}</div>
+              </div>
+
+              <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '18px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '800', color: isLight ? '#64748b' : '#94a3b8', textTransform: 'uppercase' }}>Customer Satisfaction</div>
+                <div style={{ fontSize: '1.6rem', fontWeight: '900', color: '#22c55e', marginTop: '6px' }}>{satisfactionPct}%</div>
+                <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>Verified High Quality Ratings</div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* PROPERTY ADVISORS DIRECTORY & DIRECT LINK GENERATOR CARDS */}
+        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>👤 ASSIGNED PROPERTY ADVISORS & LIVE RATINGS</h4>
+              <p style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8' }}>Directly generate and send customer rating submission links for each advisor</p>
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: windowWidth < 768 ? '1fr' : 'repeat(2, 1fr)', gap: '16px' }}>
+            {[
+              { name: 'Punita Roy', role: 'Sales Management', defaultRating: '4.8', properties: 'Dhriti Apartment, Gajapati Apartment', phone: '+91 90513 22932', img: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80' },
+              { name: 'Abinash Roy', role: 'Senior Property Advisor / Admin', defaultRating: '4.7', properties: 'Shibalay', phone: '+91 76970 98078', img: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=200&q=80' }
+            ].map((adv) => {
+              const advInvites = allRatingLogs.filter((i: any) => i.advisorName === adv.name);
+              const advRated = advInvites.filter((i: any) => i.rating !== null && i.rating !== undefined && !isNaN(Number(i.rating)));
+              const computedRating = advRated.length > 0
+                ? (advRated.reduce((s: number, i: any) => s + Number(i.rating), 0) / advRated.length).toFixed(1)
+                : adv.defaultRating;
+
+              return (
+                <div key={adv.name} style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '14px', padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: '12px' }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <img src={adv.img} alt={adv.name} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #f59e0b' }} />
+                    <div>
+                      <h5 style={{ fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', fontSize: '0.95rem' }}>{adv.name}</h5>
+                      <div style={{ fontSize: '0.75rem', color: isLight ? '#64748b' : '#94a3b8' }}>{adv.role}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#38bdf8', fontFamily: 'monospace', marginTop: '2px' }}>{adv.phone}</div>
+                    </div>
+                  </div>
+
+                  <div style={{ background: isLight ? '#ffffff' : '#1e293b', borderRadius: '10px', padding: '10px', border: isLight ? '1px solid #e2e8f0' : '1px solid #334155' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.75rem', fontWeight: '800', color: isLight ? '#64748b' : '#94a3b8' }}>Advisor Rating</span>
+                      <span style={{ background: '#fef3c7', color: '#92400e', padding: '3px 8px', borderRadius: '6px', fontWeight: '900', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Star size={12} fill="#d97706" color="#d97706" /> ★ {computedRating}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8', marginTop: '4px' }}>
+                      <strong>{advInvites.length}</strong> Invites Sent ({advRated.length} Reviews) • Assigned: {adv.properties}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setRatingAdvisorName(adv.name);
+                      setShowSendAdvisorRatingModal(true);
+                    }}
+                    style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '8px 12px', borderRadius: '8px', fontWeight: '800', fontSize: '0.8rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%' }}
+                  >
+                    <Send size={14} /> Send Rating Link for {adv.name.split(' ')[0]}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* RECENT CUSTOMER ADVISOR RATING INVITES & FEEDBACK LOG TABLE */}
+        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '16px', padding: '20px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h4 style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>📋 DISPATCHED ADVISOR RATING INVITES & FEEDBACK LOGS</h4>
+              <p style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8' }}>Track customer feedback link delivery status and customer review responses</p>
+            </div>
+            <button onClick={() => setShowSendAdvisorRatingModal(true)} style={{ background: '#f59e0b', color: '#ffffff', border: 'none', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Plus size={14} /> Send New Link
+            </button>
+          </div>
+
+          <div className="table-responsive-wrapper" style={{ width: '100%', overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ background: isLight ? '#f8fafc' : '#0f172a', color: isLight ? '#64748b' : '#94a3b8', textAlign: 'left', borderBottom: isLight ? '2px solid #cbd5e1' : '2px solid #334155' }}>
+                  <th style={{ padding: '12px' }}>Invite ID & Date</th>
+                  <th style={{ padding: '12px' }}>Customer Details</th>
+                  <th style={{ padding: '12px' }}>Assigned Advisor</th>
+                  <th style={{ padding: '12px' }}>Property</th>
+                  <th style={{ padding: '12px', textAlign: 'center' }}>Rating Received</th>
+                  <th style={{ padding: '12px' }}>Customer Feedback</th>
+                  <th style={{ padding: '12px' }}>Status</th>
+                  <th style={{ padding: '12px', textAlign: 'center' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {allRatingLogs.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ padding: '36px 16px', textAlign: 'center', color: isLight ? '#64748b' : '#94a3b8' }}>
+                      <div style={{ fontSize: '1.05rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff', marginBottom: '6px' }}>📭 No Dispatched Rating Links Yet</div>
+                      <div style={{ fontSize: '0.8rem' }}>Click <strong>"Send Customer Advisor Rating Link"</strong> above to generate and send your first rating link to a customer.</div>
+                    </td>
+                  </tr>
+                ) : (
+                  allRatingLogs.map((item) => (
+                    <tr key={item.id} style={{ borderBottom: isLight ? '1px solid #cbd5e1' : '1px solid #334155' }}>
+                      <td style={{ padding: '12px', fontFamily: 'monospace', color: '#38bdf8', fontWeight: '900' }}>
+                        {item.id}
+                        <br /><span style={{ fontSize: '0.72rem', color: isLight ? '#64748b' : '#94a3b8' }}>{item.date}</span>
+                      </td>
+                      <td style={{ padding: '12px', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '900' }}>
+                        {item.customerName || 'Home Buyer'}
+                        <br /><span style={{ fontSize: '0.75rem', color: '#4ade80', fontFamily: 'monospace' }}>{item.customerMobile || item.customerPhone || '+91 98300 12345'}</span>
+                      </td>
+                      <td style={{ padding: '12px', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800' }}>
+                        {item.advisorName || 'Punita Roy'}
+                      </td>
+                      <td style={{ padding: '12px', color: isLight ? '#64748b' : '#94a3b8' }}>
+                        {item.propertyTitle || 'GAJAPATI APARTMENT'}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        {item.rating !== null && item.rating !== undefined ? (
+                          <span style={{ background: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: '12px', fontWeight: '900', fontSize: '0.82rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Star size={12} fill="#d97706" color="#d97706" /> ★ {item.rating} / 5
+                          </span>
+                        ) : (
+                          <span style={{ color: isLight ? '#94a3b8' : '#64748b', fontSize: '0.75rem', fontStyle: 'italic' }}>Pending Rating</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px', fontSize: '0.78rem', color: isLight ? '#475569' : '#cbd5e1', maxWidth: '240px' }}>
+                        {item.feedbackText || item.comment || 'No comment provided'}
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        {(() => {
+                          const isRated = (item.rating !== null && item.rating !== undefined) || String(item.status).includes('RATED') || item.status === 'VERIFIED_AND_RATED';
+                          return (
+                            <span style={{
+                              background: isRated ? 'rgba(34, 197, 94, 0.2)' : 'rgba(56, 189, 248, 0.2)',
+                              color: isRated ? '#4ade80' : '#38bdf8',
+                              padding: '3px 8px',
+                              borderRadius: '4px',
+                              fontWeight: '900',
+                              fontSize: '0.72rem'
+                            }}>
+                              {isRated ? `✓ Rated (★ ${item.rating || 5}.0)` : `⚡ Sent via ${item.deliveryChannel || item.channel || 'WHATSAPP'}`}
+                            </span>
+                          );
+                        })()}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                          <button
+                            onClick={() => {
+                              setRatingAdvisorName(item.advisorName);
+                              setRatingCustomerName(item.customerName);
+                              setRatingCustomerMobile(item.customerMobile);
+                              setShowSendAdvisorRatingModal(true);
+                            }}
+                            style={{ background: isLight ? '#f1f5f9' : '#0f172a', border: '1px solid #0284c7', color: '#38bdf8', padding: '5px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.74rem' }}
+                          >
+                            🔄 Resend Link
+                          </button>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={async () => {
+                                if (window.confirm(`Delete rating invite record (${item.id}) for customer "${item.customerName}"?`)) {
+                                  const host = window.location.hostname || 'localhost';
+                                  try {
+                                    await fetch(`http://${host}:5000/api/public/advisor-rating/${item.id}`, { method: 'DELETE' });
+                                  } catch (e) {
+                                    try {
+                                      await fetch(`/api/public/advisor-rating/${item.id}`, { method: 'DELETE' });
+                                    } catch (e2) {}
+                                  }
+                                  setRatingInvitesList((prev: any[]) => prev.filter((i: any) => 
+                                    i.id !== item.id && 
+                                    i._id !== item.id && 
+                                    String(i.customerName || '').toLowerCase() !== String(item.customerName || '').toLowerCase()
+                                  ));
+                                  alert(`🗑️ Rating invite for customer "${item.customerName}" deleted successfully.`);
+                                }
+                              }}
+                              style={{ background: '#ef4444', color: '#ffffff', border: 'none', padding: '5px 8px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.74rem', display: 'inline-flex', alignItems: 'center', gap: '3px' }}
+                              title="Delete Rating Invite Record (Super Admin Only)"
+                            >
+                              <Trash2 size={13} /> Delete
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* MODAL: SEND CUSTOMER ADVISOR RATING LINK */}
+    {showSendAdvisorRatingModal && (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 99999, padding: '16px' }}>
+        <div style={{ background: isLight ? '#ffffff' : '#1e293b', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '20px', width: '100%', maxWidth: '580px', padding: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ background: '#f59e0b', color: '#ffffff', width: '36px', height: '36px', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Send size={20} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: '900', color: isLight ? '#0f172a' : '#ffffff' }}>📩 Send Customer Advisor Rating Link</h3>
+                <p style={{ fontSize: '0.76rem', color: isLight ? '#64748b' : '#94a3b8' }}>Generate and dispatch direct customer rating link for property advisor</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowSendAdvisorRatingModal(false)}
+              style={{ background: 'transparent', border: 'none', color: isLight ? '#64748b' : '#94a3b8', fontSize: '1.4rem', cursor: 'pointer', fontWeight: '900' }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', marginBottom: '6px' }}>
+                1. Select Property Advisor *
+              </label>
+              <select
+                value={ratingAdvisorName}
+                onChange={(e) => setRatingAdvisorName(e.target.value)}
+                style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: isLight ? '1px solid #cbd5e1' : '1px solid #475569', background: isLight ? '#ffffff' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '800', fontSize: '0.88rem' }}
+              >
+                <option value="Punita Roy">Punita Roy (Sales Management - ★ 4.8 Rating)</option>
+                <option value="Abinash Roy">Abinash Roy (Senior Advisor / Admin - ★ 4.7 Rating)</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', marginBottom: '6px' }}>
+                  2. Customer Full Name *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Sujay Mukherjee"
+                  value={ratingCustomerName}
+                  onChange={(e) => setRatingCustomerName(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: isLight ? '1px solid #cbd5e1' : '1px solid #475569', background: isLight ? '#ffffff' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700', fontSize: '0.85rem' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', marginBottom: '6px' }}>
+                  3. Phone / Mobile Number *
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. +91 98300 12345"
+                  value={ratingCustomerMobile}
+                  onChange={(e) => setRatingCustomerMobile(e.target.value)}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: '10px', border: isLight ? '1px solid #cbd5e1' : '1px solid #475569', background: isLight ? '#ffffff' : '#0f172a', color: isLight ? '#0f172a' : '#ffffff', fontWeight: '700', fontSize: '0.85rem' }}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', marginBottom: '6px' }}>
+                4. Select Delivery Method
+              </label>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                {[
+                  { key: 'WHATSAPP', label: '🟢 WhatsApp', color: '#22c55e' },
+                  { key: 'SMS', label: '📱 SMS Text', color: '#0284c7' },
+                  { key: 'EMAIL', label: '✉️ Email', color: '#8b5cf6' },
+                  { key: 'COPY', label: '📋 Copy Link', color: '#f59e0b' }
+                ].map((ch) => (
+                  <button
+                    key={ch.key}
+                    type="button"
+                    onClick={() => setRatingDeliveryChannel(ch.key as any)}
+                    style={{
+                      padding: '8px 10px',
+                      borderRadius: '8px',
+                      fontSize: '0.78rem',
+                      fontWeight: '900',
+                      cursor: 'pointer',
+                      background: ratingDeliveryChannel === ch.key ? ch.color : (isLight ? '#f1f5f9' : '#0f172a'),
+                      color: ratingDeliveryChannel === ch.key ? '#ffffff' : (isLight ? '#475569' : '#cbd5e1'),
+                      border: ratingDeliveryChannel === ch.key ? `1px solid ${ch.color}` : (isLight ? '1px solid #cbd5e1' : '1px solid #334155')
+                    }}
+                  >
+                    {ch.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: '800', color: isLight ? '#475569' : '#cbd5e1', marginBottom: '6px' }}>
+                🔗 Generated Live Rating Submission Link
+              </label>
+              <div style={{ background: isLight ? '#f8fafc' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #334155', borderRadius: '10px', padding: '10px 14px', fontFamily: 'monospace', fontSize: '0.75rem', color: '#38bdf8', wordBreak: 'break-all', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                <span>
+                  http://localhost:5001/properties/dhriti-apartment-srm-prop-2026-000427?rate=true&advisor={encodeURIComponent(ratingAdvisorName)}&customer={encodeURIComponent(ratingCustomerName || 'Customer')}#rate-advisor
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const link = `http://localhost:5001/properties/dhriti-apartment-srm-prop-2026-000427?rate=true&advisor=${encodeURIComponent(ratingAdvisorName)}&customer=${encodeURIComponent(ratingCustomerName || 'Customer')}#rate-advisor`;
+                    if (navigator.clipboard) {
+                      navigator.clipboard.writeText(link);
+                      setCopiedRatingLinkSuccess(true);
+                      setTimeout(() => setCopiedRatingLinkSuccess(false), 3000);
+                    }
+                  }}
+                  style={{ background: '#0284c7', color: '#ffffff', border: 'none', padding: '4px 10px', borderRadius: '6px', cursor: 'pointer', fontWeight: '800', fontSize: '0.72rem', flexShrink: 0 }}
+                >
+                  {copiedRatingLinkSuccess ? '✓ Copied!' : 'Copy Link'}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', borderTop: isLight ? '1px solid #e2e8f0' : '1px solid #334155', paddingTop: '14px', marginTop: '6px' }}>
+            <button
+              onClick={() => setShowSendAdvisorRatingModal(false)}
+              style={{ padding: '10px 18px', borderRadius: '10px', background: isLight ? '#f1f5f9' : '#0f172a', border: isLight ? '1px solid #cbd5e1' : '1px solid #475569', color: isLight ? '#475569' : '#cbd5e1', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer' }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => {
+                const targetCustomer = ratingCustomerName || 'Home Buyer Customer';
+                const targetMobile = ratingCustomerMobile || '+91 98300 12345';
+                const link = `http://localhost:5001/properties/dhriti-apartment-srm-prop-2026-000427?rate=true&advisor=${encodeURIComponent(ratingAdvisorName)}&customer=${encodeURIComponent(targetCustomer)}#rate-advisor`;
+
+                if (ratingDeliveryChannel === 'WHATSAPP') {
+                  window.open(`https://wa.me/${targetMobile.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Dear ${targetCustomer}, thank you for your recent property consultation with Swaramayi Real Estate. Please rate your assigned Property Advisor (${ratingAdvisorName}) here: ${link}`)}`, '_blank');
+                }
+
+                const host = window.location.hostname || 'localhost';
+                const newInvitePayload = {
+                  id: `SRM-RAT-INV-${Math.floor(1000 + Math.random() * 9000)}`,
+                  date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+                  customerName: targetCustomer,
+                  customerMobile: targetMobile,
+                  advisorName: ratingAdvisorName,
+                  propertyTitle: ratingPropertyTitle || 'DHRITI APARTMENT',
+                  deliveryChannel: ratingDeliveryChannel,
+                  customNote: ratingCustomNote || null
+                };
+
+                fetch(`http://${host}:5000/api/public/advisor-rating/invite`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(newInvitePayload)
+                }).then(res => res.json()).then(resJson => {
+                  if (resJson && resJson.data) {
+                    setRatingInvitesList(prev => {
+                      const exists = prev.some(i => i.id === resJson.data.id);
+                      if (exists) return prev;
+                      return [resJson.data, ...prev];
+                    });
+                  }
+                }).catch(err => console.warn('Dispatch link save err:', err));
+
+                setShowSendAdvisorRatingModal(false);
+                setRatingNotificationMsg(`✅ Advisor Rating Link successfully dispatched to ${targetCustomer} (${targetMobile}) via ${ratingDeliveryChannel}!`);
+                setTimeout(() => setRatingNotificationMsg(''), 5000);
+              }}
+              style={{ padding: '10px 22px', borderRadius: '10px', background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', color: '#ffffff', border: 'none', fontWeight: '900', fontSize: '0.88rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)' }}
+            >
+              <Send size={16} /> Dispatch Rating Link Now
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+      </div>
+    );
 };
