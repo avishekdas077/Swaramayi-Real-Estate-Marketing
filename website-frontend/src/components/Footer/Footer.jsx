@@ -71,9 +71,9 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/projects" className="hover:text-gold-400 transition-colors flex items-center space-x-1.5">
+                <Link to="/properties" className="hover:text-gold-400 transition-colors flex items-center space-x-1.5">
                   <ArrowRight className="w-3 h-3 text-gold-500" />
-                  <span>New Projects</span>
+                  <span>Verified Stock</span>
                 </Link>
               </li>
               <li>

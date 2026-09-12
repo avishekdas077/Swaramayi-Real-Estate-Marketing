@@ -68,16 +68,16 @@ export default function Projects() {
                     </span>
                     <div className="absolute bottom-4 left-4 right-4 text-white">
                       <div className="text-xs text-gold-400 font-semibold">{proj.developer}</div>
-                      <h3 className="text-xl font-extrabold text-white">{proj.name}</h3>
+                      <p className="text-sm font-bold text-white line-clamp-2 mt-0.5 leading-snug">{proj.description}</p>
                     </div>
                   </div>
 
                   <div className="p-6 flex-1 flex flex-col justify-between">
                     <div>
-                      <div className="flex items-center space-x-1.5 text-xs text-gray-600 font-semibold mb-3">
+                      <div className="flex items-center space-x-1.5 text-xs text-gray-800 font-bold mb-3">
                         <MapPin className="w-4 h-4 text-gold-600 shrink-0" />
                         <span>
-                          {proj.location}, {proj.city}
+                          {proj.location || proj.locality}, {proj.city || 'Kolkata'}
                         </span>
                       </div>
 

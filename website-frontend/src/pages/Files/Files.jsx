@@ -4,6 +4,17 @@ import Breadcrumbs from '../../components/Common/Breadcrumbs';
 import { fileService } from '../../services/fileService';
 import { FileText, Download, ShieldCheck, ExternalLink } from 'lucide-react';
 
+const defaultDemoFiles = [
+  {
+    id: 'FILE-001',
+    title: 'Swarnamayi Corporate Portfolio & Services 2026',
+    category: 'Corporate Profile',
+    description: 'Complete overview of Swarnamayi Real Estate Marketing, verified project portfolios, property advisory protocols, and client track record across Kolkata.',
+    fileSize: 'PDF • 4.2 MB',
+    filePath: 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/examples/learning/helloworld.pdf'
+  }
+];
+
 export default function Files() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -16,9 +27,11 @@ export default function Files() {
     try {
       setLoading(true);
       const res = await fileService.getFiles();
-      setFiles(res.data || []);
+      const fetched = res.data || [];
+      setFiles(fetched.length > 0 ? fetched : defaultDemoFiles);
     } catch (error) {
       console.error('Error fetching files:', error);
+      setFiles(defaultDemoFiles);
     } finally {
       setLoading(false);
     }

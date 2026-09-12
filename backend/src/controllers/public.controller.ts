@@ -637,54 +637,64 @@ export async function getPublicPropertyBySlug(req: Request, res: Response) {
 }
 
 // 5. Get Public Projects List
+// 5. Get Public Projects List
 export async function getPublicProjects(req: Request, res: Response) {
   loadData();
-  let projects = (dbStore.data as any).projects || [];
+  const propertyProjects: any[] = [];
+  const seenProjects = new Set<string>();
 
-  if (projects.length === 0) {
-    // Generate projects from active properties
-    const propertyProjects: any[] = [];
-    const seenProjects = new Set<string>();
+  dbStore.data.properties
+    .filter(p => !p.is_deleted && !isSoldProperty(p))
+    .forEach((p: any) => {
+      const projName = p.project_name || p.property_title || p.title || 'Swaramayi Project';
+      const nameKey = projName.toLowerCase().trim();
+      if (!seenProjects.has(nameKey)) {
+        seenProjects.add(nameKey);
+        const images = extractPropertyImages(p, projName, p.property_code || p.id);
+        const priceMin = p.final_estimated_price || p.base_price || 2080000;
+        const priceMax = Math.round(priceMin * 1.25);
+        
+        let crmLocality = p.locality || p.location || 'Barasat, Kolkata';
+        if (projName.toLowerCase().includes('shibalay')) {
+          crmLocality = 'BARASAT, CHAPADALI';
+        } else if (projName.toLowerCase().includes('gajapati') || projName.toLowerCase().includes('dhriti')) {
+          crmLocality = 'Barasat, Kolkata';
+        }
 
-    dbStore.data.properties.forEach((p: any) => {
-      const projName = p.project_name || p.society || 'Swaramayi Residency';
-      if (!seenProjects.has(projName)) {
-        seenProjects.add(projName);
         propertyProjects.push({
-          id: uuidv4(),
+          id: p.id,
+          _id: p.id,
           name: projName,
+          title: projName,
           slug: slugify(projName),
-          description: `Premium real estate project located in ${p.locality || 'Kolkata'}, offering luxurious residential living with world-class amenities.`,
-          developer: p.developer_name || 'Swaramayi Real Estate Marketing',
+          description: p.description || `${p.configuration || '3BHK'} residential apartment with modern amenities in ${crmLocality}, Kolkata.`,
+          developer: p.developer_name || p.developer || 'Swaramayi Real Estate Marketing',
           city: p.city || 'Kolkata',
-          location: p.locality || p.location_address || 'Kolkata',
-          priceMin: p.base_price ? Math.round(p.base_price * 0.9) : 4500000,
-          priceMax: p.base_price ? Math.round(p.base_price * 1.3) : 15000000,
-          propertyTypes: ['Apartment', 'Villa'],
-          bhkOptions: ['2 BHK', '3 BHK', '4 BHK'],
-          constructionStatus: 'Under Construction',
-          possessionStatus: '2026 - 2028',
+          location: crmLocality,
+          locality: crmLocality,
+          location_address: p.location_address || 'Jessore Road, Barasat, North 24 Parganas, Kolkata, West Bengal - 700124',
+          priceMin,
+          priceMax,
+          propertyTypes: [p.property_type || p.propertyType || 'Apartment'],
+          bhkOptions: [p.configuration || '3BHK'],
+          constructionStatus: p.constructionStatus || 'Under Construction',
+          possessionStatus: p.possession_date || '2026 - 2028',
           reraApproved: true,
           reraNumber: 'WBRERA/2026/00192',
-          amenities: ['Club House', 'Swimming Pool', 'Gymnasium', 'Landscaped Gardens', '24x7 Security'],
-          images: [
-            'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80',
-            'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80'
-          ],
+          amenities: p.amenities || ['Club House', 'Swimming Pool', 'Gymnasium', '24x7 Security'],
+          images,
+          image: images[0],
           featured: true,
           published: true
         });
       }
     });
 
-    projects = propertyProjects;
-  }
-
   return res.json({
     status: 'success',
     success: true,
-    count: projects.length,
-    data: projects
+    count: propertyProjects.length,
+    data: propertyProjects
   });
 }
 
@@ -712,31 +722,42 @@ export async function getPublicProjectBySlug(req: Request, res: Response) {
 
 async function getPublicProjectsData() {
   loadData();
-  let projects = (dbStore.data as any).projects || [];
-  if (projects.length === 0) {
-    const seen = new Set();
-    projects = dbStore.data.properties.map((p: any) => {
-      const name = p.project_name || p.society || 'Swaramayi Residency';
-      if (!seen.has(name)) {
-        seen.add(name);
+  const seen = new Set();
+  return dbStore.data.properties
+    .filter(p => !p.is_deleted && !isSoldProperty(p))
+    .map((p: any) => {
+      const name = p.project_name || p.property_title || p.title || 'Swaramayi Project';
+      const nameKey = name.toLowerCase().trim();
+      if (!seen.has(nameKey)) {
+        seen.add(nameKey);
+        const images = extractPropertyImages(p, name, p.property_code || p.id);
+        let crmLocality = p.locality || p.location || 'Barasat, Kolkata';
+        if (name.toLowerCase().includes('shibalay')) {
+          crmLocality = 'BARASAT, CHAPADALI';
+        } else if (name.toLowerCase().includes('gajapati') || name.toLowerCase().includes('dhriti')) {
+          crmLocality = 'Barasat, Kolkata';
+        }
         return {
           id: p.id,
+          _id: p.id,
           name,
+          title: name,
           slug: slugify(name),
-          description: `Luxury living space in ${p.locality || 'Kolkata'}`,
+          description: p.description || `${p.configuration || '3BHK'} residential apartment with modern amenities in ${crmLocality}, Kolkata.`,
           developer: p.developer_name || 'Swaramayi Real Estate',
           city: p.city || 'Kolkata',
-          location: p.locality || 'Kolkata',
-          priceMin: p.base_price || 5000000,
-          priceMax: (p.base_price || 5000000) * 1.5,
+          location: crmLocality,
+          locality: crmLocality,
+          priceMin: p.final_estimated_price || p.base_price || 2080000,
+          priceMax: Math.round((p.final_estimated_price || p.base_price || 2080000) * 1.25),
           amenities: ['Security', 'Gym', 'Parking'],
-          images: p.images || []
+          images,
+          image: images[0]
         };
       }
       return null;
-    }).filter(Boolean);
-  }
-  return projects;
+    })
+    .filter(Boolean);
 }
 
 // 7. Submit Public Contact / Property Enquiry -> Creates Enquiry & Lead in CRM
@@ -1009,11 +1030,27 @@ export async function getPublicPhases(req: Request, res: Response) {
   });
 }
 
+const demoResourceFiles = [
+  {
+    id: 'FILE-001',
+    title: 'Swarnamayi Corporate Portfolio & Services 2026',
+    category: 'Corporate Profile',
+    description: 'Complete overview of Swarnamayi Real Estate Marketing, verified project portfolios, property advisory protocols, and client track record across Kolkata.',
+    fileSize: 'PDF • 4.2 MB',
+    filePath: 'https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/examples/learning/helloworld.pdf'
+  }
+];
+
 export async function getPublicFiles(req: Request, res: Response) {
+  loadData();
+  const dbFiles = (dbStore.data as any).files || [];
+  const filesList = dbFiles.length > 0 ? dbFiles : demoResourceFiles;
+
   return res.json({
     status: 'success',
     success: true,
-    data: []
+    count: filesList.length,
+    data: filesList
   });
 }
 

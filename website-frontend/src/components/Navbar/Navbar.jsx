@@ -13,7 +13,6 @@ import {
   Briefcase,
   Heart,
   Layers,
-  PlusCircle,
 } from 'lucide-react';
 import logoImg from '../../assets/logo.png';
 import { useFavorites } from '../../context/FavoritesContext';
@@ -111,13 +110,6 @@ export default function Navbar() {
                     onMouseEnter={() => setMoreDropdownOpen(true)}
                   >
                     <Link
-                      to="/projects"
-                      className="flex items-center space-x-3 px-3 py-2 text-sm text-gray-200 hover:bg-navy-800 hover:text-gold-400 rounded-lg"
-                    >
-                      <Building2 className="w-4 h-4 text-gold-500" />
-                      <span>Projects</span>
-                    </Link>
-                    <Link
                       to="/services"
                       className="flex items-center space-x-3 px-3 py-2 text-sm text-gray-200 hover:bg-navy-800 hover:text-gold-400 rounded-lg"
                     >
@@ -210,15 +202,6 @@ export default function Navbar() {
                 </div>
               </a>
 
-              {/* List Property CTA */}
-              <Link
-                to="/contact"
-                className="flex items-center space-x-1.5 px-4 py-2 text-xs font-semibold text-gold-400 border border-gold-500/50 hover:bg-gold-500 hover:text-navy-900 rounded-lg transition-all shadow-sm"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>List Property</span>
-              </Link>
-
               {/* Contact Us CTA */}
               <Link
                 to="/contact"
@@ -289,10 +272,6 @@ export default function Navbar() {
                 <div className="pt-2 pb-2 border-t border-gray-800">
                   <div className="text-xs uppercase font-bold text-gold-500 tracking-wider mb-2">More Options</div>
                   <div className="space-y-3 pl-2">
-                    <Link to="/projects" className="flex items-center space-x-3 text-sm text-gray-300 hover:text-gold-400">
-                      <Building2 className="w-4 h-4 text-gold-500" />
-                      <span>Projects</span>
-                    </Link>
                     <Link to="/services" className="flex items-center space-x-3 text-sm text-gray-300 hover:text-gold-400">
                       <Briefcase className="w-4 h-4 text-gold-500" />
                       <span>Services</span>

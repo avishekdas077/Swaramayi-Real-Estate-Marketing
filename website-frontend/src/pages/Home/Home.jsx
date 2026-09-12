@@ -384,61 +384,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 8. NEW LAUNCHES / PROJECTS */}
-      {newProjects.length > 0 && (
-        <section className="bg-light-bg py-16 border-t border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col md:flex-row md:items-end justify-between mb-10">
-              <div>
-                <span className="text-xs font-bold text-gold-600 uppercase tracking-widest">
-                  Developer Showcase
-                </span>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-navy-900 mt-1">New Launches & Projects</h2>
-                <p className="text-xs sm:text-sm text-gray-500 mt-1">
-                  Prominent residential developments and gated communities in Kolkata.
-                </p>
-              </div>
-              <Link
-                to="/projects"
-                className="mt-4 md:mt-0 text-xs font-bold text-navy-900 hover:text-gold-600 inline-flex items-center space-x-1.5 transition-colors"
-              >
-                <span>View All Projects</span>
-                <ArrowRight className="w-4 h-4 text-gold-500" />
-              </Link>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {newProjects.map((proj, idx) => (
-                <div key={proj.id || proj._id || proj.slug || idx} className="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col sm:flex-row shadow-sm hover:shadow-navy transition-all">
-                  <div className="sm:w-2/5 h-48 sm:h-auto relative bg-gray-100">
-                    <img src={proj.images?.[0] || 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80'} alt={proj.name} className="w-full h-full object-cover" />
-                    <span className="absolute top-3 left-3 bg-gold-500 text-navy-900 text-[10px] font-extrabold px-2.5 py-1 rounded">
-                      {proj.constructionStatus}
-                    </span>
-                  </div>
-                  <div className="sm:w-3/5 p-5 flex flex-col justify-between">
-                    <div>
-                      <div className="text-xs text-gold-600 font-semibold mb-1">{proj.developer}</div>
-                      <h3 className="text-lg font-bold text-navy-900 mb-2">{proj.name}</h3>
-                      <p className="text-xs text-gray-500 line-clamp-2 mb-3">{proj.description}</p>
-                      <div className="text-xs font-bold text-navy-900">
-                        Price Range: ₹ {(proj.priceMin / 100000).toFixed(0)} L - ₹ {(proj.priceMax / 10000000).toFixed(2)} Cr
-                      </div>
-                    </div>
-                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
-                      <span className="text-[11px] text-gray-500 font-medium">Location: {proj.location}</span>
-                      <Link to={`/projects/${proj.slug}`} className="text-xs font-bold text-gold-600 hover:text-navy-900">
-                        View Details →
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* 9. WHY CHOOSE SWARNAMAYI */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center max-w-2xl mx-auto mb-12">

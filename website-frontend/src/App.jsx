@@ -75,22 +75,8 @@ export default function App() {
           </PublicLayout>
         }
       />
-      <Route
-        path="/projects"
-        element={
-          <PublicLayout>
-            <Projects />
-          </PublicLayout>
-        }
-      />
-      <Route
-        path="/projects/:slug"
-        element={
-          <PublicLayout>
-            <ProjectDetails />
-          </PublicLayout>
-        }
-      />
+      <Route path="/projects" element={<Navigate to="/properties" replace />} />
+      <Route path="/projects/:slug" element={<Navigate to="/properties" replace />} />
       <Route
         path="/locations"
         element={
